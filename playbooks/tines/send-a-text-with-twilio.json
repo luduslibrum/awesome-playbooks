@@ -1,0 +1,228 @@
+{
+  "schema_version": 4,
+  "name": "Send a text with Twilio",
+  "description": "Alert your team to a high-level incident. Validate phone numbers and send urgent SMS messages to off-duty team members as part of your emergency incident response.\n\ntags: Respond, Twilio, Beginner, Notify, \nicons:🚨,📱,💬\nvisibility: public\n\n",
+  "guid": "5a28ba70ad5296727e1115a3f937c504",
+  "slug": "send_a_text_with_twilio",
+  "exported_at": "2022-07-11T17:51:50Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Send SMS",
+      "disabled": false,
+      "guid": "3cc2c25f7f2663d013643fcd58768471",
+      "options": {
+        "path": "1ae843bff0070ce24f56a3718b96f56d",
+        "secret": "5905ef8047969bf2fd614d178012e6a0"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send a Text Message in Twilio",
+      "disabled": false,
+      "guid": "a13aed79ba1a11e457719eb6d483f520",
+      "options": {
+        "url": "https://api.twilio.com/2010-04-01/Accounts/<<RESOURCE.twilio_account_id>>/Messages.json",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "Body": "<<send_sms.body.sms_message>>",
+          "From": "<<from_validation.body.phone_number>>",
+          "To": "<<to_validation.body.phone_number>>"
+        },
+        "basic_auth": [
+          "<<RESOURCE.twilio_account_id>>",
+          "<<CREDENTIAL.twilio_auth_token>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "From Validation",
+      "disabled": false,
+      "guid": "0aea882c705daa6ab61ed234ad5ca661",
+      "options": {
+        "url": "https://lookups.twilio.com/v1/PhoneNumbers/<<send_sms.body.from_number>>",
+        "method": "get",
+        "payload": {
+          "Type": "carrier"
+        },
+        "basic_auth": [
+          "<<RESOURCE.twilio_account_id>>",
+          "<<CREDENTIAL.twilio_auth_token>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "To Validation",
+      "disabled": false,
+      "guid": "196d4c7dcfe1d5f147e441a9e0e9ec0f",
+      "options": {
+        "url": "https://lookups.twilio.com/v1/PhoneNumbers/<<send_sms.body.to_number>>",
+        "method": "get",
+        "payload": {
+          "Type": "carrier"
+        },
+        "basic_auth": [
+          "<<RESOURCE.twilio_account_id>>",
+          "<<CREDENTIAL.twilio_auth_token>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Phone Number Validation",
+      "disabled": false,
+      "guid": "ff173f2129f71dc63294a37f0904353e",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<from_validation.status>>"
+          },
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<to_validation.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://img.search.brave.com/AFA-HqAAjVjPyIwRVdV2kCPklROWr6aBz9KI7I2YYRM/rs:fit:1200:1200:1/g:ce/aHR0cHM6Ly9sb2dv/cy1kb3dubG9hZC5j/b20vd3AtY29udGVu/dC91cGxvYWRzLzIw/MTkvMDcvVHdpbGlv/X0xvZ28ucG5n\n\nAt times, there is a need to send SMS messages to notify employees via text outside of normal working hours.  \n\nYou can kick off this story using this [form](./form)\n\nThis simple **Twilio** story allows you to send SMS messages to a phone number with a message up to 140 characters.  Tines can expand on this example by sending messages with information from other 3rd party apps, if needed.\n\n# Configuration Requirements\n- [ ] Create a Twilio account\n- [ ] Create a *Resource* in Tines with your Twilio Account SID\n- [ ] Create a *Credential* in Tines with your Twilio Auth Token\n- [ ] Add your Twilio purchased number as either the **To** or **From** number.\n\n`Phone Validation checks are apart of this story to limit failed requests and ensure messages are being sent to valid phone numbers.`\n",
+      "position": [
+        405.0,
+        60.0
+      ],
+      "guid": "a89b96c87813741c165bf419477d189c",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"3cc2c25f7f2663d013643fcd58768471\":[165,105],\"a13aed79ba1a11e457719eb6d483f520\":[165,435],\"0aea882c705daa6ab61ed234ad5ca661\":[165,195],\"196d4c7dcfe1d5f147e441a9e0e9ec0f\":[165,270],\"ff173f2129f71dc63294a37f0904353e\":[165,345]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Send an SMS Message",
+    "description": "Numbers are formatted [+][country code][subscriber number including area code] and can have a maximum of fifteen digits.",
+    "fields": [
+      {
+        "name": "SMS Message",
+        "description": "",
+        "required": true,
+        "type": "LONG_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": 140,
+        "tenant_id": 8687
+      },
+      {
+        "name": "From Number",
+        "description": "The phone number that is sending the text message.  Demo Phone Number +18508217444",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "To Number",
+        "description": "The phone number that is receiving the text message.  Example +17811234567",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -536870912,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "3cc2c25f7f2663d013643fcd58768471",
+    "success_message": "Thank you for your submission"
+  }
+}

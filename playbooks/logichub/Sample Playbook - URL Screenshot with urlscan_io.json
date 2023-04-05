@@ -1,0 +1,520 @@
+{
+  "flows": [
+    {
+      "name": "Sample Playbook - URL Screenshot with urlscan_io",
+      "nodes": [
+        {
+          "id": "beb4b468-4635-4367-b330-69b664d44993",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "e969c7c6-0c00-471a-a7e1-fdcb17c3f23c"
+          ],
+          "isExplainable": true,
+          "x": 0,
+          "y": 720,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "0ed8a488-8536-4ec4-b399-5aec79f4beae",
+          "name": "Create_Custom_Data",
+          "kind": "createData",
+          "lql": "customData(\"TableMode\", \"[{\\\"url\\\":\\\"https://www.gooogle.com\\\",\\\"note\\\":\\\"valid URL, spoofed domain\\\"},{\\\"url\\\":\\\"http://drive.gooogle.com\\\",\\\"note\\\":\\\"valid URL, spoofed domain, unresolvable host\\\"},{\\\"url\\\":\\\"hxxp://drive.gooogle.com\\\",\\\"note\\\":\\\"invalid URL\\\"}]\")",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Starting with a custom data to begin the playbook",
+          "isExplainable": true,
+          "x": 0,
+          "y": 0,
+          "vertices": [],
+          "title": "Create Custom Data",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "54b0c7d2-b2f6-4d4b-8a0e-384132519c45",
+          "name": "urlscan_io_scan_URLs_and_get_screenshots",
+          "kind": "task",
+          "lql": "runAction(valid_URLs_only, \"logichub.urlscanio\", 38, \"urlscanio_v2\", {\"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\", \"urlscanio_download_screenshot\": \"True\", \"urlscanio_max_wait\": \"\", \"urlscanio_visibility_level\": \"private\", \"urlscanio_column_name\": \"url\", \"urlscanio_time_between_consecutive_requests_milliseconds\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 433,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "urlscanio_v2",
+            "integrationId": "logichub.urlscanio",
+            "integrationInstanceId": 38,
+            "data": {
+              "__lh_multithread_count": "",
+              "urlscanio_visibility_level": "private",
+              "urlscanio_time_between_consecutive_requests_milliseconds": "",
+              "urlscanio_download_screenshot": "True",
+              "urlscanio_max_wait": "",
+              "__lh_rows_to_process": "",
+              "__lh_action_timeout_sec": "",
+              "urlscanio_column_name": "url"
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.urlscanio",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/URLscan.io+logo.png",
+            "name": "Urlscan_IO",
+            "actionId": "urlscanio_v2",
+            "actionName": "URLs Scan"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.urlscanio/urlscanio_v2"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Urlscan_IO - URLs Scan",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "5f19e4e9-13b1-479d-a7a1-903ecb8d171e",
+          "name": "validate_url",
+          "kind": "augmentation",
+          "lql": "`SELECT *,\n  REGEXP_EXTRACT(url, '^(https?:\\\\/\\\\/.*)') AS extracted_url\nFROM Create_Custom_Data`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 171,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "da6b8ef2-c187-4d98-a89d-0ccd222bb8bb",
+          "name": "valid_URLs_only",
+          "kind": "augmentation",
+          "lql": "`SELECT * FROM validate_url\nWHERE extracted_url != ''`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 302,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e969c7c6-0c00-471a-a7e1-fdcb17c3f23c",
+          "name": "parse_urlscan_results",
+          "kind": "augmentation",
+          "lql": "`SELECT CASE\n  WHEN exit_code = 241 THEN 'Integration failed: timed out before completing'\n  WHEN GET_JSON_OBJECT(result, \"$.error\") REGEXP '(?i)could not be resolved' THEN 'Lookup failed: domain could not be resolved'\n  WHEN exit_code = 0 AND GET_JSON_OBJECT(result, \"$.has_error\") = false AND GET_JSON_OBJECT(result, \"$.scan url\") != '' THEN ''\n  WHEN COALESCEEMPTY(GET_JSON_OBJECT(result, \"$.error\"), stderr) != '' THEN PRINTF('Integration failed: %s', COALESCEEMPTY(GET_JSON_OBJECT(result, \"$.error\"), stderr))\n  ELSE 'Integration appears to have failed: no error provided, but unexpected result: ' || result\nEND AS integ_error,\n\n*,\n\nGET_JSON_OBJECT(result, \"$.screenshot_file_id\") AS lhub_file_id,\n\nPRINTF('screenshot-%s-%s.png', IFNULL(PARSE_URL(url, 'HOST'), ''), FROM_UNIXTIME(UNIX_TIMESTAMP(), 'yyyy_MM_dd_HH_mm_ss_S')) AS attachment_file_name,\n\nGET_JSON_OBJECT(result, \"$.has_error\") AS has_error\n\nFROM urlscan_io_scan_URLs_and_get_screenshots`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 589,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": true,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1068",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "urlscan.io",
+      "descriptor": {
+        "id": "logichub.urlscanio",
+        "name": "Urlscan_IO",
+        "description": "Urlscan.io is a service which analyzes websites and the resources they request. Much like the Inspector of browser, urlscan.io will let you take a look at the individual resources that are requested when a site is loaded.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/URLscan.io+logo.png",
+        "documentationSlug": "urlscan_io",
+        "categories": [
+          "application_security"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m74.26"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "Authentication Information",
+              "description": "Enter authentication information for the Urlscan.io integration",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "urlscanio_api_key",
+                  "description": "To access Urlscan.io API, provide valid API Key.",
+                  "label": "API Key",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false,
+                  "isCredential": true
+                },
+                {
+                  "id": "urlscanio_url",
+                  "description": "Sample to Domain to Scan to verify credentials. (Default is `google.com`)",
+                  "label": "Sample Domain to Scan",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "optional": true,
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python -m src.urlscanio.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "urlscanio_v2",
+            "name": "URLs Scan",
+            "description": "Triggers an action for Urlscan.io API",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create scan request for Urlscan.io",
+                  "description": "Provide the column name from the parent table, where the value of the column is the URL to be scanned.",
+                  "inputs": [
+                    {
+                      "id": "urlscanio_column_name",
+                      "description": "Column name to pull URL from parent table.",
+                      "label": "Column name to pull URL",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "urlscanio_download_screenshot",
+                      "description": "Select option to download the screenshot of URL. (Default is False)",
+                      "label": "Download Screenshot",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "True",
+                          "label": "True"
+                        },
+                        {
+                          "value": "False",
+                          "label": "False"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "urlscanio_visibility_level",
+                      "description": "Select option for visibility level. (Default is Private)",
+                      "label": "Visibility Level",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "private",
+                          "label": "Private"
+                        },
+                        {
+                          "value": "public",
+                          "label": "Public"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "urlscanio_max_wait",
+                      "description": "Enter max wait time in seconds to fetch result for each scan. (Default is 60 seconds)",
+                      "label": "Max Wait",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "urlscanio_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.urlscanio.action_urlscanio_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.urlscanio.action_urlscanio_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "urlscanio_search",
+            "name": "Search",
+            "description": "Triggers search action for Urlscan.io API",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "urlscanio_query",
+                      "description": "Jinja-templated text containing the value for query (Default is *). Example: {{column_name1}} AND {{column_name2}}",
+                      "label": "Query",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "urlscanio_size",
+                      "description": "Maximum number of results(10,000 per parent row) to return as response to this call (Default is 10,000)",
+                      "label": "Size",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "urlscanio_download_screenshot",
+                      "description": "Select option to download the screenshot of URL. (Default is False)",
+                      "label": "Download Screenshot",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "True",
+                          "label": "True"
+                        },
+                        {
+                          "value": "False",
+                          "label": "False"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.urlscanio.action_urlscanio_search_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.urlscanio.action_urlscanio_search_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "2.2.7",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-05-24T14:55:10Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:08:42.674Z",
+          "errorMessage": "This imported connection is using a different version of the Urlscan_IO (logichub.urlscanio) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_table_key_value": "",
+        "urlscanio_api_key": "****restricted****",
+        "__lh_ssl_verify": "",
+        "urlscanio_url": "logichub.com",
+        "__lh_label": "urlscan.io",
+        "__lh_use_agent": ""
+      },
+      "id": 38,
+      "isDefault": false
+    }
+  ],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

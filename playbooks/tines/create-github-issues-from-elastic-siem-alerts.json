@@ -1,0 +1,236 @@
+{
+  "schema_version": 4,
+  "name": "Create GitHub Issues from Elastic SIEM alerts",
+  "description": "For each Elastic SIEM alert, create a GitHub Issue to triage and handle incidents. When used with detection-as-code, pull requests can be opened referencing GitHub Issues for rule tuning.\n\ntags: Elastic, Github, SIEM, DetectionasCode, Tuning, Intermediate, \nicons: elastic,⚡️,github\nvisibility: public",
+  "guid": "b108430e4449605bfc03172b03c499b5",
+  "slug": "create_github_issues_from_elastic_siem_alerts",
+  "exported_at": "2022-07-11T17:30:18Z",
+  "agents": [
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Parse JSON",
+      "disabled": false,
+      "guid": "7834f204d2e4fb8b2270aa1510d3f8ac",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "alerts": "=JSON_PARSE(receive_alerts.body) |> COMPACT(%)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Alerts",
+      "disabled": false,
+      "guid": "3c91d9c61392493a4db8081698540dea",
+      "options": {
+        "secret": "9753dc50b29cd3b73528389eac543e9e",
+        "verbs": "get,post",
+        "path": "ddd6961edd127a1e313f175e1db14c3a"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create GitHub Issue",
+      "disabled": false,
+      "guid": "85d7a4e1122eb6ee5eae1b3c5943d715",
+      "options": {
+        "url": "https://api.github.com/repos/<<repo_owner>>/<<repo_name>>/issues",
+        "content_type": "json",
+        "method": "post",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        },
+        "payload": {
+          "title": "[Alert] <<explode_alerts.alert.kibana.alert.rule.name>>",
+          "body": "|   |   |\n|---|---|\n| __Host__ | <<explode_alerts.alert.host.hostname>>  |\n| __User__ | <<explode_alerts.alert.user.name>> |\n| __Severity__ | <<explode_alerts.alert.kibana.alert.severity>> \n\n**Response Actions:**\n[Isolate Host](<<PROMPT(\"isolate\")>>)\n\nRaw Detection:\n```\n<<NEAT_JSON(explode_alerts.alert.kibana.alert)>>\n```\n\n[Link to Kibana](https://<<RESOURCE.kibana_url>>/app/security/alerts)",
+          "labels": [
+            "bug"
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Alerts",
+      "disabled": false,
+      "guid": "56aba62b2fd8e81e5629c32efc29df87",
+      "options": {
+        "mode": "explode",
+        "path": "=parse_json.alerts",
+        "to": "alert"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Isolate Host in Elastic Fleet",
+      "disabled": false,
+      "guid": "eb828aa093e246d3557b4c794ca13c0f",
+      "options": {
+        "url": "https://<<RESOURCE.kibana_url>>/api/endpoint/isolate",
+        "payload": {
+          "endpoint_ids": [
+            "<<explode_alerts.alert.host.id>>"
+          ],
+          "comment": "Locked down, pending further investigation"
+        },
+        "content_type": "json",
+        "method": "post",
+        "headers": {
+          "kbn-xsrf": "true"
+        },
+        "basic_auth": [
+          "elastic",
+          "<<CREDENTIAL.elasticsearch>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for Isolate Response",
+      "disabled": false,
+      "guid": "f76f08359d82b06f2f0833c7f1ad299d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "isolate",
+            "path": "<<create_github_issue.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Elastic SIEM alert configuration\n\nElastic SIEM alerts are best configured with the [Mustache](https://www.elastic.co/guide/en/security/current/rules-ui-create.html#rule-action-variables) template below. The Tines Action **Parse JSON** is expecting the format provided by that template.\n\n```\n[{{#context.alerts}}{{{.}}},{{/context.alerts}}null]\n```",
+      "position": [
+        765.0,
+        255.0
+      ],
+      "guid": "d6e7d56a9ac8e891bf17b791d5ab8ff7",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/elastic-blue.png\n\n",
+      "position": [
+        210.0,
+        165.0
+      ],
+      "guid": "243d1e534df6b504074789afe938736c",
+      "width": null
+    },
+    {
+      "content": "[Read About Detection-as-code](https://www.tines.com/blog/automating-detection-as-code)",
+      "position": [
+        765.0,
+        180.0
+      ],
+      "guid": "171688640461aa9ab4af73b365386ace",
+      "width": null
+    },
+    {
+      "content": "# Requirements: \n- [ ] A Credential `github` representing a GitHub authentication token ([OAuth](https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app) or [JWT](https://docs.github.com/en/developers/apps/building-github-apps/authenticating-with-github-apps) token) with scope *repo*\n- [ ] A Resource `kibana_url` as the Elastic SIEM Kibana URL including the port\n- [ ] A Credential `elasticsearch` for the Kibana API if isolating hosts\n- [ ] The Github repository owner and repository named filled into the **Create GitHub Issue** URL field",
+      "position": [
+        210.0,
+        375.0
+      ],
+      "guid": "0312fa0ebacb70c389ed2a21e3aa391a",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 0
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    },
+    {
+      "source": 5,
+      "receiver": 4
+    }
+  ],
+  "diagram_layout": "{\"7834f204d2e4fb8b2270aa1510d3f8ac\":[525,225],\"3c91d9c61392493a4db8081698540dea\":[525,150],\"85d7a4e1122eb6ee5eae1b3c5943d715\":[525,375],\"56aba62b2fd8e81e5629c32efc29df87\":[525,300],\"eb828aa093e246d3557b4c794ca13c0f\":[525,525],\"f76f08359d82b06f2f0833c7f1ad299d\":[525,450]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Create GitHub Issues from Elastic SIEM alerts Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

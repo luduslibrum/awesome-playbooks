@@ -1,0 +1,492 @@
+{
+  "definitionVersion" : "1.0.0",
+  "name" : "Have I Been Pwned?",
+  "panX" : 322.0,
+  "panY" : 149.0,
+  "logLevel" : "WARN",
+  "description" : "A playbook to query the HIBP API ",
+  "jobList" : [ {
+    "id" : 4,
+    "appCatalogItem" : {
+      "programName" : "Http Client",
+      "displayName" : "HTTP Client",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Query HIBP",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "httpclient_proxy"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://haveibeenpwned.com/api/v2/breachedaccount/#Trigger:9:trg.action.item!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "parameters"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ignore_ssl_trust"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "action"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 0.0,
+    "locationTop" : 130.0,
+    "outputVariables" : "[{\"name\":\"http_client.response_code\",\"type\":\"String\"},{\"name\":\"http_client.response.output_content\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v1.0",
+      "displayName" : "JMES Path",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Transform Data",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json"
+      },
+      "value" : "#App:4:http_client.response.output_content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "jmes_mapping"
+      },
+      "value" : "[{\"key\":\"breachTitles\",\"value\":\"[].[Title, \\u0027Breach\\u0027]| map(\\u0026join(\\u0027 \\u0027,@),@)\"},{\"key\":\"fullObjects\",\"value\":\"[].[{title:Title,domain:Domain,description:Description,breachDate:BreachDate}][]\"}]"
+    } ],
+    "locationLeft" : 250.0,
+    "locationTop" : 130.0,
+    "outputVariables" : "[{\"name\":\"breachTitles\",\"type\":\"String\"},{\"name\":\"fullObjects\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 26,
+    "appCatalogItem" : {
+      "programName" : "Logger",
+      "displayName" : "Logger",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "No Records Returned",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "log_message"
+      },
+      "value" : "No records returned, got response code #App:4:http_client.response_code!String \n\n\nPlease see https://haveibeenpwned.com/API/v2#ResponseCodes for more info"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "logging"
+      },
+      "value" : "ERROR"
+    } ],
+    "locationLeft" : 0.0,
+    "locationTop" : 250.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 37,
+    "appCatalogItem" : {
+      "programName" : "TCPB - GroupCreate v1.0",
+      "displayName" : "Create ThreatConnect Group",
+      "programVersion" : "1.0.10"
+    },
+    "name" : "Create And Associate",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Incident"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Description\",\"value\":\"#App:40:descriptionsArray!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "haveibeenpwned"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:38:titlesArray!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : "#Trigger:9:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "halt_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "additional_fields"
+      },
+      "value" : "[{\"key\":\"eventDate\",\"value\":\"#App:40:breachDatesArray!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "#App:38:titlesArray!StringArray"
+    } ],
+    "locationLeft" : 980.0,
+    "locationTop" : 290.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 38,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.0"
+    },
+    "name" : "Create Titles Array",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:10:breachTitles!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"titlesArray\",\"value\":\"$.*\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 560.0,
+    "locationTop" : -70.0,
+    "outputVariables" : "[{\"name\":\"titlesArray\",\"type\":\"StringArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 39,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.3"
+    },
+    "name" : "Tag with breach title",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:9:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "#App:38:titlesArray!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 560.0,
+    "locationTop" : 130.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 40,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.0"
+    },
+    "name" : "Create Other Arrays",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"descriptionsArray\",\"value\":\"$.*.description\"},{\"key\":\"breachDatesArray\",\"value\":\"$.*.breachDate\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:10:fullObjects!String"
+    } ],
+    "locationLeft" : 560.0,
+    "locationTop" : 30.0,
+    "outputVariables" : "[{\"name\":\"breachDatesArray\",\"type\":\"StringArray\"},{\"name\":\"descriptionsArray\",\"type\":\"StringArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 41,
+    "appCatalogItem" : {
+      "programName" : "TCPB - IncidentRetrieveByName v1.0",
+      "displayName" : "Get ThreatConnect Incident By Name",
+      "programVersion" : "1.0.10"
+    },
+    "name" : "Find Incidents",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "names"
+      },
+      "value" : "#App:38:titlesArray!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "haveibeenpwned"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Incident"
+    } ],
+    "locationLeft" : 560.0,
+    "locationTop" : 230.0,
+    "outputVariables" : "[{\"name\":\"tc.incidents\",\"type\":\"TCEntityArray\"},{\"name\":\"tc.incident.count\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 42,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Got Incident?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:41:tc.incident.count!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "greater than"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "0"
+    } ],
+    "locationLeft" : 820.0,
+    "locationTop" : 220.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 43,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AssociationCreate v1.0",
+      "displayName" : "Create Association",
+      "programVersion" : "1.0.3"
+    },
+    "name" : "Associate Indicator",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "source_entities"
+      },
+      "value" : "#Trigger:9:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "association_entities"
+      },
+      "value" : "#App:41:tc.incidents!TCEntityArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "one_to_one"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 980.0,
+    "locationTop" : 20.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 48,
+    "appCatalogItem" : {
+      "programName" : "Logger",
+      "displayName" : "Logger",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Tranform Error",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "log_message"
+      },
+      "value" : "Failed to transform #App:4:http_client.response.output_content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "logging"
+      },
+      "value" : "ERROR"
+    } ],
+    "locationLeft" : 560.0,
+    "locationTop" : 350.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 49,
+    "appCatalogItem" : {
+      "programName" : "Logger",
+      "displayName" : "Logger",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Incident Create Error",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "log_message"
+      },
+      "value" : "Failed to create Incident\n\n\n\n\n\n#App:38:titlesArray!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "logging"
+      },
+      "value" : "ERROR"
+    } ],
+    "locationLeft" : 1200.0,
+    "locationTop" : 290.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 50,
+    "appCatalogItem" : {
+      "programName" : "Logger",
+      "displayName" : "Logger",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Requesting data for",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "log_message"
+      },
+      "value" : "Requesting data for #Trigger:9:trg.action.item!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "logging"
+      },
+      "value" : "ERROR"
+    } ],
+    "locationLeft" : 250.0,
+    "locationTop" : 30.0,
+    "playbookRetryEnabled" : false
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10,
+    "targetJobId" : 38
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 38,
+    "targetJobId" : 40
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 39,
+    "targetJobId" : 41
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 41,
+    "targetJobId" : 42
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42,
+    "targetJobId" : 43
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42,
+    "targetJobId" : 37
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 4,
+    "targetJobId" : 26
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10,
+    "targetJobId" : 48
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 37,
+    "targetJobId" : 49
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 4,
+    "targetJobId" : 50
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 40,
+    "targetJobId" : 39
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 50,
+    "targetJobId" : 10
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 4,
+    "sourceTriggerId" : 9
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 9,
+    "name" : "Check HIBP",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : 0.0,
+    "locationTop" : 10.0,
+    "httpResponseHeader" : "[]",
+    "anyOrg" : true,
+    "orFilters" : false,
+    "fireOnDuplicate" : false,
+    "userActionTypes" : "EmailAddress",
+    "renderBodyAsTip" : false,
+    "outputVariables" : "[{\"name\":\"trg.action.item\",\"type\":\"String\"},{\"name\":\"trg.action.entity\",\"type\":\"TCEntity\"}]"
+  } ],
+  "dateExported" : "11/8/17 9:14 PM"
+}

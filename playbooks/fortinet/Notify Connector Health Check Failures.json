@@ -1,0 +1,176 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Notify Connector Health Check Failures",
+    "aliasName": null,
+    "tag": "#scheduled",
+    "description": "Scheduled to check connectors\u2019 health status and notify the specified recipients of any failed health check.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/e811949a-45b4-4189-b524-fdb64c417810",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/26fa6e55-962e-4e5b-8e78-c534a4fcd3ac",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Load configured connectors",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/integration\/connectors\/?ordering=label&page_size=1000&configured=true",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "2.7.0",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": {
+                    "configs": "{% set ns = namespace(configs=[]) %}{% for item in vars.result.data.data %}{% for config in item.configuration %}{% set ignore = ns.configs.append({\"name\": item.name, \"label\": item.label, \"config_id\": config.config_id, \"version\": item.version}) %}{% endfor %}{% endfor %}{{ ns.configs }}"
+                }
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "2ff99110-8c68-441b-9507-db8d631a5f70"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": []
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "26fa6e55-962e-4e5b-8e78-c534a4fcd3ac"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Run health checks",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/integration\/connectors\/healthcheck\/{{ vars.item.name }}\/{{ vars.item.version }}\/?config={{ vars.item.config_id }}",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "2.7.0",
+                "for_each": {
+                    "item": "{{vars.configs}}",
+                    "parallel": false,
+                    "condition": ""
+                },
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "300a2116-a578-4e03-a4b3-35afebac559e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send email",
+            "description": null,
+            "arguments": {
+                "config": "d89d51b7-20b0-4dba-8d11-afeae4324b22",
+                "params": {
+                    "cc": "",
+                    "to": "",
+                    "bcc": "",
+                    "from": "Connector health check is down for {{vars.failureList | length}} configurationsThe following connector configurations are returning a non-Available status:",
+                    "type": "User",
+                    "content": "<p>The following connector configurations are returning a non-Available status:<\/p>\n<p>{% for item in vars.failureList %}{{ item.name }} <span style=\"color: #ff0000; padding-left: 10px;\">{{ item.message.replace('\\n', '<br \/>') }}<\/span><br \/><br \/>{% endfor %}<\/p>",
+                    "subject": "Connector health check is down for {{vars.failureList | length}} configurations",
+                    "iri_list": "",
+                    "body_type": "Rich Text",
+                    "file_name": "",
+                    "file_path": ""
+                },
+                "version": "2.3.0",
+                "from_str": "",
+                "connector": "smtp",
+                "operation": "send_email_new",
+                "operationTitle": "Send Email",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/4c0019b2-055c-44d0-968c-678a0c2d762e",
+            "uuid": "8ff4691a-1a9d-4b14-ba79-d35b529f8c07"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set failureList",
+            "description": null,
+            "arguments": {
+                "failureList": "{{ vars.steps.Run_health_checks | json_query('[?data.status!=`Available`].data') }}"
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "f7eafe60-0dc1-47e7-bf82-77567cf094a6"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set failureList -> Send email",
+            "targetStep": "\/api\/3\/workflow_steps\/8ff4691a-1a9d-4b14-ba79-d35b529f8c07",
+            "sourceStep": "\/api\/3\/workflow_steps\/f7eafe60-0dc1-47e7-bf82-77567cf094a6",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "0e217fb9-395e-4d50-a3ba-c7a85619c33a"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Load configured connectors",
+            "targetStep": "\/api\/3\/workflow_steps\/2ff99110-8c68-441b-9507-db8d631a5f70",
+            "sourceStep": "\/api\/3\/workflow_steps\/26fa6e55-962e-4e5b-8e78-c534a4fcd3ac",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "fcc08993-4bec-42fd-bbc7-50bd436012e0"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Load configured connectors -> Run health checks",
+            "targetStep": "\/api\/3\/workflow_steps\/300a2116-a578-4e03-a4b3-35afebac559e",
+            "sourceStep": "\/api\/3\/workflow_steps\/2ff99110-8c68-441b-9507-db8d631a5f70",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9c106196-2525-4215-8865-3e0b31470a67"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Run health checks -> Set failureList",
+            "targetStep": "\/api\/3\/workflow_steps\/f7eafe60-0dc1-47e7-bf82-77567cf094a6",
+            "sourceStep": "\/api\/3\/workflow_steps\/300a2116-a578-4e03-a4b3-35afebac559e",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "441ec5aa-c4ca-46d4-b993-ae906e0b889a"
+        }
+    ],
+    "priority": null,
+    "uuid": "c59d2968-2530-43b7-a6aa-388c968f62f0",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "Subroutine",
+        "Scheduled"
+    ]
+}

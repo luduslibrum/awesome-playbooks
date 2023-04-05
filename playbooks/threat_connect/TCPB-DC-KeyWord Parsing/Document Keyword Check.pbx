@@ -1,0 +1,607 @@
+{
+  "name" : "Document Keyword Check",
+  "type" : "Standard",
+  "panX" : 20.0,
+  "panY" : 20.0,
+  "logLevel" : "TRACE",
+  "description" : "When triggered, this will -\r\nGet the list of keywords from the datastore in ElasticSearch\r\nConvert the document to a set of strings\r\nDo a regex capture on any keywords that match between the two\r\nFor those that match it will create the tag for the group \r\nIt will also additionally tag the document with the actual keywords within those that match",
+  "version" : "1.1",
+  "comment" : "Auto-Saved on Wed Oct 07 21:14:57 UTC 2020",
+  "jobList" : [ {
+    "id" : 80654,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DocumentDownload v1.0",
+      "displayName" : "Get ThreatConnect Document",
+      "programVersion" : "1.0.28"
+    },
+    "name" : "Get Document",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_id"
+      },
+      "value" : "#Trigger:5316:trg.tc.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Document"
+    } ],
+    "locationLeft" : 830.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"tc.document.entity\",\"type\":\"Binary\"}]",
+    "playbookRetryDelayMinutes" : 5,
+    "playbookRetryMaxRetries" : 12
+  }, {
+    "id" : 80655,
+    "appCatalogItem" : {
+      "programName" : "TCPB - BinaryToString v1.0",
+      "displayName" : "Binary To String",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Convert Document to String",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:80654:tc.document.entity!Binary"
+    } ],
+    "locationLeft" : 1030.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"b2s.text\",\"type\":\"String\"}]"
+  }, {
+    "id" : 80658,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Change Delimiter",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : "|"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"join.Russia\",\"value\":\"#App:80694:jmes.Russia!StringArray\"},{\"key\":\"join.China\",\"value\":\"#App:80694:jmes.China!StringArray\"},{\"key\":\"join.North_Korea\",\"value\":\"#App:80694:jmes.North_Korea!StringArray\"}]"
+    } ],
+    "locationLeft" : 830.0,
+    "locationTop" : 340.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"join.North_Korea\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"join.China\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"join.Russia\",\"type\":\"String\"}]"
+  }, {
+    "id" : 80659,
+    "appCatalogItem" : {
+      "programName" : "TCPB - RegexExtract v1.0",
+      "displayName" : "Regex Extract",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "KeyWord Hits",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_nulls"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_groups"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern_mapping"
+      },
+      "value" : "[{\"key\":\"regex.China\",\"value\":\"#App:80660:enclosure.China!String\"},{\"key\":\"regex.North_Korea\",\"value\":\"#App:80660:enclosure.North_Korea!String\"},{\"key\":\"regex.Russia\",\"value\":\"#App:80660:enclosure.Russia!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#App:80655:b2s.text!String"
+    } ],
+    "locationLeft" : 1240.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"regex.Russia\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"regex.China\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"regex.North_Korea\",\"type\":\"StringArray\"}]"
+  }, {
+    "id" : 80660,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Set Enclosure",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"enclosure.North_Korea\",\"value\":\"(#App:80658:join.North_Korea!String)\"},{\"key\":\"enclosure.China\",\"value\":\"(#App:80658:join.China!String)\"},{\"key\":\"enclosure.Russia\",\"value\":\"(#App:80658:join.Russia!String)\"}]"
+    } ],
+    "locationLeft" : 1030.0,
+    "locationTop" : 340.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"enclosure.North_Korea\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"enclosure.China\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"enclosure.Russia\",\"type\":\"String\"}]"
+  }, {
+    "id" : 80661,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Convert To String",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"Russia\",\"value\":\"#App:80659:regex.Russia!StringArray\"},{\"key\":\"China\",\"value\":\"#App:80659:regex.China!StringArray\"},{\"key\":\"North_Korea\",\"value\":\"#App:80659:regex.North_Korea!StringArray\"}]"
+    } ],
+    "locationLeft" : 1460.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"China\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"Russia\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"North_Korea\",\"type\":\"String\"}]"
+  }, {
+    "id" : 80662,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Russia Check",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:80661:Russia!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "null"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "does not contain"
+    } ],
+    "locationLeft" : 1770.0,
+    "locationTop" : 260.0
+  }, {
+    "id" : 80663,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Russia Tag",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "Russia"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:5316:trg.tc.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1910.0,
+    "locationTop" : 240.0
+  }, {
+    "id" : 80664,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Russia Keywords",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:5316:trg.tc.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "#App:80659:regex.Russia!StringArray"
+    } ],
+    "locationLeft" : 2110.0,
+    "locationTop" : 240.0
+  }, {
+    "id" : 80665,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "China Check",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:80661:China!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "null"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "does not contain"
+    } ],
+    "locationLeft" : 1770.0,
+    "locationTop" : 380.0
+  }, {
+    "id" : 80666,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "China Tag",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:5316:trg.tc.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "China"
+    } ],
+    "locationLeft" : 1900.0,
+    "locationTop" : 400.0
+  }, {
+    "id" : 80667,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "China Keywords",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "#App:80659:regex.China!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:5316:trg.tc.entity!TCEntity"
+    } ],
+    "locationLeft" : 2110.0,
+    "locationTop" : 400.0
+  }, {
+    "id" : 80668,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "North Korea Check",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "does not contain"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:80661:North_Korea!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "null"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1770.0,
+    "locationTop" : 520.0
+  }, {
+    "id" : 80669,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "North Korea Tag",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "North Korea"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:5316:trg.tc.entity!TCEntity"
+    } ],
+    "locationLeft" : 1900.0,
+    "locationTop" : 540.0
+  }, {
+    "id" : 80670,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "North Korea Keywords",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "#App:80659:regex.North_Korea!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:5316:trg.tc.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 2110.0,
+    "locationTop" : 540.0
+  }, {
+    "id" : 80692,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DataStore v3.0",
+      "displayName" : "DataStore",
+      "programVersion" : "3.0.1"
+    },
+    "name" : "Get Keywords from DataStore",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "tc_action"
+      },
+      "value" : "SEARCH"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_optional"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rid_required"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_not_found"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "domain"
+      },
+      "value" : "Organization"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "mapping"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rid_optional"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_type"
+      },
+      "value" : "keywords"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_required"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_type"
+      },
+      "value" : "String"
+    } ],
+    "locationLeft" : 410.0,
+    "locationTop" : 340.0,
+    "layoutDisplayOutputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.search.hits.data\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.search.hits\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.response.shard.failed\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.response.shard.success\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.action\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.search.hits.ids\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.response.json\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.search.hits.source\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.response.shard.total\",\"type\":\"String\"}]",
+    "layoutRequiredInputParams" : "[\"tc_action\",\"domain\",\"data_type\"]",
+    "layoutDisplayedInputParams" : "[\"tc_action\",\"domain\",\"data_type\",\"data_optional\",\"fail_on_not_found\"]"
+  }, {
+    "id" : 80694,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v2.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "2.0.8"
+    },
+    "name" : "Extract Keywords",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[{\"key\":\"jmes.China\",\"value\":\"[].data[].China | [0]\"},{\"key\":\"jmes.Russia\",\"value\":\"[].data[].Russia | [0]\"},{\"key\":\"jmes.North_Korea\",\"value\":\"[].data[].North_Korea | [0]\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:80692:datastore.search.hits.data!StringArray"
+    } ],
+    "locationLeft" : 620.0,
+    "locationTop" : 340.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"jmes.North_Korea\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"jmes.Russia\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"jmes.China\",\"type\":\"StringArray\"}]"
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80654,
+    "targetJobId" : 80655
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80655,
+    "targetJobId" : 80659
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 80654,
+    "sourceTriggerId" : 5316
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80658,
+    "targetJobId" : 80660
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80660,
+    "targetJobId" : 80659
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80659,
+    "targetJobId" : 80661
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80661,
+    "targetJobId" : 80662
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80662,
+    "targetJobId" : 80663
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80663,
+    "targetJobId" : 80664
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80666,
+    "targetJobId" : 80667
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80665,
+    "targetJobId" : 80666
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80661,
+    "targetJobId" : 80665
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80661,
+    "targetJobId" : 80668
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80669,
+    "targetJobId" : 80670
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80668,
+    "targetJobId" : 80669
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 80692,
+    "sourceTriggerId" : 5316
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80692,
+    "targetJobId" : 80694
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 80694,
+    "targetJobId" : 80658
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 5316,
+    "name" : "Document Trigger Tag (parseme)",
+    "type" : "Document",
+    "eventType" : "AddTag",
+    "locationLeft" : 410.0,
+    "locationTop" : 180.0,
+    "playbookTriggerFilterList" : [ {
+      "fieldType" : "Tag",
+      "operatorType" : "Contains",
+      "value" : "parseme"
+    } ],
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"trg.tc.entity\",\"type\":\"TCEntity\"}]"
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

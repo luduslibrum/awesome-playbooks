@@ -1,0 +1,148 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Get Reputation After Specified Time",
+    "aliasName": null,
+    "tag": null,
+    "description": "Re-enriches indicators after a specified time.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/deaa4d19-7444-4f3a-a80e-9577436f25ef",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/de73dd1a-ac39-40f3-9c2e-548cac3093f9",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Wait for specified duration",
+            "description": null,
+            "arguments": {
+                "delay": {
+                    "days": 0,
+                    "hours": "{{vars.input.params.duration}}",
+                    "weeks": 0,
+                    "minutes": 0,
+                    "seconds": 0
+                }
+            },
+            "status": null,
+            "top": "160",
+            "left": "200",
+            "stepType": "\/api\/3\/workflow_step_types\/6832e556-b9c7-497a-babe-feda3bd27dbf",
+            "uuid": "e811f7f1-4298-4ce2-81e6-14bbb0b08007"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "042db593-974a-42bb-b7af-e7d493b82b26",
+                "resources": [
+                    "indicators"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "duration",
+                        "type": "integer",
+                        "label": "Duration (In hours)",
+                        "title": "Integer Field",
+                        "usable": true,
+                        "tooltip": "This playbook will wait for specified duration before enriching indicator",
+                        "dataType": "integer",
+                        "formType": "integer",
+                        "required": true,
+                        "_expanded": true,
+                        "mmdUpdate": true,
+                        "collection": false,
+                        "searchable": true,
+                        "templateUrl": "app\/components\/form\/fields\/integer.html",
+                        "_nameTouched": true,
+                        "defaultValue": 24,
+                        "lengthConstraint": true,
+                        "allowedEncryption": false,
+                        "allowedGridColumn": true,
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "duration": "{{vars.request.data[\"duration\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Schedule",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "40",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "de73dd1a-ac39-40f3-9c2e-548cac3093f9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Trigger Enrichment",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "indicator_IRI": "{{vars.input.records[0]['@id']}}",
+                    "indicator_type": "{{vars.input.records[0].typeofindicator.itemValue}}",
+                    "indicator_value": "{{vars.input.records[0].value}}",
+                    "indicator_file_IRI": "",
+                    "indicator_file_name": ""
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/cd29411a-5588-4800-abf1-56ccf1cb7c35"
+            },
+            "status": null,
+            "top": "297",
+            "left": "344",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "a10b8003-248f-43aa-a06e-d4422ade5521"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Wait for specified duration -> Trigger Enrichment",
+            "targetStep": "\/api\/3\/workflow_steps\/a10b8003-248f-43aa-a06e-d4422ade5521",
+            "sourceStep": "\/api\/3\/workflow_steps\/e811f7f1-4298-4ce2-81e6-14bbb0b08007",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "cc2d4ea2-e673-430a-bbae-fdaa7ad46e53"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Wait for specified duration",
+            "targetStep": "\/api\/3\/workflow_steps\/e811f7f1-4298-4ce2-81e6-14bbb0b08007",
+            "sourceStep": "\/api\/3\/workflow_steps\/de73dd1a-ac39-40f3-9c2e-548cac3093f9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a082616a-85fe-4b46-8f06-fa4474575a2b"
+        }
+    ],
+    "priority": null,
+    "uuid": "234db36f-29ab-4bb3-9e1a-4dd36c425556",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "FSRSolutionPack"
+    ]
+}

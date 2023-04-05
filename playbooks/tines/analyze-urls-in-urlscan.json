@@ -1,0 +1,522 @@
+{
+  "schema_version": 4,
+  "name": "Analyze URLs in URLScan",
+  "description": "Extract domains from URLs, search for IOCs and leaked credentials within URLScan, and compile a list of known good domains with this Story.\n\ntags: URLScan, Share, Hunt, IOCs, Threats, Analyze, Extract, Intermediate\nicons: urlscan, 🔎, 📝\nvisibility: public",
+  "guid": "3cc925bd827b063d125649eba89d3c33",
+  "slug": "analyze_urls_in_urlscan",
+  "exported_at": "2022-07-11T17:31:48Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive URL",
+      "disabled": false,
+      "guid": "0082c9d1d562750bfdebb860faed88ec",
+      "options": {
+        "secret": "446967d23c8bde225b39e2a5b3600023",
+        "verbs": "get,post",
+        "path": "a3c0dd431473a617f627f985e4b83161"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Analyze URL",
+      "disabled": false,
+      "guid": "1caea0c752999fd42b5642f2ef19e984",
+      "options": {
+        "story": "<<STORY.analyze_urls_in_urlscan>>",
+        "payload": {
+          "url": "https://lugg2go.com.br/redirect/redirect.php"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Domain from URL",
+      "disabled": false,
+      "guid": "bde0f6244c9a0e91d6f99904501684e2",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=receive_url.body.url",
+            "regexp": "^(?:https?:\\/\\/)?(?:[^@\\n]+@)?(?:www\\.)?([^:\\/\\n?]+)",
+            "to": "domain"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Domain is Known Good",
+      "disabled": false,
+      "guid": "3673a86c621074d8414280a15b81e581",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "<<extract_domain_from_url.domain.first.first>>",
+            "path": "=RESOURCE.known_good_domains"
+          }
+        ],
+        "emit_no_match": "true"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Domain Known Good",
+      "disabled": false,
+      "guid": "038c24d04e12af6950e0c30ba452732b",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<check_if_domain_is_known_good.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Domain Not Known Good",
+      "disabled": false,
+      "guid": "543207f7248bdcefe012f31ba9656f1f",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<check_if_domain_is_known_good.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build KnownGood Results",
+      "disabled": false,
+      "guid": "110a1bf3fedad3e9f462edaebe7f6427",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "url": "<<receive_url.body.url>>",
+          "malicious": "Known Good",
+          "analysis_link": "",
+          "analysis_date": "Known Good",
+          "scan_engine": "URLScan",
+          "page_screenshot": "N/A"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Scan Results",
+      "disabled": false,
+      "guid": "d450f1ac80ee76d110d67301408a264e",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "url": "<<receive_url.body.url>>",
+          "malicious": "<%if retrieve_urlscan_result.body.verdicts.overall.malicious = FALSE%>false<%else%><<DEFAULT(retrieve_urlscan_result.body.verdicts.overall.malicious, \"error submitting\")>><%endif%>",
+          "analysis_link": "<<retrieve_urlscan_result.body.task.reportURL>>",
+          "analysis_date": "<<DEFAULT(retrieve_urlscan_result.body.task.time, \"N/A\")>>",
+          "scan_engine": "URLScan",
+          "brands": "=DEFAULT(retrieve_urlscan_result.body.verdicts.overall.brands, \"None identified\")",
+          "tags": "=DEFAULT(retrieve_urlscan_result.body.verdicts.overall.tags, \"None identified\")",
+          "screenshot": {
+            "url": "<<DEFAULT(retrieve_urlscan_result.body.task.screenshotURL, \"N/A\")>>",
+            "contents": "<<download_screenshot.body.base64encodedcontents>>"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Submit URL Privately",
+      "disabled": false,
+      "guid": "8f0ee216fe45a4699c16a572a7fc8b6f",
+      "options": {
+        "url": "https://urlscan.io/api/v1/scan/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "url": "<<receive_url.body.url>>",
+          "public": "off"
+        },
+        "headers": {
+          "API-Key": "<<CREDENTIAL.urlscan_io>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "7353723189ab8cbcb24fdad4d9d31ddf",
+      "options": {
+        "mode": "delay",
+        "seconds": 60
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Retrieve URLScan Result",
+      "disabled": false,
+      "guid": "da7ec80073774eeb1e7c965c56261c4d",
+      "options": {
+        "url": "https://urlscan.io/api/v1/result/<<submit_url_privately.body.uuid>>/",
+        "method": "get",
+        "headers": {
+          "API-Key": "<<CREDENTIAL.urlscan_io>>"
+        },
+        "retry_on_status": [
+          "400",
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Download Screenshot",
+      "disabled": false,
+      "guid": "89e17958ffecaecac5a7faa348bca076",
+      "options": {
+        "url": "<<retrieve_urlscan_result.body.task.screenshotURL>>",
+        "content_type": "json",
+        "method": "get",
+        "retry_on_status": [
+          "400",
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Successful Submit",
+      "disabled": false,
+      "guid": "04a73646ff12da5e0096a5681943f356",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<submit_url_privately.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Failed Submit",
+      "disabled": false,
+      "guid": "e5c1812ce0c5f0e23036cfbee30a6f35",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "200",
+            "path": "<<submit_url_privately.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Error Results",
+      "disabled": false,
+      "guid": "337dffbd8a84a1466104343fcff1683b",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "url": "<<receive_url.body.url>>",
+          "malicious": "Error",
+          "analysis_link": "",
+          "analysis_date": "Error Submitting URL",
+          "scan_engine": "URLScan",
+          "page_screenshot": "N/A"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-urlscan.png\n\n# Known Good Domains\n\nThere are some domains that that will not need to be submitted. These will be the company domain, such as 'tines.com', or other known good domains that frequently seen.\n\nThese domains can be stored in a Resource called 'known_good_email_domains'. This story will extract the domain from an email address, check if it is found in that Resource. If it is found, no check will be performed on that domain.\n",
+      "position": [
+        975.0,
+        135.0
+      ],
+      "guid": "a006d18f98270b97e26a9b8106e5483d",
+      "width": null
+    },
+    {
+      "content": "# Domain is Known Good\n\nIf the domain is known good, then all analysis will be bypassed.\nResults indicating this will be returned.",
+      "position": [
+        1530.0,
+        465.0
+      ],
+      "guid": "57915f2418f434cccf9f90dbf73830b2",
+      "width": null
+    },
+    {
+      "content": "# Submitting the URL Privately\n\nBy default, the URL will be submitted privately to URLScan. This means it will not show up in public searches - it will only be shown in your account.\n\nPrivate submissions are limited on the free URLScan plan. This can be disabled setting 'public' to be on.\nAlternatively additional URLScan plans are available to increase the amount of private submissions.\n\nIf URLScan returns a HTTP 429 (Too Many Requests) code, Tines will enter a retry sequence and will attempt the submission several more times.\n",
+      "position": [
+        405.0,
+        285.0
+      ],
+      "guid": "3298b90e7caa211aaa6ff45bd1ebcc54",
+      "width": null
+    },
+    {
+      "content": "# Error Submitting\n\nURLScan will respond with an error if the domain cannot be resolved, or if the domain owner has requested that their domain not be scanned (Like Facebook, or Linkedin).\n\nResults indicating this will be returned.",
+      "position": [
+        180.0,
+        945.0
+      ],
+      "guid": "de45e2923ca956417be7627fdd471cbd",
+      "width": null
+    },
+    {
+      "content": "# Getting the Results\n\nAfter submitting the URL, URLScan will provide a unique ID. We can use this to check on the status of the scan, and retrieve the results.\n\nThese results may include screenshots of the scanned URL. These will also be downloaded and made available to the parent story with the results of the scan.",
+      "position": [
+        930.0,
+        765.0
+      ],
+      "guid": "a0ddbde6fa5a83412aefca8d2ae225a8",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 13
+    },
+    {
+      "source": 8,
+      "receiver": 12
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 11,
+      "receiver": 7
+    },
+    {
+      "source": 12,
+      "receiver": 9
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    }
+  ],
+  "diagram_layout": "{\"0082c9d1d562750bfdebb860faed88ec\":[705,210],\"1caea0c752999fd42b5642f2ef19e984\":[525,210],\"bde0f6244c9a0e91d6f99904501684e2\":[705,285],\"3673a86c621074d8414280a15b81e581\":[705,375],\"038c24d04e12af6950e0c30ba452732b\":[1290,465],\"543207f7248bdcefe012f31ba9656f1f\":[705,465],\"110a1bf3fedad3e9f462edaebe7f6427\":[1290,915],\"d450f1ac80ee76d110d67301408a264e\":[705,930],\"8f0ee216fe45a4699c16a572a7fc8b6f\":[705,540],\"7353723189ab8cbcb24fdad4d9d31ddf\":[705,690],\"da7ec80073774eeb1e7c965c56261c4d\":[705,765],\"89e17958ffecaecac5a7faa348bca076\":[705,855],\"04a73646ff12da5e0096a5681943f356\":[705,615],\"e5c1812ce0c5f0e23036cfbee30a6f35\":[465,615],\"337dffbd8a84a1466104343fcff1683b\":[465,930]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "0082c9d1d562750bfdebb860faed88ec",
+  "exit_agent_guids": [
+    "110a1bf3fedad3e9f462edaebe7f6427",
+    "d450f1ac80ee76d110d67301408a264e",
+    "337dffbd8a84a1466104343fcff1683b"
+  ],
+  "exit_agent_guid": "110a1bf3fedad3e9f462edaebe7f6427",
+  "send_to_stories": [],
+  "form": {
+    "name": "Submit URL",
+    "description": "Submit a URL",
+    "fields": [
+      {
+        "name": "Url",
+        "description": "Submit URL for scanning",
+        "required": true,
+        "type": "URL",
+        "multi_select": true,
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "world",
+    "agent_guid": "0082c9d1d562750bfdebb860faed88ec",
+    "success_message": "Thank you for your submission"
+  }
+}

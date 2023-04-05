@@ -1,0 +1,207 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Notify Newly Linked User(s)",
+    "aliasName": null,
+    "tag": null,
+    "description": null,
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/c9282ce9-1cef-4e0b-94da-3b84c32381ff",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/ad1dd33b-eb09-44f9-9d47-9cdddd2c0256",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Get difference of userOwners and owners",
+            "description": null,
+            "arguments": {
+                "warRoom": "{{vars.input.records[0]}}",
+                "newUsers": "{{ vars.steps.Load_war_room_relationships[0].userOwners | json_query('[].\"@id\"') | difference(vars.previous.data.userOwners) | list}}",
+                "warRoomLink": "https:\/\/{{globalVars.Server_fqhn}}{{vars.input.records[0]['@id'] | iriToLink}}"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "8b59156b-7958-4c41-b3ee-8278db170d84"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Load war room relationships",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "id",
+                            "value": "{{vars.input.records[0].id}}",
+                            "operator": "eq",
+                            "_operator": "eq"
+                        }
+                    ],
+                    "__selectFields": [
+                        "owners",
+                        "userOwners"
+                    ]
+                },
+                "module": "warrooms?$limit=1&$relationships=true",
+                "checkboxFields": true,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "8d89819a-20c9-4f8f-b895-3ee73b2a89b7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set email body",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "value": "<p>You were added to War Room #{{ vars.warRoom.id }}:<\/p>\n<table style=\"min-width: 300px; max-width: 800px; border: 1px solid #dddddd;\">\n<tbody>\n<tr style=\"border-bottom: 1px solid #ddd;\">\n<td style=\"text-align: right; padding: 5px; border-right: 1px solid #ddd;\"><strong>Title<\/strong><\/td>\n<td>{{ vars.warRoom.title }}<\/td>\n<\/tr>\n<tr style=\"border-bottom: 1px solid #ddd;\">\n<td style=\"text-align: right; padding: 5px; border-right: 1px solid #ddd;\"><strong>Summary<\/strong><\/td>\n<td>{{ vars.warRoom.summary }}<\/td>\n<\/tr>\n<tr style=\"border-bottom: 1px solid #ddd;\">\n<td style=\"text-align: right; padding: 5px; border-right: 1px solid #ddd;\"><strong>Status<\/strong><\/td>\n<td>{{ vars.warRoom.status.itemValue }}<\/td>\n<\/tr>\n<tr style=\"border-bottom: 1px solid #ddd;\">\n<td style=\"text-align: right; padding: 5px; border-right: 1px solid #ddd;\"><strong>Launched By<\/strong><\/td>\n<td>{{ vars.warRoom.launchedBy.firstname}} {{ vars.warRoom.launchedBy.lastname}}<\/td>\n<\/tr>\n<\/tbody>\n<\/table>\n<br \/>\n<p><a href=\"{{ vars.warRoomLink }}\">Join War Room<\/a><\/p>\n<p>Thanks,<br \/>FortiSOAR&trade;<\/p>"
+                },
+                "version": "3.1.0",
+                "connector": "cyops_utilities",
+                "operation": "format_richtext",
+                "operationTitle": "Utils: Format as RichText",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "6d711fee-5e62-4324-b869-588decc5bbd2"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send new notifications",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.newUsers}}",
+                    "condition": ""
+                },
+                "arguments": {
+                    "userIri": "{{vars.item}}",
+                    "warRoom": "{{vars.input.records[0]}}",
+                    "emailBody": "{{vars.steps.Set_email_body.data['formatted_string']}}",
+                    "emailSubject": "You were added to War Room #{{ vars.warRoom.id }}: {{ vars.warRoom.title }}",
+                    "emailAttachmentIris": ""
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/e61107d7-7cab-4ad3-8a1c-976134f23ca8"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "323ca47e-7188-42f1-8714-2a1f272a7d3c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "warrooms",
+                "resources": [
+                    "warrooms"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "array",
+                            "field": "userOwners",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "object",
+                            "field": "status",
+                            "value": "\/api\/3\/picklists\/1c4fe134-de72-40d9-b35f-deb8dadc6800",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/1c4fe134-de72-40d9-b35f-deb8dadc6800",
+                                "display": "Active",
+                                "itemValue": "Active"
+                            },
+                            "operator": "eq"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "ad1dd33b-eb09-44f9-9d47-9cdddd2c0256"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Load war room relationships",
+            "targetStep": "\/api\/3\/workflow_steps\/8d89819a-20c9-4f8f-b895-3ee73b2a89b7",
+            "sourceStep": "\/api\/3\/workflow_steps\/ad1dd33b-eb09-44f9-9d47-9cdddd2c0256",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "4fd1ed06-4ffa-45d8-a289-fe16083aea6a"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Load war room relationships -> Get difference of userOwners and owners",
+            "targetStep": "\/api\/3\/workflow_steps\/8b59156b-7958-4c41-b3ee-8278db170d84",
+            "sourceStep": "\/api\/3\/workflow_steps\/8d89819a-20c9-4f8f-b895-3ee73b2a89b7",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "7a28dc2d-fb1f-4f70-9b6c-384f205a8289"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get difference of userOwners and owners -> Set email body",
+            "targetStep": "\/api\/3\/workflow_steps\/6d711fee-5e62-4324-b869-588decc5bbd2",
+            "sourceStep": "\/api\/3\/workflow_steps\/8b59156b-7958-4c41-b3ee-8278db170d84",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "72cf1465-e8ed-4d56-916d-bb212cbefdae"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set email body -> Send new notifications",
+            "targetStep": "\/api\/3\/workflow_steps\/323ca47e-7188-42f1-8714-2a1f272a7d3c",
+            "sourceStep": "\/api\/3\/workflow_steps\/6d711fee-5e62-4324-b869-588decc5bbd2",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "adde6432-58f8-474f-ab3c-74b735dc182a"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "c1e9c66d-0e56-48a0-9ece-10e26698c071",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system"
+    ]
+}

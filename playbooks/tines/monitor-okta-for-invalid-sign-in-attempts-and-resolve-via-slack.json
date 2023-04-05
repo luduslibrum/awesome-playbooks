@@ -1,0 +1,628 @@
+{
+  "schema_version": 4,
+  "name": "Monitor Okta for invalid sign-in attempts and resolve via Slack",
+  "description": "Ingest Okta sign-in events, open a PagerDuty alert when a user reaches the five failed sign-in attempts threshold, and resolve directly via Slack.\n\ntags: Okta, PagerDuty, Slack, Triage, Alerts, Respond, Notify, Intermediate\nicons: okta, pagerduty, slack\nvisibility: public",
+  "guid": "4a8f97469482cc12235443a6c1f08839",
+  "slug": "monitor_okta_for_invalid_sign_in_attempts_and_resolve_via_slack",
+  "exported_at": "2022-07-11T17:36:00Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Login Alert from Okta",
+      "disabled": false,
+      "guid": "2a347b199f30d019fc6216e013b6542d",
+      "options": {
+        "secret": "68fea22e39486c8762d673608ec9b795",
+        "verbs": "get,post",
+        "response": {
+          "verification": "<<headers.x_okta_verification_challenge>>"
+        },
+        "path": "abc123"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger for Failed login only",
+      "disabled": false,
+      "guid": "e0fc842109bdcd7c9d61bd01cf32c513",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "user.session.start",
+            "path": "<<login_alert_from_okta.body.data.events.first.eventType>>"
+          },
+          {
+            "type": "field==value",
+            "value": "FAILURE",
+            "path": "<<login_alert_from_okta.body.data.events.first.outcome.result>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "User Failed Login Logs for last 20 minutes",
+      "disabled": false,
+      "guid": "b5a3f1a11e11c2acb33dd2983fb68423",
+      "options": {
+        "url": "https://<<RESOURCE.okta>>/api/v1/logs",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "filter": "eventType eq \"user.session.start\" and outcome.result eq \"FAILURE\" and actor.alternateId eq \"<<login_alert_from_okta.body.data.events.first.actor.alternateId>>\"",
+          "since": "<<DATE(\"now\", \"%s\") |> MINUS(%, 1200) |> DATE(%, \"%Y-%m-%dT%H:%M:%S.%LZ\")>>"
+        },
+        "headers": {
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if more 5 or more Events for User",
+      "disabled": false,
+      "guid": "b72988fe2d79409dc6d7701c16b3dbba",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "5",
+            "path": "<<LIQUID_SIZE(user_failed_login_logs_for_last_20_minutes.body, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate events for one hour",
+      "disabled": false,
+      "guid": "adb90ccd9cfabe9d96a605225ca65676",
+      "options": {
+        "mode": "deduplicate",
+        "period": "3600",
+        "path": "<<login_alert_from_okta.body.data.events.first.actor.alternateId>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post notification to Team Slack Channel",
+      "disabled": false,
+      "guid": "79372875e6947a1ad21fd246066b9be1",
+      "options": {
+        "url": "https://<<RESOURCE.slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "❗️ *PagerDuty New Open Alert* ❗️"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Title:* <<login_alert_from_okta.body.data.events.first.displayMessage>>-\n<<login_alert_from_okta.body.data.events.first.outcome.result>>\n\n*Severity:* <<login_alert_from_okta.body.data.events.first.severity>>\n\n*User:* <<login_alert_from_okta.body.data.events.first.actor.alternateId>>\n\n*Reason:* <<login_alert_from_okta.body.data.events.first.outcome.reason>>\n\n*De-dupe Key:* <<create_alert_in_pagerduty.body.dedup_key>>"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Acknowledge"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"acknowledge\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Resolve"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"close\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Acknowledge",
+      "disabled": false,
+      "guid": "a59b47b2f929fa3456cd53b05a389fb5",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "acknowledge",
+            "path": "<<post_notification_to_team_slack_channel.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Close",
+      "disabled": false,
+      "guid": "a52b3a824887aa37263e30d89894e401",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "close",
+            "path": "<<post_notification_to_team_slack_channel.prompt.status>>"
+          },
+          {
+            "type": "field==value",
+            "value": "close",
+            "path": "<<post_update_to_slack.prompt.status>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Resolve Alert in PagerDuty",
+      "disabled": false,
+      "guid": "6a1134c97d7f0108c90233fd18eb97a2",
+      "options": {
+        "url": "https://<<RESOURCE.pagerdutyevents>>/v2/enqueue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "routing_key": "<<CREDENTIAL.pagerdutyroutingkey>>",
+          "dedup_key": "<<create_alert_in_pagerduty.body.dedup_key>>",
+          "event_action": "resolve"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Acknowledge an Alert in PagerDuty",
+      "disabled": false,
+      "guid": "f45268440b6ca4db7c5dcc4d46d6cb5b",
+      "options": {
+        "url": "https://<<RESOURCE.pagerdutyevents>>/v2/enqueue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "routing_key": "<<CREDENTIAL.pagerdutyroutingkey>>",
+          "dedup_key": "<<create_alert_in_pagerduty.body.dedup_key>>",
+          "event_action": "acknowledge"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Alert in Pagerduty",
+      "disabled": false,
+      "guid": "2e1d252f9c98c260b1ce1afe2d9c9794",
+      "options": {
+        "url": "https://<<RESOURCE.pagerdutyevents>>/v2/enqueue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "event_action": "trigger",
+          "payload": {
+            "summary": "<<login_alert_from_okta.body.data.events.first.displayMessage>>-<<login_alert_from_okta.body.data.events.first.outcome.result>>",
+            "severity": "<<DOWNCASE(login_alert_from_okta.body.data.events.first.severity)>>",
+            "source": "<<login_alert_from_okta.body.source>>",
+            "custom_details": "Reason: <<login_alert_from_okta.body.data.events.first.outcome.reason>>\nUser: <<login_alert_from_okta.body.data.events.first.actor.alternateId>>\n"
+          },
+          "routing_key": "<<CREDENTIAL.pagerdutyroutingkey>>"
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Update to Slack",
+      "disabled": false,
+      "guid": "b2f9e4f9c052556115ec750865be4206",
+      "options": {
+        "url": "https://<<RESOURCE.slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "👀 *PagerDuty Alert Acknowledged*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Title:* <<login_alert_from_okta.body.data.events.first.displayMessage>>-\n<<login_alert_from_okta.body.data.events.first.outcome.result>>\n\n*Severity:* <<login_alert_from_okta.body.data.events.first.severity>>\n\n*User:* <<login_alert_from_okta.body.data.events.first.actor.alternateId>>\n\n*Reason:* <<login_alert_from_okta.body.data.events.first.outcome.reason>>\n\n*De-dupe Key:* <<create_alert_in_pagerduty.body.dedup_key>>"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Resolve"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"close\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Resolution Update to Slack",
+      "disabled": false,
+      "guid": "3bc81c0aabb90c10eb7542a5fa70f64e",
+      "options": {
+        "url": "https://<<RESOURCE.slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *PagerDuty Alert Resolved*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Title:* <<login_alert_from_okta.body.data.events.first.displayMessage>>-\n<<login_alert_from_okta.body.data.events.first.outcome.result>>\n\n*Severity:* <<login_alert_from_okta.body.data.events.first.severity>>\n\n*User:* <<login_alert_from_okta.body.data.events.first.actor.alternateId>>\n\n*Reason:* <<login_alert_from_okta.body.data.events.first.outcome.reason>>\n\n*De-dupe Key:* <<create_alert_in_pagerduty.body.dedup_key>>"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "7eefcc9e22f86735be8e18f214db6576",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "incident": {
+            "type": "incident",
+            "title": "The server is on fire.",
+            "service": {
+              "id": "<<service_reference>>",
+              "type": "service_reference"
+            },
+            "urgency": "high",
+            "body": {
+              "type": "serious incident",
+              "details": "A disk is getting full on this machine"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<user_email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/okta.png\n\n# Description\nThis is a simple story that ingests Okta Sign-In events and opens a PagerDuty alert when a user reaches the 5 failed attempt threshold\n\nUsing the [Prompts Widget](https://hub.tines.com/docs/actions/widgets#prompt-widget) we enable the Analyst to Acknowledge and Resolve the alert directly from Slack",
+      "position": [
+        1170.0,
+        300.0
+      ],
+      "guid": "f2faf656a23f55294f2a1e244f41b203",
+      "width": null
+    },
+    {
+      "content": "# Prerequisites\n\n- [ ] Okta\n- [Event Hook](https://developer.okta.com/docs/concepts/event-hooks/#what-are-okta-event-hooks) that triggers on Login Attempts\n- RESOURCE.okta -  Your Okta Domain\n- CREDENTIAL.okta - Okta [API Token](https://developer.okta.com/docs/guides/create-an-api-token/main/)\n\n\n- [ ] PagerDuty\n- RESOURCE.pagerdutyevents - Events Domain\n- CREDENTIAL.pagerdutyroutingkey - Integration Key for [Events API v2](https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgw-events-api-v2-overview#getting-started) integration\n\n\n- [ ] Slack\n- [Slackbot](https://www.tines.com/blog/chatbots-for-security-and-it-teams-part-3-creating-a-slack-chatbot) with Incoming Webhooks enabled\n- RESOURCE.slack_webhook_url - Incoming Webhook for your Team Channel\n\n\n",
+      "position": [
+        1170.0,
+        750.0
+      ],
+      "guid": "a19a5bce601783d3937748f478ca5447",
+      "width": null
+    },
+    {
+      "content": "All Login Events are sent to the webhook ➡️\n\nSuccessful attempts are filtered out using a Trigger",
+      "position": [
+        540.0,
+        315.0
+      ],
+      "guid": "90c1593beded9cb13c53cbad66b16f56",
+      "width": null
+    },
+    {
+      "content": "We only want to be notified if a user is continuously trying and failing to login, so we search the logs for the last 20 minutes.\n\nThe search returns an array of failed login attempts by the user. We can use the [size of the array](https://hub.tines.com/docs/actions/liquid#get-the-size-of-an-array-from-an-incoming-event) to determine if the user has exceeded our threshold (5 attempts in this example)",
+      "position": [
+        537.0,
+        513.0
+      ],
+      "guid": "e85dcbcf146e23181a6953fc47ddba65",
+      "width": null
+    },
+    {
+      "content": "Optional deduplication of alerts (set to 1 hour) while the original is being investigated",
+      "position": [
+        540.0,
+        720.0
+      ],
+      "guid": "5e66efd35f3816e88688c334297bd614",
+      "width": null
+    },
+    {
+      "content": "Using the PagerDuty Events API an alert is opened (note: this will not open an Incident, see **Options** if an Incident is required)\n\nThe Alert detail is sent to a team Slack channel where is can be Acknowledged or Resolved using the buttons in the message",
+      "position": [
+        540.0,
+        840.0
+      ],
+      "guid": "1c03bb4d474199144c3511e4011aa771",
+      "width": null
+    },
+    {
+      "content": "For a simple alert there should be no need to log into PagerDuty.\n\nThe Analyst can Acknowledge or Resolved the alert from the initial Slack message.\n\nIf they choose to Acknowledge, an update will be sent with a single button to Resolve the Alert.\n\nOn resolution a final update will be sent to Slack to notify the team ",
+      "position": [
+        1395.0,
+        1155.0
+      ],
+      "guid": "0474b1403670dde4e6e5299fddaf3b57",
+      "width": null
+    },
+    {
+      "content": "# Options\n\nPagerDuty Events API does not open an Incident. In this simple scenario an Incident is not required.\n\nIf you are adapting this story for a more complicated Alert you may need to add Incident steps to the flow.\n\nIncident Creation is part of the [PagerDuty Rest API](https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUw-rest-api-overview). [Authentication for the Rest API ](https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTUx-authentication)is slightly different, to use the pre-configured templates you will need:\n- API Token\n- Service ID\n- User Email\n\nSample Rest API template⬇️⬇️⬇️",
+      "position": [
+        1590.0,
+        645.0
+      ],
+      "guid": "12e7f20de1b8fbf23bcffb786eb024a4",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 10
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 6,
+      "receiver": 9
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 12
+    },
+    {
+      "source": 9,
+      "receiver": 11
+    },
+    {
+      "source": 10,
+      "receiver": 5
+    },
+    {
+      "source": 11,
+      "receiver": 7
+    }
+  ],
+  "diagram_layout": "{\"2a347b199f30d019fc6216e013b6542d\":[870,300],\"e0fc842109bdcd7c9d61bd01cf32c513\":[870,405],\"b5a3f1a11e11c2acb33dd2983fb68423\":[870,510],\"b72988fe2d79409dc6d7701c16b3dbba\":[870,615],\"adb90ccd9cfabe9d96a605225ca65676\":[870,720],\"79372875e6947a1ad21fd246066b9be1\":[870,930],\"a59b47b2f929fa3456cd53b05a389fb5\":[600,1125],\"a52b3a824887aa37263e30d89894e401\":[1110,1125],\"6a1134c97d7f0108c90233fd18eb97a2\":[1110,1230],\"f45268440b6ca4db7c5dcc4d46d6cb5b\":[600,1230],\"2e1d252f9c98c260b1ce1afe2d9c9794\":[870,840],\"b2f9e4f9c052556115ec750865be4206\":[600,1350],\"3bc81c0aabb90c10eb7542a5fa70f64e\":[1110,1350],\"7eefcc9e22f86735be8e18f214db6576\":[1620,1020]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Monitor Okta for invalid sign-in attempts and resolve via Slack Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

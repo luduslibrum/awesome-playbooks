@@ -1,0 +1,588 @@
+{
+  "schema_version": 4,
+  "name": "Initiate CrowdStrike RTR memory dump",
+  "description": "Initiate a remote Memory Dump in CrowdStrike Falcon via a Tines form. Input a device ID and a filepath on the remote machine and receive an email once the memory dump has completed on the device. \n\ntags: CrowdStrike, Intermediate, RTR,\nicons: crowdstrike, 💾, 📧\nvisibility: public",
+  "guid": "005f27b6ce1934bca95780a6c0e37265",
+  "slug": "initiate_crowdstrike_rtr_memory_dump",
+  "exported_at": "2022-07-11T17:37:13Z",
+  "agents": [
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Query Not Complete",
+      "disabled": false,
+      "guid": "a525fd3d6ac4943e2106e2bc1fd8f1c4",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<check_status_and_retrieve_results_of_an_active_responder_rtr_command.body.resources.first.complete>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check Status and Retrieve Results of an Active Responder RTR Command",
+      "disabled": false,
+      "guid": "e03651a95dd17d679c6034a4e6f76394",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_hostname>>/real-time-response/entities/active-responder-command/v1",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "cloud_request_id": "<<execute_rtr_command.body.resources.first.cloud_request_id>>",
+          "sequence_id": "<<DEFAULT(increment_count.counter, 0)>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start an RTR Session in Crowdstrike Falcon",
+      "disabled": false,
+      "guid": "e8fe2386f6da47e24f58f266211680c1",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_hostname>>/real-time-response/entities/sessions/v1",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "device_id": "<<form.body.device_id>>",
+          "origin": "string",
+          "queue_offline": true
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Query Complete",
+      "disabled": false,
+      "guid": "d41e03e30c18d8f255b8e9a3d2940ca7",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<check_status_and_retrieve_results_of_an_active_responder_rtr_command.body.resources.first.complete>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Execute RTR Command",
+      "disabled": false,
+      "guid": "5265b2eb3da15af589de0eafe898a747",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_hostname>>/real-time-response/entities/admin-command/v1",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "base_command": "xmemdump",
+          "command_string": "xmemdump complete <<form.body.filepath>>\\memdump_<<DATE(\"now\", \"%Y%m%dT%H%M%S\")>>.dmp",
+          "session_id": "<<start_an_rtr_session_in_crowdstrike_falcon.body.resources.first.session_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Form",
+      "disabled": false,
+      "guid": "adb78f3a828f0b957c9203491cdf54b3",
+      "options": {
+        "path": "9b53592c5798442f1138ef8ab5f7ede7",
+        "secret": "d8c021c2c70a49db5c528190ec48a382",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "eb9b987f9570b153d15fb2e32605dad5",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "query_successful": "<%if trigger_if_error%>false<%else%>true<%endif%>",
+          "session_closed": "<%if delete_an_rtr_session_in_crowdstrike_falcon.status = 204%>true<%else%>false<%endif%>",
+          "result": "=DEFAULT(check_status_and_retrieve_results_of_an_active_responder_rtr_command.body.resources.first, \"Error - no results available\")",
+          "error": "<%if start_an_rtr_session_in_crowdstrike_falcon.status != 201%>Error Starting RTR Session - <<start_an_rtr_session_in_crowdstrike_falcon.body.errors.first.message>><%elseif execute_rtr_command.status != 201%>Error Executing Command on Device - <<execute_rtr_command.body.errors.first.message>><%elseif check_status_and_retrieve_results_of_an_active_responder_rtr_command.status != 200%>Error running script - <<check_status_and_retrieve_results_of_an_active_responder_rtr_command.body.errors.first.message>><%else%>No errors found when executing command <%endif%>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete an RTR Session in Crowdstrike Falcon",
+      "disabled": false,
+      "guid": "9305637a324b61c83d9f916b924dd724",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_hostname>>/real-time-response/entities/sessions/v1",
+        "content_type": "json",
+        "method": "delete",
+        "payload": {
+          "session_id": "<<start_an_rtr_session_in_crowdstrike_falcon.body.resources.first.session_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Error",
+      "disabled": false,
+      "guid": "31b3cfd0ce5e76b4254437be63be13a4",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "400|404|403",
+            "path": "<<execute_rtr_command.status>> <<start_an_rtr_session_in_crowdstrike_falcon.status>> <<check_status_and_retrieve_results_of_an_active_responder_rtr_command.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Completed Notification",
+      "disabled": false,
+      "guid": "5254be24daf3241df5fab0ad8d003b05",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "Any.run File Analysis Results - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "CrowdStrike Memory Dump: Story has completed successfully<br>\n\n\nPlease check story: <a href=\"<<APPEND(META.tenant.domain, \"/stories/\") |> APPEND(%, META.story.id)>>\"><<META.story.name>></a>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Increment Counter",
+      "disabled": false,
+      "guid": "46bc24901082f458bed23e4f81df94f0",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "counter": "<<PLUS(increment_counter.counter, 1)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Counter Less Than 10",
+      "disabled": false,
+      "guid": "a656ae9e878e0232d9de18150b1f7aab",
+      "options": {
+        "rules": [
+          {
+            "type": "field<=value",
+            "value": "10",
+            "path": "<<increment_counter.counter>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "6c8fcfe0b58557ffe2996f4234c34813",
+      "options": {
+        "mode": "delay",
+        "seconds": "<<TIMES(2, 60)>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Error Email - Timeout",
+      "disabled": false,
+      "guid": "747c8aa2b714b64ce616405ea55b5477",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "ERROR Any.run File Analysis Results - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "CrowdStrike Memory Dump has timed out.<br>\nPlease check story: <a href=\"<<APPEND(META.tenant.domain, \"/stories/\") |> APPEND(%, META.story.id)>>\"><<META.story.name>></a>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Counter Greater Than 10",
+      "disabled": false,
+      "guid": "05a74f1333fe55c1923dd115c1e78445",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "10",
+            "path": "<<increment_counter.counter>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Error Email",
+      "disabled": false,
+      "guid": "70f5d022eded1f78143ad737764c8650",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "ERROR Any.run File Analysis Results - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "CrowdStrike Memory Dump: an error has occurred while attempting to run Memory Dump. <br>\nPlease check story: <a href=\"<<APPEND(META.tenant.domain, \"/stories/\") |> APPEND(%, META.story.id)>>\"><<META.story.name>></a>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete an RTR Session in Crowdstrike Falcon",
+      "disabled": false,
+      "guid": "1d47fcf40ba7631a4dd0551ca38e1bb5",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_hostname>>/real-time-response/entities/sessions/v1",
+        "content_type": "json",
+        "method": "delete",
+        "payload": {
+          "session_id": "<<start_an_rtr_session_in_crowdstrike_falcon.body.resources.first.session_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# CrowdStrike RTR Memory Dump\n\n----\n\nThis story handles creating an RTR session, sending a RTR `xmemdump` command, waiting for the file to be generated and emailing an analyst once generated. \n\nOnce generated the the file can be retrieved from the host and analysed.\n\nYou will need the CrowdStrike Device ID. This ID is included in any detections retrieved from CrowdStrike Falcon.  ",
+      "position": [
+        -60.0,
+        660.0
+      ],
+      "guid": "d90ed670e9c6d24b855fdbeefbbcc27a",
+      "width": null
+    },
+    {
+      "content": "![cs](https://image-uploads.tines.com/framed-logo-crowdstrike.png)",
+      "position": [
+        -60.0,
+        435.0
+      ],
+      "guid": "9dc9f23f94d159dbf4c0dcff126ec0f1",
+      "width": 270
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 10
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 8
+    },
+    {
+      "source": 1,
+      "receiver": 0
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 7
+    },
+    {
+      "source": 4,
+      "receiver": 1
+    },
+    {
+      "source": 5,
+      "receiver": 2
+    },
+    {
+      "source": 6,
+      "receiver": 9
+    },
+    {
+      "source": 7,
+      "receiver": 6
+    },
+    {
+      "source": 8,
+      "receiver": 16
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 10,
+      "receiver": 14
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 12,
+      "receiver": 1
+    },
+    {
+      "source": 14,
+      "receiver": 13
+    },
+    {
+      "source": 16,
+      "receiver": 15
+    }
+  ],
+  "diagram_layout": "{\"a525fd3d6ac4943e2106e2bc1fd8f1c4\":[255,795],\"e03651a95dd17d679c6034a4e6f76394\":[255,690],\"e8fe2386f6da47e24f58f266211680c1\":[255,525],\"d41e03e30c18d8f255b8e9a3d2940ca7\":[780,795],\"5265b2eb3da15af589de0eafe898a747\":[255,615],\"adb78f3a828f0b957c9203491cdf54b3\":[255,465],\"eb9b987f9570b153d15fb2e32605dad5\":[780,930],\"9305637a324b61c83d9f916b924dd724\":[780,855],\"31b3cfd0ce5e76b4254437be63be13a4\":[510,795],\"5254be24daf3241df5fab0ad8d003b05\":[780,1005],\"46bc24901082f458bed23e4f81df94f0\":[255,855],\"a656ae9e878e0232d9de18150b1f7aab\":[255,930],\"6c8fcfe0b58557ffe2996f4234c34813\":[255,1005],\"747c8aa2b714b64ce616405ea55b5477\":[-30,1005],\"05a74f1333fe55c1923dd115c1e78445\":[-30,930],\"70f5d022eded1f78143ad737764c8650\":[510,930],\"1d47fcf40ba7631a4dd0551ca38e1bb5\":[510,855]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "CrowdStrike RTR - Memory Dump",
+    "description": "",
+    "fields": [
+      {
+        "name": "Email",
+        "description": "Send notifications to this email",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Filepath",
+        "description": "Eg. \"D:\\Users\\user\\Desktop\"\n\nNote: filename will be automatically generated with the format \"memdump_<timestamp>.dmp\"",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Device ID",
+        "description": "CrowdStrike Device ID \nAKA: Host ID",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "adb78f3a828f0b957c9203491cdf54b3",
+    "success_message": "Thank you for your submission"
+  }
+}

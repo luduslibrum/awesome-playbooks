@@ -1,0 +1,653 @@
+{
+  "schema_version": 4,
+  "name": "Manage Okta login threshold limit in Jira via Slack",
+  "description": "This Story ingests Okta sign-in events and opens a Jira issue when a user reaches the five failed attempts threshold. The Jira issue can then be managed directly through Slack.\n\ntags: Okta, Jira, Slack, Alerts, Respond, Notify, Intermediate,\nicons: okta,🚨, jira\nvisibility: public\n",
+  "guid": "1f1c1638b51e45b07faf9f358511d5be",
+  "slug": "manage_okta_login_threshold_limit_in_jira_via_slack",
+  "exported_at": "2022-07-11T17:28:49Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Login Alert from Okta",
+      "disabled": false,
+      "guid": "7c33d93eec1b8a9d30e5385139fb814f",
+      "options": {
+        "secret": "41b9197ad3f57d576879dd8e59e1a29f",
+        "verbs": "get,post",
+        "response": {
+          "verification": "<<headers.x_okta_verification_challenge>>"
+        },
+        "path": "9ff6f41e351ae256fec79d8efb0e34e9"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger for Failed login only",
+      "disabled": false,
+      "guid": "c9e6f9c9703e079b80ae58e7757329d5",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "user.session.start",
+            "path": "<<login_alert_from_okta.body.data.events.first.eventType>>"
+          },
+          {
+            "type": "field==value",
+            "value": "FAILURE",
+            "path": "<<login_alert_from_okta.body.data.events.first.outcome.result>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "User Failed Login Logs for last 20 minutes",
+      "disabled": false,
+      "guid": "c16364d3253d05a8c2f75dd5f4ec3e17",
+      "options": {
+        "url": "https://<<RESOURCE.okta_domain>>/api/v1/logs",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "filter": "eventType eq \"user.session.start\" and outcome.result eq \"FAILURE\" and actor.alternateId eq \"<<login_alert_from_okta.body.data.events.first.actor.alternateId>>\"",
+          "since": "<<DATE(\"now\", \"%s\") |> MINUS(%, 1200) |> DATE(%, \"%Y-%m-%dT%H:%M:%S.%LZ\")>>"
+        },
+        "headers": {
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if 5 or more Events for User",
+      "disabled": false,
+      "guid": "69c906e4c08d9bf6fe5219bcc36c9dbc",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "5",
+            "path": "<<LIQUID_SIZE(user_failed_login_logs_for_last_20_minutes.body, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate events for one hour",
+      "disabled": false,
+      "guid": "c131ae4be09fb934ea0d271343ae9a00",
+      "options": {
+        "mode": "deduplicate",
+        "period": "3600",
+        "path": "<<login_alert_from_okta.body.data.events.first.actor.alternateId>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post notification to Team Slack Channel",
+      "disabled": false,
+      "guid": "d6efdfac1055b146e3eabb012da692af",
+      "options": {
+        "url": "https://<<RESOURCE.slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "❗️ *JIRA New ISSUE from OKTA* ❗️"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Title:* <<login_alert_from_okta.body.data.events.first.displayMessage>>-\n<<login_alert_from_okta.body.data.events.first.outcome.result>>\n\n*Severity:* <<login_alert_from_okta.body.data.events.first.severity>>\n\n*User:* <<login_alert_from_okta.body.data.events.first.actor.alternateId>>\n\n*Reason:* <<login_alert_from_okta.body.data.events.first.outcome.reason>>\n\n*JIRA ISSUE:* https://<<RESOURCE.jira_domain>>/browse/<<create_issue_in_jira.body.key>>"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Mark In Progress"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"progress\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Done - Close Issue"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"done\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Mark Issue In Progress",
+      "disabled": false,
+      "guid": "5cc0c50d09960ace6d639f64727cf1ea",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "progress",
+            "path": "<<post_notification_to_team_slack_channel.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Close",
+      "disabled": false,
+      "guid": "c43665444e1ec828dec75ee26887fe08",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "done",
+            "path": "<<post_notification_to_team_slack_channel.prompt.status>>"
+          },
+          {
+            "type": "field==value",
+            "value": "done",
+            "path": "<<post_update_to_slack.prompt.status>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Update to Slack",
+      "disabled": false,
+      "guid": "daa6376be4b58b245dc24ec1edc90fd9",
+      "options": {
+        "url": "https://<<RESOURCE.slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "👀 *JIRA Issue in Progress*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Title:* <<login_alert_from_okta.body.data.events.first.displayMessage>>-\n<<login_alert_from_okta.body.data.events.first.outcome.result>>\n\n*Severity:* <<login_alert_from_okta.body.data.events.first.severity>>\n\n*User:* <<login_alert_from_okta.body.data.events.first.actor.alternateId>>\n\n*Reason:* <<login_alert_from_okta.body.data.events.first.outcome.reason>>\n\n*JIRA ISSUE:* https://<<RESOURCE.jira_domain>>/browse/<<create_issue_in_jira.body.key>>"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Done - Close Issue"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"done\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Resolution Update to Slack",
+      "disabled": false,
+      "guid": "e2b9219d233b89aab72dc63dff1623b6",
+      "options": {
+        "url": "https://<<RESOURCE.slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *JIRA ISSUE DONE - Closed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Title:* <<login_alert_from_okta.body.data.events.first.displayMessage>>-\n<<login_alert_from_okta.body.data.events.first.outcome.result>>\n\n*Severity:* <<login_alert_from_okta.body.data.events.first.severity>>\n\n*User:* <<login_alert_from_okta.body.data.events.first.actor.alternateId>>\n\n*Reason:* <<login_alert_from_okta.body.data.events.first.outcome.reason>>\n\n*JIRA ISSUE:* https://<<RESOURCE.jira_domain>>/browse/<<create_issue_in_jira.body.key>>"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "331f729de66b9b69365b652921ab86a6",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "*User:* <<login_alert_from_okta.body.data.events.first.actor.alternateId>> has had 5 or more failed login attempts in the last 5 Minutes\n*Reason:* <<login_alert_from_okta.body.data.events.first.outcome.reason>>\n*Login Target:* <<login_alert_from_okta.body.data.events.first.target.first.displayName>>\n*Time:* <<login_alert_from_okta.body.eventTime>>\n*Okta Severity:* <<login_alert_from_okta.body.data.events[0].severity>>",
+            "summary": "<<login_alert_from_okta.body.data.events.first.displayMessage>>-<<login_alert_from_okta.body.data.events.first.outcome.result>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Issue Status in Jira",
+      "disabled": false,
+      "guid": "569c73b942d463bebd1bcf188066ff62",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/transitions?expand=transitions.fields",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "transition": {
+            "id": "21"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Ticket",
+      "disabled": false,
+      "guid": "b15f94d0b0116c30cc2c6ed0231d1d92",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "body": "User <<login_alert_from_okta.body.data.events.first.actor.alternateId>> has confirmed the login attempt. No further action to take."
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Change status to Done in Jira",
+      "disabled": false,
+      "guid": "706c331be94d9350d40639686d4f2727",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/transitions?expand=transitions.fields",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Issue Transitions in Jira",
+      "disabled": false,
+      "guid": "9b75c1cf83b419a1b940d244ff3997c8",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<issueIDorKey>>/transitions",
+        "content_type": "json",
+        "method": "get",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "![](https://image-uploads.tines.com/okta.png)\n\n# Description\nThis is a simple Story that ingests Okta Sign-In events and opens a JIRA Issue when a user reaches the five failed attempt threshold.\n\nUsing the [Prompts Widget](https://hub.tines.com/docs/actions/widgets#prompt-widget) we enable the Analyst to Update and Close the Issue directly from Slack.",
+      "position": [
+        525.0,
+        195.0
+      ],
+      "guid": "f2faf656a23f55294f2a1e244f41b203",
+      "width": null
+    },
+    {
+      "content": "# Prerequisites\n\n- [ ] Okta\n- [Event Hook](https://developer.okta.com/docs/concepts/event-hooks/#what-are-okta-event-hooks) that triggers on Login Attempts\n- `RESOURCE.okta `-  Your Okta Domain\n- `CREDENTIAL.okta` - Okta [API Token](https://developer.okta.com/docs/guides/create-an-api-token/main/)\n\n\n- [ ] JIRA\n- `RESOURCE.jira_domain` - Base Domain for your JIRA account\n- `CREDENTIAL.jira` - JIRA API Key\n- `RESOURCE.jira_username` - user (email) that corresponds to the API Key\n\n\n- [ ] Slack\n- [Slackbot](https://www.tines.com/blog/chatbots-for-security-and-it-teams-part-3-creating-a-slack-chatbot) with Incoming Webhooks enabled\n- `RESOURCE.slack_webhook_url` - Incoming Webhook for your Team Channel\n\n\n",
+      "position": [
+        525.0,
+        690.0
+      ],
+      "guid": "a19a5bce601783d3937748f478ca5447",
+      "width": null
+    },
+    {
+      "content": "⬅️  All Login Events are sent to the webhook\n\nUse this Webhook URL (found in the Summary) to set up your [Event Hook].(https://developer.okta.com/docs/concepts/event-hooks/#what-are-okta-event-hooks) in Okta \n\nSuccessful login attempts are filtered out using a Trigger.\n\n❗️ *Note: If testing this story use a dummy user eg. joeblogs@email.com to fail login (you don't want to lock your own user out!).*",
+      "position": [
+        1140.0,
+        210.0
+      ],
+      "guid": "90c1593beded9cb13c53cbad66b16f56",
+      "width": 400
+    },
+    {
+      "content": "We only want to be notified if a user is continuously trying and failing to log in, so we search the logs for the last 20 minutes.\n\nThe search returns an array of failed login attempts by the user. We can use the [size of the array](https://hub.tines.com/docs/actions/liquid#get-the-size-of-an-array-from-an-incoming-event) to determine if the user has exceeded our threshold (five attempts in this example).\n\nThis is optional, if you wish to open an issue and be notified of each failed login, just remove these two Actions.",
+      "position": [
+        1140.0,
+        480.0
+      ],
+      "guid": "e85dcbcf146e23181a6953fc47ddba65",
+      "width": 410
+    },
+    {
+      "content": "Optional deduplication of alerts (set to one hour) while the original is being investigated.",
+      "position": [
+        1140.0,
+        765.0
+      ],
+      "guid": "5e66efd35f3816e88688c334297bd614",
+      "width": null
+    },
+    {
+      "content": "****An issue is opened in Jira for the alert\n\nThe Alert detail is sent to a team Slack channel where is can be acknowledged or resolved using the buttons in the message.",
+      "position": [
+        1140.0,
+        900.0
+      ],
+      "guid": "1c03bb4d474199144c3511e4011aa771",
+      "width": null
+    },
+    {
+      "content": "For a simple alert, there should be no need to log in to JIRA.\n\nThe Analyst can update or close the issue from the initial Slack message.\n\nIf they choose to update, an update message will be sent with a single button to close the issue.\n\nOn resolution, a final update will be sent to Slack to notify the team.",
+      "position": [
+        1140.0,
+        1185.0
+      ],
+      "guid": "0474b1403670dde4e6e5299fddaf3b57",
+      "width": null
+    },
+    {
+      "content": "The Transition (Status) IDs for updating JIRA issues is dependent on your own configurations. Please check with your JIRA admin, or use the action below to find the status options available to you.",
+      "position": [
+        525.0,
+        1470.0
+      ],
+      "guid": "48f853869311b3fa700582a830c0a074",
+      "width": 310
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 10
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 11
+    },
+    {
+      "source": 7,
+      "receiver": 12
+    },
+    {
+      "source": 8,
+      "receiver": 7
+    },
+    {
+      "source": 10,
+      "receiver": 5
+    },
+    {
+      "source": 11,
+      "receiver": 8
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    }
+  ],
+  "diagram_layout": "{\"7c33d93eec1b8a9d30e5385139fb814f\":[870,210],\"c9e6f9c9703e079b80ae58e7757329d5\":[870,345],\"c16364d3253d05a8c2f75dd5f4ec3e17\":[870,480],\"69c906e4c08d9bf6fe5219bcc36c9dbc\":[870,615],\"c131ae4be09fb934ea0d271343ae9a00\":[870,765],\"d6efdfac1055b146e3eabb012da692af\":[870,1020],\"5cc0c50d09960ace6d639f64727cf1ea\":[600,1110],\"c43665444e1ec828dec75ee26887fe08\":[870,1245],\"daa6376be4b58b245dc24ec1edc90fd9\":[600,1335],\"e2b9219d233b89aab72dc63dff1623b6\":[870,1455],\"331f729de66b9b69365b652921ab86a6\":[870,915],\"569c73b942d463bebd1bcf188066ff62\":[600,1215],\"b15f94d0b0116c30cc2c6ed0231d1d92\":[870,1350],\"706c331be94d9350d40639686d4f2727\":[870,1455],\"9b75c1cf83b419a1b940d244ff3997c8\":[570,1605]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Manage Okta login threshold limit in Jira via Slack Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

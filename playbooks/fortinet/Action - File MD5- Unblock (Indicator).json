@@ -1,0 +1,316 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action - File MD5- Unblock (Indicator)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Unblocks the indicators of type 'Filehash' on the firewall and marks the indicator as \"Unblocked\" based on its block status.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "inputIndicatorRecordIRI",
+        "inputIndicatorValue",
+        "inputActionReasons"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/238eb636-94af-4237-9bc4-0fad2c3804a0",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Mark as Unblocked",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "<p><span class=\"icon icon-successful text-success\"  style=\"font-size: 15px; color: green; font-weight: bold;\"><\/span>{{vars.indicatorValue}} has been unblocked as confirmed by&nbsp;{{vars.loggedInUserName}}<\/p>",
+                    "records": ""
+                },
+                "resource": {
+                    "indicatorStatus": {
+                        "id": 368,
+                        "@id": "\/api\/3\/picklists\/41a9818a-c283-4d7f-852c-6e275033e3d2",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Unblocked",
+                        "listName": "\/api\/3\/picklist_names\/e6639d57-94a9-432f-a46f-b2b530402077",
+                        "itemValue": "Unblocked",
+                        "orderIndex": 1
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.indicatorIRI}}",
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "126",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "598572bb-b42e-4f12-ade8-d8b3a3edc85e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Mark as TBD",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "content": "<p>{{vars.indicatorValue}} was <strong>not blocked&nbsp;<\/strong>as confirmed by&nbsp;{{vars.loggedInUserName}}<\/p>",
+                    "records": ""
+                },
+                "resource": {
+                    "indicatorStatus": {
+                        "id": 369,
+                        "@id": "\/api\/3\/picklists\/2f5cff61-fbff-4bb3-96be-302b78a9fb47",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "TBD",
+                        "listName": "\/api\/3\/picklist_names\/e6639d57-94a9-432f-a46f-b2b530402077",
+                        "itemValue": "TBD",
+                        "orderIndex": 2
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.indicatorIRI}}",
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "475",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "a62d0869-ed84-426b-9cd3-b84edb6b03bd"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "39638d3c-030c-4dc1-8d18-59bab35187a1",
+                "title": "Unblock File MD5",
+                "resources": [
+                    "indicators"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "actionReason",
+                        "type": "string",
+                        "label": "Reason",
+                        "tooltip": "Specify Reason for the action",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "defaultValue": "User Requested",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "actionReason": "{{vars.request.data[\"actionReason\"]}}",
+                            "inputActionReasons": "{{ vars.inputActionReasons }}",
+                            "inputIndicatorValue": "{{ vars.inputIndicatorValue }}",
+                            "inputIndicatorRecordIRI": "{{ vars.inputIndicatorRecordIRI }}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    },
+                    "loggedInUser": "{{vars.currentUser | fromIRI }}"
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": [
+                            {
+                                "type": "object",
+                                "field": "indicatorStatus",
+                                "value": "\/api\/3\/picklists\/41a9818a-c283-4d7f-852c-6e275033e3d2",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/41a9818a-c283-4d7f-852c-6e275033e3d2",
+                                    "itemValue": "Unblocked"
+                                },
+                                "operator": "neq"
+                            },
+                            {
+                                "type": "object",
+                                "field": "typeofindicator",
+                                "value": "\/api\/3\/picklists\/0ca054f2-d923-4992-a4a7-c516e6df281e",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/0ca054f2-d923-4992-a4a7-c516e6df281e",
+                                    "display": "FileHash-MD5",
+                                    "itemValue": "FileHash-MD5"
+                                },
+                                "operator": "eq"
+                            }
+                        ]
+                    }
+                },
+                "executeButtonText": "Unblock",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "30",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "238eb636-94af-4237-9bc4-0fad2c3804a0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Manual Task to Action",
+            "description": null,
+            "arguments": {
+                "type": "DecisionBased",
+                "input": {
+                    "schema": {
+                        "title": "Unblock {{vars.indicatorValue}}",
+                        "description": "<p>Configure your firewall to unblock:&nbsp;{{vars.indicatorValue}} and Click \"Unblock Completed\" to confirm the status.<\/p>\n<p>*Consider changing this step to automation using a connector. That would accelerate your response time and allow you to focus on advanced threats<\/p>",
+                        "inputVariables": []
+                    }
+                },
+                "record": "{{ vars.input.records[0][\"@id\"] }}",
+                "resources": "indicators",
+                "owner_detail": {
+                    "isAssigned": false
+                },
+                "step_variables": [],
+                "response_mapping": {
+                    "options": [
+                        {
+                            "option": "Unblock Completed",
+                            "primary": true,
+                            "step_iri": "\/api\/3\/workflow_steps\/598572bb-b42e-4f12-ade8-d8b3a3edc85e"
+                        },
+                        {
+                            "option": "Unable to Unblock",
+                            "step_iri": "\/api\/3\/workflow_steps\/a62d0869-ed84-426b-9cd3-b84edb6b03bd"
+                        }
+                    ],
+                    "duplicateOption": false
+                }
+            },
+            "status": null,
+            "top": "435",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/fc04082a-d7dc-4299-96fb-6837b1baa0fe",
+            "uuid": "860c3dfb-5b3e-42b7-8d79-25aeef4935a8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "actionReason": "{{\nvars.input.params.inputActionReasons\nif vars.input.params.inputActionReasons\nelse vars.input.params.actionReason\n}}",
+                "indicatorIRI": "{{\nvars.input.params.inputIndicatorRecordIRI \nif vars.input.params.inputIndicatorRecordIRI \nelse  \nvars.input.records[0]['@id'] \n}}",
+                "indicatorValue": "{{\nvars.input.params.inputIndicatorValue\nif vars.input.params.inputIndicatorValue\nelse \nvars.input.records[0].value\n}}",
+                "loggedInUserName": "{{vars.loggedInUser.firstname}} {{vars.loggedInUser.lastname}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "7ec52613-ac1f-4818-b4d9-7f64dd37aaaa"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add note to Indicator",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "content": "<p>{{vars.loggedInUserName}}&nbsp;initiated unblock of {{vars.indicatorValue}} with the following reasons:&nbsp;{{vars.actionReason}}<\/p>",
+                    "__replace": "",
+                    "indicators": "{{vars.indicatorIRI}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "f4dcd03b-cd9f-4211-8269-f545c6cd1ccb"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Manual Task to Block -> Mark as Blocked",
+            "targetStep": "\/api\/3\/workflow_steps\/598572bb-b42e-4f12-ade8-d8b3a3edc85e",
+            "sourceStep": "\/api\/3\/workflow_steps\/860c3dfb-5b3e-42b7-8d79-25aeef4935a8",
+            "label": "Unblock Completed",
+            "isExecuted": false,
+            "uuid": "3ed1d069-ac3e-4e64-9e25-0f730eb482c7"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Manual Task to Block -> Mark as TBD",
+            "targetStep": "\/api\/3\/workflow_steps\/a62d0869-ed84-426b-9cd3-b84edb6b03bd",
+            "sourceStep": "\/api\/3\/workflow_steps\/860c3dfb-5b3e-42b7-8d79-25aeef4935a8",
+            "label": "Unable to Unblock",
+            "isExecuted": false,
+            "uuid": "8b208f7d-c033-4479-abea-a72cc26b4659"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Add note to Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/f4dcd03b-cd9f-4211-8269-f545c6cd1ccb",
+            "sourceStep": "\/api\/3\/workflow_steps\/7ec52613-ac1f-4818-b4d9-7f64dd37aaaa",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ff24ac7a-1b87-45b4-89fc-53d888bc99c9"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/7ec52613-ac1f-4818-b4d9-7f64dd37aaaa",
+            "sourceStep": "\/api\/3\/workflow_steps\/238eb636-94af-4237-9bc4-0fad2c3804a0",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "2064e0f9-da92-45ec-a1c0-d3f1ec1abefe"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Add note to Indicator -> Manual Task to Block",
+            "targetStep": "\/api\/3\/workflow_steps\/860c3dfb-5b3e-42b7-8d79-25aeef4935a8",
+            "sourceStep": "\/api\/3\/workflow_steps\/f4dcd03b-cd9f-4211-8269-f545c6cd1ccb",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "64831c11-dfd6-47fa-a05c-311028839871"
+        }
+    ],
+    "priority": null,
+    "uuid": "da0ba196-0f23-448e-9a92-f51578d02ca7",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Mitigation"
+    ]
+}

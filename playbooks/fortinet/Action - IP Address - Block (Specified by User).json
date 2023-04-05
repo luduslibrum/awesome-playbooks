@@ -1,0 +1,209 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action - IP Address - Block (Specified by User)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Creates indicators for the specified IP Address' , blocks the IP address on the firewall, and marks the indicators as blocked. The indicator is also linked to the record on which the playbook is triggered.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/cc8c7372-1d51-4642-93e7-fe39d67b771d",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Create IP Indicator _ Deduplicated",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "value": "{{vars.input.params.ipAddress}}",
+                    "__replace": "true",
+                    "typeofindicator": {
+                        "id": 77,
+                        "@id": "\/api\/3\/picklists\/c0beeda4-2c7a-4214-b7e5-53ba1649539c",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "IP Address",
+                        "listName": "\/api\/3\/picklist_names\/50ee5bfa-e18f-49ba-8af9-dcca25b0f9c0",
+                        "itemValue": "IP Address",
+                        "orderIndex": 7
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/upsert\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "30e2136b-f600-4ea3-b783-5478e54c22d1"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block IP Address",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params.reasonsToUnblock}}",
+                    "inputIndicatorValue": "{{vars.input.params.ipAddress}}",
+                    "inputIndicatorRecordIRI": "{{vars.steps.Create_IP_Indicator___Deduplicated['@id']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/79ebfed2-86ee-404d-b69c-02a448e1144d"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "a75ccc14-9f62-43b7-83ca-c68174339384"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Link Indicator On Triggered Record",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{vars.input.records[0]['@id']}}",
+                    "body": "{\"__link\":{\"indicators\":[\"{{vars.result['@id']}}\"]}}"
+                },
+                "version": "3.0.4",
+                "connector": "cyops_utilities",
+                "operation": "update_cyops_resource",
+                "operationTitle": "CyOPs: Update Record",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "79184e5c-3e39-4f75-8c5e-ab5061d79a5d"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "f80acfa1-8322-4d1b-916e-ddd3cc1be02e",
+                "title": "Block Specified IP address",
+                "resources": [
+                    "incidents"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "ipAddress",
+                        "type": "string",
+                        "label": "IP Address",
+                        "tooltip": "Given IP address will also be created as indicator, and linked to this record",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": true,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "useRecordFieldDefault": false
+                    },
+                    {
+                        "name": "reasonsToUnblock",
+                        "type": "string",
+                        "label": "Reasons to unblock",
+                        "tooltip": "Specify reasons for unblocking the IP address. The reason would be added in Indicator Record for future reference",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "defaultValue": "Asked by User:",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "ipAddress": "{{vars.request.data[\"ipAddress\"]}}",
+                            "reasonsToUnblock": "{{vars.request.data[\"reasonsToUnblock\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "assets": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "incidents": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Block",
+                "noRecordExecution": false,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "cc8c7372-1d51-4642-93e7-fe39d67b771d"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Create IP Indicator _ Deduplicated",
+            "targetStep": "\/api\/3\/workflow_steps\/30e2136b-f600-4ea3-b783-5478e54c22d1",
+            "sourceStep": "\/api\/3\/workflow_steps\/cc8c7372-1d51-4642-93e7-fe39d67b771d",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1f17cfb5-dbd4-427b-bfbe-f471457d36b3"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create IP Indicator _ Deduplicated -> Unblock IP Address",
+            "targetStep": "\/api\/3\/workflow_steps\/a75ccc14-9f62-43b7-83ca-c68174339384",
+            "sourceStep": "\/api\/3\/workflow_steps\/30e2136b-f600-4ea3-b783-5478e54c22d1",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ad24edb6-f1ba-465f-acd8-dbc2deeb8b7b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Block IP Address -> Link Indicator On Triggered Record",
+            "targetStep": "\/api\/3\/workflow_steps\/79184e5c-3e39-4f75-8c5e-ab5061d79a5d",
+            "sourceStep": "\/api\/3\/workflow_steps\/a75ccc14-9f62-43b7-83ca-c68174339384",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "5833ba74-2d92-4c40-bce5-e23b638b294e"
+        }
+    ],
+    "priority": null,
+    "uuid": "8f6af995-8535-49aa-bbc8-2642a50d9e3a",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Mitigation"
+    ]
+}

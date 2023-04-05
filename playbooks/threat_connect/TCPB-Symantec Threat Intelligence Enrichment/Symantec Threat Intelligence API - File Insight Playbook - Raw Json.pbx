@@ -1,0 +1,587 @@
+{
+  "name" : "Symantec Threat Intelligence API - File Insight Playbook - Raw Json",
+  "type" : "Standard",
+  "panX" : 289.0,
+  "panY" : 782.0,
+  "logLevel" : "TRACE",
+  "description" : "",
+  "priority" : 7,
+  "version" : "1.197",
+  "comment" : "Auto-Saved on Wed Apr 28 16:43:34 UTC 2021",
+  "jobList" : [ {
+    "id" : 23422,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AddAttribute v1.0",
+      "displayName" : "Add ThreatConnect Attribute",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Add File Insight Enrichments Attribute",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "apply_to_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "update_type"
+      },
+      "value" : "Update First Occurrence"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_types"
+      },
+      "value" : "[{\"key\":\"Symantec ThreatIntel Insight Enrichments - Raw Json\",\"value\":\"#App:23421:jmes.Raw.Json!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "source_entities"
+      },
+      "value" : "#Trigger:2461:trg.action.entity!TCEntity"
+    } ],
+    "locationLeft" : 270.0,
+    "locationTop" : -240.0
+  }, {
+    "id" : 23411,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SplitString v1.0",
+      "displayName" : "Split String",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Create Attribute Names",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"split.AttributeNames\",\"value\":\"Symantec ThreatIntel First Seen,Symantec ThreatIntel Last Seen,Symantec ThreatIntel Prevalence,Symantec ThreatIntel Reputation,Symantec ThreatIntel Target Countries,Symantec ThreatIntel Target Industries\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter_is_regex"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : -10.0,
+    "locationTop" : -400.0
+  }, {
+    "id" : 23409,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Validate Results",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:23421:jmes.Data.Length!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "greater than"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "0"
+    } ],
+    "locationLeft" : 500.0,
+    "locationTop" : -380.0
+  }, {
+    "id" : 23421,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v3.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "3.0.0"
+    },
+    "name" : "Extract Watchtower File Insight API response",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"jmes.Data.Length\",\"value\":\"[firstSeen || `None`, lastSeen || `None`, prevalence || `None`, reputation || `None`, targetOrgs.topCountries || to_array(\\u0027None\\u0027) | join(`, `, @), targetOrgs.topIndustries || to_array(\\u0027None\\u0027) | join(`, `, @)][?contains(@, \\u0027None\\u0027) \\u003d\\u003d `false`] | length(@)\"},{\"key\":\"jmes.Raw.Json\",\"value\":\"@\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:23420:http.content!String"
+    } ],
+    "locationLeft" : 230.0,
+    "locationTop" : -400.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"jmes.Raw.Json\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"jmes.Data.Length\",\"type\":\"String\"}]"
+  }, {
+    "id" : 23420,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.20"
+    },
+    "name" : "HTTP Client Invoke WatchTower File Insight API",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://api.sep.securitycloud.symantec.com/v1/threat-intel/insight/file/#App:23412:tc.file.sha256!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"Authorization\",\"value\":\"#App:23418:access_token!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 570.0,
+    "locationTop" : -500.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"http.content\",\"type\":\"String\"}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 23419,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.20"
+    },
+    "name" : "HTTP Client: WatchTower Auth",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[{\"key\":\"grant_type\",\"value\":\"client_credentials\"},{\"key\":\"client_secret\",\"value\":\"${ORGANIZATION:KEYCHAIN:Symantec ThreatIntel client_secret}\"},{\"key\":\"client_id\",\"value\":\"${ORGANIZATION:TEXT:Symantec ThreatIntel client_id}\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "POST"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://api.sep.securitycloud.symantec.com/v1/oauth2/tokens"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"Content-Type\",\"value\":\"application/x-www-form-urlencoded\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : -10.0,
+    "locationTop" : -540.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"http.content\",\"type\":\"String\"}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"body\",\"urlencode_body\",\"multipart\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 23418,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v3.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "3.0.0"
+    },
+    "name" : "Extract WatchTower Access Token",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"access_token\",\"value\":\"access_token\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:23419:http.content!String"
+    } ],
+    "locationLeft" : 220.0,
+    "locationTop" : -540.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"access_token\",\"type\":\"String\"}]"
+  }, {
+    "id" : 23417,
+    "appCatalogItem" : {
+      "programName" : "TCPB - GroupCreate v1.0",
+      "displayName" : "Create ThreatConnect Group",
+      "programVersion" : "1.0.26"
+    },
+    "name" : "Create File Insight Report",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "additional_fields"
+      },
+      "value" : "[{\"key\":\"fileName\",\"value\":\"None\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "halt_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "Symantec ThreatIntel File Insight"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Source\",\"value\":\"#Trigger:2461:trg.action.item!String\"},{\"key\":\"Description\",\"value\":\"Symantec ThreatIntel Network Insight Enrichments Raw Json: #App:23421:jmes.Raw.Json!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "Symantec ThreatIntel File Insight Raw Json Report - #Global:0:gbl.timestamp.iso!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : "#Trigger:2461:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Report"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "#Trigger:2461:trg.action.owner!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 520.0,
+    "locationTop" : -240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"tc.group.id\",\"type\":\"String\"}]"
+  }, {
+    "id" : 23416,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Success Message",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"success\",\"value\":\"Success- \\u003ca href\\u003d\\u0027/auth/report/report.xhtml?report\\u003d#App:23417:tc.group.id!String\\u0026owner\\u003d#Trigger:2461:trg.action.owner!String\\u0027\\u003elink to report\\u003c/a\\u003e\"}]"
+    } ],
+    "locationLeft" : 880.0,
+    "locationTop" : -240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"success\",\"type\":\"String\"}]"
+  }, {
+    "id" : 23415,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Response Merge",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"m.Response\",\"value\":\"#App:23413:v.Failure!String #App:23414:v.NoResults!String #App:23416:success!String\"}]"
+    } ],
+    "locationLeft" : 1190.0,
+    "locationTop" : -560.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"m.Response\",\"type\":\"String\"}]"
+  }, {
+    "id" : 23414,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "No Results",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.NoResults\",\"value\":\"No results from File Insight API\"}]"
+    } ],
+    "locationLeft" : 880.0,
+    "locationTop" : -380.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"v.NoResults\",\"type\":\"String\"}]"
+  }, {
+    "id" : 23413,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Failed to invoke Symantec ThreatIntel File Insight API",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.Failure\",\"value\":\"A problem occurred contacting the Symantec ThreatIntel API service, please try again later\"}]"
+    } ],
+    "locationLeft" : 880.0,
+    "locationTop" : -500.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"v.Failure\",\"type\":\"String\"}]"
+  }, {
+    "id" : 23412,
+    "appCatalogItem" : {
+      "programName" : "TCPB - FileRetrieveByValue v1.1",
+      "displayName" : "Get ThreatConnect File by Value",
+      "programVersion" : "1.1.24"
+    },
+    "name" : "Get ThreatConnect File by Value (SHA-256)",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Broadcom"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "File"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "values"
+      },
+      "value" : "#Trigger:2461:trg.action.entity!TCEntity"
+    } ],
+    "locationLeft" : 570.0,
+    "locationTop" : -600.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"tc.file.sha256\",\"type\":\"String\"}]"
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23422,
+    "targetJobId" : 23417
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23409,
+    "targetJobId" : 23422
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23409,
+    "targetJobId" : 23414
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23417,
+    "targetJobId" : 23416
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23421,
+    "targetJobId" : 23409
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 23419,
+    "sourceTriggerId" : 2461
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23413,
+    "targetJobId" : 23415
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23414,
+    "targetJobId" : 23415
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23420,
+    "targetJobId" : 23413
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23416,
+    "targetJobId" : 23415
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23411,
+    "targetJobId" : 23421
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23419,
+    "targetJobId" : 23418
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 23415,
+    "targetTriggerId" : 2461
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23418,
+    "targetJobId" : 23412
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23412,
+    "targetJobId" : 23420
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 23420,
+    "targetJobId" : 23411
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 2461,
+    "name" : "Symantec Threat Intelligence API - File Insight JSON",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : 170.0,
+    "locationTop" : -710.0,
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "#App:23415:m.Response!String",
+    "anyOrg" : true,
+    "userActionTypes" : "File",
+    "overrideRunAsUser" : true,
+    "renderBodyAsTip" : true,
+    "playbookTriggerFilterList" : [ ],
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"trg.action.owner\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"trg.action.item\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"trg.action.entity\",\"type\":\"TCEntity\"}]",
+    "cacheMinutes" : 120,
+    "cacheParams" : "{\"includeMethod\":false,\"includeBody\":false,\"queryParams\":[],\"headerNames\":[]}"
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

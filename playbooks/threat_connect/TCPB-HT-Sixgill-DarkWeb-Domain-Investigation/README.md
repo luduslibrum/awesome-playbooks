@@ -1,0 +1,2 @@
+# Overview
+The purpose of this Playbook is to provide you with the ability to take an event delivered from an external source (such as a SIEM) and perform threat hunting against that domain. This Playbook goes along with [this webinar](https://www.brighttalk.com/webcast/16201/426508?utm_campaign=knowledge-feed&utm_source=brighttalk-portal&utm_medium=web). It is strongly recommended that you review the webinar video to fully understand the scenario and usefulness of this Playbook.

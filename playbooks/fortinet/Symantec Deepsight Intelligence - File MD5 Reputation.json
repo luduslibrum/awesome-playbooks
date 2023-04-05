@@ -1,0 +1,163 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Symantec Deepsight Intelligence - File MD5 Reputation",
+    "aliasName": null,
+    "tag": null,
+    "description": "Retrieves the reputation of a file, identified by its MD5 hash, using Symantec DeepSight Intelligence.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_value"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/b135c052-e170-4cff-8cc7-9a4bfe607ccb",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/44b4ed38-132f-4e60-9863-02747e777c67",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "indicator_value": "{{ vars.indicator_value }}"
+                        }
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "44b4ed38-132f-4e60-9863-02747e777c67"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get File Reputation from Symantec Deepsight Intelligence",
+            "description": null,
+            "arguments": {
+                "name": "Symantec DeepSight Intelligence",
+                "config": "8582d1ad-6584-4d14-a0b4-d8571b09b8b2",
+                "params": {
+                    "filehash": "{{vars.indicator_value}}"
+                },
+                "version": "1.0.1",
+                "connector": "symantec-deepsight-intelligence",
+                "operation": "filehash_reputation",
+                "ignore_errors": true,
+                "operationTitle": "Get File Reputation",
+                "step_variables": {
+                    "foundDeepsightReputation": "{{ ( vars.result.data.result and vars.result.data.result.reputation != \"Unknown Reputation\" ) | ternary(true,false) }}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "79ddfa0b-bf49-40b3-8a27-84d1299d30c5"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "enrichment_summary",
+            "description": null,
+            "arguments": {
+                "tags": "None",
+                "source": "Symantec Deepsight Intelligence",
+                "reputation": "{% if vars.Reputation >= vars.threshold %}\"Malicious\"{% elif vars.Reputation <= vars.threshold and vars.Reputation > 0 %}\"Suspicious\"{%elif vars.Reputation == 0%}\"No Reputation Available\"{%else%}\"Good\"{%endif%}",
+                "enrichmentSummary": "{{vars.steps.Compute_Symantec_Summary.data['formatted_string']}}"
+            },
+            "status": null,
+            "top": "570",
+            "left": "126",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "687b55a6-e351-4978-ae1f-6c72a26229bf"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configurations",
+            "description": null,
+            "arguments": {
+                "threshold": "5",
+                "indicator_value": "{{vars.input.params['indicator_value']}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "04c34581-838e-45e7-bf92-0d666bf56aae"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Compute Symantec Summary",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "value": "<p>{% if vars.foundDeepsightReputation%}<\/p>\n<div class=\"card-container-body\" style=\"width: 280px;\">\n<div class=\"card-number\"><a href=\"https:\/\/mss.symantec.com\/PortalNextgen\/Research\/md5?Hash={{vars.indicator_value}}\" target=\"_blank\" rel=\"noopener noreferrer\"> <span class=\"card-count\">{{vars.steps.Get_File_Reputation_from_Symantec_Deepsight_Intelligence.data.result.reputation}}<\/span> <\/a>\n<div class=\"font-size-12\">Detection: {{vars.steps.Get_File_Reputation_from_Symantec_Deepsight_Intelligence.data.result.detectionName}}<\/div>\n<div class=\"font-size-14\"><strong>Symantec Deepsight Intelligence<\/strong><\/div>\n<\/div>\n<\/div>\n<p>{% endif %}<\/p>"
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "format_richtext",
+                "operationTitle": "Utils: Format as RichText",
+                "step_variables": {
+                    "Reputation": "{% if vars.foundDeepsightReputation %}{{vars.steps.Get_File_Reputation_from_Symantec_Deepsight_Intelligence.data.result.reputation}}{%else%} 0\n{%endif%}"
+                }
+            },
+            "status": null,
+            "top": "440",
+            "left": "126",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "adb020e7-b1b9-4828-b193-fbe9abc8b4d8"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compute Symantec Summary -> enrichment_summary",
+            "targetStep": "\/api\/3\/workflow_steps\/687b55a6-e351-4978-ae1f-6c72a26229bf",
+            "sourceStep": "\/api\/3\/workflow_steps\/adb020e7-b1b9-4828-b193-fbe9abc8b4d8",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c2cb0f03-698c-42c9-96aa-3cf1e11102c9"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configurations -> Get File Reputation from Symantec Deepsight Intelligence",
+            "targetStep": "\/api\/3\/workflow_steps\/79ddfa0b-bf49-40b3-8a27-84d1299d30c5",
+            "sourceStep": "\/api\/3\/workflow_steps\/04c34581-838e-45e7-bf92-0d666bf56aae",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "3a307c64-64f4-47cb-a543-4a5cff8c11e7"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configurations",
+            "targetStep": "\/api\/3\/workflow_steps\/04c34581-838e-45e7-bf92-0d666bf56aae",
+            "sourceStep": "\/api\/3\/workflow_steps\/44b4ed38-132f-4e60-9863-02747e777c67",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "918fb13a-263c-4478-a678-7086688661db"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get File Reputation from Symantec Deepsight Intelligence -> Compute Symantec Summary",
+            "targetStep": "\/api\/3\/workflow_steps\/adb020e7-b1b9-4828-b193-fbe9abc8b4d8",
+            "sourceStep": "\/api\/3\/workflow_steps\/79ddfa0b-bf49-40b3-8a27-84d1299d30c5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "efb7af25-aeaf-4a6a-ba89-7514ad82d9d5"
+        }
+    ],
+    "priority": null,
+    "uuid": "e6c295e2-fc0c-4c54-9ff8-26a89679431b",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

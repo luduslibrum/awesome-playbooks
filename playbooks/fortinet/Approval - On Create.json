@@ -1,0 +1,273 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Approval - On Create",
+    "aliasName": null,
+    "tag": "#system",
+    "description": "This playbook is triggered whenever an approval is requested from a playbook. This playbook is triggered whenever an approval record is created, and an email is sent out to the intended approver(s).",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/091c5be2-7b8e-4769-8cbc-f13b70e3af78",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "replyEmail": "pooja.cyops@gmail.com",
+                "approvalSubject": "Action Required: Approval-{{vars.input.records[0].id}}"
+            },
+            "status": null,
+            "top": "113",
+            "left": "209",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "35f77f93-87c1-41df-b0d0-08638a7a0b97"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "approvals",
+                "step_variables": {
+                    "host": "https:\/\/{{vars.input.records[0].approvalhost}}",
+                    "record": "{{ vars.input.records[0] }}",
+                    "approval_id": "{{vars.input.records[0][\"@id\"].strip().split('\/')[-1]}}"
+                },
+                "fieldbasedtrigger": {
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "method",
+                            "value": "\/api\/3\/picklists\/2a817063-e12a-496d-934d-381d22a95b3b",
+                            "_value": {
+                                "display": "Email",
+                                "itemValue": "Email"
+                            },
+                            "operator": "eq"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "20",
+            "left": "60",
+            "stepType": "\/api\/3\/workflow_step_types\/ea155646-3821-4542-9702-b246da430a8d",
+            "uuid": "091c5be2-7b8e-4769-8cbc-f13b70e3af78"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Assigned to User",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/13724551-7482-41c5-86d4-8c0486c66bd5",
+                        "condition": "{{ vars.record.assignedTo != None }}"
+                    },
+                    {
+                        "option": "No",
+                        "step_iri": "\/api\/3\/workflow_steps\/55590e75-ac0c-4d2f-b2ad-9310de5465eb",
+                        "condition": "{{ vars.record.assignedTo == None }}"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "211",
+            "left": "354",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "447200a7-d40e-4b8c-87a1-bcf3a1d857e1"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Fetch relations of the record",
+            "description": null,
+            "arguments": {
+                "script": "\/wf\/workflow\/tasks\/crudhub_crud",
+                "arguments": {
+                    "method": "GET",
+                    "resource": "",
+                    "collection": "{{ vars.record['@id'] }}?$relationships=true"
+                },
+                "step_variables": {
+                    "team_uuid": "{% set parts = vars.result['owners'][0]['@id'].split('\/') %}{{ parts[-1] }}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "660",
+            "stepType": "\/api\/3\/workflow_step_types\/ee73e569-2188-43fe-a7f0-1964ba82a4de",
+            "uuid": "55590e75-ac0c-4d2f-b2ad-9310de5465eb"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send Email",
+            "description": null,
+            "arguments": {
+                "config": "88c3d39c-2fa9-4731-b00d-29815008f17c",
+                "params": {
+                    "cc": "",
+                    "to": "{{vars.sendToEmail}}",
+                    "bcc": "",
+                    "from": "{{vars.replyEmail}}",
+                    "type": "Manual Input",
+                    "content": "<p>Greetings,<\/p>\n<p>This is an auto-generated email for your approval. {{ vars.input.records[0].approvaldescription }}<\/p>\n<p><a href=\"Mailto:{{vars.replyEmail}}?subject=Re:{{vars.approvalSubject}}: Approved&amp;body=Status: Approved%0AApproval Reason: &lt;your message here&gt;%0ARequest ID: Approval-{{vars.input.records[0].id}}\">Approve<\/a> <a href=\"Mailto:{{vars.replyEmail}}?subject=Re:{{vars.approvalSubject}}: Rejected&amp;body=Status: Rejected%0ARejection Reason: &lt;your message here&gt;%0ARequest ID: Approval-{{vars.input.records[0].id}}\">Reject<\/a><\/p>",
+                    "subject": "{{vars.approvalSubject}}",
+                    "iri_list": "",
+                    "body_type": "Rich Text",
+                    "file_name": "",
+                    "file_path": ""
+                },
+                "version": "2.3.2",
+                "from_str": "soc@cybersponse.com",
+                "connector": "smtp",
+                "operation": "send_email_new",
+                "operationTitle": "Send Email",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "1120",
+            "stepType": "\/api\/3\/workflow_step_types\/4c0019b2-055c-44d0-968c-678a0c2d762e",
+            "uuid": "3a6ee9f3-7281-45cc-8440-db58eb64d731"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set Recepient",
+            "description": null,
+            "arguments": {
+                "sendToEmail": "{{vars.input.records[0].assignedTo.email}}"
+            },
+            "status": null,
+            "top": "120",
+            "left": "660",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "13724551-7482-41c5-86d4-8c0486c66bd5"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get emails of the team members",
+            "description": null,
+            "arguments": {
+                "script": "\/wf\/workflow\/tasks\/crudhub_crud",
+                "arguments": {
+                    "method": "GET",
+                    "resource": "",
+                    "collection": "\/api\/3\/people?teams={{ vars.team_uuid }}"
+                },
+                "step_variables": {
+                    "emails": "{{ vars.result[\"hydra:member\"] | json_query('[*].email')}}"
+                }
+            },
+            "status": null,
+            "top": "400",
+            "left": "660",
+            "stepType": "\/api\/3\/workflow_step_types\/ee73e569-2188-43fe-a7f0-1964ba82a4de",
+            "uuid": "905d648c-b73d-46a1-87eb-15b17b2a4f28"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set All Receipients",
+            "description": null,
+            "arguments": {
+                "sendToEmail": "{{vars.emails | join(',')}}"
+            },
+            "status": null,
+            "top": "500",
+            "left": "660",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "2e75d1b5-daa0-4d29-9ca6-4bc0f1ee0688"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get emails of the team members -> emails join",
+            "targetStep": "\/api\/3\/workflow_steps\/2e75d1b5-daa0-4d29-9ca6-4bc0f1ee0688",
+            "sourceStep": "\/api\/3\/workflow_steps\/905d648c-b73d-46a1-87eb-15b17b2a4f28",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "fa968aef-bf71-48ad-9e41-d72e3c4abd99"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check for assigned to -> Fetch relations of the record",
+            "targetStep": "\/api\/3\/workflow_steps\/55590e75-ac0c-4d2f-b2ad-9310de5465eb",
+            "sourceStep": "\/api\/3\/workflow_steps\/447200a7-d40e-4b8c-87a1-bcf3a1d857e1",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "21deae92-8a8f-41be-9cc1-c63a6daf5045"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Check for assigned to",
+            "targetStep": "\/api\/3\/workflow_steps\/447200a7-d40e-4b8c-87a1-bcf3a1d857e1",
+            "sourceStep": "\/api\/3\/workflow_steps\/35f77f93-87c1-41df-b0d0-08638a7a0b97",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "eeae4ce9-ce9d-4467-ba2c-813a423d3a5c"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/35f77f93-87c1-41df-b0d0-08638a7a0b97",
+            "sourceStep": "\/api\/3\/workflow_steps\/091c5be2-7b8e-4769-8cbc-f13b70e3af78",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "03983e10-3b1f-456c-8e06-cd8638b43219"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check for assigned to -> Set Recepient",
+            "targetStep": "\/api\/3\/workflow_steps\/13724551-7482-41c5-86d4-8c0486c66bd5",
+            "sourceStep": "\/api\/3\/workflow_steps\/447200a7-d40e-4b8c-87a1-bcf3a1d857e1",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "6b861604-22e4-40ad-95b5-4e3546aa3dc2"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Fetch relations of the record -> Get emails of the team members",
+            "targetStep": "\/api\/3\/workflow_steps\/905d648c-b73d-46a1-87eb-15b17b2a4f28",
+            "sourceStep": "\/api\/3\/workflow_steps\/55590e75-ac0c-4d2f-b2ad-9310de5465eb",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "6effaa5d-7d27-4f7e-aa53-5100149cc97a"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set All Receipients -> Send Email Using SMTP",
+            "targetStep": "\/api\/3\/workflow_steps\/3a6ee9f3-7281-45cc-8440-db58eb64d731",
+            "sourceStep": "\/api\/3\/workflow_steps\/2e75d1b5-daa0-4d29-9ca6-4bc0f1ee0688",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ae50570c-4b5e-4574-a40e-e73862a303b2"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set Recepient -> Send Email Using SMTP",
+            "targetStep": "\/api\/3\/workflow_steps\/3a6ee9f3-7281-45cc-8440-db58eb64d731",
+            "sourceStep": "\/api\/3\/workflow_steps\/13724551-7482-41c5-86d4-8c0486c66bd5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e4f0fc88-3fc2-40bc-bbe7-045fd1953cc6"
+        }
+    ],
+    "priority": null,
+    "uuid": "4f42adbd-0eb4-4ffb-b208-d1781ce6cc01",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system"
+    ]
+}

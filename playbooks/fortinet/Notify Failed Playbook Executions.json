@@ -1,0 +1,180 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Notify Failed Playbook Executions",
+    "aliasName": null,
+    "tag": "#scheduled  #system",
+    "description": "Notifies specified recipients of any playbook failure. It can be scheduled to run at specific intervals.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/e811949a-45b4-4189-b524-fdb64c417810",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/de63f31c-ac98-43cd-874d-1347af8b778d",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Get recent failures",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/wf\/api\/workflows\/?&debug=false&depth=2&limit=100&modified_after={{ arrow.get().shift(hours=-1).format('YYYY-MM-DD+HH:mm:ss') }}&offset=0&ordering=-modified&page=1&status=failed",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "3.0.4",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": {
+                    "workflow_ids": "{{vars.result.data[\"hydra:member\"] | json_query('[*][\"@id\"][]') }}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "1c6b89af-d24d-441d-94fd-f2c37333b421"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "emailTo": "noreply@example.com",
+                "emailFrom": "noreply@example.com"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "abf03e90-612f-4710-9a59-c2f3cdca5975"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send email with failed playbooks",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.steps.Get_recent_failures.data['hydra:totalItems'] > 0}}",
+                "config": "88c3d39c-2fa9-4731-b00d-29815008f17c",
+                "params": {
+                    "cc": "",
+                    "to": "{{vars.emailTo}}",
+                    "bcc": "",
+                    "from": "{{vars.emailFrom}}",
+                    "type": "Manual Input",
+                    "content": "<p>The following playbooks have failed in the last hour:<\/p>\n<ul><!-- {% for playbook in vars.all_workflows %} -->\n<li>\"<strong>{{ playbook.name }}<\/strong>\" failed at <strong>{{ arrow.get(playbook.modified).format('HH:mm:ss ZZ YYYY-MM-DD') }}<\/strong> with error: <em><span style=\"color: #ff0000;\">{{ playbook.result[\"Error message\"] }}<\/span><\/em><\/li>\n<!-- {% endfor %} --><\/ul>\n<p>Sent from no-reply@cybersponse.com<\/p>",
+                    "subject": "Playbook(s) failed in the last one hour",
+                    "iri_list": "",
+                    "body_type": "Rich Text",
+                    "file_name": "",
+                    "file_path": ""
+                },
+                "version": "2.3.0",
+                "from_str": "soc@cybersponse.com",
+                "connector": "smtp",
+                "operation": "send_email_new",
+                "operationTitle": "Send Email",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/4c0019b2-055c-44d0-968c-678a0c2d762e",
+            "uuid": "ee19279d-95b7-4aa1-982e-75aeae975cbd"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Workflow Details",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.steps.Get_recent_failures.data['hydra:totalItems'] > 0}}",
+                "params": {
+                    "iri": "\/api{{ vars.item }}?fields=name,modified,result",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "2.2.0",
+                "for_each": {
+                    "item": "{{vars.workflow_ids}}",
+                    "condition": ""
+                },
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": {
+                    "all_workflows": "{{vars.result | json_query('[*].data')}}"
+                }
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "f670f713-503d-4129-8601-cf3a1db2fe52"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": []
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "de63f31c-ac98-43cd-874d-1347af8b778d"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Get recent failures",
+            "targetStep": "\/api\/3\/workflow_steps\/1c6b89af-d24d-441d-94fd-f2c37333b421",
+            "sourceStep": "\/api\/3\/workflow_steps\/abf03e90-612f-4710-9a59-c2f3cdca5975",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "7e890f75-b955-473b-b113-6be4568aacb5"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get recent failures -> Get Workflow Details",
+            "targetStep": "\/api\/3\/workflow_steps\/f670f713-503d-4129-8601-cf3a1db2fe52",
+            "sourceStep": "\/api\/3\/workflow_steps\/1c6b89af-d24d-441d-94fd-f2c37333b421",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "18e40775-5729-4073-b002-336f8f7b4576"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Workflow Details -> Send email with failed playbooks",
+            "targetStep": "\/api\/3\/workflow_steps\/ee19279d-95b7-4aa1-982e-75aeae975cbd",
+            "sourceStep": "\/api\/3\/workflow_steps\/f670f713-503d-4129-8601-cf3a1db2fe52",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "066bd202-e40a-4a9d-8665-7de228d0028b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/abf03e90-612f-4710-9a59-c2f3cdca5975",
+            "sourceStep": "\/api\/3\/workflow_steps\/de63f31c-ac98-43cd-874d-1347af8b778d",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f2444483-4d6a-4e9e-9c61-be9bbf7cae67"
+        }
+    ],
+    "priority": null,
+    "uuid": "3ce8cd40-54be-496d-9a80-a700d6ba8506",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "Subroutine",
+        "Scheduled"
+    ]
+}

@@ -1,0 +1,340 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action (Type All) - Block Indicators",
+    "aliasName": null,
+    "tag": null,
+    "description": "Blocks all types of indicators on the firewall based on their block status.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_record_iri",
+        "indicator_block_reason",
+        "indicator_value",
+        "indicator_type"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/858a4d55-ec1e-49f1-8bd2-188fe644acda",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "40",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "858a4d55-ec1e-49f1-8bd2-188fe644acda"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "record_iri": ""
+            },
+            "status": null,
+            "top": "149",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "838eac14-9949-427b-bd2b-e05e9964c5d9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Check Type of Indicator",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "IP Address",
+                        "step_iri": "\/api\/3\/workflow_steps\/047cdd6a-dd80-48c5-a207-f9aec2cbe5a9",
+                        "condition": "{{ vars.input.params['indicator_type'] == \"IndicatorType\" | picklist(\"IP Address\", \"itemValue\") }}",
+                        "step_name": "Block IP"
+                    },
+                    {
+                        "option": "Domain",
+                        "step_iri": "\/api\/3\/workflow_steps\/84fb41af-ac58-42ac-84dc-c14c6be23d15",
+                        "condition": "{{ vars.input.params['indicator_type'] == \"IndicatorType\" | picklist(\"Domain\", \"itemValue\") }}",
+                        "step_name": "Block Domain"
+                    },
+                    {
+                        "option": "File Hash MD5",
+                        "step_iri": "\/api\/3\/workflow_steps\/dca8bf76-e976-4d76-bdd4-66f45e5440c7",
+                        "condition": "{{ vars.input.params['indicator_type'] == \"IndicatorType\" | picklist(\"FileHash-MD5\", \"itemValue\") }}",
+                        "step_name": "Block File Hash"
+                    },
+                    {
+                        "option": "URL",
+                        "step_iri": "\/api\/3\/workflow_steps\/2490733a-dfc0-4b1a-8fba-0b2bada4e0c8",
+                        "condition": "{{ vars.input.params['indicator_type'] == \"IndicatorType\" | picklist(\"URL\", \"itemValue\") }}",
+                        "step_name": "Block URL"
+                    },
+                    {
+                        "option": "Email Address",
+                        "step_iri": "\/api\/3\/workflow_steps\/adca0c0f-b4c8-470b-b12e-fb9a3a83361d",
+                        "condition": "{{ vars.input.params['indicator_type'] == \"IndicatorType\" | picklist(\"Email Address\", \"itemValue\") }}",
+                        "step_name": "Block Email Address"
+                    },
+                    {
+                        "option": "Host",
+                        "step_iri": "\/api\/3\/workflow_steps\/ec3adeae-3463-45e6-9176-764b1321d40c",
+                        "condition": "{{ vars.input.params['indicator_type'] == \"IndicatorType\" | picklist(\"Host\", \"itemValue\") }}",
+                        "step_name": "Isolate Host"
+                    },
+                    {
+                        "option": "Unknown Indicator Type",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/c6d84c36-3ad5-4442-861b-63da4ad5006a",
+                        "step_name": "Do Nothing"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "346",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "961ac5c7-f737-4352-b022-e4b0dee8bb80"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block IP",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params['indicator_block_reason']}}",
+                    "inputIndicatorValue": "{{vars.input.params['indicator_value']}}",
+                    "inputIndicatorRecordIRI": "{{vars.input.params['indicator_record_iri']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/79ebfed2-86ee-404d-b69c-02a448e1144d"
+            },
+            "status": null,
+            "top": "40",
+            "left": "580",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "047cdd6a-dd80-48c5-a207-f9aec2cbe5a9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block Domain",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params['indicator_block_reason']}}",
+                    "inputIndicatorValue": "{{vars.input.params['indicator_value']}}",
+                    "inputIndicatorRecordIRI": "{{vars.input.params['indicator_record_iri']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/7c5946d2-be83-4991-8b67-fdc568166260"
+            },
+            "status": null,
+            "top": "152",
+            "left": "651",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "84fb41af-ac58-42ac-84dc-c14c6be23d15"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block File Hash",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params['indicator_block_reason']}}",
+                    "inputIndicatorValue": "{{vars.input.params['indicator_value']}}",
+                    "inputIndicatorRecordIRI": "{{vars.input.params['indicator_record_iri']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/f43bb47f-a473-4ea2-bc1e-b6a3767960ba"
+            },
+            "status": null,
+            "top": "340",
+            "left": "1220",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "dca8bf76-e976-4d76-bdd4-66f45e5440c7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block URL",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params['indicator_block_reason']}}",
+                    "inputIndicatorValue": "{{vars.input.params['indicator_value']}}",
+                    "inputIndicatorRecordIRI": "{{vars.input.params['indicator_record_iri']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/7164f14a-5fa6-439b-a9d0-aba48ad8817a"
+            },
+            "status": null,
+            "top": "472",
+            "left": "680",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "2490733a-dfc0-4b1a-8fba-0b2bada4e0c8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block Email Address",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params['indicator_block_reason']}}",
+                    "inputIndicatorValue": "{{vars.input.params['indicator_value']}}",
+                    "inputIndicatorRecordIRI": "{{vars.input.params['indicator_record_iri']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/0bcfd971-4436-4de5-861f-7c3741437e72"
+            },
+            "status": null,
+            "top": "688",
+            "left": "620",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "adca0c0f-b4c8-470b-b12e-fb9a3a83361d"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Isolate Host",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params['indicator_block_reason']}}",
+                    "inputIndicatorValue": "{{vars.input.params['indicator_value']}}",
+                    "inputIndicatorRecordIRI": "{{vars.input.params['indicator_record_iri']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/9938fc70-8dc8-4cf3-b5de-9ef8ce0f76ec"
+            },
+            "status": null,
+            "top": "760",
+            "left": "273",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "ec3adeae-3463-45e6-9176-764b1321d40c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Do Nothing",
+            "description": null,
+            "arguments": {
+                "params": [],
+                "version": "3.0.4",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "560",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "c6d84c36-3ad5-4442-861b-63da4ad5006a"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Type of Indicator -> Block File Hash",
+            "targetStep": "\/api\/3\/workflow_steps\/dca8bf76-e976-4d76-bdd4-66f45e5440c7",
+            "sourceStep": "\/api\/3\/workflow_steps\/961ac5c7-f737-4352-b022-e4b0dee8bb80",
+            "label": "File Hash MD5",
+            "isExecuted": false,
+            "uuid": "5ab8ed7f-e2b4-43da-b2fe-7f58c95b405b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Type of Indicator -> Block Domain",
+            "targetStep": "\/api\/3\/workflow_steps\/84fb41af-ac58-42ac-84dc-c14c6be23d15",
+            "sourceStep": "\/api\/3\/workflow_steps\/961ac5c7-f737-4352-b022-e4b0dee8bb80",
+            "label": "Domain",
+            "isExecuted": false,
+            "uuid": "0e4f7fd9-4a33-4ffe-9380-7b49998f4fdd"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Type of Indicator -> Do Nothing",
+            "targetStep": "\/api\/3\/workflow_steps\/c6d84c36-3ad5-4442-861b-63da4ad5006a",
+            "sourceStep": "\/api\/3\/workflow_steps\/961ac5c7-f737-4352-b022-e4b0dee8bb80",
+            "label": "Unknown Indicator Type",
+            "isExecuted": false,
+            "uuid": "97d5ba26-6df8-49df-8cc5-c887162e33c4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/838eac14-9949-427b-bd2b-e05e9964c5d9",
+            "sourceStep": "\/api\/3\/workflow_steps\/858a4d55-ec1e-49f1-8bd2-188fe644acda",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f9420c7c-cd01-449b-a985-678aa9d113e0"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Type of Indicator -> Block URL",
+            "targetStep": "\/api\/3\/workflow_steps\/2490733a-dfc0-4b1a-8fba-0b2bada4e0c8",
+            "sourceStep": "\/api\/3\/workflow_steps\/961ac5c7-f737-4352-b022-e4b0dee8bb80",
+            "label": "URL",
+            "isExecuted": false,
+            "uuid": "41d86d24-1b96-4737-92cf-b63910158492"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Type of Indicator -> Block IP",
+            "targetStep": "\/api\/3\/workflow_steps\/047cdd6a-dd80-48c5-a207-f9aec2cbe5a9",
+            "sourceStep": "\/api\/3\/workflow_steps\/961ac5c7-f737-4352-b022-e4b0dee8bb80",
+            "label": "IP Address",
+            "isExecuted": false,
+            "uuid": "386a33e6-6a3c-4a1e-a9d9-119d3f134400"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Check Type of Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/961ac5c7-f737-4352-b022-e4b0dee8bb80",
+            "sourceStep": "\/api\/3\/workflow_steps\/838eac14-9949-427b-bd2b-e05e9964c5d9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "77aeccb9-3617-4a90-92b6-6409557dca04"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Type of Indicator -> Isolate Host",
+            "targetStep": "\/api\/3\/workflow_steps\/ec3adeae-3463-45e6-9176-764b1321d40c",
+            "sourceStep": "\/api\/3\/workflow_steps\/961ac5c7-f737-4352-b022-e4b0dee8bb80",
+            "label": "Host",
+            "isExecuted": false,
+            "uuid": "87452872-d3e0-4b1e-9e50-cafc8f14688d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Type of Indicator -> Block Email Address",
+            "targetStep": "\/api\/3\/workflow_steps\/adca0c0f-b4c8-470b-b12e-fb9a3a83361d",
+            "sourceStep": "\/api\/3\/workflow_steps\/961ac5c7-f737-4352-b022-e4b0dee8bb80",
+            "label": "Email Address",
+            "isExecuted": false,
+            "uuid": "586a373d-8038-4cca-aa12-c71a12036ed5"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "1a1cac48-567a-4066-b0d1-c63457226f12",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine",
+        "Mitigation"
+    ]
+}

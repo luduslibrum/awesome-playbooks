@@ -1,0 +1,479 @@
+{
+  "name" : "CrowdStrike Yara Rules Ingest",
+  "type" : "Standard",
+  "panX" : 20.0,
+  "panY" : 20.0,
+  "logLevel" : "TRACE",
+  "description" : "# CrowdStrike Yara Rules Ingest\n## Summary\nThis Playbook runs on a timer trigger to reach out to CrowdStrike's Falcon Intelligence Rules API, download the latest set of Yara rules, and create them as signatures within the ThreatConnect platform. In addition to storing the rule itself, the description and version number of the Yara rule are extract and added as attributes.\n\n\n## Dependencies\n- Valid CrowdStrike Falcon Intelligence subscription and API access\n\n\n## Input parameters\nThe Component requires the following configuration parameters:\n- **CrowdStrike Falcon Intelligence API ID**: Your CrowdStrike Falcon Intelligence API ID.\n\n- **CrowdStrike Falcon Intelligence API Secret Key**: Your CrowdStrike Falcon Intelligence API Secret Key.\n\n\n## Output parameters\nN/A\n\n\nFor more information on CrowdStrike Falcon Intelligence service, please refer to [https://www.crowdstrike.com/endpoint-security-products/falcon-x-threat-intelligence/](https://www.crowdstrike.com/endpoint-security-products/falcon-x-threat-intelligence/)",
+  "version" : "1.10",
+  "comment" : "Auto-Saved on Fri Jun 07 14:45:11 UTC 2019",
+  "jobList" : [ {
+    "id" : 35029,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.15"
+    },
+    "name" : "Retrieve Yara Rules",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://intelapi.crowdstrike.com/rules/entities/latest-files/v1?type=yara-update"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"Accept\",\"value\":\"application/zip\"},{\"key\":\"X-CSIX-CUSTID\",\"value\":\"${ORGANIZATION:TEXT:CrowdStrike Falcon Intelligence API ID}\"},{\"key\":\"X-CSIX-CUSTKEY\",\"value\":\"${ORGANIZATION:KEYCHAIN:CrowdStrike Falcon Intelligence API Secret}\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 630.0,
+    "locationTop" : 100.0,
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 35030,
+    "appCatalogItem" : {
+      "programName" : "TCPB - UncompressFile v1.0",
+      "displayName" : "Uncompress File",
+      "programVersion" : "1.0.8"
+    },
+    "name" : "Unzip Archive",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:35029:http.content!Binary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "algorithm"
+      },
+      "value" : "ZIP"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "password"
+      },
+      "value" : ""
+    } ],
+    "locationLeft" : 870.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"uncompress.stringdata\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35031,
+    "appCatalogItem" : {
+      "programName" : "TCPB - RegexExtract v1.0",
+      "displayName" : "Regex Extract",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Extract Yara Rules",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern_mapping"
+      },
+      "value" : "[{\"key\":\"yara.rules\",\"value\":\"(rule (?:.[\\\\\\\\\\\\n]?)*\\\\S)\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_nulls"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#App:35030:uncompress.stringdata!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_groups"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 1110.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"yara.rules\",\"type\":\"StringArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35032,
+    "appCatalogItem" : {
+      "programName" : "Iterator",
+      "displayName" : "Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Signature Creation",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_outputs"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_inputs"
+      },
+      "value" : "[{\"key\":\"yara.rule\",\"value\":\"#App:35031:yara.rules!StringArray\"}]"
+    } ],
+    "locationLeft" : 1380.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"name\":\"yara.rule\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"array_inputs\"]",
+    "layoutDisplayedInputParams" : "[\"array_inputs\",\"array_outputs\"]"
+  }, {
+    "id" : 35044,
+    "appCatalogItem" : {
+      "programName" : "TCAB - 74ecc72b-4768-4a7d-aa45-a0e31c9089ef v1",
+      "displayName" : "Parse YARA Rules",
+      "programVersion" : "1.0.2"
+    },
+    "name" : "Transform Yara To JSON",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "yara_rule"
+      },
+      "value" : "#App:35032:yara.rule!String"
+    } ],
+    "locationLeft" : 880.0,
+    "locationTop" : 420.0,
+    "outputVariables" : "[{\"name\":\"yara.json.output\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35095,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v2.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "2.0.5"
+    },
+    "name" : "Parse Info From Rule",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:35044:yara.json.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[{\"key\":\"rule.tags\",\"value\":\"[].tags[]\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"rule.name\",\"value\":\"[0].rule_name\"},{\"key\":\"rule.description\",\"value\":\"[0].metadata[].description | [0]\"},{\"key\":\"rule.version\",\"value\":\"[0].metadata[].version | [0]\"}]"
+    } ],
+    "locationLeft" : 880.0,
+    "locationTop" : 530.0,
+    "outputVariables" : "[{\"name\":\"rule.description\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"rule.name\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"rule.tags\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"rule.version\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35169,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SignatureCreate v1.0",
+      "displayName" : "Create ThreatConnect Signature",
+      "programVersion" : "1.0.24"
+    },
+    "name" : "Create Signature In ThreatConnect",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Signature"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_data"
+      },
+      "value" : "#App:35032:yara.rule!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_type"
+      },
+      "value" : "YARA"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Description\",\"value\":\"#App:35095:rule.description!String\"},{\"key\":\"Additional Analysis and Context\",\"value\":\"Rule Version: #App:35095:rule.version!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Sterling Cooper"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:35095:rule.name!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_name"
+      },
+      "value" : "#App:35095:rule.name!String.yar"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "#App:35095:rule.tags!StringArray"
+    } ],
+    "locationLeft" : 1340.0,
+    "locationTop" : 580.0
+  }, {
+    "id" : 35240,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SignatureRetrieveByName v1.0",
+      "displayName" : "Get ThreatConnect Signature by Name",
+      "programVersion" : "1.0.24"
+    },
+    "name" : "Check For Existing Rule",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "names"
+      },
+      "value" : "#App:35095:rule.name!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Signature"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Sterling Cooper"
+    } ],
+    "locationLeft" : 880.0,
+    "locationTop" : 640.0,
+    "outputVariables" : "[{\"name\":\"tc.signature.count\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35241,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Rule Already Exists?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "0"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:35240:tc.signature.count!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    } ],
+    "locationLeft" : 1160.0,
+    "locationTop" : 690.0
+  }, {
+    "id" : 35242,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Rule Already Exists",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"rule.exists\",\"value\":\"Yara Rule Already Exists In Platform\"}]"
+    } ],
+    "locationLeft" : 1340.0,
+    "locationTop" : 790.0
+  }, {
+    "id" : 35243,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Branches",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 1630.0,
+    "locationTop" : 680.0
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35029,
+    "targetJobId" : 35030
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35030,
+    "targetJobId" : 35031
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35031,
+    "targetJobId" : 35032
+  }, {
+    "type" : "StartLoop",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35032,
+    "targetJobId" : 35044
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35044,
+    "targetJobId" : 35095
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35095,
+    "targetJobId" : 35240
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35240,
+    "targetJobId" : 35241
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35241,
+    "targetJobId" : 35169
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35241,
+    "targetJobId" : 35242
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35242,
+    "targetJobId" : 35243
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35169,
+    "targetJobId" : 35243
+  }, {
+    "type" : "EndLoop",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 35243,
+    "targetJobId" : 35032
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 35029,
+    "sourceTriggerId" : 3993
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 3993,
+    "name" : "Every Wednesday @ 1700",
+    "type" : "Timer",
+    "eventType" : "Create",
+    "locationLeft" : 370.0,
+    "locationTop" : 100.0,
+    "scheduleType" : "Weekly",
+    "scheduleCronFormat" : "00 00 22 ? * 4 *",
+    "anyOrg" : true,
+    "playbookTriggerFilterList" : [ ]
+  } ],
+  "playbookLabels" : [ {
+    "playbookLabelType" : {
+      "label" : "YARA"
+    }
+  }, {
+    "playbookLabelType" : {
+      "label" : "CrowdStrike"
+    }
+  } ],
+  "exportablePipes" : [ ]
+}

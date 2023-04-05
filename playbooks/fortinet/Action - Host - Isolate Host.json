@@ -1,0 +1,316 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action - Host - Isolate Host",
+    "aliasName": null,
+    "tag": null,
+    "description": "Isolates indicators of type 'Host' and marks the indicator as \"Isolated\" based on its block status.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "inputIndicatorRecordIRI",
+        "inputIndicatorValue",
+        "inputActionReasons"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/333fd9d5-2045-4d66-808a-13f69ef71599",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Manual Task to Action",
+            "description": null,
+            "arguments": {
+                "type": "DecisionBased",
+                "input": {
+                    "schema": {
+                        "title": "\u26a0\ufe0f Isolate {{vars.indicatorValue}}",
+                        "description": "<p> Isolate host:&nbsp;{{vars.indicatorValue}} and Click \"Host Isolated\" to confirm the status.<\/p>\n<p>*Consider changing this step to automation using a connector. That would accelerate your response time and allow you to focus on advanced threats<\/p>",
+                        "inputVariables": []
+                    }
+                },
+                "record": "{{ vars.input.records[0][\"@id\"] }}",
+                "resources": "indicators",
+                "owner_detail": {
+                    "isAssigned": false
+                },
+                "step_variables": [],
+                "response_mapping": {
+                    "options": [
+                        {
+                            "option": "Isolate Host",
+                            "primary": true,
+                            "step_iri": "\/api\/3\/workflow_steps\/0baa1d02-ec12-4619-a4bf-74c9c9ac77b8"
+                        },
+                        {
+                            "option": "Unable to Isolate",
+                            "step_iri": "\/api\/3\/workflow_steps\/c08dd150-3aee-48c4-8134-02d6d86a416c"
+                        }
+                    ],
+                    "duplicateOption": false
+                }
+            },
+            "status": null,
+            "top": "435",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/fc04082a-d7dc-4299-96fb-6837b1baa0fe",
+            "uuid": "e6e88ee0-6fdb-4d44-837a-e11e9958992e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Mark as Isolated",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "<p><span class=\"icon icon-successful text-success\"  style=\"font-size: 15px; color: green; font-weight: bold;\"><\/span>&nbsp;{{vars.indicatorValue}} has been <strong>Isolated<\/strong> as confirmed by&nbsp;{{vars.loggedInUserName}}<\/p>",
+                    "records": ""
+                },
+                "resource": {
+                    "indicatorStatus": {
+                        "id": 307,
+                        "@id": "\/api\/3\/picklists\/e4a39098-3e26-4559-a7d8-7ed6ea4d6e31",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Isolated",
+                        "listName": "\/api\/3\/picklist_names\/e6639d57-94a9-432f-a46f-b2b530402077",
+                        "itemValue": "Isolated",
+                        "orderIndex": 4
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.indicatorIRI}}",
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "0baa1d02-ec12-4619-a4bf-74c9c9ac77b8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Mark TBD",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "<p><span class=\"fa fa-exclamation-triangle\"  style=\"font-size: 15px; color: yellow;\"><\/span>&nbsp;<span class=\"badge badge-pill badge-danger\"  style=\"background:#e31b1d; color: #fff;\">{{vars.indicatorValue}}<\/span> was <strong>not isolated&nbsp;<\/strong>as confirmed by&nbsp;{{vars.loggedInUserName}}<\/p>",
+                    "records": ""
+                },
+                "resource": {
+                    "indicatorStatus": {
+                        "id": 369,
+                        "@id": "\/api\/3\/picklists\/2f5cff61-fbff-4bb3-96be-302b78a9fb47",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "TBD",
+                        "listName": "\/api\/3\/picklist_names\/e6639d57-94a9-432f-a46f-b2b530402077",
+                        "itemValue": "TBD",
+                        "orderIndex": 3
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.indicatorIRI}}",
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "475",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "c08dd150-3aee-48c4-8134-02d6d86a416c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add note to Indicator",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "content": "<p>{{vars.loggedInUserName}}&nbsp;initiated isolation of {{vars.indicatorValue}} with the following reasons:&nbsp;{{vars.actionReason}}<\/p>",
+                    "__replace": "",
+                    "indicators": "{{vars.indicatorIRI}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "57ff8584-fe8d-43a0-8cda-bc66881f00e6"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "actionReason": "{{\nvars.input.params.inputActionReasons\nif vars.input.params.inputActionReasons\nelse vars.input.params.actionReason\n}}",
+                "indicatorIRI": "{{\nvars.input.params.inputIndicatorRecordIRI \nif vars.input.params.inputIndicatorRecordIRI \nelse  \nvars.input.records[0]['@id'] \n}}",
+                "indicatorValue": "{{\nvars.input.params.inputIndicatorValue\nif vars.input.params.inputIndicatorValue\nelse \nvars.input.records[0].value\n}}",
+                "loggedInUserName": "{{vars.loggedInUser.firstname}} {{vars.loggedInUser.lastname}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "86c57f84-d4bc-4495-a66d-c0f040abe465"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "79362ddf-bdd6-43ec-8c3f-ecd586a55dfa",
+                "title": "Isolate Host",
+                "resources": [
+                    "indicators"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "actionReason",
+                        "type": "string",
+                        "label": "Reason",
+                        "tooltip": "Specify Reason for the action",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "defaultValue": "Communication observed between this host and suspicious external IP",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "actionReason": "{{vars.request.data[\"actionReason\"]}}",
+                            "inputActionReasons": "{{ vars.inputActionReasons }}",
+                            "inputIndicatorValue": "{{ vars.inputIndicatorValue }}",
+                            "inputIndicatorRecordIRI": "{{ vars.inputIndicatorRecordIRI }}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    },
+                    "loggedInUser": "{{vars.currentUser | fromIRI }}"
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": [
+                            {
+                                "type": "object",
+                                "field": "indicatorStatus",
+                                "value": "\/api\/3\/picklists\/c18ac167-8457-4646-9514-252913587d5a",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/c18ac167-8457-4646-9514-252913587d5a",
+                                    "itemValue": "Isolated"
+                                },
+                                "operator": "neq"
+                            },
+                            {
+                                "type": "object",
+                                "field": "typeofindicator",
+                                "value": "\/api\/3\/picklists\/3272abd8-a1ae-4663-8c47-6d1195e684d9",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/3272abd8-a1ae-4663-8c47-6d1195e684d9",
+                                    "itemValue": "Host"
+                                },
+                                "operator": "eq"
+                            }
+                        ]
+                    }
+                },
+                "executeButtonText": "Isolate Host",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "29",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "333fd9d5-2045-4d66-808a-13f69ef71599"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Add note to Indicator -> Manual Task to Action",
+            "targetStep": "\/api\/3\/workflow_steps\/e6e88ee0-6fdb-4d44-837a-e11e9958992e",
+            "sourceStep": "\/api\/3\/workflow_steps\/57ff8584-fe8d-43a0-8cda-bc66881f00e6",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "3538f70b-81bb-4eae-95e9-8dedcc17258a"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Add note to Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/57ff8584-fe8d-43a0-8cda-bc66881f00e6",
+            "sourceStep": "\/api\/3\/workflow_steps\/86c57f84-d4bc-4495-a66d-c0f040abe465",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a1dffff4-42bf-43fc-90f2-6c22c6e7d622"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Manual Task to Action -> Mark as Isolated",
+            "targetStep": "\/api\/3\/workflow_steps\/0baa1d02-ec12-4619-a4bf-74c9c9ac77b8",
+            "sourceStep": "\/api\/3\/workflow_steps\/e6e88ee0-6fdb-4d44-837a-e11e9958992e",
+            "label": "Isolate Host",
+            "isExecuted": false,
+            "uuid": "aa36e5d1-40ed-40ad-8229-503cb676c970"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Manual Task to Action -> Mark TBD",
+            "targetStep": "\/api\/3\/workflow_steps\/c08dd150-3aee-48c4-8134-02d6d86a416c",
+            "sourceStep": "\/api\/3\/workflow_steps\/e6e88ee0-6fdb-4d44-837a-e11e9958992e",
+            "label": "Unable to Isolate",
+            "isExecuted": false,
+            "uuid": "dbbe6dbb-f236-45fd-b9fb-37311282f066"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/86c57f84-d4bc-4495-a66d-c0f040abe465",
+            "sourceStep": "\/api\/3\/workflow_steps\/333fd9d5-2045-4d66-808a-13f69ef71599",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "0c13cdc6-1960-46da-8e68-24b0f2d41f8a"
+        }
+    ],
+    "priority": null,
+    "uuid": "9938fc70-8dc8-4cf3-b5de-9ef8ce0f76ec",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Mitigation"
+    ]
+}

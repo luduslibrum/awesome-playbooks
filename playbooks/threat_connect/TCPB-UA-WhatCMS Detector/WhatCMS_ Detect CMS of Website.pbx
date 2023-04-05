@@ -1,0 +1,315 @@
+{
+  "name" : "WhatCMS: Detect CMS of Website",
+  "type" : "Standard",
+  "panX" : 91.0,
+  "panY" : 346.0,
+  "logLevel" : "WARN",
+  "description" : "Use the whatcms.org API to determine the content management system running on a particular website from a host, URL, or address indicator.",
+  "jobList" : [ {
+    "id" : 11303,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.8"
+    },
+    "name" : "Get WhatCMS API Results",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[{\"key\":\"key\",\"value\":\"${USER:KEYCHAIN:WhatCMS API Key}\"},{\"key\":\"url\",\"value\":\"#Trigger:1056:trg.action.item!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://whatcms.org/APIEndpoint"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    } ],
+    "locationLeft" : 320.0,
+    "locationTop" : 60.0,
+    "outputVariables" : "[{\"name\":\"http.content\",\"type\":\"String\"}]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 11305,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.6"
+    },
+    "name" : "Parse JSON Response",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:11303:http.content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"jp.cms_name\",\"value\":\"$.result.name\"},{\"key\":\"jp.result\",\"value\":\"$.result.msg\"}]"
+    } ],
+    "locationLeft" : 570.0,
+    "locationTop" : -50.0,
+    "outputVariables" : "[{\"name\":\"jp.result\",\"type\":\"StringArray\"},{\"name\":\"jp.cms_name\",\"type\":\"StringArray\"}]"
+  }, {
+    "id" : 11306,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Check if Found",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:11307:ja.result!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "CMS Found"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    } ],
+    "locationLeft" : 850.0,
+    "locationTop" : 50.0
+  }, {
+    "id" : 11307,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "Join Arrays",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"ja.cms_name\",\"value\":\"#App:11305:jp.cms_name!StringArray\"},{\"key\":\"ja.result\",\"value\":\"#App:11305:jp.result!StringArray\"}]"
+    } ],
+    "locationLeft" : 570.0,
+    "locationTop" : 50.0,
+    "outputVariables" : "[{\"name\":\"ja.result\",\"type\":\"String\"},{\"name\":\"ja.cms_name\",\"type\":\"String\"}]"
+  }, {
+    "id" : 11308,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.9"
+    },
+    "name" : "Create CMS Name Tag",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:1056:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "#App:11307:ja.cms_name!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 1020.0,
+    "locationTop" : -80.0
+  }, {
+    "id" : 11309,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "Set Message",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"message\",\"value\":\"\\u003ca href\\u003d\\\"#Trigger:1056:trg.action.weblink!String\\\"\\u003e#App:11307:ja.result!String\\u003c/a\\u003e\"}]"
+    } ],
+    "locationLeft" : 570.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"message\",\"type\":\"String\"}]"
+  }, {
+    "id" : 11310,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"dummy\",\"value\":\"variable\"}]"
+    } ],
+    "locationLeft" : 1380.0,
+    "locationTop" : 360.0
+  }, {
+    "id" : 11311,
+    "appCatalogItem" : {
+      "programName" : "Add Attribute",
+      "displayName" : "Create ThreatConnect Attribute",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Create CMS Info Attribute",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "indicator_name"
+      },
+      "value" : "#Trigger:1056:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "update"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_type"
+      },
+      "value" : "Additional Analysis and Context"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_content"
+      },
+      "value" : "CMS: #App:11307:ja.cms_name!String"
+    } ],
+    "locationLeft" : 1020.0,
+    "locationTop" : 20.0
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 11303,
+    "sourceTriggerId" : 1056
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11303,
+    "targetJobId" : 11305
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11305,
+    "targetJobId" : 11307
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11306,
+    "targetJobId" : 11308
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11307,
+    "targetJobId" : 11309
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11309,
+    "targetJobId" : 11306
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11306,
+    "targetJobId" : 11310
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 11310,
+    "targetTriggerId" : 1056
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11308,
+    "targetJobId" : 11311
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11311,
+    "targetJobId" : 11310
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 1056,
+    "name" : "Detect CMS",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : 80.0,
+    "locationTop" : 60.0,
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "#App:11309:message!String",
+    "anyOrg" : true,
+    "userActionTypes" : "Address,Host,URL",
+    "renderBodyAsTip" : true,
+    "playbookTriggerFilterList" : [ ],
+    "outputVariables" : "[{\"name\":\"trg.action.entity\",\"type\":\"TCEntity\"},{\"name\":\"trg.action.item\",\"type\":\"String\"},{\"name\":\"trg.action.weblink\",\"type\":\"String\"}]"
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

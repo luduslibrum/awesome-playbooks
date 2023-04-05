@@ -1,0 +1,1942 @@
+{
+  "schema_version": 4,
+  "name": "Migrate Tines Story from development tenant to production",
+  "description": "Interact with the Tines API to migrate a Story from a development tenant to a production tenant.\n\ntags: Advanced, Admin\nicons: tines, ➡️, tines\nvisibility: public",
+  "guid": "ec3e00bd326608abaf86092915a3a847",
+  "slug": "migrate_tines_story_from_development_tenant_to_production",
+  "exported_at": "2022-07-11T17:33:44Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Form",
+      "disabled": false,
+      "guid": "c80e2b9a4fba36e1be773687d8ade7df",
+      "options": {
+        "path": "869cbe999a04d78fb38414df79f85fd8",
+        "secret": "71e6da90b63e0f2d8690d8f199d1dcf9",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Story ID",
+      "disabled": false,
+      "guid": "4f288c90758c54c9d7a998af325f097b",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "\\d+",
+            "path": "<<receive_form.body.story_id_or_name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Story Name",
+      "disabled": false,
+      "guid": "332b0135ee48264fd8f5eba38638c016",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "\\d+",
+            "path": "<<receive_form.body.story_id_or_name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Export Story",
+      "disabled": false,
+      "guid": "05003be1fd152c15205e12ac27f7f6cd",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/stories/<<receive_form.body.story_id_or_name>>/export",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Export Story",
+      "disabled": false,
+      "guid": "73ebacfdfbcdf007beb2c51f37f877a5",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/stories/<<WHERE(find_story.get_stories.body.stories, \"name\", receive_form.body.story_id_or_name) |> GET(%, \"id\")>>/export",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if export successful",
+      "disabled": false,
+      "guid": "ada058ea957e899ef0211c1ba3602484",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<export_story.status>>"
+          }
+        ],
+        "emit_no_match": true
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Success - Check for Resources",
+      "disabled": false,
+      "guid": "5cd6197d13acbec896c014d69daed96a",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<check_if_export_successful.rule_matched>>"
+          },
+          {
+            "type": "not in",
+            "value": "confirm",
+            "path": "=receive_form.body.import_if_resources_are_missing"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Failure",
+      "disabled": false,
+      "guid": "5d6608ad893e764594cd3c1fbb9f8939",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<check_if_export_successful.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Notify of Failure to Export Story",
+      "disabled": false,
+      "guid": "d2cb4c47747acf31b51a990fcecc5010",
+      "options": {
+        "recipients": [
+          "<<receive_form.headers.email>>"
+        ],
+        "subject": "Story Export Error - <<receive_form.body.story_id_or_name>>",
+        "body": "The Story with the identified \"<<receive_form.body.story_id_or_name>>\" could not be exported, so the attempt to export it to the Production Tenant failed. Please try again, and verify the Story Name or ID is correct.<br><br>\n\n<a href=\"<<STORY_RUN_LINK()>>\">Link to Story Run</a>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Credentials and Resources",
+      "disabled": false,
+      "guid": "2e182b7ad9e4c7f9101cb20ec83e66c0",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=export_story.body.agents",
+            "regexp": "{{\\.?CREDENTIAL\\.[a-z0-9_]+}}|{{\\.?RESOURCE\\.[a-z0-9_]+}}",
+            "to": "values"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for Creds and Resources",
+      "disabled": false,
+      "guid": "316ceb1b46da1ecc851af2f13afbeb0f",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "{{\\.?CREDENTIAL\\.[a-z0-9_]+}}|{{\\.?RESOURCE\\.[a-z0-9_]+}}",
+            "path": "<<export_story.body.agents>>"
+          }
+        ],
+        "emit_no_match": true
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Found",
+      "disabled": false,
+      "guid": "2eb9b194f0f4a219714b08570f7eeb50",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<check_for_creds_and_resources.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Not Found",
+      "disabled": false,
+      "guid": "2028c22703203c53b4e50ac2d9164059",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<check_for_creds_and_resources.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Creds and Resources",
+      "disabled": false,
+      "guid": "a35d80211b384228d4e08c6584430566",
+      "options": {
+        "mode": "explode",
+        "path": "=extract_credentials_and_resources.values",
+        "to": "value"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Resource",
+      "disabled": false,
+      "guid": "fd397a3f195d883198f9cc1072930d1d",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "RESOURCE\\.",
+            "path": "<<explode_creds_and_resources.value>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Credential",
+      "disabled": false,
+      "guid": "12dd19024b67562c52609ac4f34a3f5b",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "CREDENTIAL\\.",
+            "path": "<<explode_creds_and_resources.value>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Success - Override Resource Check",
+      "disabled": false,
+      "guid": "78c2242ae0fda7461e088272da01a9dc",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<check_if_export_successful.rule_matched>>"
+          },
+          {
+            "type": "in",
+            "value": "confirm",
+            "path": "=receive_form.body.import_if_resources_are_missing"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List Teams",
+      "disabled": false,
+      "guid": "74abd42141d815e12081fef8293e07d7",
+      "options": {
+        "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/teams?per_page=100",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Team ID",
+      "disabled": false,
+      "guid": "e586809e6339a2fa98066374b91e15f2",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "id": "<<WHERE(list_teams.body.teams, \"name\", receive_form.body.target_team.first) |> GET(%, \"id\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List Resources",
+      "disabled": false,
+      "guid": "68ec64d96c7433f6ba5c09121b2de2b1",
+      "options": {
+        "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/global_resources?per_page=500&team_id=<<get_team_id.id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List Credentials",
+      "disabled": false,
+      "guid": "8e63385cbd56d6e69a0250ec5b6074e5",
+      "options": {
+        "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/user_credentials?per_page=500&team_id=<<get_team_id.id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Found",
+      "disabled": false,
+      "guid": "58cd60f6e5d0351ed1c5838ef40e64d6",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "<<REGEX_REPLACE(explode_creds_and_resources.value, \"{{.?RESOURCE\\\\.\") |> REPLACE(%, \"}}\")>>",
+            "path": "=MAP(list_resources.body.global_resources, \"name\")"
+          }
+        ],
+        "emit_no_match": true
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Found",
+      "disabled": false,
+      "guid": "0c4835441ad88ea0a0633b62b80d8a14",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "<<REGEX_REPLACE(explode_creds_and_resources.value, \"{{.?RESOURCE\\\\.\") |> REPLACE(%, \"}}\")>>",
+            "path": "=MAP(list_credentials.body.user_credentials, \"name\")"
+          }
+        ],
+        "emit_no_match": true
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode Creds and Resources",
+      "disabled": false,
+      "guid": "dcd6d01c9767d8e83d4fb0c2593d9247",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=explode_creds_and_resources.guid",
+        "size_path": "=LIQUID_SIZE(explode_creds_and_resources, \"dot_notation\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Summarise Results",
+      "disabled": false,
+      "guid": "41b4609052b6fa09c4c60b788d58a47b",
+      "options": {
+        "mode": "message_only",
+        "loop": "=implode_creds_and_resources",
+        "payload": {
+          "type": "<%if LOOP.value.resource.rule_matched%>Resource<%else%>Credential<%endif%>",
+          "exists_in_prod": "<<LOOP.value.check_if_found.rule_matched>>",
+          "name": "<<REGEX_REPLACE(LOOP.value.explode_creds_and_resources.value, \"{{.?RESOURCE\\\\.|{{.?CREDENTIAL\\\\.\") |> REPLACE(%, \"}}\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Any Missing",
+      "disabled": false,
+      "guid": "1c56eea69e294d16949df2bd5034137f",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "false",
+            "path": "=MAP(summarise_results, \"exists_in_prod\")"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "None Missing",
+      "disabled": false,
+      "guid": "b2ce3b61f4a8ce570cd20d661ba3c609",
+      "options": {
+        "rules": [
+          {
+            "type": "not in",
+            "value": "false",
+            "path": "=MAP(summarise_results, \"exists_in_prod\")"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Notify Missing Credentials or Resources",
+      "disabled": false,
+      "guid": "421fbea7e22af7a5c39bc85fe2e5b962",
+      "options": {
+        "recipients": "martin@tines.io",
+        "subject": "Story Import Halted - Missing Credentials or Resources",
+        "body": "The attempt to migrate the Story <i><<export_story.body.name>></i> has failed due to missing credentials or resources. <br><br>\n\n<h3>Details</h3><br><br>\n\n<table>\n  <tr>\n    <th style=\"text-align:left\">Name</th>\n    <th style=\"text-align:left\">Type</th>\n    <th style=\"text-align:left\">Exists in Destination</th>\n  </tr>\n<%for item in summarise_results%>\n  <tr>\n    <td style=\"text-align:left\"><<item.name>></td>\n    <td style=\"text-align:left\"><<item.type>></td>\n    <td style=\"text-align:left\"><<item.exists_in_prod>></td>\n  </tr>\n<%endfor%>\n</table><br><br>\n\nTo proceed with this import anyway, <a href=\"<<PROMPT(\"continue\")>>\">click here</a>.\n\n\n"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Catch Continue Prompt",
+      "disabled": false,
+      "guid": "8265ec619e35e048a8a536721adb9260",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "continue",
+            "path": "<<notify_missing_credentials_or_resources.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Import New Story",
+      "disabled": false,
+      "guid": "ad4780c647be570669c8e70105eb7223",
+      "options": {
+        "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/stories/import",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "new_name": "<<export_story.body.name>>",
+          "team_id": "<<get_team_id.id>>",
+          "folder_id": "<<DEFAULT(get_folder_id.set_folder_id.folder_id, 0)>>",
+          "data": "<<JSON(export_story.body)>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Folder Specified",
+      "disabled": false,
+      "guid": "eb8de6f5557e9cccc3b491133a417bf7",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": ".+",
+            "path": "<<receive_form.body.folder_name>>"
+          }
+        ],
+        "emit_no_match": true
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Specified",
+      "disabled": false,
+      "guid": "40fd7ff71129d106572b246d997e5d9c",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<check_if_folder_specified.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Not Specified",
+      "disabled": false,
+      "guid": "f9009d8419a6484ded22c06c6fe1e622",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<check_if_folder_specified.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Success",
+      "disabled": false,
+      "guid": "947df6ae325d5866c189e60a6faeaf15",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<import_new_story.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Failure",
+      "disabled": false,
+      "guid": "34db44e1b4ab108552d535a0244e04e2",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "200",
+            "path": "<<import_new_story.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Production Stories",
+      "disabled": false,
+      "guid": "208e70535c23124da917afdaf44292e2",
+      "options": {
+        "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/stories?per_page=500",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Story Already Exists",
+      "disabled": false,
+      "guid": "c1dca2429cc5235c42ff550de6ac6195",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "0",
+            "path": "<<WHERE(get_production_stories.body.stories, \"name\", export_story.body.name) |> LIQUID_SIZE(%)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Story Does Not Exists",
+      "disabled": false,
+      "guid": "4cba305c6d7e18375a06d3b7ce387672",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<WHERE(get_production_stories.body.stories, \"name\", export_story.body.name) |> LIQUID_SIZE(%)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Export Existing Story",
+      "disabled": false,
+      "guid": "2ca3f0cab61770fa058ee9dfddcd2b42",
+      "options": {
+        "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/stories/<<WHERE(get_production_stories.body.stories, \"name\", export_story.body.name) |> GET(%, \"id\")>>/export",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete Existing Story",
+      "disabled": false,
+      "guid": "ff8e5bde0b08a957c8ea703a155869fb",
+      "options": {
+        "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/stories/<<WHERE(get_production_stories.body.stories, \"name\", export_story.body.name) |> GET(%, \"id\")>>",
+        "content_type": "json",
+        "method": "delete",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Story Backup",
+      "disabled": false,
+      "guid": "94c6bc3ec7d167ebee43d13133f9e94b",
+      "options": {
+        "recipients": [
+          "<<receive_form.headers.email>>"
+        ],
+        "subject": "Dev to Prod Migration - Story Backup",
+        "body": "As part of the dev to prod migration process, an existing production Story has been deleted. The new version will be added to the production tenant.<br><br>\n\nPrior to delete, an export of this Story was taken. This export is attached in case the original Story needs to be recovered.",
+        "attachments": [
+          {
+            "filename": "<<export_story.body.name>>.json",
+            "base64encodedcontents": "<<JSON(export_existing_story.body) |> BASE64_ENCODE(%)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Success Notification",
+      "disabled": false,
+      "guid": "918c053b05e55b3c812c9477aed498c3",
+      "options": {
+        "recipients": [
+          "<<receive_form.headers.email>>"
+        ],
+        "subject": "Story Migration Success",
+        "body": "The Story \"<<import_new_story.body.name>>\" has been successfully migrated to <<RESOURCE.prod_tenant_domain>>.<br><br>\nThis is accessible <a href=\"https://<<RESOURCE.prod_tenant_domain>>/stories/<<import_new_story.body.first.id>>\">here</a>.<br><br>\n\nThe migration Story Run can be viewed <a href=\"<<STORY_RUN_LINK()>>\">here</a>."
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Failure Notification",
+      "disabled": false,
+      "guid": "2849be5d76fd70a44ad153d449b9977f",
+      "options": {
+        "recipients": [
+          "<<receive_form.headers.email>>"
+        ],
+        "subject": "Story Migration Success",
+        "body": "The Story \"<<import_new_story.body.name>>\" has not been successfully migrated.<br><br>\n\nImport Error:<br>\n\"<<import_new_story.body.first>>\"<br><br>\n\nThe migration Story Run can be viewed <a href=\"<<STORY_RUN_LINK()>>\">here</a>."
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Find Story",
+      "disabled": false,
+      "guid": "f2802f1235427fdc908f2c81e01fbe7c",
+      "options": {
+        "payload": {
+          "receive_form": "=receive_form"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "4677ecde8c89a824eda991f60b16ed3c",
+        "slug": null,
+        "exported_at": "2022-07-11T17:33:44Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Get Stories",
+            "disabled": false,
+            "guid": "3e948d49adb6993a549a61c245c613c6",
+            "options": {
+              "url": "<<DEFAULT(get_stories.body.meta.next_page, add_base_url.url)>>",
+              "content_type": "json",
+              "method": "get",
+              "headers": {
+                "x-user-email": "<<RESOURCE.tines_api_email>>",
+                "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Match Found",
+            "disabled": false,
+            "guid": "1a04849fdbcc9e0f7a1dfe7adb22f864",
+            "options": {
+              "rules": [
+                {
+                  "type": "in",
+                  "value": "<<input.payload.receive_form.body.story_id_or_name>>",
+                  "path": "=MAP(get_stories.body.stories, \"name\")"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Match Not Found",
+            "disabled": false,
+            "guid": "73c47f64f63ecb7c2da5ea88b0906d40",
+            "options": {
+              "rules": [
+                {
+                  "type": "not in",
+                  "value": "<<input.payload.receive_form.body.story_id_or_name>>",
+                  "path": "=MAP(get_stories.body.stories, \"name\")"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "More Results",
+            "disabled": false,
+            "guid": "50c54717c5a38ac2b4cb5a1b2cb68367",
+            "options": {
+              "rules": [
+                {
+                  "type": "regex",
+                  "value": ".+",
+                  "path": "<<get_stories.body.meta.next_page>>"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "No More Results",
+            "disabled": false,
+            "guid": "1e15d40a3b11aa3a2897de681acc5d14",
+            "options": {
+              "rules": [
+                {
+                  "type": "!regex",
+                  "value": ".+",
+                  "path": "<<get_stories.body.meta.next_page>>"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::EmailAgent",
+            "name": "Notify of Failure to Find Story",
+            "disabled": false,
+            "guid": "7f0be5b0e5be513561caf90b59724505",
+            "options": {
+              "recipients": [
+                "<<input.payload.receive_form.headers.email>>"
+              ],
+              "subject": "Story not found - <<input.payload.receive_form.body.story_id_or_name>>",
+              "body": "The Story with the name \"<<input.payload.receive_form.body.story_id_or_name>>\" could not be found, so the attempt to export it to the Production Tenant failed.<br><br>\n\nPlease double check the Story Name, and that the API Account used has permissions to access the target Story.<br><br>\n\n<a href=\"<<STORY_RUN_LINK()>>\">Link to Story Run</a>"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Add Base URL",
+            "disabled": false,
+            "guid": "96e62fcd339f055728efc5dc2bff6383",
+            "options": {
+              "mode": "message_only",
+              "loop": false,
+              "payload": {
+                "url": "https://<<META.tenant.domain>>/api/v1/stories?per_page=100"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "162392042d5df67cde6e75535df81f40",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "e271858bfd438b9b3c80816070245a5e",
+            "options": {
+              "payload": {
+                "get_stories": "=get_stories"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 0,
+            "receiver": 2
+          },
+          {
+            "source": 1,
+            "receiver": 8
+          },
+          {
+            "source": 2,
+            "receiver": 3
+          },
+          {
+            "source": 2,
+            "receiver": 4
+          },
+          {
+            "source": 3,
+            "receiver": 0
+          },
+          {
+            "source": 4,
+            "receiver": 5
+          },
+          {
+            "source": 6,
+            "receiver": 0
+          },
+          {
+            "source": 7,
+            "receiver": 6
+          }
+        ],
+        "diagram_layout": "{\"3e948d49adb6993a549a61c245c613c6\":[1050,420],\"1a04849fdbcc9e0f7a1dfe7adb22f864\":[840,495],\"73c47f64f63ecb7c2da5ea88b0906d40\":[1050,495],\"50c54717c5a38ac2b4cb5a1b2cb68367\":[1050,585],\"1e15d40a3b11aa3a2897de681acc5d14\":[1305,570],\"7f0be5b0e5be513561caf90b59724505\":[1305,645],\"96e62fcd339f055728efc5dc2bff6383\":[1050,300],\"162392042d5df67cde6e75535df81f40\":[1050,150],\"e271858bfd438b9b3c80816070245a5e\":[840,765]}"
+      }
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Get Folder ID",
+      "disabled": false,
+      "guid": "c05f94d16814d0bd1be2b830f6bd7785",
+      "options": {
+        "payload": {
+          "receive_form": "=receive_form",
+          "get_team_id": "=get_team_id"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "4f498105b6c39a7882dfc29121e95c09",
+        "slug": null,
+        "exported_at": "2022-07-11T17:33:44Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "List Folders",
+            "disabled": false,
+            "guid": "1a1bc46b3ef281f126519b77f4717895",
+            "options": {
+              "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/folders?per_page=500&team_id=<<input.payload.get_team_id.id>>",
+              "method": "get",
+              "headers": {
+                "content-type": "application/json",
+                "x-user-email": "<<RESOURCE.tines_api_email>>",
+                "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Set Folder ID",
+            "disabled": false,
+            "guid": "46e6ab5d3d1acfdde3a4b603cc0ae84c",
+            "options": {
+              "mode": "message_only",
+              "loop": false,
+              "payload": {
+                "folder_id": "<<WHERE(list_folders.body.folders, \"name\", input.payload.receive_form.body.folder_name) |> GET(%, \"id\")>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Found",
+            "disabled": false,
+            "guid": "caf15b32e3336c5ffeb9f8240b8bb45b",
+            "options": {
+              "rules": [
+                {
+                  "type": "regex",
+                  "value": "\\d+",
+                  "path": "<<set_folder_id.folder_id>>"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Not Found",
+            "disabled": false,
+            "guid": "d0b0ad99828f237e4bafb8f483f2ccbf",
+            "options": {
+              "rules": [
+                {
+                  "type": "!regex",
+                  "value": "\\d+",
+                  "path": "<<set_folder_id.folder_id>>"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Create Folder",
+            "disabled": false,
+            "guid": "27455cd8b3279f965c0579e325eeaf12",
+            "options": {
+              "url": "https://<<RESOURCE.prod_tenant_domain>>/api/v1/folders",
+              "method": "post",
+              "headers": {
+                "x-user-email": "<<RESOURCE.tines_api_email>>",
+                "x-user-token": "<<CREDENTIAL.prod_tenant_api_token>>"
+              },
+              "payload": {
+                "name": "<<input.payload.receive_form.body.folder_name>>",
+                "content_type": "STORY",
+                "team_id": "<<input.payload.get_team_id.id>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Set Folder ID",
+            "disabled": false,
+            "guid": "af366ca65609083271aab00a256ae1b8",
+            "options": {
+              "mode": "message_only",
+              "loop": false,
+              "payload": {
+                "folder_id": "<<create_folder.body.id>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "167eda72815e71a933c59ff53e2eacf2",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "beb8bed84532e3d040f6133544e26717",
+            "options": {
+              "payload": {
+                "message": "This is an automatically generated message from Tines"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 1,
+            "receiver": 2
+          },
+          {
+            "source": 1,
+            "receiver": 3
+          },
+          {
+            "source": 2,
+            "receiver": 7
+          },
+          {
+            "source": 3,
+            "receiver": 4
+          },
+          {
+            "source": 4,
+            "receiver": 5
+          },
+          {
+            "source": 5,
+            "receiver": 7
+          },
+          {
+            "source": 6,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"1a1bc46b3ef281f126519b77f4717895\":[750,2235],\"46e6ab5d3d1acfdde3a4b603cc0ae84c\":[750,2310],\"caf15b32e3336c5ffeb9f8240b8bb45b\":[945,2385],\"d0b0ad99828f237e4bafb8f483f2ccbf\":[630,2385],\"27455cd8b3279f965c0579e325eeaf12\":[630,2460],\"af366ca65609083271aab00a256ae1b8\":[630,2535],\"167eda72815e71a933c59ff53e2eacf2\":[720,2085],\"beb8bed84532e3d040f6133544e26717\":[720,2685]}"
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Exporting the Story\n\nThe first step is to identify and export the Story from the dev tenant.\n\nThe form can take either a Story ID or a Story Name. In the case of Story Name, the Tines API is used to retrieve Stories in batches, and attempt to find a match. If all Stories have been checked, a failure email is sent.\n\nIf a match is found, the Story will be exported.",
+      "position": [
+        270.0,
+        315.0
+      ],
+      "guid": "a7ca044dee87c8a151f23f3fee01a2bb",
+      "width": null
+    },
+    {
+      "content": "# Identify all Resources and Credentials\n\nAny Credentials and Resources mentioned in the target Story need to be identified and extracted.\n\nThe Production Environment will be queried for each of these to ensure it exists. If one or more do not exist, the process will be halted and a notification sent to the submitter. They can then chose to override this check, and import the Story anyway. ",
+      "position": [
+        -90.0,
+        1215.0
+      ],
+      "guid": "4f2e5398e32554ddc690c369a5956294",
+      "width": null
+    },
+    {
+      "content": "# Story Overview\n\nThis Story provides a basic way of migrating a Story from a Development Tenant or Team to a a Production Tenant or Team. This Story is intended to run from the Dev environment.\n\nIt is initiated from a form, where the user inputs the Story name or ID, selects the target team and folder. \n\nTines will then lookup and export the Story from the Dev tenant, perform some checks on the Prod environment to check that Credentials and Resources exist. Before continuing to import the target Story into the Prod tenant.",
+      "position": [
+        165.0,
+        -345.0
+      ],
+      "guid": "9a7a82e44e6ded0a169b4a480f0be0cb",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\n## Resources\n- [ ] A Dev environment API user in a Resource `tines_api_email`\n- [ ] A Resource containing the Prod environment Tenant called `prod_tenant_domain`\n- [ ] A Prod environment API user in a Resource `tines_api_email`\n\n\n## Credentials\n- [ ] A Dev environment API token called `tines_user_token`\n- [ ] A Dev environment API token called `prod_tenant_api_token`\n\n\n",
+      "position": [
+        480.0,
+        -345.0
+      ],
+      "guid": "0526bc4b4748f95a461b53d3db117421",
+      "width": null
+    },
+    {
+      "content": "# Folder Management\n\nIf the submitter has chosen a destination folder, a lookup is performed on the Prod Environment to see if it exists. If it does not exist, a new folder will be created with that name.",
+      "position": [
+        450.0,
+        2190.0
+      ],
+      "guid": "472f872af43712297faf8d4cfe69e969",
+      "width": null
+    },
+    {
+      "content": "# Importing the Story\n\nA check is first performed to see whether a Story of the chosen name already exists. If it does not, then the Story is imported.\n\nBut if it does exist, a backup is taken of that Story. The Story is then deleted from the Production Environment, so that the new version can be imported safely.\n\nThe exported version is then emailed to the submitter as a backup, in case it needs to be restored.",
+      "position": [
+        780.0,
+        2700.0
+      ],
+      "guid": "98f16035e9678defc4b7e3da9af54963",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 43
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 17
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 6,
+      "receiver": 10
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 9,
+      "receiver": 13
+    },
+    {
+      "source": 10,
+      "receiver": 12
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 11,
+      "receiver": 9
+    },
+    {
+      "source": 12,
+      "receiver": 30
+    },
+    {
+      "source": 13,
+      "receiver": 15
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    },
+    {
+      "source": 14,
+      "receiver": 19
+    },
+    {
+      "source": 15,
+      "receiver": 20
+    },
+    {
+      "source": 16,
+      "receiver": 30
+    },
+    {
+      "source": 17,
+      "receiver": 18
+    },
+    {
+      "source": 18,
+      "receiver": 16
+    },
+    {
+      "source": 18,
+      "receiver": 6
+    },
+    {
+      "source": 19,
+      "receiver": 21
+    },
+    {
+      "source": 20,
+      "receiver": 22
+    },
+    {
+      "source": 21,
+      "receiver": 23
+    },
+    {
+      "source": 22,
+      "receiver": 23
+    },
+    {
+      "source": 23,
+      "receiver": 24
+    },
+    {
+      "source": 24,
+      "receiver": 26
+    },
+    {
+      "source": 24,
+      "receiver": 25
+    },
+    {
+      "source": 25,
+      "receiver": 27
+    },
+    {
+      "source": 26,
+      "receiver": 30
+    },
+    {
+      "source": 27,
+      "receiver": 28
+    },
+    {
+      "source": 28,
+      "receiver": 30
+    },
+    {
+      "source": 29,
+      "receiver": 33
+    },
+    {
+      "source": 29,
+      "receiver": 34
+    },
+    {
+      "source": 30,
+      "receiver": 32
+    },
+    {
+      "source": 30,
+      "receiver": 31
+    },
+    {
+      "source": 31,
+      "receiver": 44
+    },
+    {
+      "source": 32,
+      "receiver": 35
+    },
+    {
+      "source": 33,
+      "receiver": 41
+    },
+    {
+      "source": 34,
+      "receiver": 42
+    },
+    {
+      "source": 35,
+      "receiver": 37
+    },
+    {
+      "source": 35,
+      "receiver": 36
+    },
+    {
+      "source": 36,
+      "receiver": 38
+    },
+    {
+      "source": 37,
+      "receiver": 29
+    },
+    {
+      "source": 38,
+      "receiver": 39
+    },
+    {
+      "source": 39,
+      "receiver": 40
+    },
+    {
+      "source": 39,
+      "receiver": 29
+    },
+    {
+      "source": 43,
+      "receiver": 4
+    },
+    {
+      "source": 44,
+      "receiver": 35
+    }
+  ],
+  "diagram_layout": "{\"c80e2b9a4fba36e1be773687d8ade7df\":[795,135],\"4f288c90758c54c9d7a998af325f097b\":[555,210],\"332b0135ee48264fd8f5eba38638c016\":[1050,210],\"05003be1fd152c15205e12ac27f7f6cd\":[555,675],\"73ebacfdfbcdf007beb2c51f37f877a5\":[840,675],\"ada058ea957e899ef0211c1ba3602484\":[720,750],\"5cd6197d13acbec896c014d69daed96a\":[510,990],\"5d6608ad893e764594cd3c1fbb9f8939\":[1470,825],\"d2cb4c47747acf31b51a990fcecc5010\":[1470,900],\"2e182b7ad9e4c7f9101cb20ec83e66c0\":[345,1245],\"316ceb1b46da1ecc851af2f13afbeb0f\":[510,1080],\"2eb9b194f0f4a219714b08570f7eeb50\":[345,1170],\"2028c22703203c53b4e50ac2d9164059\":[675,1170],\"a35d80211b384228d4e08c6584430566\":[345,1350],\"fd397a3f195d883198f9cc1072930d1d\":[210,1440],\"12dd19024b67562c52609ac4f34a3f5b\":[450,1440],\"78c2242ae0fda7461e088272da01a9dc\":[945,990],\"74abd42141d815e12081fef8293e07d7\":[720,840],\"e586809e6339a2fa98066374b91e15f2\":[720,915],\"68ec64d96c7433f6ba5c09121b2de2b1\":[210,1515],\"8e63385cbd56d6e69a0250ec5b6074e5\":[450,1515],\"58cd60f6e5d0351ed1c5838ef40e64d6\":[210,1590],\"0c4835441ad88ea0a0633b62b80d8a14\":[450,1590],\"dcd6d01c9767d8e83d4fb0c2593d9247\":[315,1665],\"41b4609052b6fa09c4c60b788d58a47b\":[315,1755],\"1c56eea69e294d16949df2bd5034137f\":[165,1830],\"b2ce3b61f4a8ce570cd20d661ba3c609\":[465,1830],\"421fbea7e22af7a5c39bc85fe2e5b962\":[165,1920],\"8265ec619e35e048a8a536721adb9260\":[165,2010],\"ad4780c647be570669c8e70105eb7223\":[1140,2625],\"eb8de6f5557e9cccc3b491133a417bf7\":[960,2085],\"40fd7ff71129d106572b246d997e5d9c\":[750,2160],\"f9009d8419a6484ded22c06c6fe1e622\":[1215,2160],\"947df6ae325d5866c189e60a6faeaf15\":[1140,2700],\"34db44e1b4ab108552d535a0244e04e2\":[1350,2700],\"208e70535c23124da917afdaf44292e2\":[945,2310],\"c1dca2429cc5235c42ff550de6ac6195\":[750,2385],\"4cba305c6d7e18375a06d3b7ce387672\":[1140,2385],\"2ca3f0cab61770fa058ee9dfddcd2b42\":[750,2475],\"ff8e5bde0b08a957c8ea703a155869fb\":[750,2550],\"94c6bc3ec7d167ebee43d13133f9e94b\":[750,2625],\"918c053b05e55b3c812c9477aed498c3\":[1140,2775],\"2849be5d76fd70a44ad153d449b9977f\":[1350,2775],\"f2802f1235427fdc908f2c81e01fbe7c\":[1050,600],\"c05f94d16814d0bd1be2b830f6bd7785\":[750,2235]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Migrate Tines Story from development tenant to production Form",
+    "description": "Starting from a form this story will:\n1. Use the Tines API to export the selected Story\n2. Extract all Credentials and Resource from that Story\n3. Check if the target production tenant has each of those credentials and resources\n4. If all are present, import the Story into the target tenant in the selected team and folder (if present)\n5. If some are missing, abort import and notify the submitter what is missing\n6. If the import over ride checkbox is present, then import the story regardless",
+    "fields": [
+      {
+        "name": "Story ID Or Name",
+        "description": "Input the Story ID or Story Name that should be imported into the production tenant.\n\nIf using Story name, it must be an exact match.",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Target Team",
+        "description": "Select the team that you wish to import the Story in to.",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Production",
+          "Your First Team",
+          "Team"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Import if resources are missing",
+        "description": "If selected, the Story will be imported into the Production tenant even if some credentials and resources are missing.",
+        "required": false,
+        "type": "OPTION",
+        "multi_select": true,
+        "options": [
+          "confirm"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Folder Name",
+        "description": "[Optional] The name of the folder that the Story should be imported in to. This name should be an exact match. If not found, a folder will be created",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1879048192,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "c80e2b9a4fba36e1be773687d8ade7df",
+    "success_message": "Thank you for your submission"
+  }
+}

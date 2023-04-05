@@ -1,0 +1,364 @@
+{
+  "schema_version": 4,
+  "name": "Create Jira issues via Slack",
+  "description": "This Story allows users to create Jira issues directly in Slack using a slash command. Once configured, the slash command will pop up a modal for users to add information to be included in the Jira ticket.\n\ntags: Slack, Beginner, Jira,\nicons: Slack, 📝, jira\nvisibility: public",
+  "guid": "6462213df278bb8b3b37835ab19aee8b",
+  "slug": "create_jira_issues_via_slack",
+  "exported_at": "2022-07-11T17:37:24Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Action",
+      "disabled": false,
+      "guid": "92fe5808ef80958697e1fd12c6697999",
+      "options": {
+        "path": "5a6516ac070eecad2640ccc68730f737",
+        "secret": "5411557e060132e8515e7e3102493dde",
+        "response_code": "200",
+        "verbs": "get,post",
+        "response": ""
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Modal",
+      "disabled": false,
+      "guid": "03aa6f88cd14c123e42f784f636bf6fc",
+      "options": {
+        "url": "https://slack.com/api/views.open",
+        "content_type": "json",
+        "method": "post",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        },
+        "payload": {
+          "trigger_id": "<<webhook_action.body.trigger_id>>",
+          "view": {
+            "type": "modal",
+            "close": {
+              "type": "plain_text",
+              "text": "Cancel",
+              "emoji": true
+            },
+            "title": {
+              "type": "plain_text",
+              "text": "Submit a Ticket"
+            },
+            "submit": {
+              "type": "plain_text",
+              "text": "Submit"
+            },
+            "blocks": [
+              {
+                "type": "input",
+                "element": {
+                  "type": "plain_text_input",
+                  "action_id": "subject",
+                  "placeholder": {
+                    "type": "plain_text",
+                    "text": "Placeholder text for single-line input"
+                  }
+                },
+                "label": {
+                  "type": "plain_text",
+                  "text": "Subject"
+                },
+                "block_id": "subject_block"
+              },
+              {
+                "type": "input",
+                "element": {
+                  "type": "plain_text_input",
+                  "action_id": "description",
+                  "multiline": true,
+                  "placeholder": {
+                    "type": "plain_text",
+                    "text": "Placeholder text for multi-line input"
+                  }
+                },
+                "label": {
+                  "type": "plain_text",
+                  "text": "Description"
+                },
+                "block_id": "description_block"
+              },
+              {
+                "type": "input",
+                "element": {
+                  "type": "static_select",
+                  "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select an item",
+                    "emoji": true
+                  },
+                  "options": [
+                    {
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Low",
+                        "emoji": true
+                      },
+                      "value": "Low"
+                    },
+                    {
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Medium",
+                        "emoji": true
+                      },
+                      "value": "Medium"
+                    },
+                    {
+                      "text": {
+                        "type": "plain_text",
+                        "text": "High",
+                        "emoji": true
+                      },
+                      "value": "High"
+                    }
+                  ],
+                  "action_id": "static_select-action"
+                },
+                "label": {
+                  "type": "plain_text",
+                  "text": "Priority",
+                  "emoji": true
+                },
+                "block_id": "priority_block"
+              }
+            ]
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "submit_ticket",
+      "disabled": false,
+      "guid": "361fecd88442de89a0315ccc8d2a9e0d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "/submit_ticket",
+            "path": "<<webhook_action.body.command>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Modal Response",
+      "disabled": false,
+      "guid": "a99e42407576c35ef16cee8505f924d2",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "view_submission",
+            "path": "<<webhook_action.body.payload>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Parse Response",
+      "disabled": false,
+      "guid": "7f114538f82ce5d532e4bf3accfddb80",
+      "options": {
+        "mode": "message_only",
+        "payload": "=JSON_PARSE(webhook_action.body.payload)"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "63677a85bfbdd7c592c1af53a7341be0",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "<<parse_response.view.state.values.priority_block[\"static_select-action\"].selected_option.value>>"
+            },
+            "description": "<<parse_response.view.state.values.description_block.description.value>>",
+            "summary": "<<parse_response.view.state.values.subject_block.subject.value>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Submit a Ticket",
+      "disabled": false,
+      "guid": "e6c7bbc26c06302fa654115235201e4c",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Submit a Ticket",
+            "path": "<<parse_response.view.title.text>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/slack_logo_purple.png\n\n**Description**\nThis Story allows users to create Jira issues directly in Slack using the slash command `/submit_ticket` (Customizable)\n\nOnce configured, the slash command `/submit_ticket` will pop up a modal for users to fill in Jira issue information to submit.",
+      "position": [
+        -465.0,
+        15.0
+      ],
+      "guid": "b60a07d7bbde3ea8fc8d0ccc004e05cd",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/Jira-Logo.png",
+      "position": [
+        -465.0,
+        345.0
+      ],
+      "guid": "eb34b3ad5aab22afac04d6c2d7442ac6",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\n## Slack Configuration\n- [ ] Slack App Created\n- [ ] Interactivity Enabled in Slack App\n- [ ] Interactive Webhook Configured with Tines `Webhook Action` URL in the Slack App\n- [ ] Slack Bot User OAuth Token\n- [ ] Slash Command `/submit_ticket` (Customizable) created and directed to Tines `Webhook Action` URL\n\n\n# Jira Configuration\n- [ ] Jira Service Account created and added to correct Jira Project\n- [ ] `Create Issue in Jira` Action updated to  include correct Jira Project Identifier\n\n\n# Tines Configuration\n- [ ] Text Credential called `slack` created containing Slack Bot Token.\n- [ ] Text Resource called `jira_domain` created containing the jira domain e.g. `tines.atlassian.net`.\n- [ ] Text Resource called `jira_username` created containing the username of the service account.\n- [ ] Text Credential called `jira` created containing the password of the service account\n\n",
+      "position": [
+        -180.0,
+        15.0
+      ],
+      "guid": "0380f29d9d49db97fabec46ed277c92c",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/submit_a_ticket.png\n\nYou can customize the modal to collect any data you'd like",
+      "position": [
+        675.0,
+        45.0
+      ],
+      "guid": "6c980eda3c9164a5a78de36b36295d0a",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 5
+    }
+  ],
+  "diagram_layout": "{\"92fe5808ef80958697e1fd12c6697999\":[300,15],\"03aa6f88cd14c123e42f784f636bf6fc\":[165,165],\"361fecd88442de89a0315ccc8d2a9e0d\":[165,90],\"a99e42407576c35ef16cee8505f924d2\":[435,90],\"7f114538f82ce5d532e4bf3accfddb80\":[435,165],\"63677a85bfbdd7c592c1af53a7341be0\":[435,315],\"e6c7bbc26c06302fa654115235201e4c\":[435,240]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Create Jira issues via Slack Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

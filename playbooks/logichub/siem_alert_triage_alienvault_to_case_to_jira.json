@@ -1,0 +1,3249 @@
+{
+  "flows": [
+    {
+      "name": "siem_alert_triage_alienvault_to_case_to_jira",
+      "nodes": [
+        {
+          "id": "start-node-1339471a-8113-4dc5-a852-bde581c0b6f7",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 0,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "73993c5d-9add-430d-8b6d-a852a2a1e4a5",
+          "name": "ip_vt_score",
+          "kind": "augmentation",
+          "lql": "`SELECT CASE WHEN get_json_object(detected_url, \"$.positives\") IS NOT NULL THEN 10 ELSE 0 END AS ip_vt_score, * FROM join_back_with_main`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 470,
+          "y": 916,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "4a7f19b0-42fa-4445-a8d7-fa9f64eda831",
+          "name": "group_by_source_and_destination",
+          "kind": "augmentation",
+          "lql": "`select COUNT(\\`result__destination_address\\`) as destination_count from operator_jsonToColumns group by \\`result__source_name\\`, \\`result__destination_address\\``",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 390,
+          "y": 356,
+          "vertices": [],
+          "title": "group by source and destination",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "67dcae6f-48c1-4186-8a36-ebb21d2354fb",
+          "name": "apply_file_scorer",
+          "kind": "scorer",
+          "lql": "autoJoinScores([operator_jsonToColumns,file_path_score])",
+          "operator": "autoJoinScores",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 80,
+          "y": 594,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "autoJoinScores"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Auto Join Scores",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "75befbb7-10c0-41ae-8400-94e8d10a780e",
+          "name": "query_virustotal_on_destination_ip",
+          "kind": "task",
+          "lql": "runAction(destination_more_than_once, \"logichub.virustotal\", 45, \"analyze_ip_address\", {\"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\", \"vt_column_name\": \"result__destination_address\", \"vt_time_between_consecutive_requests_millis\": \"10\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 390,
+          "y": 584,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "analyze_ip_address",
+            "integrationId": "logichub.virustotal",
+            "integrationInstanceId": 45,
+            "data": {
+              "__lh_multithread_count": "",
+              "vt_column_name": "result__destination_address",
+              "__lh_rows_to_process": "",
+              "__lh_action_timeout_sec": "",
+              "vt_time_between_consecutive_requests_millis": "10"
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.virustotal",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/virius-total-logo.svg",
+            "name": "Virus Total",
+            "actionId": "analyze_ip_address",
+            "actionName": "Analyze IP Address"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.virustotal/analyze_ip_address"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Virus Total - Analyze IP Address",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "4a14dd06-4f21-49d0-bf99-e9d50eb69f14",
+          "name": "combine_scores",
+          "kind": "augmentation",
+          "lql": "autoJoinTables([apply_file_scorer,ip_vt_score])",
+          "operator": "autoJoinTables",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 310,
+          "y": 1020,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "autoJoinTables"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Auto Join Tables",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "de59b890-afef-46d0-a6d5-a736efd647ea",
+          "name": "search_events_from_AlienVault",
+          "kind": "task",
+          "lql": "runAction(_Start_Node, \"logichub.alienvault_usm\", 44, \"search-events\", {\"alienvault_usm_filter_sensor\": \"\", \"alienvault_usm_filter_suppressed\": \"\", \"alienvault_usm_filter_end\": \"flow-end-time\", \"alienvault_usm_filter_start\": \"flow-start-time\", \"__lh_action_timeout_sec\": \"\", \"alienvault_usm_filter_account_name\": \"\", \"alienvault_usm_page\": \"\", \"__lh_rows_to_process\": \"\", \"alienvault_usm_filter_source_username\": \"\", \"alienvault_usm_filter_plugin\": \"\", \"alienvault_usm_filter_event_name\": \"Outbound connection\", \"alienvault_usm_size\": \"1000000\", \"alienvault_usm_filter_source_name\": \"\", \"time_between_consecutive_requests_milliseconds\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 310,
+          "y": 90,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "search-events",
+            "integrationId": "logichub.alienvault_usm",
+            "integrationInstanceId": 44,
+            "data": {
+              "alienvault_usm_filter_start": "flow-start-time",
+              "__lh_multithread_count": "",
+              "alienvault_usm_filter_event_name": "Outbound connection",
+              "alienvault_usm_filter_plugin": "",
+              "alienvault_usm_size": "1000000",
+              "alienvault_usm_filter_sensor": "",
+              "alienvault_usm_page": "",
+              "alienvault_usm_filter_end": "flow-end-time",
+              "time_between_consecutive_requests_milliseconds": "",
+              "alienvault_usm_filter_source_name": "",
+              "__lh_rows_to_process": "",
+              "alienvault_usm_filter_suppressed": "",
+              "__lh_action_timeout_sec": "",
+              "alienvault_usm_filter_account_name": "",
+              "alienvault_usm_filter_source_username": ""
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.alienvault_usm",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/alien_vault.png",
+            "name": "AlienVault USM",
+            "actionId": "search-events",
+            "actionName": "Search Events"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.alienvault_usm/search-events"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: AlienVault USM - Search Events",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "93d16937-f002-4d64-9e5a-8ecbd899f135",
+          "name": "file_paths",
+          "kind": "augmentation",
+          "lql": "`select COUNT(\\`result__destination_organisation\\`) as org_count from operator_jsonToColumns group by \\`result__destination_organisation\\`, \\`result__file_path\\`, \\`result__source_process_commandline\\`, \\`result__destination_region\\`, \\`result__destination_city\\`, \\`result__destination_country\\``",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 366,
+          "vertices": [],
+          "title": "Group Json To Columns",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "01805cd5-d92f-4968-871a-cbcb7e69ef65",
+          "name": "file_path_score",
+          "kind": "scorer",
+          "ruleSet": "ruleSet-1",
+          "lql": "scoreManually(file_paths, [\"result__file_path\"], 5.0)",
+          "operator": "scoreManually",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 480,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "ScorerContentKind",
+            "id": "scoreManually"
+          },
+          "categoryKind": "LogicHub",
+          "iconTitle": "Logichub: Score Manually",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "5da1eba0-2797-4ddf-981b-49eebc71a912",
+          "name": "judgement_criteria",
+          "kind": "augmentation",
+          "lql": "`select greatest(ip_vt_score,file_path_score) as lhub_score, * from combine_scores`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 310,
+          "y": 1124,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "2fdc63bb-d6a8-4b02-bb26-86b908c7bdd7",
+          "name": "operator_jsonToColumns",
+          "kind": "augmentation",
+          "lql": "jsonToColumns(search_events_from_AlienVault, \"result\")",
+          "operator": "jsonToColumns",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Splits JSON objects into multiple columns.",
+          "isExplainable": true,
+          "x": 310,
+          "y": 214,
+          "vertices": [],
+          "title": "Json To Columns",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "jsonToColumns"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Json To Columns",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "1e81c6d9-671a-40ab-9636-69e2a34a321f",
+          "name": "expand_detected_urls",
+          "kind": "augmentation",
+          "lql": "`select explode(from_json(get_json_object(result,\"$.detected_urls\"),\"array<string>\")) as detected_url, result__source_name, result__destination_address from query_virustotal_on_destination_ip`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 390,
+          "y": 708,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "292a077d-5ab9-4929-a7bb-e864966377b9",
+          "name": "join_back_with_main",
+          "kind": "augmentation",
+          "lql": "autoJoinTables([operator_jsonToColumns,expand_detected_urls])",
+          "operator": "autoJoinTables",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 470,
+          "y": 812,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "autoJoinTables"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Auto Join Tables",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "21bb9b78-7c52-4bc1-a36d-f89f59846baa",
+          "name": "order_by_time",
+          "kind": "augmentation",
+          "lql": "`select row_number() over (partition by result__destination_address order by result__timestamp_occured desc) as row_num, * from conviction`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 310,
+          "y": 1332,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "3013bf81-1715-4b48-98b6-fd9457e8d7c7",
+          "name": "highest_ranked_row",
+          "kind": "augmentation",
+          "lql": "`select *, \"api\" as reporter, \"critical\" as priority from order_by_time where row_num=1`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 310,
+          "y": 1436,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "15eb199b-40ed-441e-9db5-3105d28ab180",
+          "name": "create_logichub_case",
+          "kind": "task",
+          "lql": "runAction(highest_ranked_row, \"logichub.case_management\", 43, \"create_case_v2\", {\"case_management_custom_fields\": \"\", \"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\", \"case_management_case_type_template\": \"Default\", \"case_management_assignee_column_name\": \"\", \"case_management_priority_column_name\": \"priority\", \"case_management_time_between_consecutive_requests_milliseconds\": \"\", \"case_management_reporter_column_name\": \"reporter\", \"case_management_description_template\": \"This follow event deemed as suspicious per automated triage. \\n\\n**LogicHub Score**: {{lhub_score}}   \\n**VirusTotal Score**:{{ip_vt_score}}   \\n**File Path Score**: {{file_path_score}}   \\n\\n**VirusTotal** result:   \\n{{detected_url}}   \\n\\n**Raw**\\n{{result__log}}\", \"case_management_title_template\": \"Outbound Connection Suspicious Alert\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 310,
+          "y": 1540,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "create_case_v2",
+            "integrationId": "logichub.case_management",
+            "integrationInstanceId": 43,
+            "data": {
+              "case_management_assignee_column_name": "",
+              "__lh_multithread_count": "",
+              "case_management_title_template": "Outbound Connection Suspicious Alert",
+              "case_management_custom_fields": "",
+              "case_management_time_between_consecutive_requests_milliseconds": "",
+              "case_management_description_template": "This follow event deemed as suspicious per automated triage. \n\n**LogicHub Score**: {{lhub_score}}   \n**VirusTotal Score**:{{ip_vt_score}}   \n**File Path Score**: {{file_path_score}}   \n\n**VirusTotal** result:   \n{{detected_url}}   \n\n**Raw**\n{{result__log}}",
+              "case_management_case_type_template": "Default",
+              "case_management_reporter_column_name": "reporter",
+              "__lh_rows_to_process": "",
+              "__lh_action_timeout_sec": "",
+              "case_management_priority_column_name": "priority"
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.case_management",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/default-integration-logo.svg",
+            "name": "Case Management",
+            "actionId": "create_case_v2",
+            "actionName": "Create Case"
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.case_management/create_case_v2"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Case Management - Create Case",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "1241ef2a-156a-4039-95bc-cbd5f42ed277",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "15eb199b-40ed-441e-9db5-3105d28ab180"
+          ],
+          "isExplainable": true,
+          "x": 377,
+          "y": 1644,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "fc334e64-716b-4e89-a6b3-6a70ed20e3dc",
+          "name": "conviction",
+          "kind": "augmentation",
+          "lql": "`select * from judgement_criteria where lhub_score>=7 limit 3`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 310,
+          "y": 1228,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e3572d1e-5ec1-4919-8bd8-f089fd0a68c5",
+          "name": "destination_more_than_once",
+          "kind": "augmentation",
+          "lql": "`select * from group_by_source_and_destination order by destination_count desc limit 4`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 390,
+          "y": 480,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1073",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [
+    {
+      "flowId": "flow-1073",
+      "nodeId": "75befbb7-10c0-41ae-8400-94e8d10a780e",
+      "tags": [
+        "demo"
+      ]
+    },
+    {
+      "flowId": "flow-1073",
+      "nodeId": "4a14dd06-4f21-49d0-bf99-e9d50eb69f14",
+      "tags": [
+        "demo"
+      ]
+    },
+    {
+      "flowId": "flow-1073",
+      "nodeId": "01805cd5-d92f-4968-871a-cbcb7e69ef65",
+      "tags": [
+        "demo"
+      ]
+    },
+    {
+      "flowId": "flow-1073",
+      "nodeId": "de59b890-afef-46d0-a6d5-a736efd647ea",
+      "tags": [
+        "demo"
+      ]
+    },
+    {
+      "flowId": "flow-1073",
+      "nodeId": "15eb199b-40ed-441e-9db5-3105d28ab180",
+      "tags": [
+        "demo"
+      ]
+    },
+    {
+      "flowId": "flow-1073",
+      "nodeId": "5da1eba0-2797-4ddf-981b-49eebc71a912",
+      "tags": [
+        "demo"
+      ]
+    }
+  ],
+  "filters": [],
+  "ruleSets": [
+    {
+      "name": "",
+      "id": "ruleSet-1",
+      "isPublic": false,
+      "rules": []
+    }
+  ],
+  "integrationInstances": [
+    {
+      "label": "demo_alienvault",
+      "descriptor": {
+        "id": "logichub.alienvault_usm",
+        "name": "AlienVault USM",
+        "description": "AlienVault USM is a SaaS security monitoring platform designed to centralize threat detection, incident response and compliance management of cloud, hybrid cloud, and on-premises environments from a cloud-based console.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/alien_vault.png",
+        "documentationSlug": "alienvault_usm",
+        "categories": [
+          "central_management",
+          "cloud"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:alientvault_usm-v1.0.1"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "AlienVault USM Authentication Information",
+              "description": "Enter authentication information for the AlienVault USM integration",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "alienvault_usm_server_url",
+                  "description": "URL to your AlienVault USM instance. Eg: https://subdomain.alienvault.cloud",
+                  "label": "URL",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "alienvault_usm_client_id",
+                  "description": "Client id for AlienVault USM",
+                  "label": "Client ID",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "alienvault_usm_secret_key",
+                  "description": "Secret key for AlienVault USM",
+                  "label": "Secret Key",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python3 -m src.alienvault_usm.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "search-alarms",
+            "name": "Search Alarms",
+            "description": "Retrieves alarms from AlienVault (optionally filtered on various fields)",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "alienvault_usm_filter_suppressed",
+                      "description": "Select True to show only those alarms that have suppressed flag set",
+                      "label": "Filter: Suppressed",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "false",
+                          "label": "False"
+                        },
+                        {
+                          "value": "true",
+                          "label": "True"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_filter_rule_intent",
+                      "description": "Enter jinja-templated intent of the rule that triggered the alarm. Eg: `Environmental Awareness` or `{{rule_intent_column}}`",
+                      "label": "Filter: Rule Intent",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "alienvault_usm_filter_rule_method",
+                      "description": "Enter jinja-templated method of the rule that triggered the alarm. Eg: `AWS EC2 Security Group Modified` or `{{rule_method_column}}`",
+                      "label": "Filter: Rule Method",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "alienvault_usm_filter_rule_strategy",
+                      "description": "Enter jinja-templated strategy of the rule that triggered the alarm. Eg: `Network Access Control Modification` or `{{rule_strategy_column}}`",
+                      "label": "Filter: Rule Strategy",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "alienvault_usm_filter_sensor",
+                      "description": "Select column that contains uuid of the sensor to filter results for",
+                      "label": "Filter: Sensor",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_filter_start",
+                      "description": "Enter timestamp (in epoch millis) to only include alarms that occurred after this timestamp. Enter `flow-start-time` to use start-time of the time-range of the flow. Leaving it empty will not apply the filter.",
+                      "label": "Filter: Start Time",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_filter_end",
+                      "description": "Enter timestamp (in epoch millis) to only include alarms that occurred before this timestamp. Enter `flow-end-time` to use end-time of the time-range of the flow. Leaving it empty will not apply the filter.",
+                      "label": "Filter: End Time",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_page",
+                      "description": "Enter page number (0 based) of results to return",
+                      "label": "Page",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_size",
+                      "description": "Enter number of results to return on each page",
+                      "label": "Size",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "echo \"[result]\" {}"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.alienvault_usm.action_search-alarms_exec"
+            },
+            "isDataSource": "Optional",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get-alarm",
+            "name": "Get Alarm",
+            "description": "Retrieve details for an alarm",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "alienvault_usm_alarm_id",
+                      "description": "Select column that contains value for an alarm id to fetch details",
+                      "label": "Alarm ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.alienvault_usm.alarm_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.alienvault_usm.action_get-alarm_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get-events-by-alarm",
+            "name": "Get Events by Alarm",
+            "description": "Retrieve events associated with an alarm",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "alienvault_usm_alarm_id",
+                      "description": "Select column that contains value for an alarm id to fetch associated events",
+                      "label": "Alarm ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.alienvault_usm.alarm_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.alienvault_usm.action_get-events-by-alarm_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "search-events",
+            "name": "Search Events",
+            "description": "Retrieves events from AlienVault (optionally filtered on various fields)",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "alienvault_usm_filter_account_name",
+                      "description": "Enter jinja-templated name of the account to filter on. Eg: `account` or `{{account_column}}`",
+                      "label": "Filter: Account Name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "alienvault_usm_filter_suppressed",
+                      "description": "Select True to show only those alarms that have suppressed flag set",
+                      "label": "Filter: Suppressed",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "false",
+                          "label": "False"
+                        },
+                        {
+                          "value": "true",
+                          "label": "True"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_filter_plugin",
+                      "description": "Enter jinja-templated name of the plugin to filter events on. Eg: `plugin` or `{{plugin_column}}`",
+                      "label": "Filter: Plugin",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "alienvault_usm_filter_event_name",
+                      "description": "Enter jinja-templated name of the event to filter events on. Eg: `name` or `{{name_column}}`",
+                      "label": "Filter: Event Name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "alienvault_usm_filter_source_name",
+                      "description": "Enter jinja-templated name of the source to filter events on. Eg: `name` or `{{name_column}}`",
+                      "label": "Filter: Source Name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "alienvault_usm_filter_source_username",
+                      "description": "Enter jinja-templated name of the user that triggered the event to filter events on. Eg: `user@email.com` or `{{userid_column}}@email.com`",
+                      "label": "Filter: Source Username",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "alienvault_usm_filter_sensor",
+                      "description": "Select column that contains uuid of the sensor to filter results for",
+                      "label": "Filter: Sensor",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_filter_start",
+                      "description": "Enter timestamp (in epoch millis) to only include alarms that occurred after this timestamp. Enter `flow-start-time` to use start-time of the time-range of the flow. Leaving it empty will not apply the filter.",
+                      "label": "Filter: Start Time",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_filter_end",
+                      "description": "Enter timestamp (in epoch millis) to only include alarms that occurred before this timestamp. Enter `flow-end-time` to use end-time of the time-range of the flow. Leaving it empty will not apply the filter.",
+                      "label": "Filter: End Time",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_page",
+                      "description": "Enter page number (0 based) of results to return",
+                      "label": "Page",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "alienvault_usm_size",
+                      "description": "Enter number of results to return on each page",
+                      "label": "Size",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "echo \"[result]\" {}"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.alienvault_usm.action_search-events_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "1.0.1",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2020-06-18T18:15:06.534Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:09:45.795Z",
+          "errorMessage": "This imported connection is using a different version of the AlienVault USM (logichub.alienvault_usm) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "",
+        "alienvault_usm_client_id": "logichub",
+        "__lh_ssl_verify": "",
+        "alienvault_usm_server_url": "https://intelligints.alienvault.cloud/",
+        "__lh_label": "demo_alienvault"
+      },
+      "id": 44,
+      "isDefault": true
+    },
+    {
+      "label": "demo_case_mgr",
+      "descriptor": {
+        "id": "logichub.case_management",
+        "name": "Case Management",
+        "description": "An Integration to manage LogicHub Cases. It can create new cases, get all cases, get a specific case's details and update or delete a case.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/default-integration-logo.svg",
+        "documentationSlug": "case-management",
+        "categories": [
+          "ticketing_systems"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m55.12"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "Case Management Authentication Information",
+              "description": "Enter authentication information for Case Management integration",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "case_management_server_url",
+                  "description": "URL of your Logichub instance. Eg: https://xyz.logichub.com (Default to connect to the local LogicHub server using https://nginx:8443)",
+                  "label": "URL",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "case_management_api_token",
+                  "description": "API Token for accessing Case Management",
+                  "label": "API Token",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python -m src.case_management.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "fetch_cases",
+            "name": "Search Issues",
+            "description": "Search issues",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Search Issues",
+                  "description": "Search issues",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_search_query",
+                      "description": "Jinja2 template for search text. Leave empty to get all cases. For advanced query see help: https://help.logichub.com/docs/advanced-case-search",
+                      "label": "Filter Query",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_explode_flag",
+                      "description": "Explode each result in a separate row. (default: No)",
+                      "label": "Explode Results",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "True",
+                          "label": "Yes"
+                        },
+                        {
+                          "value": "False",
+                          "label": "No"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_details_flag",
+                      "description": "Get all custom and system fields. (default: No)",
+                      "label": "Get All Fields",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "True",
+                          "label": "Yes"
+                        },
+                        {
+                          "value": "False",
+                          "label": "No"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_case_limit",
+                      "description": "Limit number of search results to (Default is 10,000 cases)",
+                      "label": "Limit Search Results",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_search-cases_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_search-cases_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "create_case_v2",
+            "name": "Create Case",
+            "description": "Creates a case with parameters provided.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create Case",
+                  "description": "Creates a case with parameters provided.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_type_template",
+                      "description": "Jinja2 template for case type. e.g. This is {{case_type_column_name}}",
+                      "label": "Case Type Template",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_title_template",
+                      "description": "Jinja2 template for case title. e.g. This is {{case_title_column_name}}",
+                      "label": "Case Title Template",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_description_template",
+                      "description": "Markdown template for case description (Blockquotes and HTML tags are not supported). e.g. **Reporter**: {{reporter_column_name}}. \r\n **Severity**: {{score_column_name}}",
+                      "label": "Case Description Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_reporter_column_name",
+                      "description": "Column name from parent table containing Reporter of the Case",
+                      "label": "Case Reporter",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_assignee_column_name",
+                      "description": "Column name from parent table containing Status of the Case",
+                      "label": "Case Assignee",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_priority_column_name",
+                      "description": "Column name from parent table containing Priority for the Case",
+                      "label": "Case Priority",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_custom_fields",
+                      "description": "Jinja2 template for other case fields. Input is expected in valid json-array as given in example. e.g. {\"field-name1\":\"{{column1}}\", \"field-name2\":[\"{{column2}}\", \"another_value\"]}.",
+                      "label": "Other Case Fields Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_create-case_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_create-case_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_case",
+            "name": "Get Case Details",
+            "description": "Retrieves Details of a Case.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Case Details",
+                  "description": "Retrieves Details of a Case.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_get_history",
+                      "description": "Get history of the case as well (default: No)",
+                      "label": "Fetch case history",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "true",
+                          "label": "Yes"
+                        },
+                        {
+                          "value": "false",
+                          "label": "No"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_case_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_get-case_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "patch_case",
+            "name": "Update Case",
+            "description": "Updates Reporter, Assignee, Status, Priority, Title and/or Description of a case.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Update Case",
+                  "description": "Updates Reporter, Assignee, Status, Priority, Title and/or Description of a case.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_reporter_column_name",
+                      "description": "Column name from parent table containing Reporter to be updated for the Case",
+                      "label": "Updated Case Reporter",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_assignee_column_name",
+                      "description": "Column name from parent table containing Assignee to be updated for the Case",
+                      "label": "Updated Case Assignee",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_status_column_name",
+                      "description": "Column name from parent table containing Status to be updated for the Case",
+                      "label": "Updated Case Status",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_priority_column_name",
+                      "description": "Column name from parent table containing Priority to be updated for the Case",
+                      "label": "Updated Case Priority",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_title_template",
+                      "description": "Jinja2 template for case title. e.g. This is {{case_title_column_name}}",
+                      "label": "Updated Case Title Template",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_description_template",
+                      "description": "Markdown template for case description (Blockquotes and HTML tags are not supported). e.g. **Reporter**: {{reporter_column_name}}. \r\n **Severity**: {{score_column_name}}",
+                      "label": "Updated Case Description Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_custom_fields",
+                      "description": "Jinja2 template for case custom fields. Input is expected in valid json-array as given in example. e.g. [{\"id\":\"field-name\", \"value\":\"{{column1}}\"}, {\"id\":\"field-name\", \"value\":\"{{column2}}\"}]",
+                      "label": "Updated Case Custom Fields Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_patch-case_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_patch-case_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "delete_case",
+            "name": "Delete Case",
+            "description": "Deletes a Case associated with a case id.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Delete Case",
+                  "description": "Deletes a Case associated with a case id.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_case_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_delete-case_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "append_comment",
+            "name": "Append Comment",
+            "description": "Appends comment to a Case.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Append Comment",
+                  "description": "Appends comment to a Case.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_comment_reporter_column_name",
+                      "description": "Column name from parent table containing LogicHub username",
+                      "label": "Reporter Username",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_comment_template",
+                      "description": "Jinja2 template for comment. e.g This is {{comment_column_name}}",
+                      "label": "Comment Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_create-comment_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_create-comment_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "link_cases",
+            "name": "Link Cases",
+            "description": "Link a case with another case",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Link Cases",
+                  "description": "Link a case with another case",
+                  "inputs": [
+                    {
+                      "id": "link_case_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "link_case_case_ids_column_name",
+                      "description": "Column name from parent table containing Case Ids in comma separated manner. Example: case_id1,case_id2,case_id3 ",
+                      "label": "Case Ids to link",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_link-cases_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_link-cases_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "append_task",
+            "name": "Add manual Task",
+            "description": "Adds Manual task to a Case.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Add manual Task",
+                  "description": "Adds Manual task to a Case.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_title_template",
+                      "description": "Jinja2 template for task title. e.g. This is {{title_column_name}}",
+                      "label": "Task Title Template",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_task_reporter_column_name",
+                      "description": "Column name from parent table containing task reporter username",
+                      "label": "Task Reporter",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_assignee_column_name",
+                      "description": "Column name from parent table containing task assignee username",
+                      "label": "Task Assignee",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_priority_column_name",
+                      "description": "Column name from parent table containing task priority",
+                      "label": "Task Priority",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_status_column_name",
+                      "description": "Column name from parent table containing status of the task",
+                      "label": "Task Status",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_summary_template",
+                      "description": "Markdown template for task summary (Blockquotes and HTML tags are not supported). e.g. **Reporter**: {{reporter_column_name}}. \r\n **Severity**: {{score_column_name}} ",
+                      "label": "Task Summary Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_add_manual_task_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_add_manual_task_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "add_automatic_task",
+            "name": "Add Automated Task",
+            "description": "Adds Automated task to a Case.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Add Automated Task",
+                  "description": "Adds Automated task to a Case.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_command_column_name",
+                      "description": "Jinja2 template for Command of the task. e.g. Either mention command name directly or as {{commandNameColumn}}",
+                      "label": "Command Template",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_task_title_template",
+                      "description": "Jinja2 template for task title. e.g. This is {{title_column_name}}. Default is Command Name",
+                      "label": "Task Title Template",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_task_reporter_column_name",
+                      "description": "Jinja2 template for task reporter username. e.g. Either mention reporter name directly or as {{reporterColumnName}}",
+                      "label": "Task Reporter",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_task_description_template",
+                      "description": "Jinja2 template for task description. e.g. This is {{description_column_name}} (Default is Command Description) ",
+                      "label": "Task Description Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_task_parameters_column_name",
+                      "description": "Jinja2 template for parameters of the task. Input is expected in json format {\"key1\": \"val1\", \"key2\": \"val2\"}. You can either pass json of command directly or use jinja2 template like {{taskParamColumnName}}",
+                      "label": "Task Parameters Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_task_trigger_type",
+                      "description": "Select trigger type of task. (Default is Automatic)",
+                      "label": "Trigger Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "Automatic Task",
+                          "label": "Automatic"
+                        },
+                        {
+                          "value": "User Trigger Task",
+                          "label": "On Click"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_add_automatic_task_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_add_automatic_task_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_tasks",
+            "name": "Get Tasks",
+            "description": "Get all tasks of a case.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Tasks",
+                  "description": "Get all tasks of a case.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_case_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_get-all-tasks_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "patch_task",
+            "name": "Update Task",
+            "description": "Updates Assignee, Status, Priority, Title and/or Summary of a task.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Update Task",
+                  "description": "Updates Assignee, Status, Priority, Title and/or Summary of a task.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_id_column_name",
+                      "description": "Column name from parent table containing Task Id of the task",
+                      "label": "Task Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_title_template",
+                      "description": "Jinja2 template for task title. e.g. This is {{title_column_name}}",
+                      "label": "Task Title Template",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_task_assignee_column_name",
+                      "description": "Column name from parent table containing task assignee username",
+                      "label": "Task Assignee",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_priority_column_name",
+                      "description": "Column name from parent table containing task priority",
+                      "label": "Task Priority",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_status_column_name",
+                      "description": "Column name from parent table containing status of the task",
+                      "label": "Task Status",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_summary_template",
+                      "description": "Markdown template for task summary (Blockquotes and HTML tags are not supported). e.g. **Reporter**: {{reporter_column_name}}. \r\n **Severity**: {{score_column_name}} ",
+                      "label": "Task Summary Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_patch-task_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_patch-task_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "download_case_attachment",
+            "name": "Get/Download Case Attachment",
+            "description": "Download an attachment for a case identified by attachment-id.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get/Download Case Attachment",
+                  "description": "Download an attachment for a case identified by attachment-id.",
+                  "inputs": [
+                    {
+                      "id": "case_management_attachment_id_column_name",
+                      "description": "Column name from parent table containing Attachment Id of Attachment",
+                      "label": "Attachment Id Column",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_get-attachment_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_get-attachment_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_case_attachments",
+            "name": "Get Case Attachments",
+            "description": "Get attachments of a case.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Case Attachments",
+                  "description": "Get attachments of a case.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id Column",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_split_results",
+                      "description": "Split attachments in separate rows. (Default is 'Yes' to split)",
+                      "label": "Split Results",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "true",
+                          "label": "Yes"
+                        },
+                        {
+                          "value": "false",
+                          "label": "No"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_case_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_get-all-attachments_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_task_attachments",
+            "name": "Get Task Attachments",
+            "description": "Get attachments of a task.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Task Attachments",
+                  "description": "Get attachments of a task.",
+                  "inputs": [
+                    {
+                      "id": "case_management_task_id_column_name",
+                      "description": "Column name from parent table containing Task Id of the Case",
+                      "label": "Task Id Column",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_split_results",
+                      "description": "Split attachments in separate rows. (Default is 'Yes' to split)",
+                      "label": "Split Results",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "true",
+                          "label": "Yes"
+                        },
+                        {
+                          "value": "false",
+                          "label": "No"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_get-task_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_get-all-attachments_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "add_attachment",
+            "name": "Add Attachment",
+            "description": "Add an attachment to a case (optionally to a specific task of a case).",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Add Attachment",
+                  "description": "Add an attachment to a case.",
+                  "inputs": [
+                    {
+                      "id": "case_management_case_id_column_name",
+                      "description": "Column name from parent table containing Case Id of the Case",
+                      "label": "Case Id Column",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_attachment_file_name_column_name",
+                      "description": "Column name from parent table containing Name of the file to be added as an Attachment",
+                      "label": "File Name Column",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_attachment_file_id_column_name",
+                      "description": "Column name from parent table containing file-id of file to be added as an Attachment",
+                      "label": "File Id Column",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_task_id_column_name",
+                      "description": "Column name from parent table containing Task Id of the Case. If value corresponding to column-name is empty, task-id will be ignored and attachment will be added to case.(Default is Ignore attachment)",
+                      "label": "Task Id Column",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "case_management_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.case_management.action_add-attachment_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.case_management.action_add-attachment_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "1.0.15",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2020-06-17T12:22:44Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:09:45.734Z",
+          "errorMessage": "This imported connection is using a different version of the Case Management (logichub.case_management) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "",
+        "__lh_label": "demo_case_mgr",
+        "case_management_server_url": "https://nginx:8443",
+        "__lh_ssl_verify": "False"
+      },
+      "id": 43,
+      "isDefault": true
+    },
+    {
+      "label": "Workshop_VirusTotal",
+      "descriptor": {
+        "id": "logichub.virustotal",
+        "name": "Virus Total",
+        "description": "Analyze suspicious files and URLs to detect types of malware including viruses, worms, and trojans.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/virius-total-logo.svg",
+        "categories": [
+          "investigative",
+          "threat_intelligence"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m57.15"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "VirusTotal authentication",
+              "description": "Provide a name for the connection and an API key for authentication with VirusTotal",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "vt_apikey",
+                  "description": "API key for VirusTotal",
+                  "label": "API Key",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python3 -m src.virustotal.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "analyze_domain",
+            "name": "Analyze Domain",
+            "description": "Retrieves a domain report",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze Domain",
+                  "description": "Retrieves a domain report",
+                  "inputs": [
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing domain to submit to VirusTotal",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-domain_file_hash_ip-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_domain-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "analyze_file_hash",
+            "name": "Analyze File Hash",
+            "description": "Retrieves a file hash report",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze File Hash",
+                  "description": "Retrieves a file hash report",
+                  "inputs": [
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing file hash to submit to VirusTotal",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-domain_file_hash_ip-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_file_hash-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "analyze_ip_address",
+            "name": "Analyze IP Address",
+            "description": "Retrieves an IP address report",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze IP Address",
+                  "description": "Retrieves an IP address report",
+                  "inputs": [
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing IP address to submit to VirusTotal",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-domain_file_hash_ip-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_ip_address-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "analyze_url",
+            "name": "Analyze URL",
+            "description": "Analyze URL by VirusTotal",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze URL",
+                  "description": "Analyze URL by VirusTotal",
+                  "inputs": [
+                    {
+                      "id": "vt_action_type",
+                      "description": "Select one of the options.",
+                      "label": "Action Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "report",
+                          "label": "Submit for scan and wait for report"
+                        },
+                        {
+                          "value": "scan",
+                          "label": "Submit for scan"
+                        },
+                        {
+                          "value": "retrieve",
+                          "label": "Retrieve report for already submitted scan"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing either URL to submit for scan or Scan ID to retrieve report",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-analyze_url_file-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_url-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "analyze_file",
+            "name": "Analyze File",
+            "description": "Analyze File by VirusTotal",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze File",
+                  "description": "Analyze File by VirusTotal",
+                  "inputs": [
+                    {
+                      "id": "vt_action_type",
+                      "description": "Select one of the options",
+                      "label": "Action Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "report",
+                          "label": "Submit for scan and wait for report"
+                        },
+                        {
+                          "value": "scan",
+                          "label": "Submit for scan"
+                        },
+                        {
+                          "value": "retrieve",
+                          "label": "Retrieve report for already submitted scan"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing either File ID to submit for scan or Scan ID to retrieve report",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-analyze_url_file-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_file-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "2.0.4",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2020-07-25T18:05:16Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:09:45.848Z",
+          "errorMessage": "This imported connection is using a different version of the Virus Total (logichub.virustotal) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_label": "Workshop_VirusTotal",
+        "__lh_ssl_verify": "False",
+        "__lh_is_default_connection": ""
+      },
+      "id": 45,
+      "isDefault": false
+    }
+  ],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

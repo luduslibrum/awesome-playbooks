@@ -1,0 +1,1057 @@
+{
+  "schema_version": 4,
+  "name": "Investigate & remediate Lacework alerts",
+  "description": "Automate remediation of all Lacework alerts and violations in line with the CIS Benchmark, helping you to be more secure and achieve SOC 2 compliance faster.\n\ntags: Lacework, AWS S3, Remediate, Respond, Jira, Advanced, Investigate\nicons: lacework, 🔧, jira\nvisibility: public",
+  "guid": "270a04671315db35ee4919d80bd99e9c",
+  "slug": "investigate_remediate_lacework_alerts",
+  "exported_at": "2022-07-11T17:35:49Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Lacework Alert",
+      "disabled": false,
+      "guid": "9d501296405933ede2475138a4a5695c",
+      "options": {
+        "path": "275107b8ef737a96cf8c4dcb2384952f",
+        "secret": "007c41b76557b2a20e11f6739a500ea7"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Event by ID in Lacework",
+      "disabled": false,
+      "guid": "182fe262a6bfb798a00b9afc5d6b11b8",
+      "options": {
+        "url": "https://<<RESOURCE.lacework_domain>>/api/v1/external/events/GetEventDetails?EVENT_ID=<<receive_lacework_alert.body.event_id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.lacework>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for Compliance Alert",
+      "disabled": false,
+      "guid": "76322a50077c9e5fa74cc7abffb41f40",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Compliance",
+            "path": "<<receive_lacework_alert.body.event_source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Rotate IAM Credential Alert",
+      "disabled": false,
+      "guid": "15495467d42aba8ef6443aead76e4057",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Ensure access keys are rotated",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "fix",
+            "path": "<<add_remediation_prompt.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Violations",
+      "disabled": false,
+      "guid": "85914820c24b680f79c2668873648a81",
+      "options": {
+        "mode": "explode",
+        "path": "=DEFAULT(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.NewViolation, get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.ViolationReason)",
+        "to": "violation"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get User in AWS IAM",
+      "disabled": false,
+      "guid": "bffca748c761aa86eaa05ae5dc8a5bb9",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "GetUser",
+          "Version": "2010-05-08",
+          "UserName": "<<REGEX_REPLACE(explode_violations.violation.RESOURCE, \".*/\", \"\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "7015764b64b1de0785e26f0951098ff1",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "description": "New compliance violations in Lacework:\n\n<%for violation in LOCAL.violations%>\n{code}\n<<NEAT_JSON(violation)>>{code}\n<%endfor%> ",
+            "summary": "Lacework Compliance Alert - <<receive_lacework_alert.body.event_description>> "
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "local": {
+          "violations": "=DEFAULT(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.NewViolation, get_event_by_id_in_lacework.body.data.first.ENTITY_MAP)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List User Access Keys in AWS IAM",
+      "disabled": false,
+      "guid": "14305ad6191f847455cb26b0de27d40b",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "ListAccessKeys",
+          "Version": "2010-05-08",
+          "UserName": "<<REGEX_REPLACE(explode_violations.violation.RESOURCE, \".*/\", \"\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Access Keys",
+      "disabled": false,
+      "guid": "c1ca563ff859b64e012748d9e89450cc",
+      "options": {
+        "mode": "explode",
+        "path": "=JSONPATH(list_user_access_keys_in_aws_iam.body.ListAccessKeysResponse.ListAccessKeysResult, \"$.AccessKeyMetadata.*.AccessKeyId\")",
+        "to": "key"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Set AWS IAM Credential Inactive",
+      "disabled": false,
+      "guid": "4abb24b36cfeafc594456d68a5c8ed54",
+      "options": {
+        "url": "https://iam.amazonaws.com?Action=UpdateAccessKey&Version=2010-05-08&Status=Inactive&UserName=<<REGEX_REPLACE(explode_violations.violation.RESOURCE, \".*/\", \"\")>>&AccessKeyId=<<explode_access_keys.key>>",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "119fdb0dee9319aa69f308d16136c0a3",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<issueIdOrKey>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Disabled credential {code}<<explode_access_keys.key>>{code} attached to user {code}<<get_user_in_aws_iam.body.GetUserResponse.GetUserResult.User.UserName>>{code} due to the credential that has not been rotated passed the compliance policy."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Bucket Versioning Alert",
+      "disabled": false,
+      "guid": "d7c6f471d0cb735927673a7cd1b9197c",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Ensure the S3 bucket has versioning enabled",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "fix",
+            "path": "<<add_remediation_prompt.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Violations",
+      "disabled": false,
+      "guid": "aee83fabbcb69adc6cc952337de2e77b",
+      "options": {
+        "mode": "explode",
+        "path": "=DEFAULT(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.NewViolation, get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.ViolationReason)",
+        "to": "violation"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Set AWS S3 Versioning Policy",
+      "disabled": false,
+      "guid": "6a9b48e2415fc36b48a4dcedacbf271c",
+      "options": {
+        "url": "https://<<REGEX_REPLACE(explode_violations.violation.RESOURCE, \".*:::\", \"\")>>.s3.us-east-1.amazonaws.com/?versioning",
+        "method": "put",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": "<VersioningConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"> \n  <Status>Enabled</Status> \n</VersioningConfiguration>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Bucket Encryption Alert",
+      "disabled": false,
+      "guid": "d17093c93e49247ba31d6ad74fc26525",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Ensure all data stored in the S3 bucket is securely encrypted at rest",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "fix",
+            "path": "<<add_remediation_prompt.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Violations",
+      "disabled": false,
+      "guid": "854cd6568c4cfec087264fdf6bc293ef",
+      "options": {
+        "mode": "explode",
+        "path": "=DEFAULT(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.NewViolation, get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.ViolationReason)",
+        "to": "violation"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Set AWS S3 Encryption Policy",
+      "disabled": false,
+      "guid": "232fb423ccd9544ef64b0002ae6616bc",
+      "options": {
+        "url": "https://<<REGEX_REPLACE(explode_violations.violation.RESOURCE, \".*:::\", \"\")>>.s3.us-east-1.amazonaws.com/?encryption",
+        "method": "put",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": "           <ServerSideEncryptionConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n               <Rule>\n                  <ApplyServerSideEncryptionByDefault>\n                     <SSEAlgorithm>AES256</SSEAlgorithm>\n                  </ApplyServerSideEncryptionByDefault>\n               </Rule>\n            </ServerSideEncryptionConfiguration>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Bucket Public Alert",
+      "disabled": false,
+      "guid": "5224f37b1d898d8765e4d5f4c072bc80",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Ensure the S3 bucket ACL does not grant 'Everyone'",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "fix",
+            "path": "<<add_remediation_prompt.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IAM User Console Login Alert",
+      "disabled": false,
+      "guid": "dfc1e33a81f8de7c7718c9d0cc922f54",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "No IAM users with password-based console access should exist",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "fix",
+            "path": "<<add_remediation_prompt.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Remove IAM Console Password in AWS IAM",
+      "disabled": false,
+      "guid": "575264e73280b812a9de3f615a51dabe",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "DeleteLoginProfile",
+          "Version": "2010-05-08",
+          "UserName": "<<REGEX_REPLACE(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.Resource.first.VALUE, \".*/\", \"\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Violations",
+      "disabled": false,
+      "guid": "756ba7afe394c5d92ed4bb3bff5bee30",
+      "options": {
+        "mode": "explode",
+        "path": "=DEFAULT(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.NewViolation, get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.ViolationReason)",
+        "to": "violation"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "0a5119495aa8c7c190dd3d7d16afa022",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Removed console login for IAM user {code}<<REGEX_REPLACE(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.Resource.first.VALUE, \".*/\", \"\")>>{code}."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "80b5ac578286376d1732936400d7230f",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Public Access Policy applied to <<REGEX_REPLACE(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.Resource.first.VALUE, \".*:::\", \"\")>>. Please contact the owner and provide them with the proper request process."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Apply AWS S3 Bucket Block Policy",
+      "disabled": false,
+      "guid": "7451ce93f3d5d4ad02a017aa697f8bf5",
+      "options": {
+        "url": "https://<<REGEX_REPLACE(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.Resource.first.VALUE, \".*:::\", \"\")>>.s3.us-east-1.amazonaws.com/?publicAccessBlock",
+        "method": "put",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<PublicAccessBlockConfiguration>\n      <BlockPublicAcls>TRUE</BlockPublicAcls>\n      <IgnorePublicAcls>TRUE</IgnorePublicAcls>\n      <BlockPublicPolicy>TRUE</BlockPublicPolicy>\n      <RestrictPublicBuckets>TRUE</RestrictPublicBuckets>\n</PublicAccessBlockConfiguration>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Violations",
+      "disabled": false,
+      "guid": "43bfe6f6c762cc8bab23aceef2c871cc",
+      "options": {
+        "mode": "explode",
+        "path": "=DEFAULT(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.NewViolation, get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.ViolationReason)",
+        "to": "violation"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Public Bucket Allowlist",
+      "disabled": false,
+      "guid": "43abc013375713995e58e10fdf0b1fe4",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "website-bucket",
+            "path": "<<REGEX_REPLACE(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.Resource.first.VALUE, \".*:::\", \"\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Able to Remediate",
+      "disabled": false,
+      "guid": "7122ae4343c99785893f99578cf5e5cd",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Ensure the S3 bucket ACL does not grant 'Everyone'",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "Ensure all data stored in the S3 bucket is securely encrypted at rest",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "Ensure the S3 bucket has versioning enabled",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "Ensure access keys are rotated",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "No IAM users with password-based console access should exist",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "Ensure EBS Volumes are Encrypted",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Remediation Prompt",
+      "disabled": false,
+      "guid": "b530e5091ff3d938e73901b5ce7c4b7d",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "To remediate this issue, click [here|<<PROMPT(\"fix\")>>].\n"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Enable EBS Encryption",
+      "disabled": false,
+      "guid": "ea74b64a99fa3e5a05e0b3c240741425",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Ensure EBS Volumes are Encrypted",
+            "path": "<<receive_lacework_alert.body.event_description>>"
+          },
+          {
+            "type": "regex",
+            "value": "fix",
+            "path": "<<add_remediation_prompt.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Violations",
+      "disabled": false,
+      "guid": "3bd119184598973318e54935478baf50",
+      "options": {
+        "mode": "explode",
+        "path": "=DEFAULT(get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.NewViolation, get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.ViolationReason)",
+        "to": "violation"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Enable EBS Encryption in AWS EC2",
+      "disabled": false,
+      "guid": "9ba9798fa603d5416b93754274fce453",
+      "options": {
+        "url": "https://ec2.<<REGEX_REPLACE(explode_violations.violation.RESOURCE, \".*?:.*?:.*?:\") |> REGEX_REPLACE(%, \":[0-9]{12}.*\")>>.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "EnableEbsEncryptionByDefault",
+          "Version": "2016-11-15"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "04d1442b08174f96a051f719973c500a",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Encryption of EBS volumes has been enabled by default for all instances in region {code}<<REGEX_REPLACE(explode_violations.violation.RESOURCE, \".*?:.*?:.*?:\") |> REGEX_REPLACE(%, \":[0-9]{12}.*\")>>{code}."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Handling Lacework Compliance Events\n\nUsing the data received by the webhook, we can enrich the event with more data by calling back to Lacework to grab the event by it's ID",
+      "position": [
+        1935.0,
+        255.0
+      ],
+      "guid": "7b12d289e3ddc86bf4fafb987617e335",
+      "width": null
+    },
+    {
+      "content": "# Tracking the Issue\n\nWhen the event comes in, this workflow will open a new issue in Jira for tracking. Jira can be swapped out with any other ticketing system if needed. In addition to opening the ticket, if it is an alert that can be remediated using Tines, a comment will be left in the ticket allow for one click remediation of issues.",
+      "position": [
+        1935.0,
+        510.0
+      ],
+      "guid": "bf68fba4eb3dfc24b3ed666f5e46a227",
+      "width": null
+    },
+    {
+      "content": "# S3 Compliance Remediation Actions\n\nFor S3 compliance violations, depending on the violation, Tines can perform actions such as:\n\n- Change a bucket's ACL from public to private\n- Enable encryption on S3 objects in a bucket\n- Enable versioning on S3 objects in a bucket",
+      "position": [
+        1515.0,
+        990.0
+      ],
+      "guid": "0322a6c5cf93f63b3e0484402a2f7e4f",
+      "width": null
+    },
+    {
+      "content": "# IAM Compliance Remedation Actions\n\nFor IAM compliance violations, depending on the violation, Tines can perform actions such as:\n\n- Disabling stale IAM access keys past normal rotation guidelines\n- Remove console login access from IAM users",
+      "position": [
+        2175.0,
+        1065.0
+      ],
+      "guid": "2fd76e7cd8f416a16d356726f56ca96b",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/lacework.png\n",
+      "position": [
+        1680.0,
+        135.0
+      ],
+      "guid": "88496ed421e630ec260e91c60d677167",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\nIn order to use this story the following Resources and Credentials must be created.\n\n**Resource**\n- `lacework_domain` : the domain of your Lacework tenant\n- `jira_username` : username for creating requests in Jira\n- `jira_domain` : the domain of your Jira tenant\n\n**Credential**\n- `jira` : Jira API token that corresponds to the user resource\n- `lacework` : an HTTP Request Action credential that fetches a Lacework Bearer token\n- `aws`: an AWS credential with sufficient permissions to take remediation actions you wish to use",
+      "position": [
+        1335.0,
+        180.0
+      ],
+      "guid": "0c848019aa609b4b19eedaeb1b7dbd39",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 6
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 6,
+      "receiver": 26
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 15,
+      "receiver": 16
+    },
+    {
+      "source": 17,
+      "receiver": 24
+    },
+    {
+      "source": 18,
+      "receiver": 20
+    },
+    {
+      "source": 19,
+      "receiver": 21
+    },
+    {
+      "source": 20,
+      "receiver": 19
+    },
+    {
+      "source": 23,
+      "receiver": 22
+    },
+    {
+      "source": 24,
+      "receiver": 25
+    },
+    {
+      "source": 25,
+      "receiver": 23
+    },
+    {
+      "source": 26,
+      "receiver": 27
+    },
+    {
+      "source": 27,
+      "receiver": 17
+    },
+    {
+      "source": 27,
+      "receiver": 14
+    },
+    {
+      "source": 27,
+      "receiver": 11
+    },
+    {
+      "source": 27,
+      "receiver": 3
+    },
+    {
+      "source": 27,
+      "receiver": 18
+    },
+    {
+      "source": 27,
+      "receiver": 28
+    },
+    {
+      "source": 28,
+      "receiver": 29
+    },
+    {
+      "source": 29,
+      "receiver": 30
+    },
+    {
+      "source": 30,
+      "receiver": 31
+    }
+  ],
+  "diagram_layout": "{\"9d501296405933ede2475138a4a5695c\":[1680,240],\"182fe262a6bfb798a00b9afc5d6b11b8\":[1680,330],\"76322a50077c9e5fa74cc7abffb41f40\":[1680,420],\"15495467d42aba8ef6443aead76e4057\":[1920,735],\"85914820c24b680f79c2668873648a81\":[1920,825],\"bffca748c761aa86eaa05ae5dc8a5bb9\":[1920,900],\"7015764b64b1de0785e26f0951098ff1\":[1680,510],\"14305ad6191f847455cb26b0de27d40b\":[1920,975],\"c1ca563ff859b64e012748d9e89450cc\":[1920,1065],\"4abb24b36cfeafc594456d68a5c8ed54\":[1920,1140],\"119fdb0dee9319aa69f308d16136c0a3\":[1920,1230],\"d7c6f471d0cb735927673a7cd1b9197c\":[1680,735],\"aee83fabbcb69adc6cc952337de2e77b\":[1680,825],\"6a9b48e2415fc36b48a4dcedacbf271c\":[1680,900],\"d17093c93e49247ba31d6ad74fc26525\":[1440,735],\"854cd6568c4cfec087264fdf6bc293ef\":[1440,825],\"232fb423ccd9544ef64b0002ae6616bc\":[1440,900],\"5224f37b1d898d8765e4d5f4c072bc80\":[1200,735],\"dfc1e33a81f8de7c7718c9d0cc922f54\":[2160,735],\"575264e73280b812a9de3f615a51dabe\":[2160,900],\"756ba7afe394c5d92ed4bb3bff5bee30\":[2160,825],\"0a5119495aa8c7c190dd3d7d16afa022\":[2160,990],\"80b5ac578286376d1732936400d7230f\":[1200,1065],\"7451ce93f3d5d4ad02a017aa697f8bf5\":[1200,975],\"43bfe6f6c762cc8bab23aceef2c871cc\":[1200,825],\"43abc013375713995e58e10fdf0b1fe4\":[1200,900],\"7122ae4343c99785893f99578cf5e5cd\":[1680,585],\"b530e5091ff3d938e73901b5ce7c4b7d\":[1680,660],\"ea74b64a99fa3e5a05e0b3c240741425\":[960,735],\"3bd119184598973318e54935478baf50\":[960,825],\"9ba9798fa603d5416b93754274fce453\":[960,900],\"04d1442b08174f96a051f719973c500a\":[960,975]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Investigate & remediate Lacework alerts Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

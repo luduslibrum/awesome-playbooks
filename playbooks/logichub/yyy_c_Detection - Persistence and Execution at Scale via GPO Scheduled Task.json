@@ -1,0 +1,439 @@
+{
+  "flows": [
+    {
+      "name": "yyy_c_Detection - Persistence and Execution at Scale via GPO Scheduled Task",
+      "nodes": [
+        {
+          "id": "3b7ba696-5d46-4efd-88da-1b4326612618",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "a08a0fc7-20b8-4a82-a844-21c9d6cc4406",
+            "30505225-c154-45f1-b1fe-9481a0377030"
+          ],
+          "isExplainable": true,
+          "x": 150,
+          "y": 750,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "ba53c62c-798d-4446-adda-d74e0290c400",
+          "name": "remote_connection",
+          "kind": "augmentation",
+          "lql": "`SELECT * FROM determine_whether_local_or_remote WHERE is_local = false`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 380,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "4db33ef0-8a82-46c9-8711-8900fdff014d",
+          "name": "Windows_AD_Persistence_and_Execution_via_GPO_Scheduled_Task",
+          "kind": "eventType",
+          "isLeaf": false,
+          "eventType": "eventType-34",
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": -120,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "EventTypeContentKind",
+            "id": "eventType-34"
+          },
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data: Windows_AD_Persistence_and_Execution_via_GPO_Scheduled_Task",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "225f7e58-cac3-485e-b8f5-e20eeb851274",
+          "name": "local_connection",
+          "kind": "augmentation",
+          "lql": "`SELECT * FROM determine_whether_local_or_remote WHERE is_local = true`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 376,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "5e409388-e276-4c30-ab9b-b0d9693b3abd",
+          "name": "determine_whether_local_or_remote",
+          "kind": "augmentation",
+          "lql": "`SELECT *,\n/* Determine whether the source machine was local or remote (i.e. local share or over the network) */\nCASE dest_machine_name WHEN src_machine_name THEN true ELSE false END AS is_local\nFROM reformat_input`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 244,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "2852227b-826a-4287-946e-0c2196e6df14",
+          "name": "reformat_input",
+          "kind": "augmentation",
+          "lql": "`SELECT lhub_ts, src_ip, src_nt_domain, src_user, relative_target_name, share_name, _messageid,\n\n/* make sure machine names have no white space and are lowercase, and create short & FQDN versions of the dest machine */\nLOWER(REGEXP_REPLACE(src_machine_name, '\\\\s+', '')) AS src_machine_name,\nLOWER(REGEXP_EXTRACT(dest_machine_name, '(\\\\S[^\\\\s.]+)')) AS dest_machine_name,\nLOWER(REGEXP_REPLACE(dest_machine_name, '\\\\s+', '')) AS dest_machine_fqdn,\n\n/* reformat \"accesses\" field to strip out tabs and line breaks, keep as an array */\nSPLIT(accesses, '[\\\\r\\\\n\\\\t]+') AS accesses,\n_raw\nFROM Windows_AD_Persistence_and_Execution_via_GPO_Scheduled_Task`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 132,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "9f6937b0-ca1a-43c9-9270-18fe1409722c",
+          "name": "format_alert_high_risk",
+          "kind": "augmentation",
+          "lql": "`SELECT 'LH00205' AS alert_id,\n'Persistence and Execution at Scale via GPO Scheduled Task (Remote)' AS alert_type,\nSTRUCT(relative_target_name, share_name, accesses, is_local, _messageid) AS additional_data,\n'' AS tactic,\n'' AS technique,\n3 AS risk_score,\n3 AS fidelity_score,\n*\nFROM remote_connection`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 488,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "c95be3ce-8783-4bfb-b1ae-643022517a38",
+          "name": "format_alert_medium_risk",
+          "kind": "augmentation",
+          "lql": "`SELECT 'LH00206' AS alert_id,\n'Persistence and Execution at Scale via GPO Scheduled Task (Local)' AS alert_type,\nSTRUCT(relative_target_name, share_name, accesses, is_local, _messageid) AS additional_data,\n'' AS tactic,\n'' AS technique,\n2 AS risk_score,\n3 AS fidelity_score,\n*\nFROM local_connection`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 490,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "30505225-c154-45f1-b1fe-9481a0377030",
+          "name": "ALERT_high_risk",
+          "kind": "step",
+          "inputs": [
+            "9f6937b0-ca1a-43c9-9270-18fe1409722c"
+          ],
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Format event output to send to SumoLogic destination",
+          "isExplainable": true,
+          "x": 0,
+          "y": 600,
+          "vertices": [],
+          "title": "ALERT high risk",
+          "moduleId": "logichub.mdr.format_alert_for_sumo",
+          "moduleVersion": {
+            "majorVersion": 1,
+            "minorVersion": 31,
+            "patchVersion": 0,
+            "contentResourceVersionBranch": "Local"
+          },
+          "moduleParameters": {
+            "parent0": "format_alert_high_risk"
+          },
+          "stepParams": {
+            "kind": "module",
+            "title": "LogicHub MDR: Format Alert for Sumo"
+          },
+          "isEditable": true,
+          "isStepImplementable": false,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "id": "logichub.mdr.format_alert_for_sumo",
+            "name": "LogicHub MDR: Format Alert for Sumo",
+            "latestAvailableVersion": {
+              "majorVersion": 1,
+              "minorVersion": 31,
+              "patchVersion": 0,
+              "contentResourceVersionBranch": "Local"
+            }
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "ModuleContentKind",
+            "id": "logichub.mdr.format_alert_for_sumo"
+          },
+          "categoryKind": "Module",
+          "iconTitle": "Module: LogicHub MDR: Format Alert for Sumo",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "a08a0fc7-20b8-4a82-a844-21c9d6cc4406",
+          "name": "ALERT_medum_risk",
+          "kind": "step",
+          "inputs": [
+            "c95be3ce-8783-4bfb-b1ae-643022517a38"
+          ],
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Format event output to send to SumoLogic destination",
+          "isExplainable": true,
+          "x": 300,
+          "y": 600,
+          "vertices": [],
+          "title": "ALERT medum risk",
+          "moduleId": "logichub.mdr.format_alert_for_sumo",
+          "moduleVersion": {
+            "majorVersion": 1,
+            "minorVersion": 31,
+            "patchVersion": 0,
+            "contentResourceVersionBranch": "Local"
+          },
+          "moduleParameters": {
+            "parent0": "format_alert_medium_risk"
+          },
+          "stepParams": {
+            "kind": "module",
+            "title": "LogicHub MDR: Format Alert for Sumo"
+          },
+          "isEditable": true,
+          "isStepImplementable": false,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "id": "logichub.mdr.format_alert_for_sumo",
+            "name": "LogicHub MDR: Format Alert for Sumo",
+            "latestAvailableVersion": {
+              "majorVersion": 1,
+              "minorVersion": 31,
+              "patchVersion": 0,
+              "contentResourceVersionBranch": "Local"
+            }
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "ModuleContentKind",
+            "id": "logichub.mdr.format_alert_for_sumo"
+          },
+          "categoryKind": "Module",
+          "iconTitle": "Module: LogicHub MDR: Format Alert for Sumo",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1042",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [
+    {
+      "id": "eventType-34",
+      "data": {
+        "name": "Windows_AD_Persistence_and_Execution_via_GPO_Scheduled_Task",
+        "query": "_sourceCategory=server/windows/* event_id=5145 ((\"SYSVOL\") (\"ScheduledTasks.xml\") (\"WriteData\")) or ((\"IPC$\") (\"svcctl\") (\"WriteData\")) or ((\"ADMIN$\") (\"SYSTEM32\") (\".tmp\")) or ((\"IPC$\") (\"atsvc\") (\"WriteData\") or (\".pst\" OR \".ost\" OR \".msg\" OR \".nst\" OR \".oab\" OR \".edb\" OR \".nsf\" OR \".bak\" OR \".dmp\" OR \".kirbi\" OR \"ntds.dit\" OR \"groups.xml\" OR \".rdp\") or ((\"IPC$\") AND (\"-stdin\" OR \"-stdout\" OR \"-stderr\") AND !((\"IPC$\") AND (\"PSEXESVC\"))))\n| parse \"Computer = \\\"*\\\";\" as dest_machine_name nodrop\n| parse \"Source Address:\\t\\t*\\r\\n\" as src_ip nodrop\n| parse \"Account Name:\\t\\t*\\r\\n\" as src_user nodrop\n| parse \"Relative Target Name:\\t*\\r\" as Relative_Target_Name nodrop\n| parse \"Share Name:\\t\\t*\\r\\n\" as Share_Name nodrop\n\n| parse regex field=src_user \"(?<src_machine_name>\\S[^$]+)\" nodrop\n| parse regex \"Account Domain:\\s*(?<src_nt_domain>.*?)[\\r\\n]\" nodrop\n| parse regex \"Accesses:\\s+(?<accesses>\\S[\\s\\S]+?)\\s*[\\r\\n](?=\\S)\" nodrop\n|where (toLowerCase(Relative_Target_Name) matches \"*scheduledtasks.xml*\" AND toUpperCase(Share_Name) matches \"*SYSVOL*\") or (toLowerCase(Relative_Target_Name) matches \"*svcctl*\" AND toUpperCase(Share_Name) matches \"*IPC$*\") or (toLowerCase(Relative_Target_Name) matches \"*system32*.tmp*\" AND toUpperCase(Share_Name) matches \"*ADMIN*\") or (toLowerCase(Relative_Target_Name) matches \"*atsvc*\" AND toUpperCase(Share_Name) matches \"*IPC$*\") or (toLowerCase(Relative_Target_Name) matches \"*.pst*\" OR toLowerCase(Relative_Target_Name) matches \"*.ost*\" OR toLowerCase(Relative_Target_Name) matches \"*.msg*\" OR toLowerCase(Relative_Target_Name) matches \"*.nst*\" OR toLowerCase(Relative_Target_Name) matches \"*.oab*\" OR toLowerCase(Relative_Target_Name) matches \"*.edb*\" OR toLowerCase(Relative_Target_Name) matches \"*.nsf*\" OR toLowerCase(Relative_Target_Name) matches \"*.bak*\" OR toLowerCase(Relative_Target_Name) matches \"*.dmp*\" OR toLowerCase(Relative_Target_Name) matches \"*.kirbi*\" OR toLowerCase(Relative_Target_Name) matches \"*ntds.dit*\" OR toLowerCase(Relative_Target_Name) matches \"*groups.xml*\" OR toLowerCase(Relative_Target_Name) matches \"*.rdp*\") OR (toLowerCase(Relative_Target_Name) matches \"*-stdin*\" OR toLowerCase(Relative_Target_Name) matches \"*-stdout*\" OR toLowerCase(Relative_Target_Name) matches \"*-stderr*\")\n\n| fields time, accesses, dest_machine_name, relative_target_name, src_ip, share_name, src_machine_name, src_nt_domain, src_user, _raw",
+        "keyColumns": "src_ip,src_machine_name,src_nt_domain,src_user,dest_machine_name,relative_target_name,share_name,accesses,_messageid,_raw",
+        "connection": "connection-2",
+        "connectionTypeEntities": {
+          "entities": [
+            {
+              "connectionType": {
+                "connectionType": "sumologic",
+                "value": "query"
+              },
+              "connectionTypeDetail": {
+                "query": "_sourceCategory=server/windows/* event_id=5145 ((\"SYSVOL\") (\"ScheduledTasks.xml\") (\"WriteData\")) or ((\"IPC$\") (\"svcctl\") (\"WriteData\")) or ((\"ADMIN$\") (\"SYSTEM32\") (\".tmp\")) or ((\"IPC$\") (\"atsvc\") (\"WriteData\") or (\".pst\" OR \".ost\" OR \".msg\" OR \".nst\" OR \".oab\" OR \".edb\" OR \".nsf\" OR \".bak\" OR \".dmp\" OR \".kirbi\" OR \"ntds.dit\" OR \"groups.xml\" OR \".rdp\") or ((\"IPC$\") AND (\"-stdin\" OR \"-stdout\" OR \"-stderr\") AND !((\"IPC$\") AND (\"PSEXESVC\"))))\n| parse \"Computer = \\\"*\\\";\" as dest_machine_name nodrop\n| parse \"Source Address:\\t\\t*\\r\\n\" as src_ip nodrop\n| parse \"Account Name:\\t\\t*\\r\\n\" as src_user nodrop\n| parse \"Relative Target Name:\\t*\\r\" as Relative_Target_Name nodrop\n| parse \"Share Name:\\t\\t*\\r\\n\" as Share_Name nodrop\n\n| parse regex field=src_user \"(?<src_machine_name>\\S[^$]+)\" nodrop\n| parse regex \"Account Domain:\\s*(?<src_nt_domain>.*?)[\\r\\n]\" nodrop\n| parse regex \"Accesses:\\s+(?<accesses>\\S[\\s\\S]+?)\\s*[\\r\\n](?=\\S)\" nodrop\n|where (toLowerCase(Relative_Target_Name) matches \"*scheduledtasks.xml*\" AND toUpperCase(Share_Name) matches \"*SYSVOL*\") or (toLowerCase(Relative_Target_Name) matches \"*svcctl*\" AND toUpperCase(Share_Name) matches \"*IPC$*\") or (toLowerCase(Relative_Target_Name) matches \"*system32*.tmp*\" AND toUpperCase(Share_Name) matches \"*ADMIN*\") or (toLowerCase(Relative_Target_Name) matches \"*atsvc*\" AND toUpperCase(Share_Name) matches \"*IPC$*\") or (toLowerCase(Relative_Target_Name) matches \"*.pst*\" OR toLowerCase(Relative_Target_Name) matches \"*.ost*\" OR toLowerCase(Relative_Target_Name) matches \"*.msg*\" OR toLowerCase(Relative_Target_Name) matches \"*.nst*\" OR toLowerCase(Relative_Target_Name) matches \"*.oab*\" OR toLowerCase(Relative_Target_Name) matches \"*.edb*\" OR toLowerCase(Relative_Target_Name) matches \"*.nsf*\" OR toLowerCase(Relative_Target_Name) matches \"*.bak*\" OR toLowerCase(Relative_Target_Name) matches \"*.dmp*\" OR toLowerCase(Relative_Target_Name) matches \"*.kirbi*\" OR toLowerCase(Relative_Target_Name) matches \"*ntds.dit*\" OR toLowerCase(Relative_Target_Name) matches \"*groups.xml*\" OR toLowerCase(Relative_Target_Name) matches \"*.rdp*\") OR (toLowerCase(Relative_Target_Name) matches \"*-stdin*\" OR toLowerCase(Relative_Target_Name) matches \"*-stdout*\" OR toLowerCase(Relative_Target_Name) matches \"*-stderr*\")\n\n| fields time, accesses, dest_machine_name, relative_target_name, src_ip, share_name, src_machine_name, src_nt_domain, src_user, _raw",
+                "connection": "connection-2"
+              }
+            }
+          ]
+        },
+        "defaultConnectionType": {
+          "connectionType": "sumologic",
+          "value": "query"
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "connection-2",
+      "data": {
+        "connectionType": "sumologic",
+        "name": "SumoLogic",
+        "isActive": false,
+        "account": "",
+        "secret": "",
+        "url": "https://api.us2.sumologic.com/api/v1"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "logichub.mdr.format_alert_for_sumo",
+      "name": "LogicHub MDR: Format Alert for Sumo",
+      "description": "Format event output to send to a SumoLogic destination",
+      "templateNodes": [
+        {
+          "name": "alert_output_for_sumo",
+          "templateLQL": "`SELECT \n/* always include lhub_score in the final output */\nlhub_score,\n\n/* format the final JSON output */\nTO_JSON(STRUCT(\n\n/* Required/Standard fields first */\nlhub_score, alert_time,\nlh_batch_end, lh_batch_id, lh_hostname, lh_alert_id,\nalert_id, alert_type, technique, tactic, risk_score, fidelity_score,\n\n/* All other fields EXCEPT additional_data */\nattack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user,\n\n/* place additional_data last so it will be at the bottom of the JSON formatted output */\nadditional_data)) AS alert_output\nFROM validate_required_input`",
+          "isOutput": true
+        },
+        {
+          "name": "ensure_defined_fields_exist",
+          "templateLQL": "ensureTableHasColumns(comment_ensure_table_has_columns, \"lhub_score, lhub_ts, alert_title, alert_time, alert_id, alert_type, technique, tactic, risk_score, fidelity_score, additional_data, attack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user\")",
+          "isOutput": false
+        },
+        {
+          "name": "final_columns",
+          "templateLQL": "`SELECT \n/* Required/standard fields first */\nlh__new_score AS lhub_score,\nlh__new_ts AS lhub_ts,\nlh__new_ts AS alert_time,\nlh_batch_end, lh_batch_id, lh_hostname, lh_alert_id,\nalert_id,\n\n/* Legacy support for \"alert_title\" which is now called \"alert_type\" */\nCOALESCEEMPTY(alert_type, alert_title) AS alert_type,\n\ntechnique, tactic, risk_score, fidelity_score,\n\n/* All other supported fields */\nadditional_data, attack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user\n\nFROM calculate_new_score_and_time`",
+          "isOutput": false
+        },
+        {
+          "name": "add_batch_metadata",
+          "templateLQL": "addExecutionMetadata(ensure_defined_fields_exist)",
+          "isOutput": false
+        },
+        {
+          "name": "calculate_new_score_and_time",
+          "templateLQL": "`SELECT \n/* If lhub_score = 0, keep it 0, otherwise use the greater of the original value or risk times fidelity */\nCASE DOUBLE(lhub_score) WHEN 0 THEN DOUBLE(lhub_score) ELSE GREATEST(risk_score * fidelity_score, DOUBLE(lhub_score)) END AS lh__new_score,\n\n/* For timestamp, look first for alert_time, then lhub_ts, then batch end time */\nCASE\n  WHEN BIGINT(alert_time) IS NOT NULL THEN BIGINT(alert_time)\n  WHEN BIGINT(lhub_ts) IS NOT NULL THEN BIGINT(lhub_ts) ELSE BIGINT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.interval_end_millis\"))\nEND AS lh__new_ts,\n\nREGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), '://(.*?)/') AS lh_hostname,\nREGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), '(batch-\\\\d+)$') AS lh_batch_id,\nBIGINT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.interval_end_millis\")) AS lh_batch_end,\n\n/* Generate a unique (mostly) event ID from the batch number + lhub_id */\nBIGINT(PRINTF('%s%s', REGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), 'batch-(\\\\d+)$'), lhub_id)) AS lh_alert_id,\n*\nFROM add_batch_metadata`",
+          "isOutput": false
+        },
+        {
+          "name": "comment_ensure_table_has_columns",
+          "templateLQL": "`\n/* Since some columns are only conditionally required, there has to be a step to explicitly check for values in those fields anyway, so to keep it simple, all possible fields are protected in ensureTableHasColumns, and some are validated later to ensure that they have a value.\n\nFields supported but not part of the final JSON schema:\n- lhub_score - can be used to override final score\n- lhub_ts - when available, used to calculate alert_time\n- alert_title - legacy support, but since renamed to alert_type\n\nNot expected from input but allowed when available:\n- alert_time: calculated from lhub_ts or batch time, but if this is available then we'll accept it as truth\n\nAfter that, ALL SUPPORTED FIELDS from supported schema\nhttps://logichub.atlassian.net/wiki/spaces/CON/pages/797671425/Output+Schema+for+LogicHub+Content\n*/\n\nselect * from %%%parent0%%%`",
+          "isOutput": false
+        },
+        {
+          "name": "check_for_required_fields",
+          "templateLQL": "`/*\nOnce all calculations are done, verify that all the required fields have values.\nNote that some fields allow empty strings for the time being, as long as they aren't null. This is just to allow us to transition into this new alert schema while we figure it all out.\n*/\n\nSELECT *,\nCASE\n    /* array_sort will put nulls at the end, so this is a quick way to check all required inputs at once */\n    WHEN ELEMENT_AT(ARRAY_SORT(ARRAY(alert_id, alert_type, technique, tactic, risk_score, fidelity_score)), -1) IS NULL THEN 'One or more required inputs is missing or null. Required fields: alert_id, alert_type, technique, tactic, risk_score, fidelity_score'\n    WHEN TRIM(alert_id) = '' THEN 'alert_id cannot be empty'\n    WHEN TRIM(alert_type) = '' THEN 'alert_type cannot be empty'\n    WHEN risk_score NOT IN (1, 2, 3) THEN PRINTF('Invalid value for risk_score (%s). Acceptable values are from 1 (low), 2 (medium) and 3 (high).', risk_score)\n    WHEN fidelity_score NOT IN (1, 2, 3) THEN PRINTF('Invalid value for fidelity_score (%s). Acceptable values are from 1 (low), 2 (medium) and 3 (high).', fidelity_score)\n    WHEN FLOAT(lhub_score) IS NULL THEN 'Unable to calculate lhub_score from provided columns'\n    WHEN lhub_score > 10 OR lhub_score < 0 THEN PRINTF('Invalid value for lhub_score (%s). Acceptable values are from 0-10.', lhub_score)\nEND AS error\n\nFROM final_columns`",
+          "isOutput": false
+        },
+        {
+          "name": "validate_required_input",
+          "templateLQL": "forceFail(check_for_required_fields, \"error\")",
+          "isOutput": false
+        }
+      ],
+      "steps": [
+        {
+          "name": "Module Parameters",
+          "description": "",
+          "inputs": [
+            {
+              "id": "parent0",
+              "description": "Parent node",
+              "label": "Parent Node",
+              "dataType": "node",
+              "inputType": "columnSelect",
+              "dependsOn": "",
+              "columnTemplating": false
+            }
+          ],
+          "isVariadic": false
+        }
+      ],
+      "isPublished": true,
+      "author": "chad@logichub.com",
+      "categories": [],
+      "isEditable": true,
+      "integrations": [],
+      "innerModules": [],
+      "tags": [],
+      "moduleVersion": {
+        "majorVersion": 1,
+        "minorVersion": 31,
+        "patchVersion": 0,
+        "contentResourceVersionBranch": "Local"
+      },
+      "isDataSource": "No",
+      "resourceFormatVersion": 3,
+      "weight": 0
+    }
+  ],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

@@ -1,0 +1,176 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Send Email Notification",
+    "aliasName": null,
+    "tag": null,
+    "description": null,
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "warRoom",
+        "emailBody",
+        "emailSubject",
+        "emailAttachmentIris"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/c9282ce9-1cef-4e0b-94da-3b84c32381ff",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/bd0dd951-b93f-4e08-b66e-586689790a89",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Combine lists and uniq",
+            "description": null,
+            "arguments": {
+                "users": "{{ ((vars.steps.Load_owners_from_war_room.data['hydra:member'] | json_query('[].actors[].\"@id\"')) + (vars.steps.Load_user_owners_from_war_room.data['hydra:member'] | json_query('[].\"@id\"'))) | unique | list }}"
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "3cbecbff-1231-47c0-acf1-f877e57254ab"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "warRoom": "{{ vars.warRoom }}",
+                            "warroom": "{{ vars.warroom }}",
+                            "emailBody": "{{ vars.emailBody }}",
+                            "emailSubject": "{{ vars.emailSubject }}",
+                            "emailAttachmentIris": "{{ vars.emailAttachmentIris }}"
+                        }
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "bd0dd951-b93f-4e08-b66e-586689790a89"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Load owners from war room",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{vars.input.params.warRoom['@id']}}\/owners?$relationships=true",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "3.0.4",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "07d7ff43-dbaf-4392-8694-64a8a8dd1451"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send each email",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.users}}",
+                    "condition": "{{'people' in vars.item}}"
+                },
+                "arguments": {
+                    "userIri": "{{vars.item}}",
+                    "warRoom": "{{vars.input.params.warRoom}}",
+                    "emailBody": "{{vars.input.params.emailBody}}",
+                    "emailSubject": "{{vars.input.params.emailSubject}}",
+                    "emailAttachmentIris": "{{vars.input.params.emailAttachmentIris}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/e61107d7-7cab-4ad3-8a1c-976134f23ca8"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "4eace735-ed87-4ca1-ad79-32c9860787ad"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Load user owners from war room",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{vars.input.params.warRoom['@id']}}\/userOwners?$relationships=true",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "3.0.4",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "98934604-733a-4213-91a7-fd7bced14d2b"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Load owners from war room",
+            "targetStep": "\/api\/3\/workflow_steps\/07d7ff43-dbaf-4392-8694-64a8a8dd1451",
+            "sourceStep": "\/api\/3\/workflow_steps\/bd0dd951-b93f-4e08-b66e-586689790a89",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "dae824f2-f783-4c96-89df-171441a2e1ce"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Load owners from war room -> Load user owners from war room",
+            "targetStep": "\/api\/3\/workflow_steps\/98934604-733a-4213-91a7-fd7bced14d2b",
+            "sourceStep": "\/api\/3\/workflow_steps\/07d7ff43-dbaf-4392-8694-64a8a8dd1451",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "dea158d5-2ebd-4390-925e-2458abc763d6"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Load user owners from war room -> Combine lists and uniq",
+            "targetStep": "\/api\/3\/workflow_steps\/3cbecbff-1231-47c0-acf1-f877e57254ab",
+            "sourceStep": "\/api\/3\/workflow_steps\/98934604-733a-4213-91a7-fd7bced14d2b",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a8352991-d222-4932-9d81-fe52a2ccc370"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Combine lists and uniq -> Send each email",
+            "targetStep": "\/api\/3\/workflow_steps\/4eace735-ed87-4ca1-ad79-32c9860787ad",
+            "sourceStep": "\/api\/3\/workflow_steps\/3cbecbff-1231-47c0-acf1-f877e57254ab",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "82b9e868-2a80-4a17-b9f3-872e513a05d7"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "944c4716-d44a-4ab4-b9eb-b05f9509a721",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

@@ -1,0 +1,430 @@
+{
+  "schema_version": 4,
+  "name": "Distribute decision making using ChatOps",
+  "description": "Utilize ChatOps to reach out to individuals via Slack and get feedback on alerts or changes made in your organization.\n\ntags: Slack, ChatOps, Beginner, Share, Prompt, DecisionMaking, Crowdsource,\nicons: slack, 💬, ❓\nvisibility: public ",
+  "guid": "78cab8cc189ab2a7a34833cc629a097e",
+  "slug": "distribute_decision_making_using_chatops",
+  "exported_at": "2022-07-11T17:32:08Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive STS",
+      "disabled": false,
+      "guid": "b453c97954ae0cd118670a0c97963660",
+      "options": {
+        "secret": "04fb0b55583cf6a2e84db2c1b5cad371",
+        "verbs": "get,post",
+        "path": "c3c6f243c26bcd9fe6148e603b2875e3"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Catch Prompt",
+      "disabled": false,
+      "guid": "8ed71bbd27d2be6afd8815f0863d09dc",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<send_slack_message_by_dm.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "edc9dd0dd546922c90c3b6172879e1e9",
+      "options": {
+        "mode": "delay",
+        "seconds": "3600"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No Response",
+      "disabled": false,
+      "guid": "d8373d20cedaf3b733e3f77f607fd84b",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<send_slack_message_by_dm.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Events",
+      "disabled": false,
+      "guid": "6a23c87b62315d016c00ccadc0a064fd",
+      "options": {
+        "mode": "deduplicate",
+        "period": "3700",
+        "path": "<<STORY_RUN_GUID()>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Send Slack Prompt",
+      "disabled": false,
+      "guid": "3856b06e022eef1f5fe45e068177e5c4",
+      "options": {
+        "story": "<<STORY.distribute_decision_making_using_chatops>>",
+        "payload": {
+          "email": "<<user_email>>",
+          "message_blocks": [
+            "*Alert*: \nSuspicious Login Detected",
+            "*Location*: \nRome",
+            "*Source*: \n Okta",
+            "*Description*:\nAt 12:30 PM UTC, we were alerted to suspicious login activity from Rome."
+          ],
+          "positive_button": "I recognize this",
+          "negative_button": "I don't recognize this"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Format Slack Message",
+      "disabled": false,
+      "guid": "385e4cec2f18281269c3e817a9826841",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "message": "[<%for block in receive_sts.body.message_blocks%>{\"type\": \"mrkdwn\", \"text\": \"<<block>>\"}<%if FORLOOP.last = FALSE%>,<%endif%><%endfor%>]"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Format Return",
+      "disabled": false,
+      "guid": "e9c7dfaf455593aaa755b82db9048ef0",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "result": "no_response"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Format Return",
+      "disabled": false,
+      "guid": "5e3850e25979517a5aa97250fa42fef3",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "result": "<<send_slack_message_by_dm.prompt.status>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Slack Users By Email",
+      "disabled": false,
+      "guid": "ee035575456c71f209e6a6dd47ccb044",
+      "options": {
+        "url": "https://slack.com/api/users.lookupByEmail",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "email": "<<receive_sts.body.email>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Slack Message By DM",
+      "disabled": false,
+      "guid": "f8f3af50a9e5d0a41a67c1b783c58545",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_slack_users_by_email.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "fields": "=format_slack_message.message"
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "<<receive_sts.body.positive_button>>"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"positive\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "<<receive_sts.body.negative_button>>"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"negative\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "text": "Hello from your friendly security team! 👨‍💻 \n\nWe're checking in on an alert we received:"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Response",
+      "disabled": false,
+      "guid": "9c04d1f8ff46e5f2839795c53c97af30",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<send_slack_message_by_dm.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Simple Slack Distributed Decision Making\n\nA simple [Send to Story](https://hub.tines.com/docs/stories/send-to-story) that can be the basis to crowdsource responses from any alert. It focuses on creating an array of messages that will become Slack 'blocks' and will request a user's input in a `positive`/`negative` fashion giving them an hour to respond before timing out and returning with `no_response`.\n\nThis Story can be expanded to also escalate to another individual like a person's manager.",
+      "position": [
+        615.0,
+        -795.0
+      ],
+      "guid": "afaf4dfe26f39f6ac9eb48443c17e803",
+      "width": 310
+    },
+    {
+      "content": "https://image-uploads.tines.com/Slack_RGB.png\n\n",
+      "position": [
+        -45.0,
+        -540.0
+      ],
+      "guid": "0c6213e4319349a8014041d0e9f83274",
+      "width": null
+    },
+    {
+      "content": "# Requirements\n\n- [ ] Slack Bot with `chat:write`, `user:profile:read`,  and `users:read:email` scopes\n- [ ] A Credential named `slack` with the Slack Bot API token",
+      "position": [
+        660.0,
+        -510.0
+      ],
+      "guid": "73d6519039a90512d9ffe4e58b7f3e7d",
+      "width": null
+    },
+    {
+      "content": "# Usage\n\nEnter in any contextual alert information into the `message_blocks` array in the Action above which will become formatted Slack messages when sent to the user email provided.",
+      "position": [
+        60.0,
+        -705.0
+      ],
+      "guid": "1fd305d6ce43a6977ec4be47fa5c45f6",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 9
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 7
+    },
+    {
+      "source": 4,
+      "receiver": 11
+    },
+    {
+      "source": 4,
+      "receiver": 3
+    },
+    {
+      "source": 6,
+      "receiver": 10
+    },
+    {
+      "source": 9,
+      "receiver": 6
+    },
+    {
+      "source": 10,
+      "receiver": 1
+    },
+    {
+      "source": 10,
+      "receiver": 2
+    },
+    {
+      "source": 11,
+      "receiver": 8
+    }
+  ],
+  "diagram_layout": "{\"b453c97954ae0cd118670a0c97963660\":[360,-795],\"8ed71bbd27d2be6afd8815f0863d09dc\":[480,-480],\"edc9dd0dd546922c90c3b6172879e1e9\":[255,-480],\"d8373d20cedaf3b733e3f77f607fd84b\":[480,-330],\"6a23c87b62315d016c00ccadc0a064fd\":[360,-405],\"3856b06e022eef1f5fe45e068177e5c4\":[105,-765],\"385e4cec2f18281269c3e817a9826841\":[360,-630],\"e9c7dfaf455593aaa755b82db9048ef0\":[480,-255],\"5e3850e25979517a5aa97250fa42fef3\":[255,-255],\"ee035575456c71f209e6a6dd47ccb044\":[360,-720],\"f8f3af50a9e5d0a41a67c1b783c58545\":[360,-555],\"9c04d1f8ff46e5f2839795c53c97af30\":[255,-330]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "b453c97954ae0cd118670a0c97963660",
+  "exit_agent_guids": [
+    "e9c7dfaf455593aaa755b82db9048ef0",
+    "5e3850e25979517a5aa97250fa42fef3"
+  ],
+  "exit_agent_guid": "e9c7dfaf455593aaa755b82db9048ef0",
+  "send_to_stories": [],
+  "form": {
+    "name": "New story for tuckner329@gmail.com Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

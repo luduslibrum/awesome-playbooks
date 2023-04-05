@@ -1,0 +1,1315 @@
+{
+  "flows": [
+    {
+      "name": "OOB Content - Authorized Activity Tracking with Spreadsheets",
+      "nodes": [
+        {
+          "id": "start-node-ca8411c9-b96a-4c24-83f8-1a53cfd33bd9",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 224,
+          "y": 0,
+          "vertices": [],
+          "title": "Trigger",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "10e7eb68-5959-431f-be25-e9245c6644a2",
+          "name": "Configure_Extract_JSON_Fields",
+          "kind": "augmentation",
+          "lql": "`select get_json_object(\\`result\\`, '$.UserName') as authorized_username, true as is_authorized from Read_Google_Sheets`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 308,
+          "y": 294,
+          "vertices": [],
+          "title": "Configure: Extract JSON Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "SelectNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "da40a38a-0edf-484f-998b-c587f9816b8a",
+          "name": "lower_node",
+          "kind": "augmentation",
+          "lql": "`SELECT lower(authorized_username) AS lower_username, * FROM Configure_Extract_JSON_Fields`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Returns `str` with all characters changed to lowercase.",
+          "isExplainable": true,
+          "x": 308,
+          "y": 448,
+          "vertices": [],
+          "title": "lower node",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "TransformContentKind",
+            "id": "spark-lower"
+          },
+          "formType": "AddFieldsForm",
+          "contentItemIdentifier": {
+            "kind": "TransformContentKind",
+            "id": "spark-lower"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: lower",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "db4c892f-d8f3-4ffd-addd-48865a0053f8",
+          "name": "operator_joinTables",
+          "kind": "augmentation",
+          "lql": "joinTables([Lower_Field,lower_node], [\"lower_username\"], \"left\")",
+          "operator": "joinTables",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator joins tables based on columns in the parameters. Columns used for joining must be present in all tables, and they should not include other common fields",
+          "isExplainable": true,
+          "x": 154,
+          "y": 616,
+          "vertices": [],
+          "title": "Join Tables",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "joinTables"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "joinTables"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Join Tables",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "ed59336e-3a5f-4769-a5ff-806b5190824b",
+          "name": "Lower_Field",
+          "kind": "augmentation",
+          "lql": "`SELECT lower(UserName) AS lower_username, * FROM Get_Data_from_CSV_or_Json_File`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Returns `str` with all characters changed to lowercase.",
+          "isExplainable": true,
+          "x": 0,
+          "y": 448,
+          "vertices": [],
+          "title": "Lower Field",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "TransformContentKind",
+            "id": "spark-lower"
+          },
+          "formType": "AddFieldsForm",
+          "contentItemIdentifier": {
+            "kind": "TransformContentKind",
+            "id": "spark-lower"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: lower",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e89ad67c-1588-4eeb-b251-e81c93c2ad20",
+          "name": "Get_Data_from_CSV_or_Json_File",
+          "kind": "fetchData",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "To get data from a CSV or JSON file, enter the URL of its location(unauthenticated) or upload the file directly below. You may also specify a file already uploaded to Logichub",
+          "isExplainable": true,
+          "x": 0,
+          "y": 280,
+          "vertices": [],
+          "fileData": {
+            "isFileUploadMode": false,
+            "url": "https://lh-public.s3.us-west-2.amazonaws.com/SampleAuthoriseActivity.csv"
+          },
+          "title": "Get Data from CSV or Json File",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e253efa8-cefa-4c7f-8191-a5cb7dc79d46",
+          "name": "Create_a_filter",
+          "kind": "augmentation",
+          "lql": "`select * from operator_joinTables where ( lower_username Like 'user%' AND isnull(is_authorized) = 'true' )`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Filter rows with basic boolean statements",
+          "isExplainable": true,
+          "x": 154,
+          "y": 784,
+          "vertices": [],
+          "title": "Create a filter",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "formType": "ConditionNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Filter",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "147e584c-8591-456c-bf31-1c1679f0d635",
+          "name": "operator_tableToHtmlString",
+          "kind": "augmentation",
+          "lql": "tableToHtmlString(Create_a_filter, \"10\")",
+          "operator": "tableToHtmlString",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator converts LQL table to HTML table",
+          "isExplainable": true,
+          "x": 154,
+          "y": 938,
+          "vertices": [],
+          "title": "HTML",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "tableToHtmlString"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "tableToHtmlString"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Table To Html String",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "1aca2d42-3c7c-45ef-90e1-1daa85730387",
+          "name": "Add_Fields",
+          "kind": "augmentation",
+          "lql": "`SELECT \"chris.botelho@logichub.com\" AS email_recipient, \"Detected unauthorized users\" AS email_subject, * FROM operator_tableToHtmlString`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Add one or more fields.",
+          "isExplainable": true,
+          "x": 154,
+          "y": 1092,
+          "vertices": [],
+          "title": "Add Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "formType": "AddFieldsForm",
+          "contentItemIdentifier": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Add Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "8580f9cc-a092-4e89-8611-89ed958f1571",
+          "name": "Read_Google_Sheets",
+          "kind": "task",
+          "lql": "runAction(_Start_Node, \"logichub.google_sheets\", 37, \"read_sheet\", {\"google_sheets_url\": \"https://docs.google.com/spreadsheets/d/18yxLrapZ3AsrfadxQMxXP54lejrVb6sevi-Ud5NVgBM/edit#gid=1491817796\", \"__lh_action_timeout_sec\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Google Sheets is a spreadsheet program included as part of the free, web-based Google Docs Editors suite offered by Google.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 308,
+          "y": 112,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "read_sheet",
+            "integrationId": "logichub.google_sheets",
+            "integrationInstanceId": 37,
+            "data": {
+              "google_sheets_url": "https://docs.google.com/spreadsheets/d/18yxLrapZ3AsrfadxQMxXP54lejrVb6sevi-Ud5NVgBM/edit#gid=1491817796",
+              "__lh_action_timeout_sec": ""
+            }
+          },
+          "title": "Read Google Sheets",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.google_sheets",
+            "logoUrl": "https://lhub-public.s3.amazonaws.com/integrations/google-sheets.png",
+            "name": "Google Sheets",
+            "actionId": "read_sheet",
+            "actionName": "Read Sheet"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.google_sheets/read_sheet"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Google Sheets - Read Sheet",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "7985f90b-9425-4a1a-8a98-e104862a34b0",
+          "name": "Send_Email",
+          "kind": "task",
+          "lql": "runAction(Add_Fields, \"logichub.smtp\", 17, \"send_email\", {\"__lh_action_timeout_sec\": \"\", \"smtp_cc_email_column_name\": \"\", \"__lh_rows_to_process\": \"\", \"smtp_email_body_type\": \"htmlbody\", \"smtp_body_column_name\": \"$.htmlTable\", \"smtp_attachments_column_name\": \"\", \"smtp_bcc_email_column_name\": \"\", \"smtp_email_to_column_name\": \"$.email_recipient\", \"time_between_consecutive_requests_milliseconds\": \"\", \"smtp_subject_column_name\": \"$.email_subject\", \"smtp_attachment_extension\": \"\", \"smtp_email_from_column_name\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "Simple Mail Transfer Protocol (SMTP) is a standard communication protocol for sending email messages on business networks and the Internet.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 154,
+          "y": 1260,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "send_email",
+            "integrationId": "logichub.smtp",
+            "integrationInstanceId": 17,
+            "data": {
+              "__lh_multithread_count": "",
+              "smtp_cc_email_column_name": "",
+              "smtp_bcc_email_column_name": "",
+              "smtp_body_column_name": "$.htmlTable",
+              "time_between_consecutive_requests_milliseconds": "",
+              "__lh_rows_to_process": "",
+              "smtp_email_from_column_name": "",
+              "smtp_attachment_extension": "",
+              "__lh_action_timeout_sec": "",
+              "smtp_attachments_column_name": "",
+              "smtp_email_body_type": "htmlbody",
+              "smtp_subject_column_name": "$.email_subject",
+              "smtp_email_to_column_name": "$.email_recipient"
+            }
+          },
+          "title": "Send Email",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.smtp",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/smtp1-logo.png",
+            "name": "SMTP",
+            "actionId": "send_email",
+            "actionName": "Send Email"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.smtp/send_email"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: SMTP - Send Email",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1066",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "CB Testing - Logichub Demo",
+      "descriptor": {
+        "id": "logichub.smtp",
+        "name": "SMTP",
+        "description": "Simple Mail Transfer Protocol (SMTP) is a standard communication protocol for sending email messages on business networks and the Internet.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/smtp1-logo.png",
+        "documentationSlug": "smtp",
+        "categories": [
+          "messaging"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m88.21"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "SMTP Server and Account Authentication",
+              "description": "Enter authentication information for your SMTP connection",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_server_name",
+                  "description": "Server name for your SMTP connection",
+                  "label": "SMTP Server Name",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_server_port",
+                  "description": "Server port for your SMTP connection",
+                  "label": "SMTP Server Port",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_authentication_type",
+                  "description": "Authentication type for your SMTP connection",
+                  "label": "Authentication type",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "basic",
+                      "label": "Basic"
+                    },
+                    {
+                      "value": "ntlm",
+                      "label": "NTLM"
+                    },
+                    {
+                      "value": "none",
+                      "label": "None"
+                    }
+                  ],
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_use_encryption",
+                  "description": "Whether or not to use encryption",
+                  "label": "Use encryption",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "Yes",
+                      "label": "Yes"
+                    },
+                    {
+                      "value": "No",
+                      "label": "No"
+                    }
+                  ],
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_email_address",
+                  "description": "Email Address to send from",
+                  "label": "Email Address",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false,
+                  "isCredential": true
+                },
+                {
+                  "id": "smtp_username",
+                  "description": "Username if different from Email Address",
+                  "label": "Username",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_password",
+                  "description": "Password to log in with. Leave empty if using None Authentication type.",
+                  "label": "Password",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "optional": true,
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python -m src.smtp.instantiate"
+          }
+        },
+        "actions": [
+          {
+            "id": "send_email",
+            "name": "Send Email",
+            "description": "Sends an e-mail to a recipient using SMTP",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create and Send Email",
+                  "description": "Create and send an email using column names from the parent table",
+                  "inputs": [
+                    {
+                      "id": "smtp_subject_column_name",
+                      "description": "A column containing the subject title for e-mails",
+                      "label": "Subject Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_body_column_name",
+                      "description": "A column containing the body for outbound e-mails",
+                      "label": "Body Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_to_column_name",
+                      "description": "A column containing the e-mail addresses to send an e-mail to",
+                      "label": "Column containing the e-mail address for recipients",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_from_column_name",
+                      "description": "A column containing the e-mail addresses as sender to send an e-mail to",
+                      "label": "Column containing the from e-mail address",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_body_type",
+                      "description": "Select type of email body (Default is Plain Text)",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "plaintext",
+                          "label": "Plain Text"
+                        },
+                        {
+                          "value": "htmlbody",
+                          "label": "HTML"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_cc_email_column_name",
+                      "description": "Column containing e-mail addresses to attach as cc on an outbound e-mail",
+                      "label": "CC on outbound e-mail Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_bcc_email_column_name",
+                      "description": "Column containing e-mail addresses to attach as bcc on an outbound e-mail",
+                      "label": "BCC on outbound e-mail Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_attachments_column_name",
+                      "description": "Column containing one or more file IDs to attachment. (Can be a comma separated string of lhub_file_id values or a json dict in the format of {\"<lhub_id>\":\"<file_name>\"})",
+                      "label": "File Attachment",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_attachment_extension",
+                      "description": "If no file name is provided, add this extension to attached files.",
+                      "label": "Attachment File Extension",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.smtp.action_send-email_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.smtp.action_send-email_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          },
+          {
+            "id": "send_email_empty_table",
+            "name": "Send static email, If table is empty",
+            "description": "Sends an e-mail to a recipient with static input if table is empty",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "smtp_subject",
+                      "description": "Subject title for e-mails",
+                      "label": "Subject",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_body",
+                      "description": "Body for outbound e-mails",
+                      "label": "Body",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_to",
+                      "description": "E-mail addresses to send an e-mail to",
+                      "label": "E-mail address for recipients",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_from",
+                      "description": "E-mail addresses as sender to send an e-mail to",
+                      "label": "From E-mail address",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_body_type",
+                      "description": "Select type of email body (Default is Plain Text)",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "plaintext",
+                          "label": "Plain Text"
+                        },
+                        {
+                          "value": "htmlbody",
+                          "label": "HTML"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_cc_email",
+                      "description": "E-mail addresses to attach as cc on an outbound e-mail",
+                      "label": "CC on outbound e-mail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_bcc_email",
+                      "description": "E-mail addresses to attach as bcc on an outbound e-mail",
+                      "label": "BCC on outbound e-mail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.smtp.action_send-email-empty-table_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.smtp.action_send-email-empty-table_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "send_emails"
+            ]
+          }
+        ],
+        "version": "2.1.11",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-12-16T13:39:28Z",
+        "failedAttempt": {
+          "modified": "2022-08-03T12:36:03Z",
+          "errorMessage": "Failed to update connection: CB Testing - Logichub Demo from SMTP:2.1.11 to SMTP:2.1.12 added on 2022-08-03T12:36:03ZDetails: Authentication failed: (535, '5.7.8 Username and Password not accepted. Learn more at\\n5.7.8  https://support.google.com/mail/?p=BadCredentials p4-20020a17090a284400b001fd81970d1fsm184623pjf.47 - gsmtp')"
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "false",
+        "__lh_table_key_value": "",
+        "smtp_authentication_type": "basic",
+        "__lh_ssl_verify": "True",
+        "smtp_email_address": "logichub.automation.demo@gmail.com",
+        "smtp_server_port": "587",
+        "smtp_username": "logichub.automation.demo@gmail.com",
+        "smtp_password": "****restricted****",
+        "smtp_use_encryption": "Yes",
+        "smtp_server_name": "smtp.gmail.com",
+        "__lh_label": "CB Testing - Logichub Demo"
+      },
+      "id": 17,
+      "isDefault": false
+    },
+    {
+      "label": "LogicHub Demo",
+      "descriptor": {
+        "id": "logichub.google_sheets",
+        "name": "Google Sheets",
+        "description": "Google Sheets is a spreadsheet program included as part of the free, web-based Google Docs Editors suite offered by Google.",
+        "logoUrl": "https://lhub-public.s3.amazonaws.com/integrations/google-sheets.png",
+        "documentationSlug": "google-sheets",
+        "categories": [
+          "cloud"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m91.8"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "Google Sheets Authentication Information",
+              "description": "Enter authentication information for the Google Sheets integration.",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "google_file",
+                  "description": "JSON File containing service account keys and other details",
+                  "label": "Keys File",
+                  "dataType": "string",
+                  "inputType": "encryptedFile",
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python3 -m src.google_sheets.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "read_sheet",
+            "name": "Read Sheet",
+            "description": "Reads data from Google Sheet.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "google_sheets_url",
+                      "description": "Enter the value for sheet url. Example: https://docs.google.com/spreadsheets/d/1nrsLE/edit#gid=0",
+                      "label": "Google Sheets URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.sheets_id_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_read_sheet_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "write_sheet",
+            "name": "Write Sheet",
+            "description": "Writes table data into Google Sheet",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "google_sheets_url",
+                      "description": "Enter the value for sheet url. Example: https://docs.google.com/spreadsheets/d/1nrsLE/edit#gid=0",
+                      "label": "Google Sheets URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.sheets_id_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_write_sheet_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "read_dynamic_sheet",
+            "name": "Read Sheet (Dynamic URL)",
+            "description": "Reads data from Google Sheet.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "google_sheets_url",
+                      "description": "Jinja-Templated text containing the value of sheet url. Example: {{sheet_url}}",
+                      "label": "Google Sheets URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.sheets_dynamic_id_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_read_dynamic_sheet_exec"
+            },
+            "isDataSource": "Optional",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "write_dynamic_sheet",
+            "name": "Write Sheet (Dynamic URL)",
+            "description": "Writes table data into Google Sheet",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "google_sheets_url",
+                      "description": "Jinja-Templated text containing the value of sheet url. Example: https://docs.google.com/spreadsheets/d/{{spreadsheetId}}/edit#gid={{gid}}",
+                      "label": "Google Sheets URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "google_sheets_omit_columns",
+                      "description": "Jinja-Templated text containing the CSVs of the columns to omit to write in the Sheet. Example: https://docs.google.com/spreadsheets/d/{{spreadsheetId}}/edit#gid={{gid}}",
+                      "label": "Google Sheets Omit Columns",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.sheets_dynamic_id_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_write_dynamic_sheet_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "copy_sheet",
+            "name": "Copy Sheet",
+            "description": "Copy sheet from one Spreadsheet to another",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Copy Sheet inputs",
+                  "description": "Please provide inputs for: Copy Sheet",
+                  "inputs": [
+                    {
+                      "id": "sheets_source_url",
+                      "description": "Jinja-templated text containing the value of source sheet url. Example: https://docs.google.com/spreadsheets/d/{{spreadsheetId}}/edit#gid={{gid}}",
+                      "label": "Google Sheets Source URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "sheets_destination_url",
+                      "description": "Jinja-templated text containing the value of destination sheet url. Example: https://docs.google.com/spreadsheets/d/{{spreadsheetId}}/edit#gid={{gid}}",
+                      "label": "Google Sheets Destination URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.action_copy_sheet_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_copy_sheet_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "create_sheet",
+            "name": "Create Sheet",
+            "description": "Create Blank Spreadsheet",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create Sheet inputs",
+                  "description": "Please provide inputs for: Create Sheet",
+                  "inputs": [
+                    {
+                      "id": "sheets_title",
+                      "description": "Jinja-templated text containing the value of sheet title. Example: Invoice",
+                      "label": "Google Sheets Title",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.action_create_sheet_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_create_sheet_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "1.2.2",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2022-02-02T11:31:03Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:08:19.421Z",
+          "errorMessage": "This imported connection is using a different version of the Google Sheets (logichub.google_sheets) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "google_file": "****restricted****",
+        "__lh_is_default_connection": "false",
+        "__lh_table_key_value": "",
+        "__lh_ssl_verify": "",
+        "__lh_label": "LogicHub Demo"
+      },
+      "id": 37,
+      "isDefault": false
+    }
+  ],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

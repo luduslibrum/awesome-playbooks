@@ -1,0 +1,429 @@
+{
+  "schema_version": 4,
+  "name": "Add a new user in Microsoft Office 365",
+  "description": "This Story receives a form with information about a new user and adds them to Microsoft Office 365 before notifying their manager of the update via Microsoft Teams. \n\ntags: Microsoft, Notify, Onboarding, Beginner\nicons: 🙋, microsoft, 💬\nvisibility: public",
+  "guid": "a812513b933c8b13dcf640f1695dc0a3",
+  "slug": "add_a_new_user_in_microsoft_office_365",
+  "exported_at": "2022-07-11T17:46:50Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create a New User using MSGraph for Office365",
+      "disabled": false,
+      "guid": "6ce77e939d7e9935c2840bcd057702fd",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/users",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "accountEnabled": true,
+          "department": "<<webhook_action.body.department>>",
+          "displayName": "<<webhook_action.body.first_name>> <<webhook_action.body.last_name>>",
+          "givenName": "<<webhook_action.body.first_name>>",
+          "jobTitle": "<<webhook_action.body.title>>",
+          "mailNickname": "<<webhook_action.body.first_name>><<webhook_action.body.last_name>>",
+          "passwordPolicies": "DisablePasswordExpiration",
+          "passwordProfile": {
+            "password": "EnterPassword",
+            "forceChangePasswordNextSignIn": true
+          },
+          "surname": "<<webhook_action.body.last_name>>",
+          "userPrincipalName": "\"<<webhook_action.body.first_name>><<webhook_action.body.last_name>>@tines.dev\"\n",
+          "usageLocation": "US"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.o365>>"
+        },
+        "log_error_on_status": [
+          "500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Action",
+      "disabled": false,
+      "guid": "22b31af0f8c51ad0f8d8d86656f02514",
+      "options": {
+        "path": "02db6ea409a6ea45220e9e30251e00d2",
+        "secret": "7c13c9133cbc3809f32b4536a55756ab",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Assign a New User a license for Office365",
+      "disabled": false,
+      "guid": "7486c03d455d9b00b54ba08b82f6fbcd",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/users/<<create_a_new_user_using_msgraph_for_office365.body.id>>/assignLicense",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "addLicenses": [
+            {
+              "disabledPlans": [],
+              "skuId": "\"710779e8-3d4a-4c88-adb9-386c958d1fdf\""
+            }
+          ],
+          "removeLicenses": []
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.o365>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira with Tables",
+      "disabled": false,
+      "guid": "01b6536f4c9c4f912214502f49d1f773",
+      "options": {
+        "url": "https://<<RESOURCE.jiradomain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Unassigned"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "h2. Office 365 User Creation\n|*Employee Name*| <<webhook_action.body.first_name>> <<webhook_action.body.last_name>> |\n|*Department*| <<webhook_action.body.department>> |\n|*Start Date*| 4/25/22 |\n|*Title*| <<webhook_action.body.title>> |\n|*Manager*| John Smith |\n|*Team*| Quality Assurance\n|*Address*| 1 Test St, Testingville, MA 12345 |\n|*Location*| Boston |\n\n",
+            "summary": "Office 365 New User Confirmation"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send card to user",
+      "disabled": false,
+      "guid": "af5382977d9f8f9aba09ebd4c630fab1",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/<<start_conversation_with_user.body.id>>/activities",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "type": "message",
+          "from": {
+            "id": "<<RESOURCE.microsoft_teams_bot_id>>",
+            "name": "Tines Bot"
+          },
+          "recipient": {
+            "id": "<<get_member_information.id>>"
+          },
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.thumbnail",
+              "content": {
+                "title": "New Office 365 User Creation",
+                "subtitle": "A new user task has just been created in Jira",
+                "text": "A new user has been created for your team in office 365. To view the new user information please click the button below",
+                "images": [
+                  {
+                    "url": "https://logo.clearbit.com/tines.com",
+                    "alt": "Tines"
+                  }
+                ],
+                "buttons": [
+                  {
+                    "type": "openUrl",
+                    "title": "View Jira Task",
+                    "value": "https://tinesio.atlassian.net/browse/<<create_issue_in_jira_with_tables.body.key>>"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.msteams>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start Conversation with User",
+      "disabled": false,
+      "guid": "afcfe4e51705d79ac2cfef6f6b03944e",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "bot": {
+            "id": "<<RESOURCE.teams_bot_id>>",
+            "name": "Tines Bot"
+          },
+          "members": [
+            {
+              "id": "<<get_member_information.id>>"
+            }
+          ],
+          "channelData": {
+            "tenant": {
+              "id": "<<get_member_information.tenantID>>"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.msteams>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch Team Roster",
+      "disabled": false,
+      "guid": "6bef459c36fcb68e18653352b294ceda",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/<<RESOURCE.teams_tines_team_id>>/members",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.msteams>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "get member information",
+      "disabled": false,
+      "guid": "a9dce522e8625d5146dabd47bd37acf0",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "id": "<<GET(WHERE(fetch_team_roster.body, \"name\", \"Shaun Finn\"),\"id\")>>",
+          "tenantID": "<<GET(WHERE(fetch_team_roster.body, \"name\", \"Shaun Finn\"), \"tenantId\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/Microsoft.png\n\n\nThis automation Story receives a form with information about a new user to create in Office 365. \n\nThe Story will then create the new user, and attach the users specified license ID to the user in Office 365. Once completed the users manager can be notified via MS Teams of the user creation \n\n**Resources**\n`jira_domain` - FQDN for Jira instance\n`jira_user` - Username with rights to create/update issues\n`microsoft_service_url` - Microsoft Tenant URL\n`teams_tines_team_id`- MS teams Group ID\n`teams_bot_id` - MS Teams Chatbot ID\n\n\n**Credentials & Resources**\n`jira_credentials` - Password for `jira_user`\n`o365` - Office 365 Credential\n`msteams` - MS Teams Credential",
+      "position": [
+        90.0,
+        15.0
+      ],
+      "guid": "00fa8f7ea7099a4cef107f626a4d48ea",
+      "width": null
+    },
+    {
+      "content": "# ⬅️ ⬅️. Receive the Event\n\nThe webhook action will receive the event from the form",
+      "position": [
+        720.0,
+        30.0
+      ],
+      "guid": "e13bfd976fda21a4e72b40346f5182cc",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 0
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 4
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 5
+    }
+  ],
+  "diagram_layout": "{\"6ce77e939d7e9935c2840bcd057702fd\":[450,135],\"22b31af0f8c51ad0f8d8d86656f02514\":[450,30],\"7486c03d455d9b00b54ba08b82f6fbcd\":[450,240],\"01b6536f4c9c4f912214502f49d1f773\":[450,360],\"af5382977d9f8f9aba09ebd4c630fab1\":[450,720],\"afcfe4e51705d79ac2cfef6f6b03944e\":[450,615],\"6bef459c36fcb68e18653352b294ceda\":[450,465],\"a9dce522e8625d5146dabd47bd37acf0\":[450,540]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "New User Form ",
+    "description": "This form is used to create a new user in O365 ",
+    "fields": [
+      {
+        "name": "License Type ",
+        "description": "",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "MS Business Basic",
+          "MS Standard"
+        ],
+        "ranking": 2013265920,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Title",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1879048192,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Department",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Last Name",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "First Name",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "22b31af0f8c51ad0f8d8d86656f02514",
+    "success_message": "Thank you for your submission"
+  }
+}

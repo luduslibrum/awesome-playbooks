@@ -1,0 +1,246 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Set War Room Live and Notify Responders",
+    "aliasName": null,
+    "tag": null,
+    "description": null,
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/c9282ce9-1cef-4e0b-94da-3b84c32381ff",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/aa9da2a2-0d19-49bd-b6c6-896d5a0f3e92",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "989db74a-1547-486f-8b77-59c3feda97d3",
+                "title": "Go Live",
+                "resources": [
+                    "warrooms"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "notifyAllResponders",
+                        "type": "boolean",
+                        "label": "Notify All Responders",
+                        "title": "Checkbox",
+                        "usable": true,
+                        "tooltip": "",
+                        "dataType": "checkbox",
+                        "formType": "checkbox",
+                        "required": false,
+                        "_expanded": true,
+                        "mmdUpdate": true,
+                        "collection": false,
+                        "searchable": true,
+                        "templateUrl": "app\/components\/form\/fields\/checkbox.html",
+                        "defaultValue": true,
+                        "lengthConstraint": false,
+                        "allowedEncryption": false,
+                        "allowedGridColumn": true,
+                        "useRecordFieldDefault": false
+                    },
+                    {
+                        "name": "externalCollaborationLink",
+                        "type": "string",
+                        "label": "External Collaboration Link",
+                        "tooltip": "",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "moduleField": "collaboration",
+                        "_previousName": "externalOllaborationLink",
+                        "useRecordFieldDefault": true
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "notifyAllResponders": "{{vars.request.data[\"notifyAllResponders\"]}}",
+                            "externalCollaborationLink": "{{vars.request.data[\"externalCollaborationLink\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "warrooms": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": [
+                            {
+                                "type": "object",
+                                "field": "status",
+                                "value": "\/api\/3\/picklists\/55a2f3e7-8354-4c41-9120-f6c3559903f8",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/55a2f3e7-8354-4c41-9120-f6c3559903f8",
+                                    "itemValue": "Draft"
+                                },
+                                "operator": "eq"
+                            }
+                        ]
+                    }
+                },
+                "executeButtonText": "Go Live",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "aa9da2a2-0d19-49bd-b6c6-896d5a0f3e92"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set email body",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "value": "<p>You were added to War Room #{{ vars.warRoom.id }}:<\/p>\n<table style=\"min-width: 300px; max-width: 800px; border: 1px solid #dddddd;\">\n<tbody>\n<tr style=\"border-bottom: 1px solid #ddd;\">\n<td style=\"text-align: right; padding: 5px; border-right: 1px solid #ddd;\"><strong>Title<\/strong><\/td>\n<td>{{ vars.warRoom.title }}<\/td>\n<\/tr>\n<tr style=\"border-bottom: 1px solid #ddd;\">\n<td style=\"text-align: right; padding: 5px; border-right: 1px solid #ddd;\"><strong>Summary<\/strong><\/td>\n<td>{{ vars.warRoom.summary }}<\/td>\n<\/tr>\n<tr style=\"border-bottom: 1px solid #ddd;\">\n<td style=\"text-align: right; padding: 5px; border-right: 1px solid #ddd;\"><strong>Status<\/strong><\/td>\n<td>{{ vars.warRoom.status.itemValue }}<\/td>\n<\/tr>\n<tr style=\"border-bottom: 1px solid #ddd;\">\n<td style=\"text-align: right; padding: 5px; border-right: 1px solid #ddd;\"><strong>Launched By<\/strong><\/td>\n<td>{{ vars.warRoom.launchedBy.firstname}} {{ vars.warRoom.launchedBy.lastname}}<\/td>\n<\/tr>\n<\/tbody>\n<\/table>\n<br \/>\n<p><a href=\"{{ vars.warRoomLink }}\">Join War Room<\/a><\/p>\n<p>Thanks,<br \/>FortiSOAR&trade;<\/p>"
+                },
+                "version": "3.1.0",
+                "connector": "cyops_utilities",
+                "operation": "format_richtext",
+                "operationTitle": "Utils: Format as RichText",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "3c061f63-9f05-433e-9589-63b67fb26336"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "warRoom": "{{ vars.input.records[0] }}",
+                "warRoomLink": "https:\/\/{{globalVars.Server_fqhn}}{{vars.input.records[0]['@id'] | iriToLink}}",
+                "externalCollaborationLink": "{{vars.input.params.externalCollaborationLink}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "dfb06f8e-9c87-4e41-b03b-b2960829ffcf"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set status to Live",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "status": {
+                        "id": 5513,
+                        "@id": "\/api\/3\/picklists\/1c4fe134-de72-40d9-b35f-deb8dadc6800",
+                        "icon": null,
+                        "uuid": "1c4fe134-de72-40d9-b35f-deb8dadc6800",
+                        "@type": "Picklist",
+                        "color": "#28B35C",
+                        "display": "Live",
+                        "listName": "\/api\/3\/picklist_names\/ab8bbdb4-2cf9-4695-90ef-9f1f825d2b1f",
+                        "itemValue": "Live",
+                        "orderIndex": 1
+                    },
+                    "launchedBy": "{{vars.currentUser}}",
+                    "activeSince": "{{arrow.utcnow().int_timestamp}}",
+                    "collaboration": "{{vars.externalCollaborationLink}}"
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.warRoom['@id']}}",
+                "__recommend": [],
+                "collectionType": "\/api\/3\/warrooms",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": {
+                    "warRoom": "{{vars.result}}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "5744152a-ff6e-4659-ac20-f938461b937f"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "War room send notifications",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.input.params.notifyAllResponders}}",
+                "arguments": {
+                    "warRoom": "{{vars.input.records[0]}}",
+                    "emailBody": "{{vars.steps.Set_email_body.data['formatted_string']}}",
+                    "emailSubject": "You were added to War Room #{{ vars.warRoom.id }}: {{ vars.warRoom.title }}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/944c4716-d44a-4ab4-b9eb-b05f9509a721"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "bff44d05-1a23-4ef6-a697-abf1aba22ce4"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set status to Active -> Set email body",
+            "targetStep": "\/api\/3\/workflow_steps\/3c061f63-9f05-433e-9589-63b67fb26336",
+            "sourceStep": "\/api\/3\/workflow_steps\/5744152a-ff6e-4659-ac20-f938461b937f",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "5fa8253f-c124-4206-86ee-4c43d21234cd"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set email body -> War room send notifications",
+            "targetStep": "\/api\/3\/workflow_steps\/bff44d05-1a23-4ef6-a697-abf1aba22ce4",
+            "sourceStep": "\/api\/3\/workflow_steps\/3c061f63-9f05-433e-9589-63b67fb26336",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c623e3b9-97d2-4d1f-afe4-4ca4a58293fb"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/dfb06f8e-9c87-4e41-b03b-b2960829ffcf",
+            "sourceStep": "\/api\/3\/workflow_steps\/aa9da2a2-0d19-49bd-b6c6-896d5a0f3e92",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ef6db28a-9ff5-4df7-a438-6ed6cf328443"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Set status to Active",
+            "targetStep": "\/api\/3\/workflow_steps\/5744152a-ff6e-4659-ac20-f938461b937f",
+            "sourceStep": "\/api\/3\/workflow_steps\/dfb06f8e-9c87-4e41-b03b-b2960829ffcf",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f3682c4f-cf6f-48b2-afe3-f10ee991820f"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "a182bc07-a581-48f2-a821-1b616c550a25",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction"
+    ]
+}

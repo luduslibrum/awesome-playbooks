@@ -1,0 +1,226 @@
+{
+  "schema_version": 4,
+  "name": "Import Tines Story from AWS S3",
+  "description": "This Story retrives an exported Story from an AWS S3 bucket and places it into the drafts folder on your Tines dashboard.\n\ntags: AWS, S3, Import, Intermediate, \nicons: aws, 🛂, tines\nvisibility: public",
+  "guid": "48020542201914c58b34bd39e14c02c6",
+  "slug": "import_tines_story_from_aws_s3",
+  "exported_at": "2022-07-11T17:45:08Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Exported Story from S3",
+      "disabled": false,
+      "guid": "f707d635271384d7d0fcb6c9a004a88c",
+      "options": {
+        "url": "https://<<RESOURCE.s3_bucket>>.s3.<<RESOURCE.s3_region>>.amazonaws.com/<<form_input.body.file_to_import>>",
+        "content_type": "text",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_s3>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Form Input",
+      "disabled": false,
+      "guid": "9c1cf35c16924c51d1dcea3a9042dbee",
+      "options": {
+        "path": "7e13cebef2ef1f340c2b8eb87ec3f9a3",
+        "secret": "6f4c42ef198007b8a98e041a852460e0",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get a List of Objects in an S3 Bucket",
+      "disabled": false,
+      "guid": "af1b2d003b173cce0f87e2e245baf027",
+      "options": {
+        "url": "https://<<RESOURCE.s3_bucket>>.s3.<<RESOURCE.s3_region>>.amazonaws.com?list-type=2&encoding-type=url",
+        "content_type": "text",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_s3>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update the annotation with object list",
+      "disabled": false,
+      "guid": "4218ec5a2dc6eb9fcfb2080fdf0fc813",
+      "options": {
+        "url": "https://{{META.tenant.domain}}/api/v1/annotations/<<ID_of_the_annotation_below>>",
+        "method": "put",
+        "content_type": "json",
+        "payload": {
+          "story_id": "{{META.story.id}}",
+          "content": "# List of objects in the bucket\n\n\n{%for item in get_a_list_of_objects_in_an_s3_bucket.body.ListBucketResult.Contents%}\n{{item.Key}}{%endfor%}\n"
+        },
+        "headers": {
+          "x-user-email": "{{RESOURCE.tines_api_email}}",
+          "x-user-token": "{{CREDENTIAL.tines_user_token}}"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Import Story",
+      "disabled": false,
+      "guid": "90c03a430e6c4aa3f058307c01dbd1f4",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/stories/import",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "new_name": "<<form_input.body.file_to_import>>",
+          "data": "<<TO_JSON(get_exported_story_from_s3.body)>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# List of objects in the bucket\n\n\n\n\n",
+      "position": [
+        510.0,
+        1125.0
+      ],
+      "guid": "0b3bbecee46f3c62284bcebbad0d8a3d",
+      "width": null
+    },
+    {
+      "content": "---\n# Make a list of objects in the S3 bucket\nFor demo purposes, run the below action to get a list of objects in the S3 bucket saved in `RESOURCE.s3_bucket`\n\nYou'll have to update the ID of the annotation - this is visible in the URL bar when you select the annotation\n\n⬇️⬇️⬇️    ⬇️⬇️⬇️    ⬇️⬇️⬇️    \n",
+      "position": [
+        510.0,
+        720.0
+      ],
+      "guid": "15a7d4028d2f979f32cf782e3f8a1a13",
+      "width": null
+    },
+    {
+      "content": "# **Import Story in an S3 Bucket**\n\nhttps://image-uploads.tines.com/aws.png\n\n# What does this story do?\nThe form will ask for the name of an object in the S3 bucket specified in `RESOURCE/s3_bucket`.  This object will be imported as a story in the drafts folder.",
+      "position": [
+        -120.0,
+        300.0
+      ],
+      "guid": "a860f029a3f03d2a1052d1986f9b4b6c",
+      "width": null
+    },
+    {
+      "content": "# Resources:\n- `RESOURCE.tines_api_email` Email address for authentication.  See also: https://hub.tines.com/api/stories/export\n- `RESOURCE.s3_bucket` Target bucket to export the story to.\n- `RESOURCE.s3_region` AWS Region the bucket is located (e.g. us-east-2)\n\n# Credentials:\n- `CREDENTIAL.tines_user_token` Tines API credential generated by user in `RESOURCE.tines_api_email`.  To generate a Tines API token, see: https://hub.tines.com/api/authentication\n- `CREDENTIAL.aws_s3` AWS Credentials with role-based permissions for S3. See: https://hub.tines.com/docs/credentials/aws",
+      "position": [
+        -120.0,
+        645.0
+      ],
+      "guid": "ee853a7825e260f68d36ac44c75e1c82",
+      "width": null
+    },
+    {
+      "content": "# Enter the name of the object in the S3 bucket to import it into the drafts folder.",
+      "position": [
+        210.0,
+        300.0
+      ],
+      "guid": "15ec59b8e6e89e2548b5387455b2d678",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 4
+    },
+    {
+      "source": 1,
+      "receiver": 0
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    }
+  ],
+  "diagram_layout": "{\"f707d635271384d7d0fcb6c9a004a88c\":[210,495],\"9c1cf35c16924c51d1dcea3a9042dbee\":[210,405],\"af1b2d003b173cce0f87e2e245baf027\":[510,960],\"4218ec5a2dc6eb9fcfb2080fdf0fc813\":[510,1050],\"90c03a430e6c4aa3f058307c01dbd1f4\":[210,585]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Import Tines Story from AWS S3 Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "File to import",
+        "description": "Select the file in your S3 bucket to import into Tines.",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "9c1cf35c16924c51d1dcea3a9042dbee",
+    "success_message": "Thank you for your submission"
+  }
+}

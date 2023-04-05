@@ -1,0 +1,384 @@
+{
+  "definitionVersion" : "1.0.0",
+  "name" : "Robtex ASN Query",
+  "panX" : 1450.0,
+  "panY" : 28.0,
+  "logLevel" : "WARN",
+  "description" : "Playbook which queries Robtex for an ASN.",
+  "jobList" : [ {
+    "id" : 10682,
+    "appCatalogItem" : {
+      "programName" : "TCPB - RegexExtract v1.0",
+      "displayName" : "Regex Extract",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Regex Extract 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#Trigger:1026:trg.action.item!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_groups"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_nulls"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern_mapping"
+      },
+      "value" : "[{\"key\":\"asns\",\"value\":\"ASN(.*)\"}]"
+    } ],
+    "locationLeft" : -1110.0,
+    "locationTop" : 70.0,
+    "outputVariables" : "[{\"name\":\"asns\",\"type\":\"StringArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10683,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Join Array 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"asn\",\"value\":\"#App:10682:asns!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    } ],
+    "locationLeft" : -890.0,
+    "locationTop" : 70.0,
+    "outputVariables" : "[{\"name\":\"asn\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10684,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Set Variable 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"robtexAPI\",\"value\":\"https://freeapi.robtex.com/asquery/#App:10683:asn!String\"},{\"key\":\"errorPrefix\",\"value\":\"[Robtex ASN Query]: \"},{\"key\":\"slackChannel\",\"value\":\"#slack-channel\"}]"
+    } ],
+    "locationLeft" : -670.0,
+    "locationTop" : 70.0,
+    "outputVariables" : "[{\"name\":\"robtexAPI\",\"type\":\"String\"},{\"name\":\"errorPrefix\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10685,
+    "appCatalogItem" : {
+      "programName" : "Http Client",
+      "displayName" : "HTTP Client",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "HTTP Client 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "#App:10684:robtexAPI!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "action"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ignore_ssl_trust"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "parameters"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "httpclient_proxy"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : -670.0,
+    "locationTop" : 210.0,
+    "outputVariables" : "[{\"name\":\"http_client.response.output_content\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10686,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.1"
+    },
+    "name" : "Json Path 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"cidrRanges\",\"value\":\"nets[*].n\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:10685:http_client.response.output_content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : -400.0,
+    "locationTop" : 160.0,
+    "outputVariables" : "[{\"name\":\"cidrRanges\",\"type\":\"StringArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10687,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Slack Messaging v1.0",
+      "displayName" : "Send Slack Message",
+      "programVersion" : "1.0.1"
+    },
+    "name" : "Send Slack Message 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "message"
+      },
+      "value" : "#App:10684:errorPrefix!String Unable to retrieve search for #Trigger:1026:trg.action.item!String in Robtex using #App:10684:robtexAPI!String: #App:10685:http_client.response.output_content!String ."
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_recipient"
+      },
+      "value" : "#App:10684:slackChannel!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_api_token"
+      },
+      "value" : ""
+    } ],
+    "locationLeft" : -400.0,
+    "locationTop" : 270.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10688,
+    "appCatalogItem" : {
+      "programName" : "TCPB - CidrCreate v1.1",
+      "displayName" : "Create ThreatConnect CIDR",
+      "programVersion" : "1.1.11"
+    },
+    "name" : "Create ThreatConnect CIDR 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "CIDR"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rating"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:10686:cidrRanges!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Source\",\"value\":\"#App:10684:robtexAPI!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "confidence"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : -180.0,
+    "locationTop" : 160.0,
+    "outputVariables" : "[{\"name\":\"tc.cidr\",\"type\":\"TCEntityArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10689,
+    "appCatalogItem" : {
+      "programName" : "TCPB - CustomAssociationCreate v1.1",
+      "displayName" : "Create Custom Indicator Association",
+      "programVersion" : "1.1.11"
+    },
+    "name" : "Create Custom Indicator Association 2",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "source_entities"
+      },
+      "value" : "#Trigger:1026:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "one_to_one"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "association_entities"
+      },
+      "value" : "#App:10688:tc.cidr!TCEntityArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "association_name"
+      },
+      "value" : "ASN to CIDR"
+    } ],
+    "locationLeft" : 40.0,
+    "locationTop" : 160.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 10690,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Slack Messaging v1.0",
+      "displayName" : "Send Slack Message",
+      "programVersion" : "1.0.1"
+    },
+    "name" : "Send Slack Message 2",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_recipient"
+      },
+      "value" : "#App:10684:slackChannel!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "message"
+      },
+      "value" : "#App:10684:errorPrefix!String Error creating #App:10686:cidrRanges!StringArray ."
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_api_token"
+      },
+      "value" : ""
+    } ],
+    "locationLeft" : 40.0,
+    "locationTop" : 270.0,
+    "playbookRetryEnabled" : false
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10685,
+    "targetJobId" : 10686
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10685,
+    "targetJobId" : 10687
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10684,
+    "targetJobId" : 10685
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 10682,
+    "sourceTriggerId" : 1026
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10682,
+    "targetJobId" : 10683
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10683,
+    "targetJobId" : 10684
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10686,
+    "targetJobId" : 10688
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10688,
+    "targetJobId" : 10689
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10688,
+    "targetJobId" : 10690
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 1026,
+    "name" : "Query Robtex API",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : -1330.0,
+    "locationTop" : 70.0,
+    "httpBasicAuthEnable" : false,
+    "httpBasicAuthUsername" : "RL26AWS4OQPT6EEHPX9A",
+    "httpBasicAuthPassword" : "XL20VFLJTEA2CWZHN8TU",
+    "httpResponseHeader" : "[]",
+    "anyOrg" : true,
+    "orFilters" : false,
+    "fireOnDuplicate" : false,
+    "userActionTypes" : "ASN",
+    "renderBodyAsTip" : false,
+    "outputVariables" : "[{\"name\":\"trg.action.item\",\"type\":\"String\"},{\"name\":\"trg.action.entity\",\"type\":\"TCEntity\"}]"
+  } ],
+  "dateExported" : "1/17/18 6:29 PM"
+}

@@ -1,0 +1,211 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Notify Blocked Indicator Status to Linked Alerts",
+    "aliasName": null,
+    "tag": null,
+    "description": "Adds a note about an indicator being blocked.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/0d619d52-caf1-4237-a377-01d8257bcbf5",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "indicators",
+                "resources": [
+                    "indicators"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "indicatorStatus",
+                            "value": null,
+                            "_value": {
+                                "@id": null,
+                                "display": "",
+                                "itemValue": ""
+                            },
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "object",
+                            "field": "indicatorStatus",
+                            "value": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                                "itemValue": "Blocked"
+                            },
+                            "operator": "eq"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "0d619d52-caf1-4237-a377-01d8257bcbf5"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Related Records",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{vars.input.records[0]['@id'] + '?$relationships=true&$export=true'}}",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "2.7.0",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "24c41845-cb91-4745-8484-16d6b4bd7665"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Prepare Dict Of Related Records",
+            "description": null,
+            "arguments": {
+                "comment_payload": "{'content': \"{{vars.block_note}}\"}",
+                "__update_related_record_dict": "{% for module in  vars.related_modules %}\n  {{vars.related_records_dict.update({ module: vars.steps.Find_Related_Records.data[module]}) }}\n{%endfor%}"
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "5cdd5c5c-5272-44fc-927b-20ba2fef7c1a"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "block_note": "Linked indicator {{vars.input.records[0].typeofindicator.itemValue}} {{vars.input.records[0].value}} has been blocked",
+                "related_modules": "['alerts', 'incidents']",
+                "related_records_dict": "{}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "8e8b5361-7866-4e9a-995c-580e0a7ef63e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add Comment To The Related Records",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/3\/comments",
+                    "body": "{{vars.comment_payload}}"
+                },
+                "version": "2.7.0",
+                "connector": "cyops_utilities",
+                "operation": "insert_cyops_resource",
+                "operationTitle": "CyOPs: Create Record",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "705",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "01da5bd6-8b5a-4264-a356-af64587fd37e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Prepare Comment Record Payload",
+            "description": null,
+            "arguments": {
+                "__comment_payload": "{{vars.comment_payload.update(vars.related_records_dict) }}"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "e9858ecd-64bf-42a9-bf80-36a3ebfc1aac"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Find Related Records",
+            "targetStep": "\/api\/3\/workflow_steps\/24c41845-cb91-4745-8484-16d6b4bd7665",
+            "sourceStep": "\/api\/3\/workflow_steps\/8e8b5361-7866-4e9a-995c-580e0a7ef63e",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "93550a49-1e44-444a-8518-61a452c1c8b0"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Related Records -> Prepare Dict Of Related Records",
+            "targetStep": "\/api\/3\/workflow_steps\/5cdd5c5c-5272-44fc-927b-20ba2fef7c1a",
+            "sourceStep": "\/api\/3\/workflow_steps\/24c41845-cb91-4745-8484-16d6b4bd7665",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "80c4fc0e-fb66-473f-9f21-65294b8caafc"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Prepare Dict Of Related Records -> Prepare Comment Record Payload",
+            "targetStep": "\/api\/3\/workflow_steps\/e9858ecd-64bf-42a9-bf80-36a3ebfc1aac",
+            "sourceStep": "\/api\/3\/workflow_steps\/5cdd5c5c-5272-44fc-927b-20ba2fef7c1a",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "55318f9d-4a74-484f-90cd-8bda9a784afd"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Prepare Comment Record Payload -> Add Comment To The Related Records",
+            "targetStep": "\/api\/3\/workflow_steps\/01da5bd6-8b5a-4264-a356-af64587fd37e",
+            "sourceStep": "\/api\/3\/workflow_steps\/e9858ecd-64bf-42a9-bf80-36a3ebfc1aac",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "bb2903e0-98a2-42b6-9497-7008b132a044"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "On Blocked State -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/8e8b5361-7866-4e9a-995c-580e0a7ef63e",
+            "sourceStep": "\/api\/3\/workflow_steps\/0d619d52-caf1-4237-a377-01d8257bcbf5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "bc39a306-6f24-486c-8307-53eda7da5318"
+        }
+    ],
+    "priority": null,
+    "uuid": "58527167-8f8e-4034-97b2-a59503c1a706",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "PostUpdate",
+        "Indicators"
+    ]
+}

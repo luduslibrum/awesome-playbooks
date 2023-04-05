@@ -1,0 +1,1134 @@
+{
+  "schema_version": 4,
+  "name": "Send KnowBe4 training reminders via Slack copy 2",
+  "description": "This Story checks KnowBe4 enrollments for users that should be notified about different stages in their training.\n\ntags: KnowBe4, Training, Slack, Notify, Intermediate\nicons: 🎓, knowbe4, ⏰\nvisibility: public",
+  "guid": "36faeff5fdeb3aa8c89913c2094ba3f7",
+  "slug": "send_knowbe4_training_reminders_via_slack_copy_2",
+  "exported_at": "2022-07-11T17:26:27Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get all Training Enrollments in KnowBe4",
+      "disabled": false,
+      "guid": "e0424d5dbdc5c375571c48a922ddf769",
+      "options": {
+        "url": "https://<<RESOURCE.knowbe4_domain>>/v1/training/enrollments",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "per_page": "500",
+          "page": "<<DEFAULT(set_page_number.count, 1)>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.knowbe4>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for Results",
+      "disabled": false,
+      "guid": "6549ba33b0a5ec0b730fb28b4130acfa",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(get_all_training_enrollments_in_knowbe4.body)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay",
+      "disabled": false,
+      "guid": "06d0c29fec20b0578bcb962ed69a3082",
+      "options": {
+        "mode": "delay",
+        "seconds": "10"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set page number",
+      "disabled": false,
+      "guid": "593fd74aef3b880437c724977388a025",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "count": "<<DEFAULT(set_page_number.count, 1) |> PLUS(%, 1)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Filter for Trainings Not Started",
+      "disabled": false,
+      "guid": "bac99684e22fba898fae77ff40470254",
+      "options": {
+        "mode": "message_only",
+        "loop": "=WHERE(get_all_training_enrollments_in_knowbe4.body, \"status\", \"Not Started\")",
+        "payload": {
+          "user_email": "<<LOOP.value.user.email>>",
+          "user_id": "<<LOOP.value.user.id>>",
+          "campaign_name": "<<LOOP.value.campaign_name>>",
+          "enrollment_date": "<<DATE(LOOP.value.enrollment_date, \"%Y-%m-%d\")>>",
+          "module_name": "<<LOOP.value.module_name>>",
+          "status": "<<LOOP.value.status>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Filter for Enrollments Starting Today",
+      "disabled": false,
+      "guid": "c9c57f4429bbac6bdc3afccadf6ab47c",
+      "options": {
+        "mode": "message_only",
+        "loop": "=WHERE(filter_for_trainings_not_started, \"enrollment_date\", set_filter_date.date)",
+        "payload": {
+          "user_email": "<<LOOP.value.user_email>>",
+          "user_id": "<<LOOP.value.user_id>>",
+          "campaign_name": "<<LOOP.value.campaign_name>>",
+          "enrollment_date": "<<LOOP.value.enrollment_date>>",
+          "module_name": "<<LOOP.value.module_name>>",
+          "training_status": "new"
+        },
+        "custom_fields": {
+          "today": "<<DATE(\"now\", \"%Y-%m-%d\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode to individual Enrollments",
+      "disabled": false,
+      "guid": "63058f91765f6255df78588d7178e35a",
+      "options": {
+        "mode": "explode",
+        "path": "=filter_for_enrollments_starting_today",
+        "to": "individual_enrollment"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedupe",
+      "disabled": false,
+      "guid": "45c27714fb57f0e0c794a9c03d3ce2d3",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<explode_to_individual_enrollments.individual_enrollment.user_email>>",
+        "period": "86400"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Filter for Trainings In Progress",
+      "disabled": false,
+      "guid": "3861c1bb71b788a643c059dfc41cbaa6",
+      "options": {
+        "mode": "message_only",
+        "loop": "=WHERE(get_all_training_enrollments_in_knowbe4.body, \"status\", \"In Progress\")",
+        "payload": {
+          "user_email": "<<LOOP.value.user.email>>",
+          "user_id": "<<LOOP.value.user.id>>",
+          "campaign_name": "<<LOOP.value.campaign_name>>",
+          "enrollment_date": "<<DATE(LOOP.value.enrollment_date, \"%Y-%m-%d\")>>",
+          "module_name": "<<LOOP.value.module_name>>",
+          "status": "<<LOOP.value.status>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Filter for Training not completed on Time",
+      "disabled": false,
+      "guid": "2a86109740c5fc2b0e40767c5383306b",
+      "options": {
+        "mode": "message_only",
+        "loop": "=WHERE(filter_for_trainings_in_progress, \"enrollment_date\", set_filter_date.date)",
+        "payload": {
+          "user_email": "<<LOOP.value.user_email>>",
+          "user_id": "<<LOOP.value.user_id>>",
+          "campaign_name": "<<LOOP.value.campaign_name>>",
+          "enrollment_date": "<<LOOP.value.enrollment_date>>",
+          "module_name": "<<LOOP.value.module_name>>",
+          "training_status": "not complete"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Filter for Trainings Past Due",
+      "disabled": false,
+      "guid": "a4a8dc6ed5c2c94919d0277496953c54",
+      "options": {
+        "mode": "message_only",
+        "loop": "=WHERE(get_all_training_enrollments_in_knowbe4.body, \"status\", \"Past Due\")",
+        "payload": {
+          "user_email": "<<LOOP.value.user.email>>",
+          "user_id": "<<LOOP.value.user.id>>",
+          "campaign_name": "<<LOOP.value.campaign_name>>",
+          "enrollment_date": "<<DATE(LOOP.value.enrollment_date, \"%Y-%m-%d\")>>",
+          "module_name": "<<LOOP.value.module_name>>",
+          "status": "<<LOOP.value.status>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Filter for Training Due Yesterday",
+      "disabled": false,
+      "guid": "909f6ad11d15486ff9be72e8bc117b81",
+      "options": {
+        "mode": "message_only",
+        "loop": "=WHERE(filter_for_trainings_past_due, \"enrollment_date\", set_filter_date.date)",
+        "payload": {
+          "user_email": "<<LOOP.value.user_email>>",
+          "user_id": "<<LOOP.value.user_id>>",
+          "campaign_name": "<<LOOP.value.campaign_name>>",
+          "enrollment_date": "<<LOOP.value.enrollment_date>>",
+          "module_name": "<<LOOP.value.module_name>>",
+          "training_status": "past due"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode to individual Enrollments",
+      "disabled": false,
+      "guid": "23b69c20934ac3b307d9f41237de0a1e",
+      "options": {
+        "mode": "explode",
+        "path": "=filter_for_training_not_completed_on_time",
+        "to": "individual_enrollment"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode to individual Enrollments",
+      "disabled": false,
+      "guid": "c16a102cbacb898c4f13b1d9c510134d",
+      "options": {
+        "mode": "explode",
+        "path": "=filter_for_training_due_yesterday",
+        "to": "individual_enrollment"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedupe",
+      "disabled": false,
+      "guid": "c0f96c5df9239ce0cc6aa6648fc5d08d",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<explode_to_individual_enrollments.individual_enrollment.user_email>>",
+        "period": "86400"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedupe",
+      "disabled": false,
+      "guid": "c425e3ae0bd76e697ff1c91b7d61f245",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<explode_to_individual_enrollments.individual_enrollment.user_email>>",
+        "period": "86400"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Filter for Training not completed on Time",
+      "disabled": false,
+      "guid": "51cc22eaf46beec1fc8104de5d260b3d",
+      "options": {
+        "mode": "message_only",
+        "loop": "=WHERE(filter_for_trainings_not_started, \"enrollment_date\", set_filter_date.date)",
+        "payload": {
+          "user_email": "<<LOOP.value.user_email>>",
+          "user_id": "<<LOOP.value.user_id>>",
+          "campaign_name": "<<LOOP.value.campaign_name>>",
+          "enrollment_date": "<<LOOP.value.enrollment_date>>",
+          "module_name": "<<LOOP.value.module_name>>",
+          "status": "in progress"
+        },
+        "local": {
+          "date_thirteen_days_past": "<<DATE(\"now\", \"%s\") |> MINUS(%, 1123200) |> DATE(%, \"%Y-%m-%d\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set filter date",
+      "disabled": false,
+      "guid": "1eb6cff347077f1e1595b04efa700fa0",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "date": "<<DATE(\"now\", \"%Y-%m-%d\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set filter date",
+      "disabled": false,
+      "guid": "b10f76c6d1e7581c980e23e2bdfdc900",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "date": "<<DATE(\"now\", \"%s\") |> MINUS(%, 1123200) |> DATE(%, \"%Y-%m-%d\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set filter date",
+      "disabled": false,
+      "guid": "a67053ca98e4eebd2ceca899a9df9b7f",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "date": "<<DATE(\"now\", \"%s\") |> MINUS(%, 1123200) |> DATE(%, \"%Y-%m-%d\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set filter date",
+      "disabled": false,
+      "guid": "d5c2711bee3cec442c13b159b544f72b",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "date": "<<DATE(\"now\", \"%s\") |> MINUS(%, 1296000) |> DATE(%, \"%Y-%m-%d\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Send Slack Notification",
+      "disabled": false,
+      "guid": "c7e4f7001e556b69bf7f610baa971e30",
+      "options": {
+        "payload": {
+          "explode_to_individual_enrollments": "=explode_to_individual_enrollments"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "f9d9c95a678a55e67b4fe5ddf046f5e7",
+        "slug": null,
+        "exported_at": "2022-07-11T17:26:27Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Search User by Email in Slack",
+            "disabled": false,
+            "guid": "311d673df3707dd16dd6383bcbe15aaf",
+            "options": {
+              "url": "https://slack.com/api/users.lookupByEmail",
+              "content_type": "json",
+              "method": "get",
+              "payload": {
+                "email": "<<input.payload.explode_to_individual_enrollments.individual_enrollment.user_email>>"
+              },
+              "headers": {
+                "Authorization": "Bearer <<CREDENTIAL.slack>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Send Slack Notification",
+            "disabled": false,
+            "guid": "85c2db3f8ba597d80817b978d18c209b",
+            "options": {
+              "url": "https://slack.com/api/chat.postMessage",
+              "content_type": "json",
+              "method": "post",
+              "payload": {
+                "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+                "text": "Your KnowBe4 Training - <<input.payload.explode_to_individual_enrollments.individual_enrollment.campaign_name>> - starts today. To begin <https://training.knowbe4.com | login here>."
+              },
+              "headers": {
+                "Authorization": "Bearer <<CREDENTIAL.slack>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "45349caaf46f1a44cc3632adf2036728",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "4bde1a77136fbc61b8fa5c8cc9d21876",
+            "options": {
+              "payload": {
+                "message": "This is an automatically generated message from Tines"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 1,
+            "receiver": 3
+          },
+          {
+            "source": 2,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"311d673df3707dd16dd6383bcbe15aaf\":[705,960],\"85c2db3f8ba597d80817b978d18c209b\":[705,1110],\"45349caaf46f1a44cc3632adf2036728\":[705,810],\"4bde1a77136fbc61b8fa5c8cc9d21876\":[705,1260]}"
+      }
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Send Slack Notification",
+      "disabled": false,
+      "guid": "0039043192aea53cd7dd4cadb8414d05",
+      "options": {
+        "payload": {
+          "explode_to_individual_enrollments": "=explode_to_individual_enrollments"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "0c546474048df9caad492c2958e99f09",
+        "slug": null,
+        "exported_at": "2022-07-11T17:26:27Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Search User by Email in Slack",
+            "disabled": false,
+            "guid": "f60f84652acee6761010c8e8aebca282",
+            "options": {
+              "url": "https://slack.com/api/users.lookupByEmail",
+              "content_type": "json",
+              "method": "get",
+              "payload": {
+                "email": "<<input.payload.explode_to_individual_enrollments.individual_enrollment.user_email>>"
+              },
+              "headers": {
+                "Authorization": "Bearer <<CREDENTIAL.slack>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Send Slack Notification",
+            "disabled": false,
+            "guid": "f08cd1397eedf053316ec38ca27771cb",
+            "options": {
+              "url": "https://slack.com/api/chat.postMessage",
+              "content_type": "json",
+              "method": "post",
+              "payload": {
+                "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+                "text": "Your KnowBe4 Training - <<input.payload.explode_to_individual_enrollments.individual_enrollment.campaign_name>> - should be completed by tomorrow. To complete it <https://training.knowbe4.com | login here>."
+              },
+              "headers": {
+                "Authorization": "Bearer <<CREDENTIAL.slack>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "d4a0cc5735b87fe8e55a2ef5e1ee9f3e",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "c1bed3c88f31244044a79631a5803091",
+            "options": {
+              "payload": {
+                "message": "This is an automatically generated message from Tines"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 1,
+            "receiver": 3
+          },
+          {
+            "source": 2,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"f60f84652acee6761010c8e8aebca282\":[1200,960],\"f08cd1397eedf053316ec38ca27771cb\":[1200,1110],\"d4a0cc5735b87fe8e55a2ef5e1ee9f3e\":[1200,810],\"c1bed3c88f31244044a79631a5803091\":[1200,1260]}"
+      }
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Send Slack Notification",
+      "disabled": false,
+      "guid": "6b767897683939966e89794de3eede71",
+      "options": {
+        "payload": {
+          "explode_to_individual_enrollments": "=explode_to_individual_enrollments"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "711faadabc919943dd852abeb22cb30f",
+        "slug": null,
+        "exported_at": "2022-07-11T17:26:27Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Search User by Email in Slack",
+            "disabled": false,
+            "guid": "e88ad265f8ccc00591c3c2cd2859875a",
+            "options": {
+              "url": "https://slack.com/api/users.lookupByEmail",
+              "content_type": "json",
+              "method": "get",
+              "payload": {
+                "email": "<<input.payload.explode_to_individual_enrollments.individual_enrollment.user_email>>"
+              },
+              "headers": {
+                "Authorization": "Bearer <<CREDENTIAL.slack>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Send Slack Notification",
+            "disabled": false,
+            "guid": "09d9e2137289928d0d469115856cf7b4",
+            "options": {
+              "url": "https://slack.com/api/chat.postMessage",
+              "content_type": "json",
+              "method": "post",
+              "payload": {
+                "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+                "text": "<%if input.payload.explode_to_individual_enrollments.individual_enrollment.training_status = \"new\"%>Your KnowBe4 Training - <<input.payload.explode_to_individual_enrollments.individual_enrollment.campaign_name>> - starts today. To begin <https://training.knowbe4.com | login here>.<%elseif input.payload.explode_to_individual_enrollments.individual_enrollment.training_status = \"not complete\"%>Your KnowBe4 Training - <<input.payload.explode_to_individual_enrollments.individual_enrollment.campaign_name>> - should be completed by tomorrow. To complete it <https://training.knowbe4.com | login here>.<%elseif input.payload.explode_to_individual_enrollments.individual_enrollment.training_status = \"past due\"%>Your KnowBe4 Training - <<input.payload.explode_to_individual_enrollments.individual_enrollment.campaign_name>> - is overdue. To complete it <https://training.knowbe4.com | login here>.<%endif%>"
+              },
+              "headers": {
+                "Authorization": "Bearer <<CREDENTIAL.slack>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "994758055fb28aa49bb3122069bc77cb",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "930168ed1ac66d1c7883f2456f2e8ec6",
+            "options": {
+              "payload": {
+                "message": "This is an automatically generated message from Tines"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 1,
+            "receiver": 3
+          },
+          {
+            "source": 2,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"e88ad265f8ccc00591c3c2cd2859875a\":[1500,960],\"09d9e2137289928d0d469115856cf7b4\":[1500,1110],\"994758055fb28aa49bb3122069bc77cb\":[1500,810],\"930168ed1ac66d1c7883f2456f2e8ec6\":[1500,1260]}"
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "![](https://image-uploads.tines.com/KnowBe4_logo.png)\n\n# Description\n\nBy default [KnowBe4](https://www.knowbe4.com/products/kevin-mitnick-security-awareness-training/) will send training notifications to the user via email, but often these emails get lost in a busy inbox.\n\nThis Story enables us to notify the user on Slack, either as an alternative to the default email or to complement it.\n\nThe three alerts in this example are based on a training with a two-week duration.\n\n**Notification 1:** This is sent on the Training Start Date (Enrollment Date).\n\n**Notification 2:** If the training is not complete 13 days after the Enrollment Date, a reminder is sent.\n\n**Notification 3:** On day 15 (one day after the expected completion date), a final reminder is sent to alert the user that their training is now overdue.\n\nThe timing of these alerts can be adjusted in the `Set filter date` Action.\n\n",
+      "position": [
+        90.0,
+        165.0
+      ],
+      "guid": "3c90a85193adde6d721aa83982467a4e",
+      "width": 270
+    },
+    {
+      "content": "⬆️⬆️ The first step in the Story uses the [KnowBe4 Reporting API](https://developer.knowbe4.com/reporting/#tag/Training/paths/~1v1~1training~1enrollments/get) to get all enrollments.\n\nThe response is paginated and returns a max of 500, so has to be looped until all results are returned.\n\nThe Trigger `Check for Results` looks at the size of the array returned, when the array is empty the loop will stop.\n\nThe Event Transform `set page number` increases by 1 on each run, and is used by `Get all Training Enrollments in KnowBe4` to return the next page\n\n",
+      "position": [
+        420.0,
+        690.0
+      ],
+      "guid": "8688d6d9110e7d9738f0b9303d558cb3",
+      "width": null
+    },
+    {
+      "content": "⬅️⬅️ Depending on your use of Knowbe4 the number of results could be in the thousands so we are using the [Looping](https://hub.tines.com/docs/actions/types/event-transformation/message-only#looping) feature to filter out the results we don't need.\n\nStep 1: Filters by status, any completed trainings can be ignored.\n\nStep 2: Set the filter date, as mentioned in the description this should be configured depending on  your own notification schedule.\n\nStep 3: Filter for only users that should get a notification today.",
+      "position": [
+        1755.0,
+        375.0
+      ],
+      "guid": "f58f3fd1f021bcafb08ff856b32dc011",
+      "width": null
+    },
+    {
+      "content": "⬅️⬅️ Now the array (list) only includes users that should be contacted today, we use an [Explode](https://hub.tines.com/docs/actions/types/event-transformation/explode) to break this down into individuals.\n\nWhen a user is enrolled in different modules we don't want to bombard them with multiple reminders, to prevent this from happening we [Deduplicate](https://hub.tines.com/docs/actions/types/event-transformation/deduplicate) on email address so they only receive one notification. ",
+      "position": [
+        1755.0,
+        690.0
+      ],
+      "guid": "9aac888d0a99513a97a8c27befa1f403",
+      "width": null
+    },
+    {
+      "content": "⬅️⬅️ Using their email address we search for the user in Slack.\n\nThe user is sent a different Slack message depending on the path they have passed through. This message can be customized with your own text.",
+      "position": [
+        1755.0,
+        975.0
+      ],
+      "guid": "296c8f28598826e184bbeeebd3643e7f",
+      "width": null
+    },
+    {
+      "content": "# Prerequisites\n\nTo use the Knowbe4 Reporting API, you need to have a [platinum](https://www.knowbe4.com/pricing-kevin-mitnick-security-awareness-training) level Training account\n\n- KnowBe4\n- [ ] `RESOURCE.knowbe4_domain` This is the [base URL](https://developer.knowbe4.com/reporting/#tag/Base-URL) used in the API and is dependent on where your account is located.\n- [ ] `CREDENTIAL.knowbe4` This is the [API  Key](https://developer.knowbe4.com/reporting/#tag/Authentication) for your Knowbe4 Account\n\n\n\n\nSending the Slack message requires bot with the following permissions:\n`users:read.email` - this allows the bot to lookup the user by email\n`im:write` - this allows the bot to send direct messages\n\n- Slack\n- [ ] `CREDENTIAL.slack` This [access token](https://api.slack.com/authentication/token-types#bot) you bot uses to authenticate API calls\n\n\n\n",
+      "position": [
+        90.0,
+        780.0
+      ],
+      "guid": "a2b5a6966d6313abc39dbd1a5cb6f100",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 0,
+      "receiver": 10
+    },
+    {
+      "source": 0,
+      "receiver": 4
+    },
+    {
+      "source": 0,
+      "receiver": 8
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 0
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    },
+    {
+      "source": 4,
+      "receiver": 18
+    },
+    {
+      "source": 4,
+      "receiver": 17
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 21
+    },
+    {
+      "source": 8,
+      "receiver": 19
+    },
+    {
+      "source": 9,
+      "receiver": 12
+    },
+    {
+      "source": 10,
+      "receiver": 20
+    },
+    {
+      "source": 11,
+      "receiver": 13
+    },
+    {
+      "source": 12,
+      "receiver": 14
+    },
+    {
+      "source": 13,
+      "receiver": 15
+    },
+    {
+      "source": 14,
+      "receiver": 22
+    },
+    {
+      "source": 15,
+      "receiver": 23
+    },
+    {
+      "source": 16,
+      "receiver": 12
+    },
+    {
+      "source": 17,
+      "receiver": 5
+    },
+    {
+      "source": 18,
+      "receiver": 16
+    },
+    {
+      "source": 19,
+      "receiver": 9
+    },
+    {
+      "source": 20,
+      "receiver": 11
+    }
+  ],
+  "diagram_layout": "{\"e0424d5dbdc5c375571c48a922ddf769\":[450,270],\"6549ba33b0a5ec0b730fb28b4130acfa\":[450,405],\"06d0c29fec20b0578bcb962ed69a3082\":[450,585],\"593fd74aef3b880437c724977388a025\":[450,495],\"bac99684e22fba898fae77ff40470254\":[705,405],\"c9c57f4429bbac6bdc3afccadf6ab47c\":[705,570],\"63058f91765f6255df78588d7178e35a\":[705,705],\"45c27714fb57f0e0c794a9c03d3ce2d3\":[705,825],\"3861c1bb71b788a643c059dfc41cbaa6\":[1200,405],\"2a86109740c5fc2b0e40767c5383306b\":[1200,570],\"a4a8dc6ed5c2c94919d0277496953c54\":[1500,405],\"909f6ad11d15486ff9be72e8bc117b81\":[1500,570],\"23b69c20934ac3b307d9f41237de0a1e\":[1200,705],\"c16a102cbacb898c4f13b1d9c510134d\":[1500,705],\"c0f96c5df9239ce0cc6aa6648fc5d08d\":[1200,825],\"c425e3ae0bd76e697ff1c91b7d61f245\":[1500,825],\"51cc22eaf46beec1fc8104de5d260b3d\":[960,570],\"1eb6cff347077f1e1595b04efa700fa0\":[705,495],\"b10f76c6d1e7581c980e23e2bdfdc900\":[960,495],\"a67053ca98e4eebd2ceca899a9df9b7f\":[1200,495],\"d5c2711bee3cec442c13b159b544f72b\":[1500,495],\"c7e4f7001e556b69bf7f610baa971e30\":[705,990],\"0039043192aea53cd7dd4cadb8414d05\":[1200,990],\"6b767897683939966e89794de3eede71\":[1500,990]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Send KnowBe4 training reminders via Slack Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

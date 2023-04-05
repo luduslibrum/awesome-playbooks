@@ -1,0 +1,198 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Indicator - Import Bulk Indicators",
+    "aliasName": null,
+    "tag": "#ManualAction",
+    "description": "Extract Indicators from specified text",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/20289298-cdd6-4052-8fa0-11e2603dca00",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/93b87fa3-dd1c-4e5b-8037-aa58adca0c55",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Indicator",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.steps.Extract_Body_Indicators.data.results}}",
+                    "__bulk": true,
+                    "condition": ""
+                },
+                "resource": {
+                    "value": "{{vars.item.value}}",
+                    "__replace": "false",
+                    "reputation": {
+                        "id": 171,
+                        "@id": "\/api\/3\/picklists\/ae98ebc6-beef-4882-9980-1d88fc6d87cd",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": "#696969",
+                        "display": "TBD",
+                        "listName": "\/api\/3\/picklist_names\/e75ed3c3-9f23-4a43-832b-0daf236209ba",
+                        "itemValue": "TBD",
+                        "orderIndex": 3
+                    },
+                    "indicatorStatus": {
+                        "id": 369,
+                        "@id": "\/api\/3\/picklists\/2f5cff61-fbff-4bb3-96be-302b78a9fb47",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "TBD",
+                        "listName": "\/api\/3\/picklist_names\/e6639d57-94a9-432f-a46f-b2b530402077",
+                        "itemValue": "TBD",
+                        "orderIndex": 3
+                    },
+                    "typeofindicator": "{{vars.item['picklist_iri']}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/upsert\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "78513b67-aff6-4368-99f3-22e26b5c7abc"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": [],
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "f429f4a4-5cb4-4436-9b0d-cb7fbeeb8f96"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "1a67c380-43cb-4f77-bf4b-df0833ceef66",
+                "title": "Import Bulk Indicators",
+                "resources": [
+                    "indicators"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "indicators",
+                        "type": "string",
+                        "label": "Indicators",
+                        "title": "Text Area",
+                        "usable": true,
+                        "_ignore": false,
+                        "tooltip": "IP address, URL, Domain and File hashes would be extracted from the input text",
+                        "dataType": "text",
+                        "formType": "textarea",
+                        "required": true,
+                        "_expanded": true,
+                        "collection": false,
+                        "searchable": true,
+                        "templateUrl": "app\/components\/form\/fields\/textarea.html",
+                        "useModuleField": false,
+                        "allowedEncryption": true,
+                        "allowedGridColumn": true,
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "indicators": "{{vars.request.data[\"indicators\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Import",
+                "noRecordExecution": true,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "93b87fa3-dd1c-4e5b-8037-aa58adca0c55"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Extract Body Indicators",
+            "description": null,
+            "arguments": {
+                "name": "CyOps Utilities",
+                "params": {
+                    "data": "{{vars.input.params.indicators}}"
+                },
+                "version": "2.1.3",
+                "connector": "cyops_utilities",
+                "operation": "extract_artifacts",
+                "operationTitle": "CyOPs: Extract Artifacts from string",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "92ee2405-4785-48d7-9fee-5682115920dc"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Extract Body Indicators",
+            "targetStep": "\/api\/3\/workflow_steps\/92ee2405-4785-48d7-9fee-5682115920dc",
+            "sourceStep": "\/api\/3\/workflow_steps\/f429f4a4-5cb4-4436-9b0d-cb7fbeeb8f96",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "23c8814f-9955-485f-80ba-ca7098a68f63"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/f429f4a4-5cb4-4436-9b0d-cb7fbeeb8f96",
+            "sourceStep": "\/api\/3\/workflow_steps\/93b87fa3-dd1c-4e5b-8037-aa58adca0c55",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b828c04f-0efb-4eab-9e5a-4dcb10762c68"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Extract Body Indicators -> Copy  of Create Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/78513b67-aff6-4368-99f3-22e26b5c7abc",
+            "sourceStep": "\/api\/3\/workflow_steps\/92ee2405-4785-48d7-9fee-5682115920dc",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "8a16eee6-f3d9-4174-ab73-c927c7e43537"
+        }
+    ],
+    "priority": null,
+    "uuid": "800d85e7-b327-4a90-b7ff-7b8c967c3457",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction"
+    ]
+}

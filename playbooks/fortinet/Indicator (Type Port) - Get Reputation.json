@@ -1,0 +1,360 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Indicator (Type Port) - Get Reputation",
+    "aliasName": null,
+    "tag": "#Subroutine",
+    "description": "Retrieves the reputation of indicators of type \u2018Port\u2019 using configured threat intelligence tools.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_value"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/deaa4d19-7444-4f3a-a80e-9577436f25ef",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/006a0153-17c0-4da4-b52f-f84a5b28e3a7",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "indicator_value": "{{vars.input.params['indicator_value'] | ternary(vars.input.params['indicator_value'],vars.input.records[0].value) }}"
+            },
+            "status": null,
+            "top": "190",
+            "left": "1425",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "00aee9e5-7988-4cb2-940c-e1e9d9d9e5d8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Is Referenced",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Referenced",
+                        "step_iri": "\/api\/3\/workflow_steps\/bbba66e6-2593-4306-b97e-ef03744ac3f1",
+                        "condition": "{{ vars.input.params['indicator_value'] | length > 0 }}"
+                    },
+                    {
+                        "option": "Upon Create",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/d5025e94-19f7-485c-907f-52ff21faa254"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "190",
+            "left": "1750",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "01abf1fd-bec7-4255-92df-1cd03a38d6ce"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": "Indicator reputation is set as 'TBD' by 'Create and Link Indicator' utility playbook. We can ignore those indicators when triggering this PB",
+            "arguments": {
+                "resource": "indicators",
+                "resources": [
+                    "indicators"
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "indicator_value": "{{ vars.indicator_value }}"
+                        },
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "typeofindicator",
+                            "value": "\/api\/3\/picklists\/1c4def41-b578-49a3-9063-8aa46f757c08",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/1c4def41-b578-49a3-9063-8aa46f757c08",
+                                "itemValue": "Port"
+                            },
+                            "operator": "eq"
+                        },
+                        {
+                            "type": "object",
+                            "field": "indicatorStatus",
+                            "value": "\/api\/3\/picklists\/4218cb58-4de5-4eff-ad08-185d36ef9bab",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/4218cb58-4de5-4eff-ad08-185d36ef9bab",
+                                "itemValue": "Whitelisted"
+                            },
+                            "operator": "neq"
+                        },
+                        {
+                            "logic": "OR",
+                            "filters": [
+                                {
+                                    "type": "object",
+                                    "field": "reputation",
+                                    "value": "true",
+                                    "_value": {
+                                        "@id": "true",
+                                        "display": "",
+                                        "itemValue": ""
+                                    },
+                                    "operator": "isnull"
+                                },
+                                {
+                                    "type": "object",
+                                    "field": "reputation",
+                                    "value": "\/api\/3\/picklists\/ae98ebc6-beef-4882-9980-1d88fc6d87cd",
+                                    "_value": {
+                                        "@id": "\/api\/3\/picklists\/ae98ebc6-beef-4882-9980-1d88fc6d87cd",
+                                        "itemValue": "TBD"
+                                    },
+                                    "operator": "eq"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "110",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/ea155646-3821-4542-9702-b246da430a8d",
+            "uuid": "006a0153-17c0-4da4-b52f-f84a5b28e3a7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set Reputation",
+            "description": null,
+            "arguments": {
+                "reputation_iri": "{{(\"IndicatorReputation\" | picklist(\"No Reputation Available\"))[\"@id\"]}}"
+            },
+            "status": null,
+            "top": "110",
+            "left": "2075",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "bbba66e6-2593-4306-b97e-ef03744ac3f1"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Record",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "reputation": "\/api\/3\/picklists\/9a611980-1b5e-4ae9-8062-eb2c0c433cff",
+                    "enrichmentStatus": "\/api\/3\/picklists\/c6e46fde-97a2-48cc-8019-938c9c5aebd0"
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "__recommend": [],
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "270",
+            "left": "2075",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "d5025e94-19f7-485c-907f-52ff21faa254"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Is Dedicated Tenant Record",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes, Enrich at Tenant Node",
+                        "step_iri": "\/api\/3\/workflow_steps\/962f419a-8787-4a3b-a204-9d0a9fc743c6",
+                        "condition": "{{ 'tenant' in vars.input.records[0] and vars.input.records[0].tenant.isDedicated and vars.input.records[0].tenant.role != 'self' }}",
+                        "step_name": "Exit"
+                    },
+                    {
+                        "option": "No, Enrich Here",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/0e71da62-dd9d-4c29-a90e-4f3f87d370d2",
+                        "step_name": "Is Referenced Playbook"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "110",
+            "left": "450",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "b99c7849-4a43-4d79-9762-576603c609a3"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Exit",
+            "description": null,
+            "arguments": {
+                "params": [],
+                "version": "3.2.1",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "30",
+            "left": "775",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "962f419a-8787-4a3b-a204-9d0a9fc743c6"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Enrichment Status to In Process",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "enrichmentStatus": "\/api\/3\/picklists\/8a4609d2-8a3d-4bda-9888-5f00bfea43cb"
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "__recommend": [],
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "145",
+            "left": "1100",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "6606de74-cf06-4cd5-837e-208355bd85fd"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Is Referenced Playbook",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/00aee9e5-7988-4cb2-940c-e1e9d9d9e5d8",
+                        "condition": "{{ vars.input.params['indicator_value'] | length > 0 }}",
+                        "step_name": "Configuration"
+                    },
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/6606de74-cf06-4cd5-837e-208355bd85fd",
+                        "step_name": "Update Enrichment Status to In Process"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "190",
+            "left": "775",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "0e71da62-dd9d-4c29-a90e-4f3f87d370d2"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Upon Create -> Asset IRI",
+            "targetStep": "\/api\/3\/workflow_steps\/bbba66e6-2593-4306-b97e-ef03744ac3f1",
+            "sourceStep": "\/api\/3\/workflow_steps\/01abf1fd-bec7-4255-92df-1cd03a38d6ce",
+            "label": "Referenced",
+            "isExecuted": false,
+            "uuid": "331d8d1f-6559-4a5f-9573-a6c1c3db3fb5"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Is Referenced",
+            "targetStep": "\/api\/3\/workflow_steps\/01abf1fd-bec7-4255-92df-1cd03a38d6ce",
+            "sourceStep": "\/api\/3\/workflow_steps\/00aee9e5-7988-4cb2-940c-e1e9d9d9e5d8",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "aa4015ba-c104-4f9a-b534-f9fdc198cb81"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Upon Create -> Update Record",
+            "targetStep": "\/api\/3\/workflow_steps\/d5025e94-19f7-485c-907f-52ff21faa254",
+            "sourceStep": "\/api\/3\/workflow_steps\/01abf1fd-bec7-4255-92df-1cd03a38d6ce",
+            "label": "Upon Create",
+            "isExecuted": false,
+            "uuid": "f2e4a613-3f21-436c-91ba-c8538e6b37f1"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Has Dedicated Tenant Record -> Exit",
+            "targetStep": "\/api\/3\/workflow_steps\/962f419a-8787-4a3b-a204-9d0a9fc743c6",
+            "sourceStep": "\/api\/3\/workflow_steps\/b99c7849-4a43-4d79-9762-576603c609a3",
+            "label": "Yes, Enrich at Tenant Node",
+            "isExecuted": false,
+            "uuid": "9be85623-226b-4e95-b1ab-a48f3b60ef71"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Has Dedicated Tenant Record",
+            "targetStep": "\/api\/3\/workflow_steps\/b99c7849-4a43-4d79-9762-576603c609a3",
+            "sourceStep": "\/api\/3\/workflow_steps\/006a0153-17c0-4da4-b52f-f84a5b28e3a7",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "acb5c01f-ad5c-41cf-9ec2-38ae35b87828"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Update Enrichment Status to In Process -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/00aee9e5-7988-4cb2-940c-e1e9d9d9e5d8",
+            "sourceStep": "\/api\/3\/workflow_steps\/6606de74-cf06-4cd5-837e-208355bd85fd",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "16018314-de8c-43a6-996b-e27e689b0a6c"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Dedicated Tenant Record -> Is Referenced Playbook",
+            "targetStep": "\/api\/3\/workflow_steps\/0e71da62-dd9d-4c29-a90e-4f3f87d370d2",
+            "sourceStep": "\/api\/3\/workflow_steps\/b99c7849-4a43-4d79-9762-576603c609a3",
+            "label": "No, Enrich Here",
+            "isExecuted": false,
+            "uuid": "97cb90c5-0374-49ed-96b2-a903787b8252"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Referenced Playbook -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/00aee9e5-7988-4cb2-940c-e1e9d9d9e5d8",
+            "sourceStep": "\/api\/3\/workflow_steps\/0e71da62-dd9d-4c29-a90e-4f3f87d370d2",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "83964acd-a380-4bb0-8191-859c17e982a7"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Referenced Playbook -> Update Enrichment Status to In Process",
+            "targetStep": "\/api\/3\/workflow_steps\/6606de74-cf06-4cd5-837e-208355bd85fd",
+            "sourceStep": "\/api\/3\/workflow_steps\/0e71da62-dd9d-4c29-a90e-4f3f87d370d2",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "398b5cf5-c2e3-4a26-b7c5-144f905fe8a1"
+        }
+    ],
+    "priority": null,
+    "uuid": "7070bdf3-9fab-42f8-b136-8c7371b847b2",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "PostCreate"
+    ]
+}

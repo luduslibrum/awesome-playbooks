@@ -1,0 +1,480 @@
+{
+  "schema_version": 4,
+  "name": "Material Security email attachment triage",
+  "description": "Retrieve email attachments that trigger phishing events in Material Security, gather details around senders, and analyze attachments in VirusTotal.\n\ntags: Analyze, MaterialSecurity, Phishing, VirusTotal, Email, Intermediate,\nicons: materialsecurity,🔍, virustotal\nvisibility: public",
+  "guid": "6936a6004c8a1eabae5d482c2c36dab0",
+  "slug": "material_security_email_attachment_triage",
+  "exported_at": "2022-07-11T17:33:57Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Job Results in Material Security",
+      "disabled": false,
+      "guid": "7cec56bc25263cb242801d84be73badd",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/jobby/job/<<compute_details_about_case_messages_in_material_security.body.type>>/<<compute_details_about_case_messages_in_material_security.body.id>>",
+        "method": "get",
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait for Job",
+      "disabled": false,
+      "guid": "2d70bfa3507c06ec443e1bbd86386c50",
+      "options": {
+        "mode": "delay",
+        "seconds": 5
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Compute Details About Case Messages in Material Security",
+      "disabled": false,
+      "guid": "c969b0f4643ae3cf783227f327fa2a4c",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/jobby/job/ComputeCaseDetails",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "jobConfig": {
+            "type": "ComputeCaseDetails",
+            "skipCache": true,
+            "caseIds": [
+              "<<receive_event_from_material_security.body.caseId>>"
+            ],
+            "detailsConfig": {
+              "groupBy": {
+                "groupBys": [
+                  "SIMILARITY"
+                ],
+                "buckets": {
+                  "limit": 30,
+                  "offset": 0
+                },
+                "messages": {
+                  "limit": 20,
+                  "offset": 0
+                },
+                "assignments": {
+                  "limit": 10,
+                  "offset": 0
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Message Details in Material Security",
+      "disabled": false,
+      "guid": "eb2ae1ed3205457e40234d32363f0d9a",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/luna/message/detail/<<URL_ENCODE(extract_messageid_and_date_from_reported_message.messageId.first)>>",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "date": "<<extract_messageid_and_date_from_reported_message.date.first>>"
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract MessageID and Date from Reported Message",
+      "disabled": false,
+      "guid": "2db288e4740f4afb624900a5727a2b6a",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_job_results_in_material_security.body.results.first.details.groupBy.messageBuckets.first.rep.date",
+            "regexp": "\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d.\\d\\d\\dZ",
+            "to": "date"
+          },
+          {
+            "path": "=get_job_results_in_material_security.body.results.first.details.groupBy.messageBuckets.first.rep.hId",
+            "regexp": "<[^>]+\\>",
+            "to": "messageId"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Attachment Data",
+      "disabled": false,
+      "guid": "4e3a7a324f06212476a2bf4532a3c5aa",
+      "options": {
+        "mode": "explode",
+        "path": "=get_message_details_in_material_security.body.attachments",
+        "to": "attachment"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get AssetIds from Message in Material Security",
+      "disabled": false,
+      "guid": "74ecf3b8b3b4871e621e864071d5772d",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/luna/message/attachments",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "attachments": [
+            {
+              "attachId": "<<get_attachment_data.attachment.attachId>>",
+              "filename": "<<get_attachment_data.attachment.filename>>"
+            }
+          ],
+          "datedHid": {
+            "hId": "<<get_message_details_in_material_security.body.messageId>>",
+            "date": "<<get_message_details_in_material_security.body.date>>"
+          }
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Download Attachment from Material Security",
+      "disabled": false,
+      "guid": "c6361d2d97a762bb40e5f976120dbf17",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/asset/<<get_assetids_from_message_in_material_security.body.assetId>>",
+        "method": "get",
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Event from Material Security",
+      "disabled": false,
+      "guid": "a9f9aadce41bd734134129fff531fa85",
+      "options": {
+        "path": "d22e63c8ba810f4fce2a218ae6d9cfad",
+        "secret": "1e494ad546518c7b109e6e1a54d918e3",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Attachment Details",
+      "disabled": false,
+      "guid": "d8dcbe78453bab2d5a12b47bf38044c3",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "filename": "<<unzip_attachment.attachment.first.filename>>",
+          "md5": "<<unzip_attachment.attachment.first.md5>>",
+          "sha256": "<<unzip_attachment.attachment.first.sha256>>",
+          "base64encodedcontents": "<<unzip_attachment.attachment.first.base64encodedcontents>>",
+          "filetype": "<<unzip_attachment.attachment.first.content_type>>",
+          "size": "<<LIQUID_SIZE(unzip_attachment.attachment.first, \"dot_notation\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Collect Triage Data",
+      "disabled": false,
+      "guid": "8ef23dc2bb23047c89009165f7274f2c",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "SPF": "<<get_message_details_in_material_security.body.spf>>",
+          "DKIM": "<<get_message_details_in_material_security.body.dkim>>",
+          "DMARC": "<<get_message_details_in_material_security.body.dmarc>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search for File Hash in VirusTotal",
+      "disabled": false,
+      "guid": "044083c1e440caca0f3907e35ed5a3a9",
+      "options": {
+        "url": "https://www.virustotal.com/api/v3/files/<<attachment_details.sha256>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-apikey": "<<CREDENTIAL.virustotal>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Unzip Attachment",
+      "disabled": false,
+      "guid": "235525821bdafde6c5ba909a3440f765",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "attachment": "=BASE64_DECODE(download_attachment_from_material_security.body.base64encodedcontents) |> UNZIP(%)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Submit File to Palo Alto Wildfire",
+      "disabled": false,
+      "guid": "57a88d6dbe8612db4cd1c7619856441d",
+      "options": {
+        "url": "https://wildfire.paloaltonetworks.com/publicapi/submit/file ",
+        "content_type": "data",
+        "method": "post",
+        "payload": {
+          "apikey": "<<CREDENTIAL.palo_alto_wildfire>>",
+          "file": {
+            "filename": "<<filename>>",
+            "contents": "<<BASE64_DECODE(contents)>>"
+          },
+          "link": ""
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Email Attachment Triage\n\nThis flow will gather information about email attachments and automatically present a summary of the findings to your security team.\n\nRead more on the [Material Security blog](https://material.security/blog/automate-phishing-triage-with-tines-and-material)!\n\n\n**Requirements:**\n- [ ] A Material Security API key as Credential `material_security`\n- [ ] A Material Security admin configures the \"Case Created\" event subscription to send data to the Tines webhook\n- [ ] A VirusTotal API key as Credential `virustotal`",
+      "position": [
+        480.0,
+        75.0
+      ],
+      "guid": "ea98b8c2c911ecaefd40084439324113",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-material-security.png",
+      "position": [
+        480.0,
+        -165.0
+      ],
+      "guid": "ce510d4848bbea8b99d7eefc3e4059b5",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 4
+    },
+    {
+      "source": 1,
+      "receiver": 0
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 4,
+      "receiver": 3
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 12
+    },
+    {
+      "source": 8,
+      "receiver": 2
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 12,
+      "receiver": 9
+    }
+  ],
+  "diagram_layout": "{\"7cec56bc25263cb242801d84be73badd\":[795,90],\"2d70bfa3507c06ec443e1bbd86386c50\":[795,15],\"c969b0f4643ae3cf783227f327fa2a4c\":[795,-90],\"eb2ae1ed3205457e40234d32363f0d9a\":[795,270],\"2db288e4740f4afb624900a5727a2b6a\":[795,180],\"4e3a7a324f06212476a2bf4532a3c5aa\":[795,360],\"74ecf3b8b3b4871e621e864071d5772d\":[795,435],\"c6361d2d97a762bb40e5f976120dbf17\":[795,525],\"a9f9aadce41bd734134129fff531fa85\":[795,-165],\"d8dcbe78453bab2d5a12b47bf38044c3\":[795,690],\"8ef23dc2bb23047c89009165f7274f2c\":[795,765],\"044083c1e440caca0f3907e35ed5a3a9\":[795,840],\"235525821bdafde6c5ba909a3440f765\":[795,615],\"57a88d6dbe8612db4cd1c7619856441d\":[450,510]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Material Security email attachment triage Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

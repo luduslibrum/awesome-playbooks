@@ -1,0 +1,271 @@
+{
+  "name" : "Bit.ly Long URL Creator",
+  "type" : "Standard",
+  "panX" : 190.0,
+  "panY" : 62.0,
+  "logLevel" : "INFO",
+  "description" : "Upon creation of a bit.ly URL indicator in ThreatConnect, this Playbook uses the Bit.ly API to fetch the original URL and adds it as an attribute value to the indicator.",
+  "jobList" : [ {
+    "id" : 10165,
+    "appCatalogItem" : {
+      "programName" : "Http Client",
+      "displayName" : "HTTP Client",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Bit.ly API",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "httpclient_proxy"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "parameters"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "action"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ignore_ssl_trust"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://api-ssl.bitly.com/v3/expand?access_token=${USER:TEXT:Bit.ly API Token}&shortUrl=#Trigger:971:trg.tc.url!String"
+    } ],
+    "locationLeft" : 420.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"http_client.response.output_content\",\"type\":\"String\"}]"
+  }, {
+    "id" : 10168,
+    "appCatalogItem" : {
+      "programName" : "Json Path",
+      "displayName" : "Filter JSON Path",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Get Long URL",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_path"
+      },
+      "value" : "data.expand[0].long_url"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "stripQuotes"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_json"
+      },
+      "value" : "#App:10165:http_client.response.output_content!String"
+    } ],
+    "locationLeft" : 150.0,
+    "locationTop" : 200.0,
+    "outputVariables" : "[{\"name\":\"json_path.output\",\"type\":\"String\"}]"
+  }, {
+    "id" : 10170,
+    "appCatalogItem" : {
+      "programName" : "TCPB - RegexExtract v1.0",
+      "displayName" : "Regex Extract",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "Omit Quotes",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#App:10168:json_path.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_groups"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern_mapping"
+      },
+      "value" : "[{\"key\":\"long_url\",\"value\":\"\\\"(.*)\\\"\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_nulls"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 420.0,
+    "locationTop" : 200.0,
+    "outputVariables" : "[{\"name\":\"long_url\",\"type\":\"StringArray\"}]"
+  }, {
+    "id" : 13900,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AddAttribute v1.0",
+      "displayName" : "Add ThreatConnect Attribute",
+      "programVersion" : "1.0.9"
+    },
+    "name" : "Add ThreatConnect Attribute 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "apply_to_all"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_types"
+      },
+      "value" : "[{\"key\":\"Description\",\"value\":\"Shortened bit.ly URL for [[URL:#App:25136:tc.url.value!String]]\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "update_type"
+      },
+      "value" : "Add New"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "source_entities"
+      },
+      "value" : "#Trigger:971:trg.tc.entity!TCEntity"
+    } ],
+    "locationLeft" : 420.0,
+    "locationTop" : 300.0
+  }, {
+    "id" : 25136,
+    "appCatalogItem" : {
+      "programName" : "TCPB - UrlCreate v1.1",
+      "displayName" : "Create ThreatConnect URL",
+      "programVersion" : "1.1.19"
+    },
+    "name" : "Create ThreatConnect URL 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Description\",\"value\":\"Lengthened URL of bit.ly link [[URL:#Trigger:971:trg.tc.url!String]]\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rating"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "confidence"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:10170:long_url!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "URL"
+    } ],
+    "locationLeft" : 150.0,
+    "locationTop" : 300.0,
+    "outputVariables" : "[{\"name\":\"tc.url.value\",\"type\":\"String\"}]"
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10165,
+    "targetJobId" : 10168
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 10165,
+    "sourceTriggerId" : 971
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10168,
+    "targetJobId" : 10170
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 10170,
+    "targetJobId" : 25136
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 25136,
+    "targetJobId" : 13900
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 971,
+    "name" : "Bit.ly URL Trigger",
+    "type" : "URL",
+    "eventType" : "Create",
+    "locationLeft" : 150.0,
+    "locationTop" : 100.0,
+    "orFilters" : true,
+    "fireOnDuplicate" : true,
+    "playbookTriggerFilterList" : [ {
+      "fieldType" : "Summary",
+      "operatorType" : "Contains",
+      "value" : "bit.ly"
+    }, {
+      "fieldType" : "Summary",
+      "operatorType" : "Contains",
+      "value" : "bitly"
+    } ],
+    "outputVariables" : "[{\"name\":\"trg.tc.url\",\"type\":\"String\"},{\"name\":\"trg.tc.entity\",\"type\":\"TCEntity\"}]"
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

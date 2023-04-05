@@ -1,0 +1,160 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Indicator - Check Expiry Status",
+    "aliasName": null,
+    "tag": null,
+    "description": "Checks periodically for the expiry date of the indicator and marks it as expired, if matched.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/d210b3a2-7c7a-4264-a072-14535df3b8d9",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "d210b3a2-7c7a-4264-a072-14535df3b8d9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get all expired indicators",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "expiredStatus",
+                            "value": "\/api\/3\/picklists\/de7e9f06-45aa-43e1-b88d-1989a56d9eae",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/de7e9f06-45aa-43e1-b88d-1989a56d9eae",
+                                "itemValue": "Yes"
+                            },
+                            "operator": "neq"
+                        },
+                        {
+                            "type": "datetime",
+                            "logic": "AND",
+                            "_field": "expiryDate",
+                            "_value": {
+                                "differenceType": "mins",
+                                "differenceValue": 1
+                            },
+                            "filters": [
+                                {
+                                    "type": "datetime",
+                                    "field": "expiryDate",
+                                    "value": "{{getRelativeDate(0,0,0,0,1,\"end\")}}",
+                                    "operator": "lte"
+                                }
+                            ],
+                            "_operator": "lte"
+                        }
+                    ],
+                    "__selectFields": [
+                        "expiredStatus",
+                        "expiryDate"
+                    ]
+                },
+                "module": "indicators?$limit=100",
+                "checkboxFields": true,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "b2f667db-9aa8-4468-926d-ac15f7de928e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Mark as Expired",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.steps.Get_all_expired_indicators}}",
+                    "__bulk": true,
+                    "condition": "",
+                    "batch_size": 100
+                },
+                "resource": {
+                    "expiredStatus": {
+                        "id": 327,
+                        "@id": "\/api\/3\/picklists\/d4ca4a72-7974-4b93-843e-da9efa235c6e",
+                        "icon": null,
+                        "uuid": "d4ca4a72-7974-4b93-843e-da9efa235c6e",
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "No",
+                        "listName": "\/api\/3\/picklist_names\/315954aa-906f-405c-989e-66477ecc268b",
+                        "itemValue": "No",
+                        "orderIndex": 1
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.item['@id']}}",
+                "__recommend": [],
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "59488138-b801-45db-8a82-d1d9094bc3c2"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get all expired indicators -> Mark as Expired",
+            "targetStep": "\/api\/3\/workflow_steps\/59488138-b801-45db-8a82-d1d9094bc3c2",
+            "sourceStep": "\/api\/3\/workflow_steps\/b2f667db-9aa8-4468-926d-ac15f7de928e",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a6bd28b7-4409-4284-82dd-1efcdddf263d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Get all expired indicators",
+            "targetStep": "\/api\/3\/workflow_steps\/b2f667db-9aa8-4468-926d-ac15f7de928e",
+            "sourceStep": "\/api\/3\/workflow_steps\/d210b3a2-7c7a-4264-a072-14535df3b8d9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e26aa761-af89-45f2-a3e4-4f6b3a0b3421"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "b3d790ee-b192-4a7e-b14e-8be01a8e4fb6",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "Scheduled"
+    ]
+}

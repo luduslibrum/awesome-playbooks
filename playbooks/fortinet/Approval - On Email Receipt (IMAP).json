@@ -1,0 +1,111 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Approval - On Email Receipt (IMAP)",
+    "aliasName": null,
+    "tag": null,
+    "description": "This playbook is triggered whenever an email is received via IMAP and it checks whether the received email is an approval mail along with its approval status.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/87c88b58-7ad8-46bf-9fe1-2f295b9f68b7",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Process Each Email",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.steps.Get_Unread_Emails.data}}",
+                    "condition": ""
+                },
+                "arguments": {
+                    "approvalEmail": "{{ vars.item }}"
+                },
+                "apply_async": true,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/8d909e25-6142-4df1-85a5-9036e1c1b037"
+            },
+            "status": null,
+            "top": "200",
+            "left": "371",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "56dd46bf-edcf-443c-be4e-d3a1106731f7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Unread Emails",
+            "description": null,
+            "arguments": {
+                "name": "IMAP",
+                "params": {
+                    "limit_count": 30
+                },
+                "version": "3.5.1",
+                "connector": "imap",
+                "operation": "fetch_email_new",
+                "operationTitle": "Fetch Email(s)",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "110",
+            "left": "211",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "159d5d3b-155b-4f34-a3ff-ee64e7217644"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "approval_listener_imap",
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "api_body": "{{vars.request.data}}"
+                        }
+                    }
+                },
+                "authentication_methods": [
+                    ""
+                ]
+            },
+            "status": null,
+            "top": "40",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/df26c7a2-4166-4ca5-91e5-548e24c01b5f",
+            "uuid": "87c88b58-7ad8-46bf-9fe1-2f295b9f68b7"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Unread Emails -> Process Each Email",
+            "targetStep": "\/api\/3\/workflow_steps\/56dd46bf-edcf-443c-be4e-d3a1106731f7",
+            "sourceStep": "\/api\/3\/workflow_steps\/159d5d3b-155b-4f34-a3ff-ee64e7217644",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "235e3fac-8c7f-4d2d-a29b-1472543e37c6"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Get Unread Emails",
+            "targetStep": "\/api\/3\/workflow_steps\/159d5d3b-155b-4f34-a3ff-ee64e7217644",
+            "sourceStep": "\/api\/3\/workflow_steps\/87c88b58-7ad8-46bf-9fe1-2f295b9f68b7",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1f1171d6-f6c7-411a-a8c9-dfff2337e132"
+        }
+    ],
+    "priority": null,
+    "uuid": "9a318057-9354-4a57-9c12-97a3d35b58bd",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": []
+}

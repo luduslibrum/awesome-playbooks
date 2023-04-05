@@ -1,0 +1,2055 @@
+{
+  "schema_version": 4,
+  "name": "Create & manage incident comms via Slack",
+  "description": "This Story allows teams to create and manage incident communication directly through Slack. It can create Slack channels for communications, and sync conversation backups to a Jira ticket for long-term preservation.\n\ntags: Slack, Jira, Chatbots, CaseManagement, Advanced,\nicons: slack,🧑‍🚒, 💾\nvisibility: public",
+  "guid": "9b5a1b4b1cda4a94704221d479fa0a08",
+  "slug": "create_manage_incident_comms_via_slack",
+  "exported_at": "2022-07-11T17:45:17Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Commands",
+      "disabled": false,
+      "guid": "6aed622ce3ee4b9c86c4967d188c578c",
+      "options": {
+        "secret": "35e8a62c048cf7158ba2dba40b96481e",
+        "verbs": "get,post",
+        "response": "",
+        "response_code": "200",
+        "path": "12446c94949ec17daea98840dee253d9"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Incident Channel in Slack",
+      "disabled": false,
+      "guid": "5376305dc422591924129487b9dd79b6",
+      "options": {
+        "url": "https://slack.com/api/conversations.create",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "name": "incident_channel_<<DEFAULT(create_issue_in_jira.body.key, parse_response.view.state.values.jira_textbox_block.jira_id.value) |> REPLACE(%, \"-\", \"_\") |> DOWNCASE(%)>>",
+          "is_private": true
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Users to Incident Channel in Slack",
+      "disabled": false,
+      "guid": "71b5f247b0200a9d26283899805d2973",
+      "options": {
+        "url": "https://slack.com/api/conversations.invite",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<create_incident_channel_in_slack.body.channel.id>>",
+          "users": "<<JOIN(parse_response.view.state.values.incident_channel_users[\"users_select-action\"].selected_users, \",\")>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Modal",
+      "disabled": false,
+      "guid": "6f3b5ae78b40590273e76edc5701f9c6",
+      "options": {
+        "url": "https://slack.com/api/views.open",
+        "content_type": "json",
+        "method": "post",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        },
+        "payload": {
+          "trigger_id": "<<receive_commands.body.trigger_id>>",
+          "view": {
+            "type": "modal",
+            "callback_id": "create_channel",
+            "notify_on_close": true,
+            "title": {
+              "type": "plain_text",
+              "text": "Create Incident Channel",
+              "emoji": true
+            },
+            "submit": {
+              "type": "plain_text",
+              "text": "Submit",
+              "emoji": true
+            },
+            "close": {
+              "type": "plain_text",
+              "text": "Cancel",
+              "emoji": true
+            },
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "Complete this form to create Incident Slack Channels"
+                }
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input",
+                "element": {
+                  "type": "plain_text_input",
+                  "action_id": "jira_id"
+                },
+                "label": {
+                  "type": "plain_text",
+                  "text": "Enter Incident ID (if available)",
+                  "emoji": true
+                },
+                "block_id": "jira_textbox_block",
+                "optional": "true"
+              },
+              {
+                "type": "input",
+                "element": {
+                  "type": "radio_buttons",
+                  "initial_option": {
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*Use Existing Incident included above*"
+                    },
+                    "value": "existing"
+                  },
+                  "options": [
+                    {
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Use Existing Incident included above*"
+                      },
+                      "value": "existing"
+                    },
+                    {
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Create New Incident*"
+                      },
+                      "value": "new"
+                    }
+                  ],
+                  "action_id": "new_incident-action"
+                },
+                "label": {
+                  "type": "plain_text",
+                  "text": "Optional: Create new Incident"
+                },
+                "block_id": "new_incident_block"
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "Select Users to add to Incident Channel"
+                },
+                "accessory": {
+                  "type": "multi_users_select",
+                  "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select a user",
+                    "emoji": true
+                  },
+                  "action_id": "users_select-action"
+                },
+                "block_id": "incident_channel_users"
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "If an Executive Comms Channel is required for this incident, add users here. This is optional."
+                },
+                "accessory": {
+                  "type": "multi_users_select",
+                  "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select a user",
+                    "emoji": true
+                  },
+                  "action_id": "users_select-action"
+                },
+                "block_id": "exec_channel_users"
+              }
+            ]
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Modal Response",
+      "disabled": false,
+      "guid": "d4229a64485c34ed6944f6e69b9cae84",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "view_submission",
+            "path": "<<receive_commands.body.payload>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Incident Slack Command Found",
+      "disabled": false,
+      "guid": "0074c96c335404150659c293e76c6cba",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "/incident",
+            "path": "<<receive_commands.body.command>>"
+          },
+          {
+            "type": "field==value",
+            "value": "create",
+            "path": "<<receive_commands.body.text>>"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Parse Response",
+      "disabled": false,
+      "guid": "e9ab664bc675b7fe8f4c9e33bf9c30e2",
+      "options": {
+        "mode": "message_only",
+        "payload": "=receive_commands.body.payload"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Create New Incident",
+      "disabled": false,
+      "guid": "131d6dcfaa1719c33b424cf0f96849c5",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "new",
+            "path": "<<parse_response.view.state.values.new_incident_block[\"new_incident-action\"].selected_option.value>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Existing Incident",
+      "disabled": false,
+      "guid": "26f6d517c973e59b607d5a7dce4a3435",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "existing",
+            "path": "<<parse_response.view.state.values.new_incident_block[\"new_incident-action\"].selected_option.value>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "bc7d08a81e0467e5520ada8b8b4fa91d",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "Placeholder incident created by <<parse_response.user.name>> via Slack. \nA Slack channel will be created to manage this incident. ",
+            "summary": "New Placeholder Incident"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_svc_user>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "7a8514b7809021d9639609e37c488f85",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<DEFAULT(create_issue_in_jira.body.key, parse_response.view.state.values.jira_textbox_block.jira_id.value)>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_svc_user>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Slack Channel Created: <<create_incident_channel_in_slack.body.channel.name>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Incident Slack Channel Topic",
+      "disabled": false,
+      "guid": "e938c9518a070eb76ca934ba516899f9",
+      "options": {
+        "url": "https://slack.com/api/conversations.setTopic",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<create_incident_channel_in_slack.body.channel.id>>",
+          "topic": "Incident channel to discuss: https://tinesio.atlassian.net/browse/<<DEFAULT(create_issue_in_jira.body.key, parse_response.view.state.values.jira_textbox_block.jira_id.value)>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Backup Slack Command Found",
+      "disabled": false,
+      "guid": "0f662fd4d5476a18535ace810b8db00a",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "/backup",
+            "path": "<<receive_commands.body.command>>"
+          },
+          {
+            "type": "regex",
+            "value": "backup",
+            "path": "<<receive_commands.body.text>>"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Backup Notification to Channel",
+      "disabled": false,
+      "guid": "4363d807a1be2d27f5ff18e3f30f1278",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<receive_commands.body.channel_id>>",
+          "text": "<%if archive_slack_command_found%>Backing up conversation before archive<%else%>Backing up conversation at the request of <@<<receive_commands.body.user_name>>><%endif%>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Ticket ID",
+      "disabled": false,
+      "guid": "6c27999ed7d0d5601f6b920eba28eb99",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "id": "<<REGEX_REPLACE(receive_commands.body.channel_name, \"incident.channel.|executive.channel.\") |> REPLACE(%, \"_\", \"-\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Chat Logs as Jira Comment",
+      "disabled": false,
+      "guid": "1e001c9f9b2ff146620912039166aacb",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<extract_ticket_id.id>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_svc_user>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Backup requested by <<receive_commands.body.user_name>> for the channel `<<receive_commands.body.channel_name>>`.\n\n<<build_conversation.add_names_jira>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Archive Slack Command Found",
+      "disabled": false,
+      "guid": "ee547a20a5c09619ef7ed83186d3e23d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "/archive_incident",
+            "path": "<<receive_commands.body.command>>"
+          },
+          {
+            "type": "regex",
+            "value": "archive",
+            "path": "<<receive_commands.body.text>>"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Verify Incident Channel",
+      "disabled": false,
+      "guid": "e58be085668811043e477e752f5ce416",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "incident.channel|executive.channel",
+            "path": "<<receive_commands.body.channel_name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Archive Notification to Channel",
+      "disabled": false,
+      "guid": "ce3d07ce28b480ae265d30e5d3a9dd2a",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<receive_commands.body.channel_id>>",
+          "text": "Archive Requested by <@<<receive_commands.body.user_name>>>. Channel will be backed up and archived in 1 hour.\nTo cancel this process and keep the channel open, click \\<<<PROMPT(\"cancel\")>>|here>."
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Archive Timer",
+      "disabled": false,
+      "guid": "8ccf6b51f286ca210a732d421dea25e7",
+      "options": {
+        "mode": "delay",
+        "seconds": 60
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Events",
+      "disabled": false,
+      "guid": "95cd894279e4bd453431cbbf62c8d1af",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "100",
+        "path": "<<receive_commands.body.trigger_id>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Cancel Archive",
+      "disabled": false,
+      "guid": "0e8c9a95e3c3072551f36e89ee3060c4",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": ".",
+            "path": "<<post_archive_notification_to_channel.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Archive Cancelled",
+      "disabled": false,
+      "guid": "e60a3fa2f924aa9750df5f3cf95dfa72",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<cancel_archive.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Archive Proceeding",
+      "disabled": false,
+      "guid": "460d43d7610b925b8c3957c36e973c25",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "true",
+            "path": "<<cancel_archive.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Archive Cancellation Notification to Channel",
+      "disabled": false,
+      "guid": "bfab79d4a2871a547c773312e28b3c76",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<receive_commands.body.channel_id>>",
+          "text": "Archive Cancelled. Channel will remain open"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Archive Proceeding Notification to Channel",
+      "disabled": false,
+      "guid": "8fd601d8a890f60c4fdc5cc33c36423e",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<receive_commands.body.channel_id>>",
+          "text": "Archive continuing. Channel will be backed up and Archived."
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Ticket ID",
+      "disabled": false,
+      "guid": "21ede0f73380036a73b1879ca7ad4563",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "id": "<<REGEX_REPLACE(receive_commands.body.channel_name, \"incident.channel.|executive.channel.\") |> REPLACE(%, \"_\", \"-\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "0363178cf88e3350b020285d3b27d251",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<extract_ticket_id.id>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_svc_user>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Channel archived by <<receive_commands.body.user_name>>."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Archive Channel",
+      "disabled": false,
+      "guid": "765be0f9c53c1fb9a436fc3c98145fa0",
+      "options": {
+        "url": "https://slack.com/api/conversations.archive",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "channel": "<<receive_commands.body.channel_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Executive Channel Needed",
+      "disabled": false,
+      "guid": "b055bd1363b8e9c69b2f5e5c6d45f512",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(parse_response.view.state.values.exec_channel_users[\"users_select-action\"].selected_users, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Executive Comms Channel in Slack",
+      "disabled": false,
+      "guid": "fe40d356a4d64782532da3949d73ab0b",
+      "options": {
+        "url": "https://slack.com/api/conversations.create",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "name": "executive_channel_<<DEFAULT(create_issue_in_jira.body.key, parse_response.view.state.values.jira_textbox_block.jira_id.value) |> REPLACE(%, \"-\", \"_\") |> DOWNCASE(%)>>",
+          "is_private": true
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Executive Slack Channel Topic",
+      "disabled": false,
+      "guid": "74bf3e797d95eb48b1a605baa73a198a",
+      "options": {
+        "url": "https://slack.com/api/conversations.setTopic",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<create_executive_comms_channel_in_slack.body.channel.id>>",
+          "topic": "Executive Communication channel related to: https://tinesio.atlassian.net/browse/<<DEFAULT(create_issue_in_jira.body.key, parse_response.view.state.values.jira_textbox_block.jira_id.value)>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Users to Executive Comms Channel in Slack",
+      "disabled": false,
+      "guid": "ac8f73ce689d282d419f9e4da192505b",
+      "options": {
+        "url": "https://slack.com/api/conversations.invite",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<create_executive_comms_channel_in_slack.body.channel.id>>",
+          "users": "<<JOIN(parse_response.view.state.values.exec_channel_users[\"users_select-action\"].selected_users, \",\")>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Incident Tines Resource",
+      "disabled": false,
+      "guid": "8b515e46d74b739b04bd8d05cea6557b",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/global_resources",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "name": "<<create_incident_channel_in_slack.body.channel.name>>",
+          "value": {
+            "slack_channel_id": "<<create_incident_channel_in_slack.body.channel.id>>",
+            "ticket_id": "<<DEFAULT(create_issue_in_jira.body.key, parse_response.view.state.values.jira_textbox_block.jira_id.value) |> DOWNCASE(%)>>",
+            "last_read_time": "<<DATE(\"now\", \"%s\")>>",
+            "created_by": "<<parse_response.user.username>>",
+            "resource_id": "a",
+            "conversation_file_id": "0"
+          },
+          "team_id": "1"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Generate Backup Info",
+      "disabled": false,
+      "guid": "6b1633c3850f5ca5b0196d229e011303",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "tracking_details": "=GET(RESOURCE, receive_commands.body.channel_name)",
+          "request_time": "<<DATE(\"now\", \"%s\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add ID to Resource",
+      "disabled": false,
+      "guid": "b28c6913696467a5ae4f7b62a6ea6b36",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/global_resources/<<create_incident_tines_resource.body.id>>/replace",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "key": "resource_id",
+          "value": "<<create_incident_tines_resource.body.id>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Backup Time",
+      "disabled": false,
+      "guid": "802271302b4dc3889275a99e0b5881e4",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/global_resources/<<generate_backup_info.tracking_details.resource_id>>/replace",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "key": "last_read_time",
+          "value": "<<generate_backup_info.request_time>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Members",
+      "disabled": false,
+      "guid": "8de7893d972eadfd923dc3fc5602f9dc",
+      "options": {
+        "url": "https://slack.com/api/conversations.members",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "channel": "<<receive_commands.body.channel_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Upload Conversation to Jira",
+      "disabled": false,
+      "guid": "db0a4089ed9da5ced3199a832478702c",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<extract_ticket_id.id>>/attachments",
+        "content_type": "data",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_svc_user>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "file": {
+            "contents": "<<build_conversation.add_names_csv>>",
+            "filename": "conversation_backup_<<receive_commands.body.channel_name>>_<<DATE(generate_backup_info.request_time, \"%Y-%m-%d %H:%M\")>>.csv"
+          }
+        },
+        "headers": {
+          "X-Atlassian-Token": "no-check"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Attachment Content",
+      "disabled": false,
+      "guid": "f98be919a1c143d56459a2e614a9c346",
+      "options": {
+        "url": "<<get_attachment_in_jira.body.content>>",
+        "content_type": "json",
+        "method": "get",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No File Exists",
+      "disabled": false,
+      "guid": "e40a35e9bc72d4ada71392b8dbbea421",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<generate_backup_info.tracking_details.conversation_file_id>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Conversation File ID to Resource",
+      "disabled": false,
+      "guid": "f86bff5662124ed9d71fde935898b3cb",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/global_resources/<<generate_backup_info.tracking_details.resource_id>>/replace",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "key": "conversation_file_id",
+          "value": "<<upload_conversation_to_jira.body.first.id>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "File Exists",
+      "disabled": false,
+      "guid": "4dd12f4cf583df6a121da3cfe1dbaed9",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "0",
+            "path": "<<generate_backup_info.tracking_details.conversation_file_id>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Remove Attachment in Jira",
+      "disabled": false,
+      "guid": "596f9209f77ff6e28999d497b0c6471d",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/attachment/<<generate_backup_info.tracking_details.conversation_file_id>>",
+        "content_type": "json",
+        "method": "delete",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Attachment in Jira",
+      "disabled": false,
+      "guid": "d880a3e78dd584b63ebb08e497bdc774",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/attachment/<<generate_backup_info.tracking_details.conversation_file_id>>",
+        "content_type": "json",
+        "method": "get",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Upload Conversation to Jira",
+      "disabled": false,
+      "guid": "62ab3febc7e38d5520933d20ec16617b",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<extract_ticket_id.id>>/attachments",
+        "content_type": "data",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_svc_user>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "file": {
+            "contents": "<<get_attachment_content.body>><<build_conversation.add_names_csv>>",
+            "filename": "conversation_backup_<<receive_commands.body.channel_name>>_<<DATE(generate_backup_info.request_time, \"%Y-%m-%d %H:%M\")>>.csv"
+          }
+        },
+        "headers": {
+          "X-Atlassian-Token": "no-check"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Conversation File ID in Resource",
+      "disabled": false,
+      "guid": "350e876052ac2419e0b33c9025204fc5",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/global_resources/<<generate_backup_info.tracking_details.resource_id>>/replace",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "key": "conversation_file_id",
+          "value": "<<upload_conversation_to_jira.body.first.id>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add ID to Resource",
+      "disabled": false,
+      "guid": "331fd0eb51943eb23a131b9b6f4706bf",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/global_resources/<<create_executive_comms_tines_resource.body.id>>/replace",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "key": "resource_id",
+          "value": "<<create_executive_comms_tines_resource.body.id>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Executive Comms Tines Resource",
+      "disabled": false,
+      "guid": "4c8689ae9d2b3139f16d2c31317890df",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/global_resources",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "name": "<<create_executive_comms_channel_in_slack.body.channel.name>>",
+          "value": {
+            "slack_channel_id": "<<create_executive_comms_channel_in_slack.body.channel.id>>",
+            "ticket_id": "<<DEFAULT(create_issue_in_jira.body.key, parse_response.view.state.values.jira_textbox_block.jira_id.value) |> DOWNCASE(%)>>",
+            "last_read_time": "<<DATE(\"now\", \"%s\")>>",
+            "created_by": "<<parse_response.user.username>>",
+            "resource_id": "a",
+            "conversation_file_id": "0"
+          },
+          "team_id": "1"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Members",
+      "disabled": false,
+      "guid": "06dd4441b84c2c5d86564534fbafa079",
+      "options": {
+        "mode": "explode",
+        "path": "=get_members.body.members",
+        "to": "individual_member"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get User Details",
+      "disabled": false,
+      "guid": "23b1c620d92ad6b37c055215980ca07f",
+      "options": {
+        "url": "https://slack.com/api/users.info",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "user": "<<explode_members.individual_member>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode Members",
+      "disabled": false,
+      "guid": "53a8cd844fc5c9dd8dd07fd89181375e",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=explode_members.guid",
+        "size_path": "=LIQUID_SIZE(explode_members, \"dot_notation\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Channel History",
+      "disabled": false,
+      "guid": "9100df7eee93c94841f5f4f26f16d08e",
+      "options": {
+        "url": "https://slack.com/api/conversations.history",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "channel": "<<receive_commands.body.channel_id>>",
+          "oldest": "<<generate_backup_info.tracking_details.last_read_time>>.99999",
+          "limit": "1000"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Conversation",
+      "disabled": false,
+      "guid": "12029d78de2b63e58f26dae112f80b1f",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "conversation_csv": "=LEGACY_LIQUID.payload.conversation_csv",
+          "add_names_csv": "=LEGACY_LIQUID.payload.add_names_csv",
+          "conversation_jira_table": "=LEGACY_LIQUID.payload.conversation_jira_table",
+          "add_names_jira": "=LEGACY_LIQUID.payload.add_names_jira"
+        },
+        "legacy_liquid": {
+          "payload": {
+            "conversation_csv": "{% capture conversation_csv %}{% for message in .get_channel_history.body.messages reversed %}\n{{message.ts | truncate: 10, '' | date: '%Y-%m-%d %H:%M:%S' }},{{message.user}},{{message.text}}{% endfor %}{% endcapture %}",
+            "add_names_csv": "{% for member in implode_members %}{% assign conversation_csv = conversation_csv | replace: .member.get_user_details.body.user.id, .member.get_user_details.body.user.name %}{% endfor %}{{conversation_csv}}",
+            "conversation_jira_table": "{% capture conversation_jira %}{% for message in .get_channel_history.body.messages reversed %}\n|{{message.ts | truncate: 10, '' | date: '%Y-%m-%d %H:%M:%S' }}|{{message.user}}|{{message.text}}|{% endfor %}{% endcapture %}",
+            "add_names_jira": "{% for member in implode_members %}{% assign conversation_jira = conversation_jira | replace: .member.get_user_details.body.user.id, .member.get_user_details.body.user.name %}{% endfor %}{{conversation_jira}}"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay for Backup",
+      "disabled": false,
+      "guid": "9e1a920e9ff2f5de555f92fea9d4305d",
+      "options": {
+        "mode": "delay",
+        "seconds": "15"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete a Incident Resource",
+      "disabled": false,
+      "guid": "7bff80b8ff77c45898400634262608ee",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/global_resources/<<get_resource_id.resource_details.resource_id>>",
+        "content_type": "json",
+        "method": "delete",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Resource ID",
+      "disabled": false,
+      "guid": "c9f17b1bb37f157044c53be45f0341e3",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "resource_details": "=GET(RESOURCE, receive_commands.body.channel_name)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Story Requirements\n\n## Slack Configuration\n- [ ] Slack App Created\n- [ ] Interactivity Enabled in Slack App\n- [ ] Interactive Webhook Configured with Tines `Receive Commands` Webhook URL in the Slack App\n- [ ] Slack Bot Permissions granted:\n- channels:manage\n- channels:read\n- channels:history\n- groups:write\n- groups:history\n- im:write\n- chat:write\n- users:read\n- [ ] Slash Command Created and directed to Tines `Receive Commands` Webhook\n- `/irbot` (Customizable)\n\n\n# Jira Configuration\n- [ ] Jira Service Account created and added to correct Jira Project\n- [ ] `Create Issue in Jira` Action updated to  include correct Jira Project Identifier\n\n\n# Tines Configuration\n- [ ] Text Credential called `slack_irbot` created containing Slack Bot Token.\n- [ ] Text Resource called `jira_domain` created containing the jira domain e.g. `tines.atlassian.net`.\n- [ ] Text Resource called `jira_svc_user` created containing the username of the service account.\n- [ ] Text Credential called `jira_svc_pwd` created containing the password of the service account\n- [ ] Text Resource called `tines_domain` created containing the Tines Tenant Name e.g. snowy-pond-1234.tines.io\n- [ ] Text Resource called `tines_api_email` created containing the email address of the API user account.\n- [ ] Text Credential called `tines_user_token` created containing the API Token for the above user account\n\n",
+      "position": [
+        1425.0,
+        -465.0
+      ],
+      "guid": "f6ab07d008394a1eccff5e137f7c42cd",
+      "width": null
+    },
+    {
+      "content": "Receive commands\n\nThis webhook will receive all response and command information from Slack. It should be configured as the receiving webhook for each Slash Command, and for Slack Interactivity.",
+      "position": [
+        750.0,
+        15.0
+      ],
+      "guid": "1bd2122d924c82c66f3c78c9d303bab3",
+      "width": null
+    },
+    {
+      "content": "1. Starting the process\n\nThis interaction will start by the user typing `/incident`. This command will be captured by the Trigger Action here, and a modal view will be presented to the user to gather requirements.\n\nThis modal can easily be extended to include additional fields as needed.",
+      "position": [
+        -210.0,
+        285.0
+      ],
+      "guid": "d4c1db979a69ef02cd5e761f616ade23",
+      "width": null
+    },
+    {
+      "content": "2. Handling Modal Response\n\nThe users response will be captured and parsed here.\n\nSome logic exists here to identify if the user has requested a new Jira Ticket be created, or whether to use an existing case.",
+      "position": [
+        435.0,
+        285.0
+      ],
+      "guid": "1806ea14bed66d982c2bf68535e78084",
+      "width": null
+    },
+    {
+      "content": "Creating Channels\n\nAn Incident Slack channel will be created with the name format `incident_channel_<jira_id>`.\n\nThe provided list of users will be added to this new channel.",
+      "position": [
+        435.0,
+        675.0
+      ],
+      "guid": "1763e61ef2dfd00155831bf8c4322444",
+      "width": null
+    },
+    {
+      "content": "Additional Channels\n\nIf the submitting user provided additional users to be added to an Executive Slack Channel for this incident, then an additional channel will be created. It's name format will be `executive_channel_<jira_id>`",
+      "position": [
+        435.0,
+        1035.0
+      ],
+      "guid": "add9afd32457d08bcd524481d7654526",
+      "width": null
+    },
+    {
+      "content": "Tracking State\n\nSome information at this stage will be important through the process, like Jira ID, Slack Channel ID, and the last time the conversation was backed up.\n\nTo help us track state, a Tines Resource is created to store this information. One resource is created for each Slack Channel.",
+      "position": [
+        1005.0,
+        855.0
+      ],
+      "guid": "562317a312a3f8b364e1caa10185944e",
+      "width": null
+    },
+    {
+      "content": "3. Managing Backups\n\nPeriodically, a user may type `/backup` in the Slack Channel to store a log of the conversation for auditing purposes.",
+      "position": [
+        1769.0,
+        280.0
+      ],
+      "guid": "225c3cca6694eba19fa5e10c44111142",
+      "width": null
+    },
+    {
+      "content": "Preparing for the backup\n\nThe Tines Resource will store the last time a backup was taken. So, this is parsed first in `Generate Backup Info`, alongside the current time.\n\n`Get Members` will retrieve a list of all user_ids in the Slack Channel, and for each user, we will retrieve their actual name. This will help identify the user that posted each message later.",
+      "position": [
+        1755.0,
+        480.0
+      ],
+      "guid": "9c796c12d36b3dbd61f81c64e0e94672",
+      "width": null
+    },
+    {
+      "content": "Taking the backup\n\nAll messages posted since the last backup time will be retrieved by Tines.\n\nThis conversation backup includes Slack User IDs rather than names, so we are taking a minute to reformat this in `Build Conversation`. Here, User IDs will be replaced by the users name.",
+      "position": [
+        1755.0,
+        795.0
+      ],
+      "guid": "2f0cba984c67696a2582a7b752d4b956",
+      "width": null
+    },
+    {
+      "content": "Storing the Backup\n\nThis Story is configured to backup the conversation into Jira Comments, and as a CSV attachment to the Jira Incident. Both of these will not be necessary, but are included for example.\n\n`Add Chat Logs as Jira Comment` will post the messages in a table directly to Jira.\n\nWhile the remaining Actions will either create a new CSV File attachment containing the backup, or replace an existing CSV File attachment with an updated version.\n\nOur Tines Resource will be updated to include:\n- The time this backup was taken, and\n- The File ID of the CSV Attachment for easy retrieval later.\n\n",
+      "position": [
+        1905.0,
+        1335.0
+      ],
+      "guid": "8697776f68211970469132f43a23110b",
+      "width": null
+    },
+    {
+      "content": "4. Archiving the Channels\n\nOnce the incident has completed, a user can type `/archive_incident` to initiate the final backup and archive process.\n\nA trigger action is present here to ensure that **only** Incident or Executive Incident channels can be archived.",
+      "position": [
+        2685.0,
+        285.0
+      ],
+      "guid": "d7061fd94a6bff42d94ddb056675b231",
+      "width": null
+    },
+    {
+      "content": "Notifying the Channel\n\nA message is posted to the channel notifying all users that the channel will be archived in 1 hour. A Tines Prompt is included in this message to allow for this request to be cancelled if it was issued in error.\n\nAfter one hour, if the Cancel Prompt was not clicked, a message will be sent to the channel confirming that archiving will continue.",
+      "position": [
+        2685.0,
+        510.0
+      ],
+      "guid": "8a3c8951e9aa10bce176851128665e4d",
+      "width": null
+    },
+    {
+      "content": "A Final Backup\n\nHere, we are linking in with the `Backup` flow. This will backup the message contents one final time.",
+      "position": [
+        2685.0,
+        855.0
+      ],
+      "guid": "52bd0454ff701f93274702e0b34223a0",
+      "width": null
+    },
+    {
+      "content": "Archiving and Tidying Up!\n\nTines will then Archive the Slack Channel.\nA note will be added to the Jira Ticket confirming that the channel has been archived.\n\nFinally, the Tines Resource used for tracking incident Information will be deleted.",
+      "position": [
+        2670.0,
+        1155.0
+      ],
+      "guid": "ee2bfb8ab53c99c38cbfa74bb195ea5c",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/slack_logo_purple.png\n\n# **Description**\n\nThis Story is used directly through Slack. It allows users manage & create incident channels in Slack with associated Jira issues where conversations are logged\n\nOnce configured, the following commands can be used to run specific commands:\n\n1. `/irbot create` - Will trigger the Slack Modal to collect data used to create the incident channels.\n2. `/irbot backup` - Used to initiate a backup of the conversation\n3. `/irbot archive` - Used to kick off the archiving process\n\n\nThese keywords can be customized to suit requirement. Additional keywords can be handled by adding extra branches to this Story.",
+      "position": [
+        1080.0,
+        -480.0
+      ],
+      "guid": "d225f445400b1c19a73e2270f0280841",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 4
+    },
+    {
+      "source": 0,
+      "receiver": 5
+    },
+    {
+      "source": 0,
+      "receiver": 12
+    },
+    {
+      "source": 0,
+      "receiver": 16
+    },
+    {
+      "source": 1,
+      "receiver": 33
+    },
+    {
+      "source": 1,
+      "receiver": 11
+    },
+    {
+      "source": 2,
+      "receiver": 10
+    },
+    {
+      "source": 4,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 3
+    },
+    {
+      "source": 6,
+      "receiver": 8
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 9
+    },
+    {
+      "source": 8,
+      "receiver": 1
+    },
+    {
+      "source": 9,
+      "receiver": 1
+    },
+    {
+      "source": 10,
+      "receiver": 29
+    },
+    {
+      "source": 11,
+      "receiver": 2
+    },
+    {
+      "source": 12,
+      "receiver": 34
+    },
+    {
+      "source": 13,
+      "receiver": 37
+    },
+    {
+      "source": 14,
+      "receiver": 36
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 17,
+      "receiver": 18
+    },
+    {
+      "source": 18,
+      "receiver": 21
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 20,
+      "receiver": 23
+    },
+    {
+      "source": 20,
+      "receiver": 22
+    },
+    {
+      "source": 21,
+      "receiver": 20
+    },
+    {
+      "source": 22,
+      "receiver": 24
+    },
+    {
+      "source": 23,
+      "receiver": 25
+    },
+    {
+      "source": 25,
+      "receiver": 54
+    },
+    {
+      "source": 25,
+      "receiver": 34
+    },
+    {
+      "source": 26,
+      "receiver": 27
+    },
+    {
+      "source": 27,
+      "receiver": 56
+    },
+    {
+      "source": 28,
+      "receiver": 26
+    },
+    {
+      "source": 29,
+      "receiver": 30
+    },
+    {
+      "source": 30,
+      "receiver": 48
+    },
+    {
+      "source": 30,
+      "receiver": 31
+    },
+    {
+      "source": 31,
+      "receiver": 32
+    },
+    {
+      "source": 33,
+      "receiver": 35
+    },
+    {
+      "source": 34,
+      "receiver": 13
+    },
+    {
+      "source": 36,
+      "receiver": 42
+    },
+    {
+      "source": 36,
+      "receiver": 40
+    },
+    {
+      "source": 36,
+      "receiver": 15
+    },
+    {
+      "source": 37,
+      "receiver": 49
+    },
+    {
+      "source": 38,
+      "receiver": 41
+    },
+    {
+      "source": 39,
+      "receiver": 43
+    },
+    {
+      "source": 40,
+      "receiver": 38
+    },
+    {
+      "source": 42,
+      "receiver": 44
+    },
+    {
+      "source": 43,
+      "receiver": 45
+    },
+    {
+      "source": 44,
+      "receiver": 39
+    },
+    {
+      "source": 45,
+      "receiver": 46
+    },
+    {
+      "source": 48,
+      "receiver": 47
+    },
+    {
+      "source": 49,
+      "receiver": 50
+    },
+    {
+      "source": 50,
+      "receiver": 51
+    },
+    {
+      "source": 51,
+      "receiver": 52
+    },
+    {
+      "source": 52,
+      "receiver": 53
+    },
+    {
+      "source": 53,
+      "receiver": 14
+    },
+    {
+      "source": 54,
+      "receiver": 28
+    },
+    {
+      "source": 56,
+      "receiver": 55
+    }
+  ],
+  "diagram_layout": "{\"6aed622ce3ee4b9c86c4967d188c578c\":[750,180],\"5376305dc422591924129487b9dd79b6\":[750,585],\"71b5f247b0200a9d26283899805d2973\":[750,765],\"6f3b5ae78b40590273e76edc5701f9c6\":[105,390],\"d4229a64485c34ed6944f6e69b9cae84\":[750,285],\"0074c96c335404150659c293e76c6cba\":[105,285],\"e9ab664bc675b7fe8f4c9e33bf9c30e2\":[750,360],\"131d6dcfaa1719c33b424cf0f96849c5\":[750,435],\"26f6d517c973e59b607d5a7dce4a3435\":[1050,465],\"bc7d08a81e0467e5520ada8b8b4fa91d\":[750,510],\"7a8514b7809021d9639609e37c488f85\":[750,855],\"e938c9518a070eb76ca934ba516899f9\":[750,675],\"0f662fd4d5476a18535ace810b8db00a\":[1530,285],\"4363d807a1be2d27f5ff18e3f30f1278\":[1530,465],\"6c27999ed7d0d5601f6b920eba28eb99\":[1530,1005],\"1e001c9f9b2ff146620912039166aacb\":[1860,1245],\"ee547a20a5c09619ef7ed83186d3e23d\":[2445,285],\"e58be085668811043e477e752f5ce416\":[2445,390],\"ce3d07ce28b480ae265d30e5d3a9dd2a\":[2445,480],\"8ccf6b51f286ca210a732d421dea25e7\":[2445,585],\"95cd894279e4bd453431cbbf62c8d1af\":[2445,675],\"0e8c9a95e3c3072551f36e89ee3060c4\":[2235,585],\"e60a3fa2f924aa9750df5f3cf95dfa72\":[2205,750],\"460d43d7610b925b8c3957c36e973c25\":[2445,750],\"bfab79d4a2871a547c773312e28b3c76\":[2205,825],\"8fd601d8a890f60c4fdc5cc33c36423e\":[2445,825],\"21ede0f73380036a73b1879ca7ad4563\":[2445,1080],\"0363178cf88e3350b020285d3b27d251\":[2445,1155],\"765be0f9c53c1fb9a436fc3c98145fa0\":[2445,1005],\"b055bd1363b8e9c69b2f5e5c6d45f512\":[750,945],\"fe40d356a4d64782532da3949d73ab0b\":[750,1035],\"74bf3e797d95eb48b1a605baa73a198a\":[750,1140],\"ac8f73ce689d282d419f9e4da192505b\":[750,1230],\"8b515e46d74b739b04bd8d05cea6557b\":[1050,675],\"6b1633c3850f5ca5b0196d229e011303\":[1530,390],\"b28c6913696467a5ae4f7b62a6ea6b36\":[1050,780],\"802271302b4dc3889275a99e0b5881e4\":[1530,1170],\"8de7893d972eadfd923dc3fc5602f9dc\":[1530,555],\"db0a4089ed9da5ced3199a832478702c\":[1425,1320],\"f98be919a1c143d56459a2e614a9c346\":[1680,1395],\"e40a35e9bc72d4ada71392b8dbbea421\":[1425,1245],\"f86bff5662124ed9d71fde935898b3cb\":[1425,1410],\"4dd12f4cf583df6a121da3cfe1dbaed9\":[1680,1245],\"596f9209f77ff6e28999d497b0c6471d\":[1680,1485],\"d880a3e78dd584b63ebb08e497bdc774\":[1680,1320],\"62ab3febc7e38d5520933d20ec16617b\":[1680,1575],\"350e876052ac2419e0b33c9025204fc5\":[1680,1665],\"331fd0eb51943eb23a131b9b6f4706bf\":[1035,1245],\"4c8689ae9d2b3139f16d2c31317890df\":[1035,1140],\"06dd4441b84c2c5d86564534fbafa079\":[1530,630],\"23b1c620d92ad6b37c055215980ca07f\":[1530,705],\"53a8cd844fc5c9dd8dd07fd89181375e\":[1530,780],\"9100df7eee93c94841f5f4f26f16d08e\":[1530,855],\"12029d78de2b63e58f26dae112f80b1f\":[1530,930],\"9e1a920e9ff2f5de555f92fea9d4305d\":[2445,930],\"7bff80b8ff77c45898400634262608ee\":[2445,1335],\"c9f17b1bb37f157044c53be45f0341e3\":[2445,1245]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Create & manage incident comms via Slack Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

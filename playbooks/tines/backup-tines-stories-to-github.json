@@ -1,0 +1,654 @@
+{
+  "schema_version": 4,
+  "name": "Backup Tines Stories to GitHub",
+  "description": "The Story features a form that can be used to routinely export and backup Tines Stories to GitHub. Individual Stories can be backed up by using their Story ID, or the argument 'all' for Story ID will backup all Stories that can be accessed.\n\ntags: Intermediate, Internal, GitHub, Backup\nicons: tines, ➡️, github\nvisibility: public",
+  "guid": "c9af405980c9a2735673bc08ed78e99a",
+  "slug": "backup_tines_stories_to_github",
+  "exported_at": "2022-07-11T17:34:50Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Story",
+      "disabled": false,
+      "guid": "76d7d5d84bf462f5deffd22bfe880688",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/stories/<<receive_sts.body.story_id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive STS",
+      "disabled": false,
+      "guid": "8ed0a48036286501c4b629ed58d917d8",
+      "options": {
+        "secret": "65e1a63657da4d60f19e19c8cd208d54",
+        "verbs": "get,post",
+        "path": "bee72d2e8a5265f4f675dfa6bce2ca43"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Send to Story Agent",
+      "disabled": false,
+      "guid": "0b5a31abeda349df7f6c418fab423b71",
+      "options": {
+        "story": "<<STORY.backup_tines_stories_to_github>>",
+        "payload": {
+          "story_id": "all",
+          "commit": "final"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for All Stories",
+      "disabled": false,
+      "guid": "d76643979693efbf0f0cb639e2e79eb1",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "all",
+            "path": "<<receive_sts.body.story_id>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for Single Story",
+      "disabled": false,
+      "guid": "4bb9e829021b0f298272a240aeedeac6",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "all",
+            "path": "<<receive_sts.body.story_id>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Github Repository Contents",
+      "disabled": false,
+      "guid": "2d6792d38625ef0c8ff5757f460e1dc8",
+      "options": {
+        "url": "https://api.github.com/repos/<<RESOURCE.github_owner>>/<<RESOURCE.github_repo>>/contents/<<set_file_path_and_commit_message.path>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "File Path Exists",
+      "disabled": false,
+      "guid": "a0d09fbfcee2b727fdb3a75e6f288983",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "200",
+            "path": "<<get_github_repository_contents.headers.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Stories",
+      "disabled": false,
+      "guid": "4bb0bb52b0167c5898fb806508c2a7d2",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "story": "=get_story.body"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "File Path Doesn't Exist",
+      "disabled": false,
+      "guid": "055c5f195dcd24f248ff3c7f35e304ae",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "200",
+            "path": "<<get_github_repository_contents.headers.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Commit Github File",
+      "disabled": false,
+      "guid": "55203e55ba4955018fb2779978b4614c",
+      "options": {
+        "url": "https://api.github.com/repos/<<RESOURCE.github_owner>>/<<RESOURCE.github_repo>>/contents/<<REPLACE(set_file_path_and_commit_message.path, \" \", \"_\") |> REPLACE(%, \"[\", \"\") |> REPLACE(%, \"]\", \"\")>>export.json",
+        "content_type": "json",
+        "method": "put",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        },
+        "payload": {
+          "message": "<<set_file_path_and_commit_message.commit>>",
+          "content": "<<JSON(export_story.body) |> BASE64_ENCODE(%)>>",
+          "sha": "<<WHERE(get_github_repository_contents.body, \"name\", \"export.json\") |> GET(%, \"sha\")>>"
+        },
+        "retry_on_status": [
+          "409"
+        ],
+        "log_error_on_status": [
+          "400-408",
+          "410-500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Commit Github README File",
+      "disabled": false,
+      "guid": "5db4fed801b0463b85d8fac3300b124f",
+      "options": {
+        "url": "https://api.github.com/repos/<<RESOURCE.github_owner>>/<<RESOURCE.github_repo>>/contents/<<set_file_path_and_commit_message.path>>README.md",
+        "content_type": "json",
+        "method": "put",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        },
+        "payload": {
+          "message": "<<set_file_path_and_commit_message.commit>>",
+          "content": "<<BASE64_ENCODE(export_story.body.description)>>",
+          "sha": "<<WHERE(get_github_repository_contents.body, \"name\", \"README.md\") |> GET(%, \"sha\")>>"
+        },
+        "retry_on_status": [
+          "409"
+        ],
+        "log_error_on_status": [
+          "400-408",
+          "410-500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Exit STS",
+      "disabled": false,
+      "guid": "ed9419f19b389ba9b167222990d3df78",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "message": "This is an automatically generated message from Tines"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Commit Github File",
+      "disabled": false,
+      "guid": "b9bee0dd732a22d7da937c43ae607e0a",
+      "options": {
+        "url": "https://api.github.com/repos/<<RESOURCE.github_owner>>/<<RESOURCE.github_repo>>/contents/<<REPLACE(set_file_path_and_commit_message.path, \" \", \"_\") |> REPLACE(%, \"[\", \"\") |> REPLACE(%, \"]\", \"\")>>export.json",
+        "content_type": "json",
+        "method": "put",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        },
+        "payload": {
+          "message": "<<set_file_path_and_commit_message.commit>>",
+          "content": "<<JSON(export_story.body) |> BASE64_ENCODE(%)>>"
+        },
+        "retry_on_status": [
+          "409"
+        ],
+        "log_error_on_status": [
+          "400-408",
+          "410-500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Commit Github README File",
+      "disabled": false,
+      "guid": "a3caa4b372d8473f1268b772d69e3657",
+      "options": {
+        "url": "https://api.github.com/repos/<<RESOURCE.github_owner>>/<<RESOURCE.github_repo>>/contents/<<set_file_path_and_commit_message.path>>README.md",
+        "content_type": "json",
+        "method": "put",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        },
+        "payload": {
+          "message": "<<set_file_path_and_commit_message.commit>>",
+          "content": "<<BASE64_ENCODE(get_single_story.body.description)>>"
+        },
+        "retry_on_status": [
+          "409"
+        ],
+        "log_error_on_status": [
+          "400-408",
+          "410-500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set File Path and Commit Message",
+      "disabled": false,
+      "guid": "6d73dfe993796d747b0b25311135202b",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "path": "<<explode_stories.story.slug>>-<<explode_stories.story.team_id>>/",
+          "commit": "<%if receive_sts.body.commit%><<receive_sts.body.commit>><%else%>Backup on <<DATE(\"now\", \"%Y-%m-%d\")>><%endif%>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Stories",
+      "disabled": false,
+      "guid": "ef2299c259ceafb83da5524227d6ef38",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/stories?per_page=500",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Stories",
+      "disabled": false,
+      "guid": "7ff33e32821e26a3d5482d4828715559",
+      "options": {
+        "mode": "explode",
+        "path": "=get_stories.body.stories",
+        "to": "story"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Export Story",
+      "disabled": false,
+      "guid": "404e3118384ecd5e53de2ffe26e1307c",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/stories/<<explode_stories.story.id>>/export",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Story Requirements\n\n# GitHub\n- [ ] A configured OAuth app within GitHub with the scopes `repo user`\n\n# Tines\n- [ ] A Resource named `tines_api_email` containing the email address of the user.\n- [ ] A Credential named `tines_user_token` containing the API Token of the above user.\n- [ ] A Resource named `tines_domain` containing the domain of the Tines tenant. e.g. `snowy-pond-1234.tines.com`\n- [ ] A Resource named `github_owner` containing the owner of the target repo.\n- [ ] A Resource named `github_repo` containing the name of the target repo.\n- [ ] An OAuth Credential named `github` configured using the OAuth app created in GitHub\n\n",
+      "position": [
+        585.0,
+        -60.0
+      ],
+      "guid": "4c45965ae66024ecec7bbe760effd1dd",
+      "width": null
+    },
+    {
+      "content": "# Running This Story\n\nThis Story is called through a Send To Story Action, which passes through either the `story_id` of the Story to backed up, or the keyword `all` which will backup all Stories.",
+      "position": [
+        -480.0,
+        -30.0
+      ],
+      "guid": "ea1f62c03a9476b7244de017db58e112",
+      "width": null
+    },
+    {
+      "content": "# Export The Story\n\nOnce the list of Stories has been received, the Tines Export Story API is used to export the Story as JSON.",
+      "position": [
+        270.0,
+        525.0
+      ],
+      "guid": "52e718208be18f4ccc4bd23828f17c20",
+      "width": null
+    },
+    {
+      "content": "# Preparing to Commit\n\nThe intended GitHub File Path of the Story, and the commit message are generated.\n\nThe contents of the GitHub Repo is then retrieved. This allows Tines to check whether the Story in question has previously been committed, or it is new.",
+      "position": [
+        -375.0,
+        585.0
+      ],
+      "guid": "0bf021480f2ce6fa976193bbea82e1dc",
+      "width": null
+    },
+    {
+      "content": "# Committing the Story\n\nExisting Stories are committed to the same file path, so previous versions exist. While new Stories are committed onto the generated file path.\n\nFinally, the README is updated to include the description of the Story.",
+      "position": [
+        300.0,
+        930.0
+      ],
+      "guid": "72525e71f4e394fed3b48512faf1ff54",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/github.png\n\n# Github Backup\n\n## Requirements\n\n+ Github API OAuth authentication\n\n+ Tines API authentication\n\n## Overview\n\nExports stories to Github. The story features a form that can be used ad hoc to backup stories.\n\nThe Send to Story Action can be scheduled to run routine story backups.\n\nIndividual stories can be backed up by using their Story ID, or the argument 'all' for Story ID will backup all stories that can be accessed.\n\nBackups are stored in folders named for their reference slug and the Team ID they are present in.",
+      "position": [
+        270.0,
+        -75.0
+      ],
+      "guid": "4bc5f0047de851447509a59ed03d8456",
+      "width": 262
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 7
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 15
+    },
+    {
+      "source": 4,
+      "receiver": 0
+    },
+    {
+      "source": 5,
+      "receiver": 8
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 9
+    },
+    {
+      "source": 7,
+      "receiver": 17
+    },
+    {
+      "source": 8,
+      "receiver": 12
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 11
+    },
+    {
+      "source": 14,
+      "receiver": 5
+    },
+    {
+      "source": 15,
+      "receiver": 16
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 17,
+      "receiver": 14
+    }
+  ],
+  "diagram_layout": "{\"76d7d5d84bf462f5deffd22bfe880688\":[60,330],\"8ed0a48036286501c4b629ed58d917d8\":[-45,105],\"0b5a31abeda349df7f6c418fab423b71\":[-480,195],\"d76643979693efbf0f0cb639e2e79eb1\":[-165,225],\"4bb9e829021b0f298272a240aeedeac6\":[60,225],\"2d6792d38625ef0c8ff5757f460e1dc8\":[-30,720],\"a0d09fbfcee2b727fdb3a75e6f288983\":[-180,840],\"4bb0bb52b0167c5898fb806508c2a7d2\":[60,420],\"055c5f195dcd24f248ff3c7f35e304ae\":[60,840],\"55203e55ba4955018fb2779978b4614c\":[-180,930],\"5db4fed801b0463b85d8fac3300b124f\":[-180,1035],\"ed9419f19b389ba9b167222990d3df78\":[-75,1155],\"b9bee0dd732a22d7da937c43ae607e0a\":[60,930],\"a3caa4b372d8473f1268b772d69e3657\":[60,1035],\"6d73dfe993796d747b0b25311135202b\":[-30,600],\"ef2299c259ceafb83da5524227d6ef38\":[-165,330],\"7ff33e32821e26a3d5482d4828715559\":[-165,420],\"404e3118384ecd5e53de2ffe26e1307c\":[-30,510]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "8ed0a48036286501c4b629ed58d917d8",
+  "exit_agent_guids": [
+    "ed9419f19b389ba9b167222990d3df78"
+  ],
+  "exit_agent_guid": "ed9419f19b389ba9b167222990d3df78",
+  "send_to_stories": [],
+  "form": {
+    "name": "Backup Tines Story to Github",
+    "description": "",
+    "fields": [
+      {
+        "name": "Commit Message",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Story ID",
+        "description": "Set \"All\" to export all stories.",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "8ed0a48036286501c4b629ed58d917d8",
+    "success_message": "Thank you for your submission"
+  }
+}

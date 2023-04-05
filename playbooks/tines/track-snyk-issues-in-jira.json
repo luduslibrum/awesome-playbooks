@@ -1,0 +1,598 @@
+{
+  "schema_version": 4,
+  "name": "Track Snyk issues in Jira",
+  "description": "Analyze projects in Snyk, search Jira for open vulnerabilities, and create tickets as required.\n\ntags: Snyk, Jira, Detect, Enrich, Intermediate\nicons: Snyk, 📝, Jira\nvisibility: public",
+  "guid": "1373991e40c1b4c9531e987ac3ca0b67",
+  "slug": "track_snyk_issues_in_jira",
+  "exported_at": "2022-07-11T17:28:09Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Reopen Issue in Jira",
+      "disabled": false,
+      "guid": "10ceb491da64edfb0ba4b7e05c8e4589",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<search_snyk_issue_in_jira.body.issues.first.key>>/transitions?expand=transitions.fields",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jirausername>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "transition": {
+            "id": "11"
+          }
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get a Single Project in Snyk",
+      "disabled": false,
+      "guid": "c460cfd5e5529a8eaea365037af35d4f",
+      "options": {
+        "url": "https://snyk.io/api/v1/org/<<RESOURCE.snyk_org_id>>/project/<<extract_main_details.snyk_project_id>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.snyk>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Scheduled List All Projects in Snyk",
+      "disabled": false,
+      "guid": "d786d68041d1649bb999a11b7dff892b",
+      "options": {
+        "url": "https://snyk.io/api/v1/org/<<RESOURCE.snyk_org_id>>/projects",
+        "content_type": "json",
+        "method": "post",
+        "payload": {},
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.snyk>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger on Specific Project Types",
+      "disabled": false,
+      "guid": "918f669a6430fd4952439b013c792e75",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": ".*",
+            "path": "<<get_a_single_project_in_snyk.body.name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Projects",
+      "disabled": false,
+      "guid": "29d5a021205e403840497845dc4e19bf",
+      "options": {
+        "mode": "explode",
+        "path": "=scheduled_list_all_projects_in_snyk.body.projects",
+        "to": "snyk_projects"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Jira Webhook with Snyk IDs",
+      "disabled": false,
+      "guid": "088b2e763662d6a6e707e4d1eca939ea",
+      "options": {
+        "secret": "7d113666fb7c14d2306c63a7432e33cc",
+        "verbs": "get,post",
+        "include_headers": "false",
+        "path": "9c4d97279578a60aab4e5a10ee5f3120"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Vulnerability Issue in Jira Service Desk",
+      "disabled": false,
+      "guid": "2e7066119cc294b856e16a02a9038b4e",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "EN"
+            },
+            "issuetype": {
+              "name": "Vulnerability"
+            },
+            "priority": {
+              "name": "<<CAPITALIZE(explode_snyk_issues.active_snyk_issues.issueData.severity)>>"
+            },
+            "summary": "<<explode_snyk_issues.active_snyk_issues.issueData.title>> : <<get_a_single_project_in_snyk.body.name>>",
+            "description": "*CVSS Score:* <<explode_snyk_issues.active_snyk_issues.issueData.cvssScore>>\n*CVSSv3:* <<explode_snyk_issues.active_snyk_issues.issueData.CVSSv3>>\n*Exploit Maturity:* <<explode_snyk_issues.active_snyk_issues.issueData.exploitMaturity>>\n\n*Origin:* <<get_a_single_project_in_snyk.body.origin>>\n*Branch:* <<get_a_single_project_in_snyk.body.branch>>\n*Language:* <<explode_snyk_issues.active_snyk_issues.issueData.language>>\n*Package/Name:* <<explode_snyk_issues.active_snyk_issues.pkgName>>\n*Versions:* <<explode_snyk_issues.active_snyk_issues.pkgVersions>>\n*Type:* <<get_a_single_project_in_snyk.body.type>>\n\n*Snyk*\n- Vulnerability Link: <<explode_snyk_issues.active_snyk_issues.issueData.url>>\n- Project Link: <<get_a_single_project_in_snyk.body.browseUrl>> (Inc. Re-test)\n",
+            "customfield_10039": "<<explode_snyk_issues.active_snyk_issues.id>>",
+            "customfield_10040": "<<extract_main_details.snyk_project_id>>",
+            "customfield_10041": "<<explode_snyk_issues.active_snyk_issues.issueData.cvssScore>>",
+            "customfield_10042": "<<explode_snyk_issues.active_snyk_issues.issueData.exploitMaturity>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jirausername>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Snyk Issues",
+      "disabled": false,
+      "guid": "e9f2649847abf1ce8328ab6650ed1fe3",
+      "options": {
+        "url": "https://snyk.io/api/v1/org/<<RESOURCE.snyk_org_id>>/project/<<extract_main_details.snyk_project_id>>/aggregated-issues",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filters": {
+            "orgs": [
+              ""
+            ],
+            "severities": [
+              "medium",
+              "high",
+              "low"
+            ],
+            "types": [
+              "vuln"
+            ],
+            "languages": [],
+            "projects": [
+              "<<extract_main_details.snyk_project_id>>"
+            ],
+            "patched": false,
+            "ignored": "false"
+          }
+        },
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.snyk>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger Only On Jira Done and Snyk IDs",
+      "disabled": false,
+      "guid": "503acc73b526e913108910515cb87190",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": ".",
+            "path": "<<extract_main_details.snyk_vul_id>>"
+          },
+          {
+            "type": "regex",
+            "value": ".",
+            "path": "<<extract_main_details.snyk_project_id>>"
+          },
+          {
+            "type": "regex",
+            "value": "done",
+            "path": "<<receive_jira_webhook_with_snyk_ids.issue.fields.status.name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Main Details",
+      "disabled": false,
+      "guid": "4e727e027fa26518ece269be02083f59",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "snyk_vul_id": "<<receive_jira_webhook_with_snyk_ids.issue.fields.customfield_10039>>",
+          "snyk_project_id": "<<receive_jira_webhook_with_snyk_ids.issue.fields.customfield_10040>>",
+          "jira_key": "<<receive_jira_webhook_with_snyk_ids.issue.key>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Snyk Issue in Jira",
+      "disabled": false,
+      "guid": "31f32f011bc52a5ae61269fa4d7a06e5",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/search",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "jql": "project=EN AND cf[10039]~<<explode_snyk_issues.active_snyk_issues.id>> AND cf[10040]~<<extract_main_details.snyk_project_id>> "
+        },
+        "basic_auth": [
+          "<<RESOURCE.jirausername>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Vuln Still Exists But Jira Status Was Set To Done",
+      "disabled": false,
+      "guid": "ff2859576870c9cf56d18a359f864ba9",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<search_snyk_issue_in_jira.body.total>>"
+          },
+          {
+            "type": "regex",
+            "value": "done",
+            "path": "<<search_snyk_issue_in_jira.body.issues.first.fields.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger If Any Found",
+      "disabled": false,
+      "guid": "696d149af49be2c44ab046e5975657df",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(get_snyk_issues.body.issues, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger If Vuln For Project Does Not Exist In Jira Yet",
+      "disabled": false,
+      "guid": "63f15f3ef84b9f810505aa53a5cd7c35",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<search_snyk_issue_in_jira.body.total>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Snyk Issues",
+      "disabled": false,
+      "guid": "b531e1df6122991ef892376de87d0d9b",
+      "options": {
+        "mode": "explode",
+        "path": "=get_snyk_issues.body.issues",
+        "to": "active_snyk_issues"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Main Details",
+      "disabled": false,
+      "guid": "25af3949c0182513051aecf1b77dc1c3",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "snyk_project_id": "<<explode_projects.snyk_projects.id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Close Fixed Vuln Issues in Jira",
+      "disabled": false,
+      "guid": "f306fd18c3a308158fa734802f08adf8",
+      "options": {
+        "story": "<<STORY.blog_cicd_snyk_close>>",
+        "payload": {
+          "snyk_project_id": "<<extract_main_details.snyk_project_id>>"
+        },
+        "send_payload_as_body": "false"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/synk_logo.png\n\nSee our [blog](https://www.tines.com/blog/continuous-security-with-snyk) for info on this story\n\n# Requirements\n- [ ] Snyk Credential - [API Token docs](https://docs.snyk.io/snyk-api-info/authentication-for-api)\n- [ ] Jira Credential - [Basic Auth docs](https://developer.atlassian.com/server/jira/platform/basic-authentication/)",
+      "position": [
+        75.0,
+        -825.0
+      ],
+      "guid": "88e244ebb3a4b21c280fe0bf096a07ff",
+      "width": null
+    },
+    {
+      "content": "# Schedule or Manually Input Projects\n\n- You can schedule a run to list all of the projects in Snyk\n- Each project will be *exploded* for individual analysis and to capture the Snyk project ID\n",
+      "position": [
+        120.0,
+        -495.0
+      ],
+      "guid": "48e8f3589f1a1edfe5d0af8da91cf5d6",
+      "width": null
+    },
+    {
+      "content": "# Identify the Snyk Project Types\n\n- Once the Snyk project is captured the following requests will start listing Snyk issues \n- Issues that are found will be converted from the array list returned to individual JSON objects\n- Search on the existing Snyk issues in Jira to identify \n     - If the vulnerability still exists but \n     the Jira issue was marked as Done \n     -> change the issue status to Open\n     - If the vulnerability for the Snyk \n     project has not yet been \n     documented in Jira -> Tines will \n     document the issue in Jira for work \n     to be started on the open \n     Vulnerability",
+      "position": [
+        210.0,
+        -150.0
+      ],
+      "guid": "fb8cbf97fc5b8906ec187351d45cdd7f",
+      "width": null
+    },
+    {
+      "content": "# Close out existing Jira's\n\nIf Vulnerabilities have been fixed, but the Jira issue is still open, this fork will initiate the process to start closing the open Jira issues",
+      "position": [
+        1050.0,
+        -180.0
+      ],
+      "guid": "6dc6d0ed6197bf236a6e8b6b55d8f383",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 1,
+      "receiver": 16
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 7
+    },
+    {
+      "source": 4,
+      "receiver": 15
+    },
+    {
+      "source": 5,
+      "receiver": 9
+    },
+    {
+      "source": 7,
+      "receiver": 12
+    },
+    {
+      "source": 8,
+      "receiver": 1
+    },
+    {
+      "source": 9,
+      "receiver": 8
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 10,
+      "receiver": 13
+    },
+    {
+      "source": 11,
+      "receiver": 0
+    },
+    {
+      "source": 12,
+      "receiver": 14
+    },
+    {
+      "source": 13,
+      "receiver": 6
+    },
+    {
+      "source": 14,
+      "receiver": 10
+    },
+    {
+      "source": 15,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"10ceb491da64edfb0ba4b7e05c8e4589\":[405,315],\"c460cfd5e5529a8eaea365037af35d4f\":[525,-225],\"d786d68041d1649bb999a11b7dff892b\":[405,-510],\"918f669a6430fd4952439b013c792e75\":[525,-135],\"29d5a021205e403840497845dc4e19bf\":[405,-435],\"088b2e763662d6a6e707e4d1eca939ea\":[660,-510],\"2e7066119cc294b856e16a02a9038b4e\":[660,315],\"e9f2649847abf1ce8328ab6650ed1fe3\":[525,-60],\"503acc73b526e913108910515cb87190\":[660,-315],\"4e727e027fa26518ece269be02083f59\":[660,-375],\"31f32f011bc52a5ae61269fa4d7a06e5\":[525,135],\"ff2859576870c9cf56d18a359f864ba9\":[405,225],\"696d149af49be2c44ab046e5975657df\":[525,0],\"63f15f3ef84b9f810505aa53a5cd7c35\":[660,225],\"b531e1df6122991ef892376de87d0d9b\":[525,75],\"25af3949c0182513051aecf1b77dc1c3\":[405,-375],\"f306fd18c3a308158fa734802f08adf8\":[810,-150]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Track Snyk issues in Jira Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

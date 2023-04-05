@@ -1,0 +1,208 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Virustotal - File Reputation",
+    "aliasName": null,
+    "tag": null,
+    "description": "Submits a file to VirusTotal and then retrieves its reputation.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_file_IRI",
+        "indicator_file_name"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/b135c052-e170-4cff-8cc7-9a4bfe607ccb",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/9b34606b-c935-4f96-bbdf-04f20d7576f5",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "threshold": "5",
+                "indicator_file_IRI": "{{vars.input.params['indicator_file_IRI']}}",
+                "indicator_file_name": "{{vars.input.params['indicator_file_name']}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "087386e5-b3dc-45a2-84b2-da74c7277d94"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get File Reputation",
+            "description": null,
+            "arguments": {
+                "name": "VirusTotal",
+                "config": "886317a7-715a-4ab3-939c-4602b63d2376",
+                "params": {
+                    "file_hash": "{{vars.steps.Upload_file_to_VirusTotal.data.md5}}"
+                },
+                "version": "1.0.1",
+                "do_until": {
+                    "delay": "10",
+                    "retries": "6",
+                    "condition": "{{( vars.result.data.scans | length > 0  or  (vars.result.data['response_code'] > -2) )}}"
+                },
+                "connector": "virustotal",
+                "operation": "file_reputation",
+                "operationTitle": "Get File Reputation",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "cb8a58b2-a3cd-457c-9654-d1465461a1e9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "enrichment_summary",
+            "description": null,
+            "arguments": {
+                "tags": "None",
+                "source": "VirusTotal",
+                "reputation": "{% if vars.Reputation >= vars.threshold %}\"Malicious\"{% elif vars.Reputation <= vars.threshold and vars.Reputation > 0 %}\"Suspicious\"{%elif vars.Reputation == 0%}\"No Reputation Available\"{%else%}\"Good\"{%endif%}",
+                "enrichmentSummary": "{{vars.steps.Enrichment_Summary.data['formatted_string']}}"
+            },
+            "status": null,
+            "top": "705",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "d7db2765-a6a8-4367-83ed-f6d49e1b3e78"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Upload file to VirusTotal",
+            "description": null,
+            "arguments": {
+                "name": "VirusTotal",
+                "config": "1ba6a7ef-304a-4f78-855d-70b09bcd0b0a",
+                "params": {
+                    "input": "File IRI",
+                    "value": "{{vars.indicator_file_IRI}}"
+                },
+                "version": "1.0.1",
+                "connector": "virustotal",
+                "operation": "upload_sample",
+                "operationTitle": "Submit File",
+                "step_variables": [],
+                "operationOutput": {
+                    "scans": [],
+                    "total": "",
+                    "scan_id": "",
+                    "resource": "",
+                    "aggregate": "",
+                    "permalink": "",
+                    "positives": "",
+                    "scan_date": "",
+                    "verbose_msg": ""
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "5ad34f5b-b563-4cbd-b75b-acb8bc143256"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "9b34606b-c935-4f96-bbdf-04f20d7576f5"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Enrichment Summary",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "value": "\n<div class=\"card-container-body\" style=\"width: 200px;\">\n<div class=\"card-number\"><span class=\"card-count\">{{vars.steps.Get_File_Reputation.data.aggregate}}<\/span>\n\n<div class=\"font-size-12 ng-binding\"><a href=\"{{vars.steps.Get_File_Reputation.data.permalink}}\" target=\"_blank\"><font color=\"#34dbeb\"><u>Scan Report Link<\/u><\/font><\/a><\/div>\n\n<div class=\"font-size-14 ng-binding\"><strong>VirusTotal<\/strong><\/div>\n<\/div>\n<\/div>"
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "format_richtext",
+                "operationTitle": "Utils: Format as RichText",
+                "step_variables": {
+                    "Reputation": "{{vars.steps.Get_File_Reputation.data.aggregate}}"
+                }
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "3d603316-9856-4dc4-9e43-8a575d72108e"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Enrichment Summary -> enrichment_summary",
+            "targetStep": "\/api\/3\/workflow_steps\/d7db2765-a6a8-4367-83ed-f6d49e1b3e78",
+            "sourceStep": "\/api\/3\/workflow_steps\/3d603316-9856-4dc4-9e43-8a575d72108e",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1553e43a-9c08-43df-8157-b8e8e819b7d4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get File Reputation -> Enrichment Summary",
+            "targetStep": "\/api\/3\/workflow_steps\/3d603316-9856-4dc4-9e43-8a575d72108e",
+            "sourceStep": "\/api\/3\/workflow_steps\/cb8a58b2-a3cd-457c-9654-d1465461a1e9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "3c2bc186-ca68-423b-9c28-8952f094da0c"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Upload file to VirusTotal -> Get File Reputation",
+            "targetStep": "\/api\/3\/workflow_steps\/cb8a58b2-a3cd-457c-9654-d1465461a1e9",
+            "sourceStep": "\/api\/3\/workflow_steps\/5ad34f5b-b563-4cbd-b75b-acb8bc143256",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "5d8569af-0991-40c5-b6b3-9feee3572344"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Upload file to VirusTotal",
+            "targetStep": "\/api\/3\/workflow_steps\/5ad34f5b-b563-4cbd-b75b-acb8bc143256",
+            "sourceStep": "\/api\/3\/workflow_steps\/087386e5-b3dc-45a2-84b2-da74c7277d94",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "7fd50378-828b-4a56-9902-cf2153303ef6"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/087386e5-b3dc-45a2-84b2-da74c7277d94",
+            "sourceStep": "\/api\/3\/workflow_steps\/9b34606b-c935-4f96-bbdf-04f20d7576f5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "0d2e6388-2573-47e9-8996-0c4f9bc6d3bf"
+        }
+    ],
+    "priority": null,
+    "uuid": "0e9bf89b-b5c8-49f4-9b03-0dc2c3b4b257",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

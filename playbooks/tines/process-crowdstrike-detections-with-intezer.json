@@ -1,0 +1,905 @@
+{
+  "schema_version": 4,
+  "name": "Process CrowdStrike detections with Intezer",
+  "description": "Process CrowdStrike detections, examining individual behaviors and checking process hashes in Intezer, before documenting in a Jira ticket and notifying stakeholders via Slack.\n\ntags: CrowdStrike, Intezer, Intermediate, IOCs, Jira, Slack, Analyze, Notify, Investigate,\nicons: crowdstrike, ⛳️, intezer\nvisibility: public",
+  "guid": "927d07fec55edb06493bced2516409f4",
+  "slug": "process_crowdstrike_detections_with_intezer",
+  "exported_at": "2022-07-11T17:35:03Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Detections in CrowdStrike Falcon",
+      "disabled": false,
+      "guid": "6d6d8aa4d6a33f20b806e8aff0965938",
+      "options": {
+        "url": "https://<<RESOURCE.crowdstrike_domain>>/detects/queries/detects/v1",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "limit": "3",
+          "sort": "first_behavior|desc"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "manual_time": "90",
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 90,
+        "time_saved_unit": "seconds"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Detection Details",
+      "disabled": false,
+      "guid": "4d21142ae8b7f97797fa8547ccbed6fa",
+      "options": {
+        "url": "https://<<RESOURCE.crowdstrike_domain>>/detects/entities/summaries/GET/v1",
+        "content_type": "json",
+        "method": "post",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "payload": {
+          "ids": "=get_detections_in_crowdstrike_falcon.body.resources"
+        },
+        "manual_time": "60",
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 60,
+        "time_saved_unit": "seconds"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Detection to In Progress",
+      "disabled": false,
+      "guid": "85150725a8c60da3d5ce88a7c87dfe85",
+      "options": {
+        "url": "https://<<RESOURCE.crowdstrike_domain>>/detects/entities/detects/v2",
+        "content_type": "json",
+        "method": "patch",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "payload": {
+          "ids": "=get_detections_in_crowdstrike_falcon.body.resources",
+          "status": "in_progress"
+        },
+        "manual_time": "60",
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 60,
+        "time_saved_unit": "seconds"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Individual Detections",
+      "disabled": false,
+      "guid": "8ff602ccab37af8881c08efa8bf37433",
+      "options": {
+        "mode": "explode",
+        "path": "=get_detection_details.body.resources",
+        "to": "individual_detection"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "94bb415eb29c7be255df7ac887db88f9",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "h2. Alert Overview:\n\n||*Priority*|<<explode_individual_detections.individual_detection.max_severity_displayname>> |\n||*Confidence*|<<explode_individual_detections.individual_detection.max_confidence>> |\n||*Hostname*|<<explode_individual_detections.individual_detection.device.hostname>> |\n||*OS*|<<explode_individual_detections.individual_detection.device.platform_name>> |\n||*Device Type*|<<explode_individual_detections.individual_detection.device.product_type_desc>> |\n||*Local Time*|<<explode_individual_detections.individual_detection.device.agent_local_time>> |\n||*External IP*|<<explode_individual_detections.individual_detection.device.external_ip>> |\n||*Internal IP*|<<explode_individual_detections.individual_detection.device.local_ip>> |\n||*Host ID*|https://falcon.us-2.crowdstrike.com/hosts/hosts/host/<<explode_individual_detections.individual_detection.device.device_id>> |\n\n[Click Here to contain this device in Crowdstrike |<<PROMPT(\"contain\")>>]\n",
+            "summary": "New Crowdstrike Alert for <<explode_individual_detections.individual_detection.device.hostname>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Behaviors",
+      "disabled": false,
+      "guid": "ce9fd28647807679a19dbf1b77befd24",
+      "options": {
+        "mode": "explode",
+        "path": "=explode_individual_detections.individual_detection.behaviors",
+        "to": "individual_behaviour"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Behavior to Jira",
+      "disabled": false,
+      "guid": "f86d424cd2c6315934898fcfe4b9dab5",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "body": "Intezer Analysis URL:<<get_analysis_results_in_intezer_analyze.body.result.analysis_url>>\n||*Intezer Verdict*|<<get_analysis_results_in_intezer_analyze.body.result.verdict>>|\n||*Intezer Sub_Verdict*|<<get_analysis_results_in_intezer_analyze.body.result.sub_verdict>> |\n||*Hash*|<<get_analysis_results_in_intezer_analyze.body.result.sha256>> |\n||*Family ID*|<<get_analysis_results_in_intezer_analyze.body.result.family_id>> |\n||*Family Name*|<<get_analysis_results_in_intezer_analyze.body.result.family_name>> |\n||*Intezer Analysis ID*|<<get_analysis_results_in_intezer_analyze.body.result.analysis_id>> |\n||*Intezer Analysis Time*|<<get_analysis_results_in_intezer_analyze.body.result.analysis_time>> |"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Catch Prompt Response",
+      "disabled": false,
+      "guid": "365b8c310c490ecc67b403d120a1e535",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "contain",
+            "path": "<<create_issue_in_jira.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Contain Device in Falcon",
+      "disabled": false,
+      "guid": "7112ff9a7b3bfdbe26c31058cb73f2ba",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_domain>>/devices/entities/devices-actions/v2?action_name=contain",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "action_parameters": [
+            {
+              "name": "",
+              "value": ""
+            }
+          ],
+          "ids": [
+            "<<explode_individual_detections.individual_detection.device.device_id>>"
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Handle Behaviors",
+      "disabled": false,
+      "guid": "8e67923c157f7019a12423af59e7e4df",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<create_issue_in_jira.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Form CrowdStrike URL Detection ID",
+      "disabled": false,
+      "guid": "a5537fbd63b1c3e68ce389a88a039c96",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "ID": "<<REPLACE_FIRST(explode_individual_detections.individual_detection.detection_id, \"ldt:\") |> REPLACE(%, \":\", \"/\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Bearer Token in Intezer Analyze",
+      "disabled": false,
+      "guid": "6e7508cd7e3d673bb14fbedca7e968ff",
+      "options": {
+        "url": "https://analyze.intezer.com/api/v2-0/get-access-token",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "api_key": "<<CREDENTIAL.intezer>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Analysis Results in Intezer Analyze",
+      "disabled": false,
+      "guid": "210757ed129ce17cef83acd38237d53b",
+      "options": {
+        "url": "https://analyze.intezer.com/api/v2-0/<<submit_hash_to_be_analyzed_in_intezer.body.result_url>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "Authorization": "Bearer <<get_bearer_token_in_intezer_analyze.body.result>>"
+        },
+        "retry_on_status": [
+          "202"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Submit Hash to be Analyzed in Intezer",
+      "disabled": false,
+      "guid": "568e2cd8279db5528643930a108cf37d",
+      "options": {
+        "url": "https://analyze.intezer.com/api/v2-0/analyze-by-hash",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "hash": "<<explode_behaviors.individual_behaviour.sha256>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<get_bearer_token_in_intezer_analyze.body.result>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if escalate",
+      "disabled": false,
+      "guid": "6c880155d51e60b8946febb0e67fe3f7",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "escalate",
+            "path": "<<post_notification_to_team_slack_channel.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if falsepositive",
+      "disabled": false,
+      "guid": "36f33c7937ab67de0ffbdaeb373be753",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "falsepositive",
+            "path": "<<post_notification_to_team_slack_channel.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Action",
+      "disabled": false,
+      "guid": "013ee332fee29cd3cf334d97af6b93d9",
+      "options": {
+        "recipients": [
+          "<<escalation_email>>"
+        ],
+        "subject": "New CrowdStrike Detection",
+        "body": "*A new Jira Issue has been opened based on a CrowdStrike Detection.  <%if get_analysis_results_in_intezer_analyze.body.result.verdict = \"trusted\"%>The ticket was closed based on the Intezer Verdict of \"Trusted\".<%endif%> <br> \nCrowdStrike Severity is <<explode_individual_detections.individual_detection.max_severity>>. <br>\nIntezer Analysis: <<get_analysis_results_in_intezer_analyze.body.result.analysis_url>><br>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Jira Ticket",
+      "disabled": false,
+      "guid": "be064dd9648eb86a75cc1d6f81fc65ed",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/issue/<<create_issue_in_jira.body.id>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate on unique JIRAs",
+      "disabled": false,
+      "guid": "bc48ed63a0e3e7bc6dc2953fc5e7156b",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<create_issue_in_jira.body.id>>",
+        "period": "60"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post notification to Team Slack Channel",
+      "disabled": false,
+      "guid": "e6f7132e373d3780e459fef558f773e4",
+      "options": {
+        "url": "<<CREDENTIAL.slack_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "blocks": [
+            {
+              "type": "divider"
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*A new Jira Issue has been opened based on a CrowdStrike Detection.  <%if crowdstrike_detections[\"Intezer Verdict\"] = \"trusted\"%>The ticket was closed based on the Intezer Verdict of \"Trusted\" <%endif%>*"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "CrowdStrike Detection ID: <<explode_individual_detections.individual_detection.detection_id>>"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "CrowdStrike Severity: <<explode_individual_detections.individual_detection.max_severity>>"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "CrowdStrike Behavior Description: <<explode_behaviors.individual_behaviour.description>>"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Intezer Verdict: <<get_analysis_results_in_intezer_analyze.body.result.verdict>>"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Intezer Classification: <<get_analysis_results_in_intezer_analyze.body.result.family_name>>"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Jira ID: <<create_issue_in_jira.body.id>>"
+              }
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Intezer Detection",
+                    "emoji": true
+                  },
+                  "url": "<<get_analysis_results_in_intezer_analyze.body.result.analysis_url>>"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Jira Incident",
+                    "emoji": true
+                  },
+                  "url": "https://tinesio.atlassian.net/browse/<<create_issue_in_jira.body.key>>"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "View Detection in CrowdStrike",
+                    "emoji": true
+                  },
+                  "url": "https://falcon.us-2.crowdstrike.com/activity/detections/detail/<<form_crowdstrike_url_detection_id.ID>>"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Close Jira Ticket",
+                    "emoji": true
+                  },
+                  "url": "<<PROMPT(\"falsepositive\")>>"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Escalate to on-call",
+                    "emoji": true
+                  },
+                  "url": "<<PROMPT(\"escalate\")>>"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Intezer Result is Trusted",
+      "disabled": false,
+      "guid": "a0076c52f69ad53fcc6390ffed4829c7",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "trusted",
+            "path": "<<get_analysis_results_in_intezer_analyze.body.result.verdict>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Jira Ticket",
+      "disabled": false,
+      "guid": "f806d64a2eed23029a4606de6e398f1f",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/issue/<<create_issue_in_jira.body.id>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Respond Immediately from Anywhere\n\nUtilizing [Tines Prompts](https://docs.tines.io/tines_actions_widgets#prompt-widget), any incident response action is only a URL click away. In this example, each detection ticket includes a link with the capability to isolate a host and contain any malicious activity in an instant. ",
+      "position": [
+        -315.0,
+        825.0
+      ],
+      "guid": "e5bb1d88ab63811be41eb5b6eeb00b9b",
+      "width": null
+    },
+    {
+      "content": "#  Get New Detections in CrowdStrike\n\nThis Story kicks off by using an HTTP Request to CrowdStrike to pull in \"new\" detections. This Action can configured to run on a schedule to check for alerts on a regular interval. Once detections are pulled in, their status can be updated to \"In Progress\" automatically to signify they have been acknowledged and triage has begun.",
+      "position": [
+        -30.0,
+        405.0
+      ],
+      "guid": "4f67bfe1dd228eaf7d9c72b79cdcf24c",
+      "width": null
+    },
+    {
+      "content": "# Enrich and Record\n\nTines enables teams to bring their own tools and combine them in powerful ways. To utilize **Intezer** and **Jira** in this Story, Credentials and Resources need to be created in Tines.\n\nCreate a Credential in Tines named `intezer` with the type text that will contain your Intezer API key. If you do not have a Intezer API key, you can sign up for one [here](https://analyze.intezer.com/account-details).\n\nTo use Jira as a ticketing platform, create a Resource named `jira domain` that contains the URL of your Jira instance and `Jira Username,` which is the user that will be connecting to the Jira REST API. Also create a Credential named `Jira` that will contain your Jira user's API key. **In the Action \"Create Issue in Jira\", make sure to configure the Jira \"Project\" your issue should be created in.**",
+      "position": [
+        540.0,
+        765.0
+      ],
+      "guid": "75bf2b842472a1e7d6ff2cc582cb0f01",
+      "width": null
+    },
+    {
+      "content": "Forming a CrowdStrike URL for each detection so the detection can be linked via a button in Slack for easy access for further analysis.",
+      "position": [
+        -30.0,
+        630.0
+      ],
+      "guid": "0b9578800cee9ac3812f0dbb713ad922",
+      "width": null
+    },
+    {
+      "content": "**Add Behaviour to Jira**\n\nAdds the enrichment information from Intezer into the Jira incident's comments.",
+      "position": [
+        570.0,
+        1410.0
+      ],
+      "guid": "91c53c1b663ae6309130922b66fe31a3",
+      "width": null
+    },
+    {
+      "content": "Automatically close the Jira ticket if the Intezer result is trusted.",
+      "position": [
+        -315.0,
+        1605.0
+      ],
+      "guid": "8bc82243c536d6cc3d0ab13f3229aa27",
+      "width": null
+    },
+    {
+      "content": "For each Jira ticket post a message to Slack with a summary of the detection and provide the analyst with response actions.",
+      "position": [
+        570.0,
+        1650.0
+      ],
+      "guid": "dbdb8788adf6b722b3bcfdb9b6650cdc",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-crowdstrike.png\n\nPulls a list of CrowdStrike detections, flags them as in progress in CrowdStrike, and gets the detection details for each one.\nFor each detection, the individual behaviors are examined, and the process hash is checked in Intezer to see if it is known malicious.\n\nA Jira ticket is created for each detection, and a message sent to a Slack channel with a summary and response actions via buttons.",
+      "position": [
+        765.0,
+        255.0
+      ],
+      "guid": "35f35d0dd18e7015bc95d67d8165d996",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\n# CrowdStrike\n- [ ] CrowdStrike OAuth App created with the scopes: \n- Detection: `Read Write` to retrieve and update detections\n- Hosts: `Read Write` to read Host Info, and Contain the Device\n- Real Time Response: `Read Write` to execute and query Real Time Response commands\n\n# Tines\n# Resources\n- [ ]  `crowdstrike_domain` - the full CrowdStrike domain including server location. e.g. `falcon.us-2.crowdstrike.com`\n- [ ] `jira_domain` -  your Jira domain\n- [ ] `jira_username` - your Jira username\n- [ ] `slack_url` - your Slack webhook URL\n\n# Credentials\n- [ ] OAuth -  `crowdstrike` containing OAuth information for CrowdStrike. Scope should be `Read Write`\n- [ ] Text - `jira` -  your API Token for Jira\n- [ ] Text - `intezer` - your Intezer API key",
+      "position": [
+        -315.0,
+        210.0
+      ],
+      "guid": "496c26049c7292c7b6d62216b972c1f8",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/intezer-logo-n.png",
+      "position": [
+        285.0,
+        165.0
+      ],
+      "guid": "b8e3ea3421da3d787fb684e7f3e3b6c3",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/Jira-Logo.png",
+      "position": [
+        -30.0,
+        210.0
+      ],
+      "guid": "7608eb93259baa73e6aeab377765feda",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 10
+    },
+    {
+      "source": 4,
+      "receiver": 9
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 11
+    },
+    {
+      "source": 6,
+      "receiver": 18
+    },
+    {
+      "source": 6,
+      "receiver": 20
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 9,
+      "receiver": 5
+    },
+    {
+      "source": 10,
+      "receiver": 4
+    },
+    {
+      "source": 11,
+      "receiver": 13
+    },
+    {
+      "source": 12,
+      "receiver": 6
+    },
+    {
+      "source": 13,
+      "receiver": 12
+    },
+    {
+      "source": 14,
+      "receiver": 16
+    },
+    {
+      "source": 15,
+      "receiver": 17
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 19,
+      "receiver": 14
+    },
+    {
+      "source": 19,
+      "receiver": 15
+    },
+    {
+      "source": 20,
+      "receiver": 21
+    }
+  ],
+  "diagram_layout": "{\"6d6d8aa4d6a33f20b806e8aff0965938\":[285,300],\"4d21142ae8b7f97797fa8547ccbed6fa\":[285,390],\"85150725a8c60da3d5ce88a7c87dfe85\":[525,390],\"8ff602ccab37af8881c08efa8bf37433\":[285,465],\"94bb415eb29c7be255df7ac887db88f9\":[285,705],\"ce9fd28647807679a19dbf1b77befd24\":[285,870],\"f86d424cd2c6315934898fcfe4b9dab5\":[285,1440],\"365b8c310c490ecc67b403d120a1e535\":[0,795],\"7112ff9a7b3bfdbe26c31058cb73f2ba\":[0,870],\"8e67923c157f7019a12423af59e7e4df\":[285,795],\"a5537fbd63b1c3e68ce389a88a039c96\":[285,570],\"6e7508cd7e3d673bb14fbedca7e968ff\":[285,990],\"210757ed129ce17cef83acd38237d53b\":[285,1290],\"568e2cd8279db5528643930a108cf37d\":[285,1155],\"6c880155d51e60b8946febb0e67fe3f7\":[165,1815],\"36f33c7937ab67de0ffbdaeb373be753\":[420,1815],\"013ee332fee29cd3cf334d97af6b93d9\":[165,1890],\"be064dd9648eb86a75cc1d6f81fc65ed\":[420,1890],\"bc48ed63a0e3e7bc6dc2953fc5e7156b\":[285,1560],\"e6f7132e373d3780e459fef558f773e4\":[285,1665],\"a0076c52f69ad53fcc6390ffed4829c7\":[30,1560],\"f806d64a2eed23029a4606de6e398f1f\":[30,1665]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "CrowdStrike Alert Workflow with STS Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

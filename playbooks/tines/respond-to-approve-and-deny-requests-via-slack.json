@@ -1,0 +1,364 @@
+{
+  "schema_version": 4,
+  "name": "Respond to approve and deny requests via Slack",
+  "description": "Send an approve or deny request into a Slack channel and take various actions depending on how a user responds.\n\ntags: Slack, Beginner, Respond, Notify, Alerts,\nicons: slack, 👍, 👎\nvisibility: public",
+  "guid": "218d29ebcbf586929f4db100a914efbf",
+  "slug": "respond_to_approve_and_deny_requests_via_slack",
+  "exported_at": "2022-07-11T17:31:05Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive from Slack",
+      "disabled": false,
+      "guid": "b6471cb7508c2da26c96f545b51dfdb6",
+      "options": {
+        "path": "e90e093e91b634c89cf1df53d4a8c55f",
+        "secret": "14df858eba953ca0980e22281e8f079d",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Parse Response",
+      "disabled": false,
+      "guid": "a89f0309300192ab0268888ab2368ef2",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "response": "=receive_from_slack.body.payload"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Approved",
+      "disabled": false,
+      "guid": "4330aa7598d981adec9a405a34cf9c71",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Approve",
+            "path": "<<parse_response.response.actions.first.text.text>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Slack Message Approval Update Approval",
+      "disabled": false,
+      "guid": "60ca607ac27351ad14c955ffedab34b9",
+      "options": {
+        "url": "<<parse_response.response.response_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "replace_original": "true",
+          "blocks": [
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "Here is the decision:\n"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "✅  <@<<parse_response.response.user.id>>> has approved this request."
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Slack Message Approval Update Denial",
+      "disabled": false,
+      "guid": "98a03d92433ae5da489b5d5fd7565fff",
+      "options": {
+        "url": "<<parse_response.response.response_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "replace_original": "true",
+          "blocks": [
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "Here is the decision:\n"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "❌ <@<<parse_response.response.user.id>>> has denied this request."
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Slack Message Approval Request",
+      "disabled": false,
+      "guid": "9811cd2e6d52e62111c7a66d560b29c7",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "blocks": [
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*New request*\n"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Request Date:*\n<<DATE(\"now\", \"%m/%d/%Y\")>>"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "You can include relevant information here to aid in decision making. Feel free to pull information in from other actions in your story."
+                }
+              ]
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Approve"
+                  },
+                  "style": "primary"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Deny"
+                  },
+                  "style": "danger"
+                }
+              ]
+            }
+          ],
+          "channel": "<<channel_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Denied",
+      "disabled": false,
+      "guid": "0f2b4241d7e029edeba51b9769b847db",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Deny",
+            "path": "<<parse_response.response.actions.first.text.text>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "The story begins here, by sending an approve/deny request to a specified channel. This could be something like time off requests, IT equipment orders, or login verifications, for example.\n\nThe message would look something like this:\n\nhttps://image-uploads.tines.com/slack_approve_deny_buttons.png",
+      "position": [
+        -198.0,
+        256.0
+      ],
+      "guid": "f356f0c8bdd4104e306549d364a9d307",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\n\n\n# Slack\n- [ ] A Slack app/bot with at least the following:\n1.  Interactivity -  The Request URL will be the Tines webhook URL for the `Receive from Slack` action\n2.  Scopes:\n- `chat:write`\n- `chat:write.public` - enable this scope if you want the bot to send messages to a channel it is not a member of\n\n\n# Credentials\n- [ ] `CREDENTIAL.slack` - this is the Bot User OAuth token for the app described above",
+      "position": [
+        342.0,
+        -149.0
+      ],
+      "guid": "d6c878bc8ad07f9640dd5369e44e37b5",
+      "width": null
+    },
+    {
+      "content": "# Story Overview\nhttps://image-uploads.tines.com/slack_logo_purple.png\nThis story allows you to send an Approve/Deny request into a Slack channel and take various actions depending on how a user responds.\n\nIt can be used as a starting point to create tickets or update other sources. You can also enrich the initial message with information taken from other parts of your story or a Send to Story.",
+      "position": [
+        -15.0,
+        -150.0
+      ],
+      "guid": "8bc73da17d149224723b746e1f8c7a5a",
+      "width": null
+    },
+    {
+      "content": "The interactions with the Slack message buttons are received by the story here.",
+      "position": [
+        657.0,
+        286.0
+      ],
+      "guid": "2a44b1d1b86ce2b638ac3ffbc3530f89",
+      "width": null
+    },
+    {
+      "content": "Parse the incoming webhook payload from Slack to make it easier to work with later on.",
+      "position": [
+        653.0,
+        398.0
+      ],
+      "guid": "78f5ac5139ec673c874eaa712ea91ea9",
+      "width": null
+    },
+    {
+      "content": "Take two different paths based on if someone clicks `Approve` or `Deny`.",
+      "position": [
+        838.0,
+        555.0
+      ],
+      "guid": "c36fc69c207a3c78f80dccda2a3f13eb",
+      "width": null
+    },
+    {
+      "content": "Both of these actions utilize the `replace_original` option. This will replace the original message sent with an updated one of your creation. Replacing the original can be a good idea if the request only requires 1 answer. You can update the message to remove the buttons but preserve the original message as well. If you wish to preserve the original in its entirety, you can delete this option or set the boolean to `false`.\n\nThey also feature an `@` mention of the user who performed the approval or denial. This can be helpful for tracking/visual purposes to let others in the channel know who performed the action. You can remove this if preferred.",
+      "position": [
+        435.0,
+        795.0
+      ],
+      "guid": "013f806095cd4f5a1868642401f9c640",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 6
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    }
+  ],
+  "diagram_layout": "{\"b6471cb7508c2da26c96f545b51dfdb6\":[390,300],\"a89f0309300192ab0268888ab2368ef2\":[390,420],\"4330aa7598d981adec9a405a34cf9c71\":[300,555],\"60ca607ac27351ad14c955ffedab34b9\":[300,675],\"98a03d92433ae5da489b5d5fd7565fff\":[585,675],\"9811cd2e6d52e62111c7a66d560b29c7\":[105,300],\"0f2b4241d7e029edeba51b9769b847db\":[585,555]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Respond to approve and deny requests via Slack Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

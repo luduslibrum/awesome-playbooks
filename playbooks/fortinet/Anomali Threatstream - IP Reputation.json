@@ -1,0 +1,164 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Anomali Threatstream - IP Reputation",
+    "aliasName": null,
+    "tag": null,
+    "description": "Retrieves the reputation of indicators of type 'IP Address' using Anomali Threatstream.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_value"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/b135c052-e170-4cff-8cc7-9a4bfe607ccb",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/68e0995c-4a5b-4f66-bfe5-3d2191fc170a",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Reputation from Anomali",
+            "description": null,
+            "arguments": {
+                "name": "Anomali ThreatStream",
+                "config": "8827ae00-b86a-4ed4-aa2c-deae42b1d993",
+                "params": {
+                    "value": "{{vars.indicator_value}}",
+                    "validation": false,
+                    "filter_option": "Exact",
+                    "record_number": "Fetch All Records"
+                },
+                "version": "2.2.0",
+                "connector": "threatstream",
+                "operation": "ip_reputation",
+                "ignore_errors": true,
+                "operationTitle": "Get IP Reputation",
+                "step_variables": {
+                    "foundAnomaliReputation": "{{ ( vars.result.data.objects and vars.result.data.objects | length > 0 ) | ternary(true,false) }}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "59ae3125-fd5b-4937-a4b3-10d98681be09"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "68e0995c-4a5b-4f66-bfe5-3d2191fc170a"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configurations",
+            "description": null,
+            "arguments": {
+                "threshold": "5",
+                "indicator_value": "{{vars.input.params['indicator_value']}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "a2b98e55-7ef1-40b8-82d3-3ce8ea0b7053"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Compute Anomali Summary",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "value": "<p>{% if vars.foundAnomaliReputation %}<\/p>\n<div class=\"card-container-body\" style=\"width: 250px;\">\n<div class=\"card-number\"><a href=\"https:\/\/ui.threatstream.com\/detail\/hash\/{{vars.indicator_value}}\" target=\"_blank\" rel=\"noopener noreferrer\"> <span class=\"card-count\">&nbsp;{{vars.steps.Get_Reputation_from_Anomali.data.objects[0].threatscore}}<\/span> <\/a>\n<div class=\"font-size-12\">Severity: {{vars.steps.Get_Reputation_from_Anomali.data.objects[0].meta.severity}}<\/div>\n<div class=\"font-size-14\"><strong>Anomali ThreatStream<\/strong><\/div>\n<\/div>\n<\/div>\n<p>{% endif %}<\/p>\n<p>&nbsp;<\/p>"
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "format_richtext",
+                "operationTitle": "Utils: Format as RichText",
+                "step_variables": {
+                    "Reputation": "{% if vars.foundAnomaliReputation %} {{vars.steps.Get_Reputation_from_Anomali.data.objects[0].threatscore}}{%else%} 0\n{%endif%}"
+                }
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "17178229-c6b4-4727-8613-42cb3e327bab"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "enrichment_summary",
+            "description": null,
+            "arguments": {
+                "tags": "None",
+                "source": "Anomali Threatstream",
+                "reputation": "{% if vars.Reputation >= vars.threshold %}\"Malicious\"{% elif vars.Reputation <= vars.threshold and vars.Reputation > 0 %}\"Suspicious\"{%elif vars.Reputation == 0%}\"No Reputation Available\"{%else%}\"Good\"{%endif%}",
+                "enrichmentSummary": "{{vars.steps.Compute_Anomali_Summary.data['formatted_string']}}"
+            },
+            "status": null,
+            "top": "569",
+            "left": "126",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "f853775c-caf8-437f-af0e-c7c9d1bb3e74"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Reputation from Anomali -> Compute Anomali Summary",
+            "targetStep": "\/api\/3\/workflow_steps\/17178229-c6b4-4727-8613-42cb3e327bab",
+            "sourceStep": "\/api\/3\/workflow_steps\/59ae3125-fd5b-4937-a4b3-10d98681be09",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e71ccc6f-8bbb-440c-beee-231b1e3bea9d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compute Anomali Summary -> enrichment_summary",
+            "targetStep": "\/api\/3\/workflow_steps\/f853775c-caf8-437f-af0e-c7c9d1bb3e74",
+            "sourceStep": "\/api\/3\/workflow_steps\/17178229-c6b4-4727-8613-42cb3e327bab",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b99b9ee7-ce81-41df-93d2-7741221d37a2"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configurations",
+            "targetStep": "\/api\/3\/workflow_steps\/a2b98e55-7ef1-40b8-82d3-3ce8ea0b7053",
+            "sourceStep": "\/api\/3\/workflow_steps\/68e0995c-4a5b-4f66-bfe5-3d2191fc170a",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c432c557-dbf3-4dc9-9b76-55dc81bc4cae"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configurations -> Get Reputation from Anomali",
+            "targetStep": "\/api\/3\/workflow_steps\/59ae3125-fd5b-4937-a4b3-10d98681be09",
+            "sourceStep": "\/api\/3\/workflow_steps\/a2b98e55-7ef1-40b8-82d3-3ce8ea0b7053",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "3b3a19ac-b067-4dcc-8b8b-ab6502f89691"
+        }
+    ],
+    "priority": null,
+    "uuid": "9e16d8da-e79b-44ce-80ef-9852f4841f2b",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

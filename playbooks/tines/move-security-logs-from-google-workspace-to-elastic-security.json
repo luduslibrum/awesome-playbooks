@@ -1,0 +1,161 @@
+{
+  "schema_version": 4,
+  "name": "Move security logs from Google Workspace to Elastic Security",
+  "description": "Detect and respond to malicious activity in Google Workspace by moving security logs to a centralized environment such as Elastic Security for further analysis and alerting with this Story.\n\ntags: Beginner, Google, ElasticSecurity, Analyze, Respond, Detect, Alerts, Threats,\nicons: google, ➡️, elastic\nvisibility: public\n\n",
+  "guid": "8194eed473d7545a9f17e63de889e61b",
+  "slug": "move_security_logs_from_google_workspace_to_elastic_security",
+  "exported_at": "2022-07-11T17:50:32Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get GSuite Logins",
+      "disabled": false,
+      "guid": "362883c935d928494aba7c5a9ac27982",
+      "options": {
+        "url": "https://www.googleapis.com/admin/reports/v1/activity/users/all/applications/login",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<get_g_suite_auth_token.body.access_token>>"
+        },
+        "payload": {
+          "startTime": "2019-01-01T00:00:00Z"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get GSuite Auth Token",
+      "disabled": false,
+      "guid": "ab8f877fdf871d8c8c21e6ab13e420b6",
+      "options": {
+        "url": "https://www.googleapis.com/oauth2/v4/token",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+          "assertion": "<<CREDENTIAL.gsuite>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send to Elastic Security",
+      "disabled": false,
+      "guid": "bb67996b40cb1a8023078a643533283a",
+      "options": {
+        "url": "http://<<RESOURCE.elk_domain>>:4999/gsuite/logins",
+        "content_type": "json",
+        "method": "post",
+        "headers": {},
+        "payload": {
+          "events": "=explode_gsuite_admin_events.event.events",
+          "ipAddress": "<<explode_gsuite_admin_events.event.ipAddress>>",
+          "actor": {
+            "profileid": "<<explode_gsuite_admin_events.event.actor.profileId>>",
+            "email": "<<explode_gsuite_admin_events.event.actor.email>>"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Gsuite admin events",
+      "disabled": false,
+      "guid": "66f4cc9f0b8cd6d583e9c62848774c17",
+      "options": {
+        "mode": "explode",
+        "path": "=get_gsuite_logins.body.items",
+        "to": "event"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://www.datocms-assets.com/55802/1635782402-605479051f853b3e19a2ba6f5ea2ef5842802b0a4156c315reports-admin.png?dpr=1&fm=jpg&w=2256\n\nSimple Story to send GSuite Logs to Elastic Security\n\nFollowing Instructions from our blog [here](https://www.tines.com/blog/g-suite-logs-elk-tines) we are fetching GSuite Logins and then sending them, individually, to an Elastic Security stack with a Logstash HTTP Input configured to send logs to Elasticsearch",
+      "position": [
+        -189.0,
+        -346.0
+      ],
+      "guid": "b97147b2082220a1c3c47eb9a8c4e2a7",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/elastic-blue.png",
+      "position": [
+        353.0,
+        -33.0
+      ],
+      "guid": "28da30fd1ccb731691b27ee5681ef33f",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 0
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    }
+  ],
+  "diagram_layout": "{\"362883c935d928494aba7c5a9ac27982\":[105,-240],\"ab8f877fdf871d8c8c21e6ab13e420b6\":[105,-345],\"bb67996b40cb1a8023078a643533283a\":[105,-30],\"66f4cc9f0b8cd6d583e9c62848774c17\":[105,-135]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Move security logs from Google Workspace to Elastic Security Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

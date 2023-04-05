@@ -1,0 +1,181 @@
+{
+  "schema_version": 4,
+  "name": "Generate a Tines Story visual",
+  "description": "Using a Tines Story export, create a DOT graph representation of the workflow for documentation, compliance, and sharing purposes.\n\ntags: Administrative, Visualization, Graph, Compliance, Beginner,\nicons: tines, 🎨, 📊\nvisibility: public",
+  "guid": "fc29c8ef39d9fa001096b7a8eb537be8",
+  "slug": "generate_a_tines_story_visual",
+  "exported_at": "2022-07-11T17:30:14Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Form",
+      "disabled": false,
+      "guid": "f217e836282b545ca3f7faf8b8511888",
+      "options": {
+        "path": "081fe482d21e5885b7573f1c25579263",
+        "secret": "98f442999d347e2c62f7de124b441133"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Create Graph",
+      "disabled": false,
+      "guid": "1a8a73046b6cd73f2a10b14146b4a2b7",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "result": "digraph {\n  node [fontname = \"Arial\", shape=\"box3d\"]\n  <%for action in unpack_story.story.agents%>\n  \"<<unpack_story.story.agents[FORLOOP.index0].name>> [<<FORLOOP.index0>>]\" <%if unpack_story.story.agents[FORLOOP.index0].type = \"Agents::EventTransformationAgent\"%>[color = \"#F5A666\"]<%elseif unpack_story.story.agents[FORLOOP.index0].type = \"Agents::EmailAgent\"%>[color = \"#DF99FF\"]<%elseif unpack_story.story.agents[FORLOOP.index0].type = \"Agents::WebhookAgent\"%>[color = \"#00d6b2\"]<%elseif unpack_story.story.agents[FORLOOP.index0].type = \"Agents::HTTPRequestAgent\"%>[color = \"#52BFFF\"]<%elseif unpack_story.story.agents[FORLOOP.index0].type = \"Agents::IMAPAgent\"%>[color = \"#F48889\"]<%elseif unpack_story.story.agents[FORLOOP.index0].type = \"Agents::SendToStoryAgent\"%>[color = \"#777FFF\"]<%elseif unpack_story.story.agents[FORLOOP.index0].type = \"Agents::TriggerAgent\"%>[color = \"#6DD888\"]<%endif%>\n<%endfor%><%for link in unpack_story.story.links%>\n  \"<<unpack_story.story.agents[link.source].name>> [<<link.source>>]\" -> \"<<unpack_story.story.agents[link.receiver].name>> [<<link.receiver>>]\"\n<%endfor%>\n}"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Unpack Story",
+      "disabled": false,
+      "guid": "b4bf8b625dfbcb9fa17030aa2720ef72",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "story": "=BASE64_DECODE(receive_form.body.upload_a_story.contents) |> JSON_PARSE(%)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Graph",
+      "disabled": false,
+      "guid": "05e1522b470494b3fd5f7234bb8b00bf",
+      "options": {
+        "recipients": [
+          "<<receive_form.body.email>>"
+        ],
+        "subject": "Dot Graph for <<unpack_story.story.name>>",
+        "body": "Check the attachment! The contents of the file can be put into <a href=\"https://dreampuf.github.io/GraphvizOnline\">GraphViz Online</a> or <a href=\"https://edotor.net/\">Edotor</a> easily!",
+        "attachments": [
+          {
+            "filename": "<<TO_SNAKE_CASE(unpack_story.story.name)>>.",
+            "base64encodedcontents": "<<BASE64_ENCODE(create_graph.result)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Generate A Tines Story Visual\n\nThis Story will generate a DOT graph representation from a Tines Story export. The DOT graph can be used with Graphviz based tools and services such as [Graphviz Online](https://dreampuf.github.io/GraphvizOnline) and [Edotor](https://edotor.net/).\n\nUtilize the [form](./form) to upload a Story export. Your DOT file will be emailed to you.",
+      "position": [
+        -15.0,
+        255.0
+      ],
+      "guid": "e42670d5f568dd8aa62296dbb0d7b251",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/story-visual.png\n\n",
+      "position": [
+        480.0,
+        240.0
+      ],
+      "guid": "94b3b72bc789e4473bbe323101f0c083",
+      "width": 253
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"f217e836282b545ca3f7faf8b8511888\":[285,240],\"1a8a73046b6cd73f2a10b14146b4a2b7\":[285,390],\"b4bf8b625dfbcb9fa17030aa2720ef72\":[285,315],\"05e1522b470494b3fd5f7234bb8b00bf\":[285,465]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Generate a Tines Story visual Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Email",
+        "description": "Your Graphviz .dot file will be sent here.",
+        "required": false,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Upload a Story",
+        "description": "",
+        "required": false,
+        "type": "FILE_UPLOAD",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "world",
+    "agent_guid": "f217e836282b545ca3f7faf8b8511888",
+    "success_message": "Thank you for your submission. A dot file will be sent to your email."
+  }
+}

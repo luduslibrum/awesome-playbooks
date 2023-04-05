@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_0sa8xfd" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.7.2">
+  <bpmn:process id="ICSAsstIntgrtyChck" name="ICS Asset Integrity Check" isExecutable="true" camunda:versionTag="Shareable_Workflow">
+    <bpmn:startEvent id="StartEvent_1" name="System Response Type Review">
+      <bpmn:outgoing>Flow_0djo82p</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0ghzown" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0djo82p" sourceRef="StartEvent_1" targetRef="Activity_0uc2zs6" />
+    <bpmn:serviceTask id="Activity_0uc2zs6" name="SOAR Identifies Asset Type">
+      <bpmn:incoming>Flow_0djo82p</bpmn:incoming>
+      <bpmn:outgoing>Flow_0h24h64</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0h24h64" sourceRef="Activity_0uc2zs6" targetRef="Activity_0v0e57e" />
+    <bpmn:serviceTask id="Activity_0v0e57e" name="SOAR Identifies required integrity checks for Asset">
+      <bpmn:incoming>Flow_0h24h64</bpmn:incoming>
+      <bpmn:outgoing>Flow_0n63hza</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0n63hza" sourceRef="Activity_0v0e57e" targetRef="Activity_0jaohx6" />
+    <bpmn:serviceTask id="Activity_0jaohx6" name="SOAR Conducts Integrity Checks">
+      <bpmn:incoming>Flow_0n63hza</bpmn:incoming>
+      <bpmn:outgoing>Flow_1vr1ftm</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_069p2go" name="Did any integrity checks fail?">
+      <bpmn:incoming>Flow_1vr1ftm</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kaegxa</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1s0uplc</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1vr1ftm" sourceRef="Activity_0jaohx6" targetRef="Gateway_069p2go" />
+    <bpmn:sequenceFlow id="Flow_0kaegxa" name="Yes" sourceRef="Gateway_069p2go" targetRef="Event_1147nkf" />
+    <bpmn:endEvent id="Event_1147nkf" name="ICS Asset Mitigation">
+      <bpmn:incoming>Flow_0kaegxa</bpmn:incoming>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0hk1gw5" />
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_0uj21rp" name="SOAR Generates Ticket for Response">
+      <bpmn:incoming>Flow_1s0uplc</bpmn:incoming>
+      <bpmn:outgoing>Flow_0el57xj</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="Activity_1gl5wn3" name="SOAR Notfies Operator of Ticket">
+      <bpmn:incoming>Flow_0el57xj</bpmn:incoming>
+      <bpmn:outgoing>Flow_1akpdhp</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:userTask id="Activity_1l7nq6b" name="Operator Reviews Ticket and Enables Response">
+      <bpmn:incoming>Flow_1akpdhp</bpmn:incoming>
+      <bpmn:outgoing>Flow_1iuvx5r</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_0lwl44q" name="End">
+      <bpmn:incoming>Flow_1iuvx5r</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0el57xj" sourceRef="Activity_0uj21rp" targetRef="Activity_1gl5wn3" />
+    <bpmn:sequenceFlow id="Flow_1akpdhp" sourceRef="Activity_1gl5wn3" targetRef="Activity_1l7nq6b" />
+    <bpmn:sequenceFlow id="Flow_1iuvx5r" sourceRef="Activity_1l7nq6b" targetRef="Event_0lwl44q" />
+    <bpmn:sequenceFlow id="Flow_1s0uplc" name="No" sourceRef="Gateway_069p2go" targetRef="Activity_0uj21rp" />
+    <bpmn:textAnnotation id="TextAnnotation_1uu330l">
+      <bpmn:text>These checks could consist of multiple automated workflows</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0s2nq1i" sourceRef="Activity_0jaohx6" targetRef="TextAnnotation_1uu330l" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ICSAsstIntgrtyChck">
+      <bpmndi:BPMNEdge id="Flow_1s0uplc_di" bpmnElement="Flow_1s0uplc">
+        <di:waypoint x="690" y="302" />
+        <di:waypoint x="690" y="410" />
+        <di:waypoint x="730" y="410" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="698" y="317" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1iuvx5r_di" bpmnElement="Flow_1iuvx5r">
+        <di:waypoint x="1110" y="410" />
+        <di:waypoint x="1162" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1akpdhp_di" bpmnElement="Flow_1akpdhp">
+        <di:waypoint x="970" y="410" />
+        <di:waypoint x="1010" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0el57xj_di" bpmnElement="Flow_0el57xj">
+        <di:waypoint x="830" y="410" />
+        <di:waypoint x="870" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kaegxa_di" bpmnElement="Flow_0kaegxa">
+        <di:waypoint x="715" y="277" />
+        <di:waypoint x="1162" y="277" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="934" y="259" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vr1ftm_di" bpmnElement="Flow_1vr1ftm">
+        <di:waypoint x="630" y="277" />
+        <di:waypoint x="665" y="277" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0n63hza_di" bpmnElement="Flow_0n63hza">
+        <di:waypoint x="500" y="277" />
+        <di:waypoint x="530" y="277" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0h24h64_di" bpmnElement="Flow_0h24h64">
+        <di:waypoint x="370" y="277" />
+        <di:waypoint x="400" y="277" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0djo82p_di" bpmnElement="Flow_0djo82p">
+        <di:waypoint x="215" y="277" />
+        <di:waypoint x="270" y="277" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0g6ft4n_di" bpmnElement="StartEvent_1" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="179" y="259" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="152" y="302" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1uxgd00_di" bpmnElement="Activity_0uc2zs6">
+        <dc:Bounds x="270" y="237" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04qdsg8_di" bpmnElement="Activity_0v0e57e">
+        <dc:Bounds x="400" y="237" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_013bt2c_di" bpmnElement="Activity_0jaohx6">
+        <dc:Bounds x="530" y="237" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_069p2go_di" bpmnElement="Gateway_069p2go" isMarkerVisible="true">
+        <dc:Bounds x="665" y="252" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="650" y="214.5" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0jq81lm_di" bpmnElement="Event_1147nkf" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="1162" y="259" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1156" y="302" width="49" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0uj21rp_di" bpmnElement="Activity_0uj21rp">
+        <dc:Bounds x="730" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1gl5wn3_di" bpmnElement="Activity_1gl5wn3">
+        <dc:Bounds x="870" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1l7nq6b_di" bpmnElement="Activity_1l7nq6b">
+        <dc:Bounds x="1010" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0lwl44q_di" bpmnElement="Event_0lwl44q" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="1162" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1171" y="435" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1uu330l_di" bpmnElement="TextAnnotation_1uu330l">
+        <dc:Bounds x="500" y="80" width="100" height="82" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0s2nq1i_di" bpmnElement="Association_0s2nq1i">
+        <di:waypoint x="572" y="237" />
+        <di:waypoint x="558" y="162" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

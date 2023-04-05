@@ -1,0 +1,208 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Link Similar Incidents",
+    "aliasName": null,
+    "tag": null,
+    "description": "Links all selected similar incidents with the parent incident",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/212a360e-0b4c-4b72-9a7b-cc1766265d83",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Raise Error",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "msg": "This playbook is meant for using with Recommendation engine and expects similar records as one of the inputs."
+                },
+                "version": "3.0.0",
+                "connector": "cyops_utilities",
+                "operation": "raise_exception",
+                "operationTitle": "Utils: Raise Exception",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "393",
+            "left": "660",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "d13da9fe-aa72-4df9-8d76-87271d2613ee"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "664526a0-84df-4c23-870d-e74761257cd5",
+                "title": "Link Similar Incidents",
+                "resources": [
+                    "incidents"
+                ],
+                "inputVariables": [],
+                "step_variables": {
+                    "input": {
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "incidents": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "OR",
+                        "filters": [
+                            {
+                                "type": "primitive",
+                                "field": "id",
+                                "value": 0,
+                                "operator": "eq",
+                                "_operator": "eq"
+                            }
+                        ]
+                    },
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": false,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "40",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "212a360e-0b4c-4b72-9a7b-cc1766265d83"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Config",
+            "description": null,
+            "arguments": {
+                "parentIncidents": "{{vars.request.data.__parentRecordId}}",
+                "selectedSimilarIncidents": "{{vars.request.data.records}}"
+            },
+            "status": null,
+            "top": "146",
+            "left": "189",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "8b51e268-7021-41f2-8779-bb225ee765d4"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Link Similar Incidents To Parent",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "content": "<p>Linked<strong> {{vars.selectedSimilarIncidents|length}}<\/strong>&nbsp;similar incident(s) to this&nbsp;incident successfully.&nbsp;<\/p>\n<p>&nbsp;<\/p>\n<p>&nbsp;<\/p>",
+                    "records": "{{vars.parentIncidents}}"
+                },
+                "resource": {
+                    "incidents": "{{vars.selectedSimilarIncidents}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.parentIncidents}}",
+                "collectionType": "\/api\/3\/alerts",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "149",
+            "left": "660",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "45639091-1dbe-42c0-a96a-4b2b68feebf0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Check if triggered from similarity section",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "No",
+                        "step_iri": "\/api\/3\/workflow_steps\/d13da9fe-aa72-4df9-8d76-87271d2613ee",
+                        "condition": "{{ vars.parentIncidents|length == 0 }}"
+                    },
+                    {
+                        "option": "Yes",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/45639091-1dbe-42c0-a96a-4b2b68feebf0"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "260",
+            "left": "340",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "37cbd422-055c-4d36-9f74-3ae555146f3f"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Config",
+            "targetStep": "\/api\/3\/workflow_steps\/8b51e268-7021-41f2-8779-bb225ee765d4",
+            "sourceStep": "\/api\/3\/workflow_steps\/212a360e-0b4c-4b72-9a7b-cc1766265d83",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d5f88448-2299-401a-af5e-701250fb1959"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Config -> Check if triggered from similarity section",
+            "targetStep": "\/api\/3\/workflow_steps\/37cbd422-055c-4d36-9f74-3ae555146f3f",
+            "sourceStep": "\/api\/3\/workflow_steps\/8b51e268-7021-41f2-8779-bb225ee765d4",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f68426db-d98e-4565-b044-cf9106132b92"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check if triggered from similarity section -> Link Similar Alerts To Parent",
+            "targetStep": "\/api\/3\/workflow_steps\/45639091-1dbe-42c0-a96a-4b2b68feebf0",
+            "sourceStep": "\/api\/3\/workflow_steps\/37cbd422-055c-4d36-9f74-3ae555146f3f",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "6726683a-b237-44f5-b365-e124431ad814"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check if triggered from similarity section -> Error",
+            "targetStep": "\/api\/3\/workflow_steps\/d13da9fe-aa72-4df9-8d76-87271d2613ee",
+            "sourceStep": "\/api\/3\/workflow_steps\/37cbd422-055c-4d36-9f74-3ae555146f3f",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "b66649a4-4ad5-4f33-8d38-37ade87e2228"
+        }
+    ],
+    "priority": null,
+    "uuid": "34aa984d-9bf9-447f-9172-d63aa3c36197",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "link",
+        "similarity",
+        "incidents"
+    ]
+}

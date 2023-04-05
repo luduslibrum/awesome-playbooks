@@ -1,0 +1,301 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Export as CSV",
+    "aliasName": null,
+    "tag": null,
+    "description": "Export all records of the given module with specified filters in the CSV format.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/e811949a-45b4-4189-b524-fdb64c417810",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/96bbd26c-d404-4458-938d-e492bd0e71e9",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Send Email",
+            "description": null,
+            "arguments": {
+                "config": "88c3d39c-2fa9-4731-b00d-29815008f17c",
+                "params": {
+                    "cc": "",
+                    "to": "{{vars.toEmailAddress}}",
+                    "bcc": "",
+                    "from": "{{vars.fromEmailAddress}}",
+                    "type": "Manual Input",
+                    "content": "Incident Export at {{ arrow.utcnow() }}",
+                    "subject": "Incident Export Attached",
+                    "iri_list": "",
+                    "body_type": "Plain Text",
+                    "file_name": "{{ vars.resultsFileName }}.zip",
+                    "file_path": "{{ vars.resultsFileName }}.zip"
+                },
+                "version": "2.3.0",
+                "from_str": "soc@cybersponse.com",
+                "connector": "smtp",
+                "operation": "send_email_new",
+                "operationTitle": "Send Email",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "975",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/4c0019b2-055c-44d0-968c-678a0c2d762e",
+            "uuid": "09784943-df4e-4ace-9a49-b5609cf15260"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "c1305aab-cfe7-4b6f-9227-f16ded912bf5",
+                "title": "Export > All Records Data",
+                "resources": [
+                    "incidents"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "emailID",
+                        "type": "string",
+                        "label": "Email ID",
+                        "tooltip": "Please Enter Email ID for receiving report",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": true,
+                        "_expanded": true,
+                        "defaultValue": "",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "emailID": "{{vars.request.data[\"emailID\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "incidents": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": true,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "96bbd26c-d404-4458-938d-e492bd0e71e9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set Pages",
+            "description": null,
+            "arguments": {
+                "pageRange": "{% set _list=[] %}{% if vars.pages >= 1%}{% for n in range(1, vars.pages + 1) %}{% set _temp=_list.append(n) %}{% endfor %}{% endif %}{{ _list }}"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "dffe6697-49a6-4b36-b1cd-19161b0fd829"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "pageSize": "250",
+                "moduleName": "incidents",
+                "toEmailAddress": "{{vars.input.params.emailID}}",
+                "incidentsFilter": "{ \n   \"filters\":[ \n      { \n         \"field\":\"name\",\n         \"operator\":\"like\",\n         \"value\":\"%Suspicious%\"\n      },\n      { \n         \"field\":\"createDate\",\n         \"operator\":\"gt\",\n         \"value\":\"2018-01-31T16:22:55.297317+05:30\"\n      }\n   ],\n   \"logic\":\"AND\",\n  \"__selectFields\":[\"name\",\"category\",\"dueby\",\"phase\",\"status\",\"severity\",\"incidentLead\",\"createDate\",\"dateOfIncident\",\"id\",\"createUser\",\"modifyUser\"]\n}",
+                "resultsFileName": "incidentExport-{{ arrow.utcnow().timestamp }}",
+                "fromEmailAddress": "no-reply@cybersponse.com",
+                "datetimeFieldsToConvert": "[\"createDate\", \"dueby\", \"dateOfIncident\"]"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "ca8d2f88-9de8-424a-b7d4-fefbbbbee260"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Write Headers To File",
+            "description": null,
+            "arguments": {
+                "config": "0fd89191-0436-4ba1-8eca-88771f17e159",
+                "params": {
+                    "python_function": "import csv\n\nrecordsToSave = {{vars.steps.Find_Records_Paginated.data[\"hydra:member\"]}} \ncolumns = recordsToSave[0].keys()\ncolumnsToAdd = [item for item in columns if item in {{ vars.incidentsFilter.__selectFields}}]\nwith open('\/tmp\/{{vars.resultsFileName}}.csv','w') as out_file:\n    csv_w = csv.writer(out_file)\n    csv_w.writerow(columnsToAdd)"
+                },
+                "version": "1.2.1",
+                "connector": "code-snippet",
+                "operation": "python_inline",
+                "operationTitle": "Execute Python Code",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/1fdd14cc-d6b4-4335-a3af-ab49c8ed2fd8",
+            "uuid": "f3bbac99-d211-4cc8-9639-34ee1b1c6c09"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Records Paginated",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/query\/{{vars.moduleName}}?$limit={{vars.pageSize}}",
+                    "body": "{{ vars.incidentsFilter }}",
+                    "method": "POST"
+                },
+                "version": "2.7.0",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": {
+                    "pages": "{{(vars.result.data['hydra:totalItems']\/vars.pageSize | int) | round(0, 'ceil') | int}}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "120",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "94ed884f-cbaf-479b-abf8-6f2fd59aee5a"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Compress File",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "filename": "{{vars.resultsFileName}}.csv",
+                    "password": "",
+                    "compress_level": 6,
+                    "target_filename": "{{vars.resultsFileName}}.zip"
+                },
+                "version": "2.7.0",
+                "connector": "cyops_utilities",
+                "operation": "zip_and_protect_file",
+                "operationTitle": "File: Zip",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "840",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "c6638987-8486-4d67-b3a2-3e05275f647d"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Append Paginated Results",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.pages >= 1}}",
+                "for_each": {
+                    "item": "{{ vars.pageRange }}",
+                    "condition": ""
+                },
+                "arguments": {
+                    "queryURL": "\/api\/query\/{{vars.moduleName}}?$limit={{vars.pageSize}}&$page={{vars.item}}",
+                    "queryBody": "{{vars.incidentsFilter}}",
+                    "fileToUpdate": "\/tmp\/{{vars.resultsFileName}}.csv",
+                    "datetimeFieldsToConvert": "{{vars.datetimeFieldsToConvert}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/040d22ad-4796-4154-8592-c89af670abb5"
+            },
+            "status": null,
+            "top": "705",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "61e4d61e-f8b5-42a2-861b-c0c741f38b42"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compress File -> Send Email",
+            "targetStep": "\/api\/3\/workflow_steps\/09784943-df4e-4ace-9a49-b5609cf15260",
+            "sourceStep": "\/api\/3\/workflow_steps\/c6638987-8486-4d67-b3a2-3e05275f647d",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "59179374-a9c3-4a23-92b6-d02c4cae9ff2"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Set Incident Filter",
+            "targetStep": "\/api\/3\/workflow_steps\/ca8d2f88-9de8-424a-b7d4-fefbbbbee260",
+            "sourceStep": "\/api\/3\/workflow_steps\/96bbd26c-d404-4458-938d-e492bd0e71e9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a4314de1-372b-4af3-ac5f-de0b95741bcb"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set Pages -> Append next page results",
+            "targetStep": "\/api\/3\/workflow_steps\/61e4d61e-f8b5-42a2-861b-c0c741f38b42",
+            "sourceStep": "\/api\/3\/workflow_steps\/dffe6697-49a6-4b36-b1cd-19161b0fd829",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "5f7e617e-200d-43f1-b47c-43b054105898"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Append next page results -> Compress File",
+            "targetStep": "\/api\/3\/workflow_steps\/c6638987-8486-4d67-b3a2-3e05275f647d",
+            "sourceStep": "\/api\/3\/workflow_steps\/61e4d61e-f8b5-42a2-861b-c0c741f38b42",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "edcf8a1a-bc0f-4136-b32a-57cbda802b2a"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set Incident Filter -> Find Records Paginated",
+            "targetStep": "\/api\/3\/workflow_steps\/94ed884f-cbaf-479b-abf8-6f2fd59aee5a",
+            "sourceStep": "\/api\/3\/workflow_steps\/ca8d2f88-9de8-424a-b7d4-fefbbbbee260",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "aca88c16-5baa-4784-870a-fba66829dd8f"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Write Results To File -> Set Pages",
+            "targetStep": "\/api\/3\/workflow_steps\/dffe6697-49a6-4b36-b1cd-19161b0fd829",
+            "sourceStep": "\/api\/3\/workflow_steps\/f3bbac99-d211-4cc8-9639-34ee1b1c6c09",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d66bf1e9-7a4b-442e-8bd6-0b4662229ef0"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Records Paginated -> Write Headers To File",
+            "targetStep": "\/api\/3\/workflow_steps\/f3bbac99-d211-4cc8-9639-34ee1b1c6c09",
+            "sourceStep": "\/api\/3\/workflow_steps\/94ed884f-cbaf-479b-abf8-6f2fd59aee5a",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c7f6e127-f47e-478c-b2a7-143283f93b7f"
+        }
+    ],
+    "priority": null,
+    "uuid": "967f8066-8cec-4d90-a2fe-d387be29e5c8",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction"
+    ]
+}

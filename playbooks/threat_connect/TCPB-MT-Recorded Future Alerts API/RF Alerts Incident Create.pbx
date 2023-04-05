@@ -1,0 +1,836 @@
+{
+  "definitionVersion" : "1.0.0",
+  "name" : "RF Alerts Incident Create",
+  "type" : "Standard",
+  "panX" : 764.0,
+  "panY" : 85.0,
+  "logLevel" : "WARN",
+  "jobList" : [ {
+    "id" : 357,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "X-RFToken",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"RF\",\"value\":\"Recorded Future Alert\"},{\"key\":\"XRFToken\",\"value\":\"your_api_key_here\"}]"
+    } ],
+    "locationLeft" : -440.0,
+    "locationTop" : 190.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 358,
+    "appCatalogItem" : {
+      "programName" : "Http Client",
+      "displayName" : "HTTP Client",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Get Results from Alert ID",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "ignore_ssl_trust"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"X-RFToken\",\"value\":\"#App:357:XRFToken!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "parameters"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "action"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "httpclient_proxy"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://api.recordedfuture.com/v2/alert/#Trigger:46:trg.tc.name!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    } ],
+    "locationLeft" : -240.0,
+    "locationTop" : 190.0,
+    "outputVariables" : "[{\"name\":\"http_client.response.output_content\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 359,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TaskCreate v1.0",
+      "displayName" : "Create ThreatConnect Task",
+      "programVersion" : "1.0.16"
+    },
+    "name" : "Create New Task",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "task_due_date"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "task_assignees"
+      },
+      "value" : "buddy+orgadmin"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "task_escalatees"
+      },
+      "value" : "buddy"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Task"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "DOITNC"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "RF Alert: #App:365:find_replace.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "task_escalation_date"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "task_reminder_date"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "RF Alert"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      }
+    } ],
+    "locationLeft" : 660.0,
+    "locationTop" : 180.0,
+    "outputVariables" : "[{\"name\":\"tc.task\",\"type\":\"TCEntity\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 360,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.3"
+    },
+    "name" : "Extract Data",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:358:http_client.response.output_content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"alertURL\",\"value\":\"$.data.rule.url\"},{\"key\":\"rulename\",\"value\":\"$.data.rule.name\"},{\"key\":\"dateTriggered\",\"value\":\"$.data.triggered\"},{\"key\":\"fragmentName\",\"value\":\"$.data..entities..documents..references..fragment\"},{\"key\":\"sourceName\",\"value\":\"$.data..entities..documents..source..name\"},{\"key\":\"SourceURL\",\"value\":\"$.data..entities..documents..url\"},{\"key\":\"entities\",\"value\":\"$.data.entities..entities[*][\\\"name\\\",\\\"type\\\",\\\"description\\\"]\"}]"
+    } ],
+    "locationLeft" : -20.0,
+    "locationTop" : 190.0,
+    "outputVariables" : "[{\"name\":\"dateTriggered\",\"type\":\"StringArray\"},{\"name\":\"SourceURL\",\"type\":\"StringArray\"},{\"name\":\"rulename\",\"type\":\"StringArray\"},{\"name\":\"fragmentName\",\"type\":\"StringArray\"},{\"name\":\"entities\",\"type\":\"StringArray\"},{\"name\":\"alertURL\",\"type\":\"StringArray\"},{\"name\":\"sourceName\",\"type\":\"StringArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 361,
+    "appCatalogItem" : {
+      "programName" : "Regex Filter",
+      "displayName" : "Filter Regex",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Parse Task ID",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern"
+      },
+      "value" : "(?<=task=)(.*)"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#Trigger:46:trg.tc.weblink!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_group"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 180.0,
+    "locationTop" : 370.0,
+    "outputVariables" : "[{\"name\":\"regex_filter.output\",\"type\":\"StringArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 362,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Convert JobID to String",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"jTaskID\",\"value\":\"#App:361:regex_filter.output!StringArray\"}]"
+    } ],
+    "locationLeft" : 430.0,
+    "locationTop" : 370.0,
+    "outputVariables" : "[{\"name\":\"jTaskID\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 363,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TC Api v1.0",
+      "displayName" : "ThreatConnect API",
+      "programVersion" : "1.0.4"
+    },
+    "name" : "Remove Old Task",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "query_params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "path"
+      },
+      "value" : "/v2/tasks/#App:362:jTaskID!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "method"
+      },
+      "value" : "DELETE"
+    } ],
+    "locationLeft" : 660.0,
+    "locationTop" : 370.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 364,
+    "appCatalogItem" : {
+      "programName" : "TCPB - IncidentCreate v1.0",
+      "displayName" : "Create ThreatConnect Incident",
+      "programVersion" : "1.0.16"
+    },
+    "name" : "Create Incient",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Incident"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "DOITNC"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "RF Alert:  #App:366:jrulename!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "incident_event_date"
+      },
+      "value" : "#App:366:jdateTriggered!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Additional Analysis and Context\",\"value\":\"#App:374:find_replace.output!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : "#App:359:tc.task!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "Recorded Future Alert"
+    } ],
+    "locationLeft" : 2270.0,
+    "locationTop" : 180.0,
+    "outputVariables" : "[{\"name\":\"tc.incident\",\"type\":\"TCEntity\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 365,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Remove \"[ ]\" RuleName",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "[|]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:366:jrulename!String"
+    } ],
+    "locationLeft" : 420.0,
+    "locationTop" : 190.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 366,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Convert Output to Strings",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"jrulename\",\"value\":\"#App:360:rulename!StringArray\"},{\"key\":\"jalertrule\",\"value\":\"#App:360:alertURL!StringArray\"},{\"key\":\"jdateTriggered\",\"value\":\"#App:360:dateTriggered!StringArray\"},{\"key\":\"jentities\",\"value\":\"#App:360:entities!StringArray\"},{\"key\":\"jfragmentName\",\"value\":\"#App:360:fragmentName!StringArray\"},{\"key\":\"jsourceName\",\"value\":\"#App:360:sourceName!StringArray\"},{\"key\":\"sSourceURL\",\"value\":\"#App:360:SourceURL!StringArray\"}]"
+    } ],
+    "locationLeft" : 190.0,
+    "locationTop" : 170.0,
+    "outputVariables" : "[{\"name\":\"jalertrule\",\"type\":\"String\"},{\"name\":\"jdateTriggered\",\"type\":\"String\"},{\"name\":\"jfragmentName\",\"type\":\"String\"},{\"name\":\"jsourceName\",\"type\":\"String\"},{\"name\":\"jrulename\",\"type\":\"String\"},{\"name\":\"jentities\",\"type\":\"String\"},{\"name\":\"sSourceURL\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 367,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Remove \"[ ]\" Entities",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:366:jentities!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "[|]"
+    } ],
+    "locationLeft" : 410.0,
+    "locationTop" : 80.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 368,
+    "appCatalogItem" : {
+      "programName" : "Add Attribute",
+      "displayName" : "Create ThreatConnect Attribute",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Create Source Attribute",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_content"
+      },
+      "value" : "Alert Name: #App:366:jrulename!String \n\nAlert URL: #App:366:jalertrule!String  \n\nSource: #App:366:jsourceName!String \n\nSource URL: #App:366:sSourceURL!String  \n\n\nFragments: #App:366:jfragmentName!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_type"
+      },
+      "value" : "Source"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "update"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "indicator_name"
+      },
+      "value" : "#App:364:tc.incident!TCEntity"
+    } ],
+    "locationLeft" : 2490.0,
+    "locationTop" : 180.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 369,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Remove []",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "\\[|\\]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:366:jentities!String"
+    } ],
+    "locationLeft" : 960.0,
+    "locationTop" : 300.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 370,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Remove },",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:369:find_replace.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "},"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      },
+      "value" : "\"\n\n\""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1200.0,
+    "locationTop" : 300.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 371,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Remove {}",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:370:find_replace.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "\\{|\\}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 1410.0,
+    "locationTop" : 300.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 372,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Replace ,",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:371:find_replace.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      },
+      "value" : "\"\n\""
+    } ],
+    "locationLeft" : 1620.0,
+    "locationTop" : 300.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 373,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Remove \"\"",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "\""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:372:find_replace.output!String"
+    } ],
+    "locationLeft" : 1820.0,
+    "locationTop" : 300.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 374,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Add Padding",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:373:find_replace.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      },
+      "value" : ": "
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : ":"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 2050.0,
+    "locationTop" : 290.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 357,
+    "sourceTriggerId" : 46
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 357,
+    "targetJobId" : 358
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 358,
+    "targetJobId" : 360
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 360,
+    "targetJobId" : 361
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 361,
+    "targetJobId" : 362
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 362,
+    "targetJobId" : 363
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 360,
+    "targetJobId" : 366
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 366,
+    "targetJobId" : 365
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 365,
+    "targetJobId" : 359
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 366,
+    "targetJobId" : 367
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 367,
+    "targetJobId" : 359
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 364,
+    "targetJobId" : 368
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 359,
+    "targetJobId" : 369
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 369,
+    "targetJobId" : 370
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 370,
+    "targetJobId" : 371
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 371,
+    "targetJobId" : 372
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 372,
+    "targetJobId" : 373
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 373,
+    "targetJobId" : 374
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 374,
+    "targetJobId" : 364
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 45,
+    "name" : "CVE Trigger 1",
+    "type" : "CVE",
+    "eventType" : "Create",
+    "locationLeft" : 1900.0,
+    "locationTop" : 140.0,
+    "httpBasicAuthEnable" : false,
+    "anyOrg" : false,
+    "orFilters" : false,
+    "fireOnDuplicate" : false,
+    "renderBodyAsTip" : false
+  }, {
+    "id" : 46,
+    "name" : "Task Trigger 1",
+    "type" : "Task",
+    "eventType" : "AddTag",
+    "locationLeft" : -340.0,
+    "locationTop" : 0.0,
+    "httpBasicAuthEnable" : false,
+    "anyOrg" : false,
+    "orFilters" : false,
+    "fireOnDuplicate" : false,
+    "renderBodyAsTip" : false,
+    "playbookTriggerFilterList" : [ {
+      "fieldType" : "Tag",
+      "operatorType" : "Contains",
+      "value" : "RFATemp"
+    } ],
+    "outputVariables" : "[{\"name\":\"trg.tc.weblink\",\"type\":\"String\"},{\"name\":\"trg.tc.name\",\"type\":\"String\"}]"
+  } ],
+  "exportablePipes" : [ ],
+  "dateExported" : "3/16/18 10:43 AM"
+}

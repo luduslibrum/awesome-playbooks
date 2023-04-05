@@ -1,0 +1,188 @@
+{
+  "schema_version": 4,
+  "name": "Fetch & manage Microsoft Defender alerts",
+  "description": "A beginner Story that fetches Microsoft Defender alerts and creates a Jira ticket for each of them.\n\ntags: Microsoft, Beginner, Jira, Alert\nicons: Microsoft, 🚨, Jira\nvisibility: public",
+  "guid": "7de83aa1d35a6af0824a406f3ad8eb70",
+  "slug": "fetch_manage_microsoft_defender_alerts",
+  "exported_at": "2022-07-11T17:46:42Z",
+  "agents": [
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Individual Detections",
+      "disabled": false,
+      "guid": "492187195d3bb754abb08591fa40250c",
+      "options": {
+        "mode": "explode",
+        "path": "=get_defender_detections.body.value",
+        "to": "individual_detection"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Events",
+      "disabled": false,
+      "guid": "a92cb9979191d2f0d74b18f140e4f7e7",
+      "options": {
+        "mode": "deduplicate",
+        "period": "86400",
+        "path": "<<explode_individual_detections.individual_detection.id>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Defender Detections",
+      "disabled": false,
+      "guid": "d4ac0c63d94d0444f671a9a505862b3d",
+      "options": {
+        "url": "https://api.securitycenter.microsoft.com/api/alerts?$filter=status eq 'New' and severity ne 'Informational'&$expand=evidence",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.microsoft_defender>>",
+          "Accept-Encoding": "None"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Detection",
+      "disabled": false,
+      "guid": "79a72bb48137b02a2015a544e460764c",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "jira_body": "h2. Alert Overview:\n\n||*Alert Link*| https://security.microsoft.com/alerts/<<explode_individual_detections.individual_detection.id>> |\n||*Priority*|<<explode_individual_detections.individual_detection.severity>> |\n||*Title*|<<explode_individual_detections.individual_detection.title>> |\n||*Detection Source*|<<explode_individual_detections.individual_detection.detectionSource>> |\n||*Category*|<<explode_individual_detections.individual_detection.category>> |\n||*Incident ID*|<<explode_individual_detections.individual_detection.incidentId>> |\n||*Description*|<<explode_individual_detections.individual_detection.description>> |\n||*Alert creation time*|<<explode_individual_detections.individual_detection.alertCreationTime>> |\n||*First Event*|<<explode_individual_detections.individual_detection.firstEventTime>> |\n||*Last Event*|<<explode_individual_detections.individual_detection.lastEventTime>> |\n||*Machine ID*|<<explode_individual_detections.individual_detection.machineId>> |\n||*Computer DNS Name*|<<explode_individual_detections.individual_detection.computerDnsName>> |\n\nh2. Alert Evidence\n<%for evidence in explode_individual_detections.individual_detection.evidence%>\n*Evidence <<FORLOOP.index>> of <<FORLOOP.length>>*\n\n||*Description*|<<DEFAULT(evidence.entityType, \"N/A\")>> |\n||*Evidence Creation Time*|<<DEFAULT(evidence.evidenceCreationTime, \"N/A\")>> |\n<%if evidence.sha1 != NULL%>||*SHA1*|<<evidence.sha1>> |\n<%endif%><%if evidence.sha265 != NULL%>||*SHA256*|<<evidence.sha256>> |\n<%endif%><%if evidence.filename != NULL%>||*File Name*|<<evidence.fileName>> |\n<%endif%><%if evidence.filepath != NULL%>||*File Path*|<<evidence.filePath>> |\n<%endif%><%if evidence.processid != NULL%>||*Process ID*|<<evidence.processId>> |\n<%endif%><%if evidence.processCommandLine != NULL%>||*Process Command Line*|<<evidence.processCommandLine>> |\n<%endif%><%if evidence.processCreationTime != NULL%>||*Process Creation Time*|<<evidence.processCreationTime>> |\n<%endif%><%if evidence.parentprocessId != NULL%>||*Parent Process ID*|<<evidence.parentprocessId>> |\n<%endif%><%if evidence.parentProcessCreationTime != NULL%>||*Parent Process Creation Time*|<<evidence.parentProcessCreationTime>> |\n<%endif%><%if evidence.ParentProcessFileName != NULL%>||*Parent File Name*|<<evidence.parentProcessFileName>> |\n<%endif%><%if evidence.parentProcessFilePath != NULL%>||*Parent File Path*|<<evidence.parentProcessFilePath>> |\n<%endif%><%if evidence.ipAddress != NULL%>||*IP Address*|<<evidence.ipAddress>> |\n<%endif%><%if evidence.url != NULL%>||*URL*|<<evidence.url>> |\n<%endif%><%if evidence.registryKey != NULL%>||*Registry Key*|<<evidence.registryKey>> |\n<%endif%><%if evidence.registryhive != NULL%>||*Registry Hive*|<<evidence.registryHive>> |\n<%endif%><%if evidence.registryValueType != NULL%>||*Registry Value Type*|<<evidence.registryValueType>> |\n<%endif%><%if evidence.registryValue != NULL%>||*Registry Value*|<<evidence.registryValue>> |\n<%endif%><%if evidence.accountName != NULL%>||*Account Name*|<<evidence.accountName>> |\n<%endif%><%if evidence.domainName != NULL%>||*Domain Name*|<<evidence.domainName>> |\n<%endif%><%if evidence.userSid != NULL%>||*User SID*|<<evidence.userSid>> |\n<%endif%><%if evidence.aadUserId != NULL%>||*AA AD User ID*|<<evidence.aadUserId>> |\n<%endif%><%if evidence.userPrincipalName != NULL%>||*User Principal Name*|<<evidence.userPrincipalName>> |\n<%endif%><%if evidence.detectionStatus != NULL%>||*Detection Status*|<<evidence.detectionStatus>> |<%endif%>\n<%endfor%>\n\n",
+          "summary": "SOC_Defender_Security_Incident_<<explode_individual_detections.individual_detection.title>>",
+          "component": "Defender",
+          "alert": "SOC_Defender_Security_Incident_<<explode_individual_detections.individual_detection.category>>",
+          "priority": "High"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "123e4a4782ff86ac449477b4ae7ba49a",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "ED"
+            },
+            "issuetype": {
+              "name": "Security Incident"
+            },
+            "description": "<<build_detection.jira_body>>",
+            "summary": "<<build_detection.summary>>",
+            "labels": [
+              "fromTines"
+            ],
+            "priority": {
+              "name": "High"
+            }
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-ms-defender.png\n\n# **Microsoft Defender Detections**\n\nThis is a simple story to Extract New Microsoft Defender alerts and create a ticket in Jira for each of them.\n\n\n\n# Requirements\n- [ ] A Microsoft Defender OAuth Token\n- [ ] A Jira API Key and Username",
+      "position": [
+        60.0,
+        285.0
+      ],
+      "guid": "c0128f2d02a62fd4e2918e75fcb446c4",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 0
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    }
+  ],
+  "diagram_layout": "{\"492187195d3bb754abb08591fa40250c\":[375,360],\"a92cb9979191d2f0d74b18f140e4f7e7\":[375,450],\"d4ac0c63d94d0444f671a9a505862b3d\":[375,270],\"79a72bb48137b02a2015a544e460764c\":[375,540],\"123e4a4782ff86ac449477b4ae7ba49a\":[375,630]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Fetch & manage Microsoft Defender alerts Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

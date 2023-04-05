@@ -1,0 +1,302 @@
+{
+  "schema_version": 4,
+  "name": "Split a large array into smaller arrays",
+  "description": "This Story takes in a large array (or delimited string) and uses 'slice' to break it into smaller arrays with 75 entries each to meet call size requirements for third-party APIs.\n\ntags: Array, Split, Intermediate\nicons: 🔻, 🎳, 👌\nvisibility: public",
+  "guid": "bbc75be80e5e8f5da5d728462a259b56",
+  "slug": "split_a_large_array_into_smaller_arrays",
+  "exported_at": "2022-07-11T17:45:27Z",
+  "agents": [
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Array",
+      "disabled": false,
+      "guid": "308ccf1328c96a22c86574af74b42b96",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "incoming_data": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Count Array Entries",
+      "disabled": false,
+      "guid": "e1e452730c93303bf8fcbd6b12c01f8f",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "count": "<<LIQUID_SIZE(split_incoming_entries.array, \"dot_notation\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set offset",
+      "disabled": false,
+      "guid": "3ea538fe196d77ffc0d6d926a372073a",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "slice_number": 1,
+          "array_start": 0,
+          "array_size": 75
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set offset",
+      "disabled": false,
+      "guid": "29db40ad14e9159b65ecaf6ac2717773",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "slice_number": "<<PLUS(set_offset.slice_number, 1)>>",
+          "array_start": "<<PLUS(set_offset.array_start, 75)>>",
+          "array_size": 75
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if More Slices",
+      "disabled": false,
+      "guid": "498f60e10916b7765317d067cf112d1d",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "<<PLUS(set_offset.array_start, 76)>>",
+            "path": "<<count_array_entries.count>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Array Slice",
+      "disabled": false,
+      "guid": "8f9647380b454edfa7d111b3a433840a",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "slice": "=SLICE(split_incoming_entries.array, set_offset.array_start, set_offset.array_size)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Array with the Slices",
+      "disabled": false,
+      "guid": "628f56fe0e0424d0ff199e93764eaeca",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "slice_number": "<<set_offset.slice_number>>",
+          "array": "=extract_array_slice.slice"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Split Incoming Entries",
+      "disabled": false,
+      "guid": "23f5524401f6cd1a087a59410e4e2cc9",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "array": "=SPLIT(build_array.incoming_data, \",\")"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "\n# Build our test data\n\nBuild a large object with comma separated entries",
+      "position": [
+        3885.0,
+        -195.0
+      ],
+      "guid": "794b27913695e1533d782247841e714c",
+      "width": null
+    },
+    {
+      "content": "# Slicing \n\nUse the `slice` function on the array to grab 75 entries at a time",
+      "position": [
+        4140.0,
+        270.0
+      ],
+      "guid": "dd158b9a53dfaffd264acafa3801946c",
+      "width": null
+    },
+    {
+      "content": "# Pagination\n\nIf there are more than 75 entries, loop and increment the index start by 75 to grab the next set of entries",
+      "position": [
+        3420.0,
+        255.0
+      ],
+      "guid": "aa1e64b916c387eec3082877043385f5",
+      "width": null
+    },
+    {
+      "content": "![Tines](https://image-uploads.tines.com/Tines-logo-with-background_Purple.png)\n\n# Splitting Arrays\n\nThere are many times that an incoming array needs to be split into separate arrays of certain sizes in order to meet call size requirements for 3rd party APIs.\n\nThis story takes in an array (or delimited string) and uses `slice` to break the large array into smaller arrays with 75 entries each, with a final array of the remainder of the incoming data.",
+      "position": [
+        3570.0,
+        -345.0
+      ],
+      "guid": "9437c14694039460afee6ac69b058641",
+      "width": null
+    },
+    {
+      "content": "# Setting offsets\n\nThis use-case specifically requires arrays of 75, so we're setting the \"array_size\" to 75",
+      "position": [
+        4140.0,
+        150.0
+      ],
+      "guid": "134e872674b747bbccd4b11d9e1f4213",
+      "width": null
+    },
+    {
+      "content": "# Splitting the Incoming Datra\n\nWe're creating an array out of the incoming data by using the `split` function",
+      "position": [
+        4140.0,
+        -30.0
+      ],
+      "guid": "235922f65c05ddb8be551f6da40641d3",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 7
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 4,
+      "receiver": 3
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 4
+    },
+    {
+      "source": 7,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"308ccf1328c96a22c86574af74b42b96\":[3930,-90],\"e1e452730c93303bf8fcbd6b12c01f8f\":[3930,75],\"3ea538fe196d77ffc0d6d926a372073a\":[3930,165],\"29db40ad14e9159b65ecaf6ac2717773\":[3720,165],\"498f60e10916b7765317d067cf112d1d\":[3720,405],\"8f9647380b454edfa7d111b3a433840a\":[3930,285],\"628f56fe0e0424d0ff199e93764eaeca\":[3930,495],\"23f5524401f6cd1a087a59410e4e2cc9\":[3930,-15]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Split a large array into smaller arrays Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

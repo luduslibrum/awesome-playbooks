@@ -1,0 +1,163 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Download and Create Attachment",
+    "aliasName": null,
+    "tag": "#Subroutine  #system",
+    "description": "Downloads the file from a specified URL and creates an attachment record for the same.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "fileURL",
+        "authorization"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/20289298-cdd6-4052-8fa0-11e2603dca00",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/171ca431-5177-4fae-9db4-5fbb44905fa9",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "fileURL": "{{ vars.fileURL }}",
+                            "authorization": "{{ vars.authorization }}"
+                        }
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "171ca431-5177-4fae-9db4-5fbb44905fa9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create File Attachment in CyOPs",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "name": "{{vars.input.params.fileURL[-1]}} - Malware Test file - com  format",
+                    "filename": "{{vars.steps.File_Download.data.cyops_file_path}}",
+                    "description": "DO NOT DOWNLOAD ON YOUR LAPTOP",
+                    "request_headers": "{\"Authorization\" : \"{{vars.input.params.authorization}}\"}",
+                    "multipart_headers": "",
+                    "extra_multipart_fields": ""
+                },
+                "version": "2.2.0",
+                "connector": "cyops_utilities",
+                "operation": "create_cyops_attachment",
+                "ignore_errors": true,
+                "operationTitle": "File: Create CyOPs Attachment from File",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "47c97d43-089b-4e89-b3a8-8fbd04942593"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "File Download",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "url": "{{vars.input.params.fileURL}}",
+                    "password": "",
+                    "username": "",
+                    "request_headers": ""
+                },
+                "version": "2.1.0",
+                "connector": "cyops_utilities",
+                "operation": "download_file_from_url",
+                "operationTitle": "File: Download File from URL",
+                "step_variables": {
+                    "file_metadata": "{{vars.result}}"
+                }
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "45b6ac97-5ef8-444d-b3de-e3ddbcce4087"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Attachment Name",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "name": "DO NOT DOWNLOAD {{vars.result.data.filename}} - Malware \/ Test file",
+                    "type": {
+                        "id": 114,
+                        "@id": "\/api\/3\/picklists\/58b8bdee-a5d8-4e54-b514-05adc7bfee08",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Malware",
+                        "listName": "\/api\/3\/picklist_names\/91be0720-8088-42b0-95d8-1178b390e0f9",
+                        "itemValue": "Malware",
+                        "orderIndex": 5
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.steps.Create_File_Attachment_in_CyOPs.data['@id']}}",
+                "collectionType": "\/api\/3\/attachments",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "431f579a-cf3d-4e45-a746-18484a4c2787"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> File Download",
+            "targetStep": "\/api\/3\/workflow_steps\/45b6ac97-5ef8-444d-b3de-e3ddbcce4087",
+            "sourceStep": "\/api\/3\/workflow_steps\/171ca431-5177-4fae-9db4-5fbb44905fa9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "04bb595a-b0bd-49fd-9079-991d79d0f80f"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create File Attachment in CyOPs1 -> Update Attachment Name",
+            "targetStep": "\/api\/3\/workflow_steps\/431f579a-cf3d-4e45-a746-18484a4c2787",
+            "sourceStep": "\/api\/3\/workflow_steps\/47c97d43-089b-4e89-b3a8-8fbd04942593",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "7b9a9a4d-86a7-47c2-bba3-0cb1830ca84c"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "File Download -> Create File Attachment in CyOPs1",
+            "targetStep": "\/api\/3\/workflow_steps\/47c97d43-089b-4e89-b3a8-8fbd04942593",
+            "sourceStep": "\/api\/3\/workflow_steps\/45b6ac97-5ef8-444d-b3de-e3ddbcce4087",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c3e2db82-99fd-4beb-b973-69b67752ef16"
+        }
+    ],
+    "priority": null,
+    "uuid": "6d8b867a-58b8-434b-af0e-c106d66fb1a6",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "Subroutine",
+        "Generate - Attachment Records"
+    ]
+}

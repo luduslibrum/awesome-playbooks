@@ -1,0 +1,348 @@
+{
+  "schema_version": 4,
+  "name": "Analyze domains via slash command in Microsoft Teams",
+  "description": "Find a needle in a haystack with this Story that analyzes domains and allows users to take action from within their chat application.\n\ntags: MicrosoftTeams, Chatbots, Analyze, VirusTotal, URLhaus, Intermediate, Extract, SlashCommand\nicons: 🔎,🌐,microsoft-teams\nvisibility: public",
+  "guid": "b93d1a8481c842ba1d7859eb4dda2454",
+  "slug": "analyze_domains_via_slash_command_in_microsoft_teams",
+  "exported_at": "2022-07-11T17:29:32Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check URLHaus for Domain",
+      "disabled": false,
+      "guid": "768b78b40f68c6907d93b1b81da4e5c5",
+      "options": {
+        "url": "https://urlhaus-api.abuse.ch/v1/host/",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "host": "<<explode_domains.individual_domain>>"
+        },
+        "headers": {},
+        "fail_on_status": "true"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build results",
+      "disabled": false,
+      "guid": "d6f808ed429b0f09c3a6017f922352b7",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "forcepoint_category": "<<search_domain_in_virustotal.body[\"Forcepoint ThreatSeeker category\"]>>",
+          "urlhaus": "<%if INCLUDES(check_urlhaus_for_domain.body.query_status, \"no_results\")%>Clean<%elseif check_urlhaus_for_domain.body.url_count != 0%>Malicious<%else%>Unknown<%endif%>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Reply with Acknowledgement",
+      "disabled": false,
+      "guid": "764c91a8f8ebe5d10d16a23f6fa68941",
+      "options": {
+        "url": "<<receive_commands.serviceUrl>>/v3/conversations/<<receive_commands.conversation.id>>/activities",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "type": "message",
+          "from": {
+            "id": "<<receive_commands.recipient.id>>",
+            "name": "<<receive_commands.recipient.name>>"
+          },
+          "recipient": {
+            "id": "<<receive_commands.from.id>>",
+            "name": "<<receive_commands.from.name>>"
+          },
+          "text": "We're analyzing the domain now - Sit Tight!"
+        },
+        "headers": {
+          "Authorization": "Bearer <<get_bearer_token_from_microsoft.body.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Reply with Results",
+      "disabled": false,
+      "guid": "c6a73f28c8bb00923c9b27c71ee53ac8",
+      "options": {
+        "url": "<<receive_commands.serviceUrl>>/v3/conversations/<<receive_commands.conversation.id>>/activities",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "type": "message",
+          "from": {
+            "id": "<<receive_commands.recipient.id>>",
+            "name": "<<receive_commands.recipient.name>>"
+          },
+          "recipient": {
+            "id": "<<receive_commands.from.id>>",
+            "name": "<<receive_commands.from.name>>"
+          },
+          "text": "We have completed analysis of the domain <<explode_domains.individual_domain>>.<br><b>Forcepoint Categorization:</b> <<build_results.forcepoint_category>><br><b>URLHaus Categorization:</b> <<build_results.urlhaus>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<get_bearer_token_from_microsoft.body.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search domain in virustotal",
+      "disabled": false,
+      "guid": "89ce4e600c62d635bec959ed806529ac",
+      "options": {
+        "url": "https://www.virustotal.com/vtapi/v2/domain/report",
+        "method": "get",
+        "payload": {
+          "apikey": "<<CREDENTIAL.virustotal>>",
+          "domain": "<<explode_domains.individual_domain>>"
+        },
+        "fail_on_status": "true"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if AnalyzeDomain",
+      "disabled": false,
+      "guid": "aea08d27f2f9d95ef9fe1a5a89344a89",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "path": "<<receive_commands.text>>",
+            "value": "analyzedomain"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode domains",
+      "disabled": false,
+      "guid": "9d93dda0fcf1e7e7441fa10a172b0dce",
+      "options": {
+        "mode": "explode",
+        "path": "=extract_domains.domain",
+        "to": "individual_domain"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract domains",
+      "disabled": false,
+      "guid": "12f51766921d3907cf38e319244dd263",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=receive_commands.text",
+            "regexp": "(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]",
+            "to": "domain"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Bearer Token from Microsoft",
+      "disabled": false,
+      "guid": "b06ba98434c16c6b610ddc5d1d274175",
+      "options": {
+        "url": "https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "grant_type": "client_credentials",
+          "client_id": "<<client_id>>",
+          "client_secret": "<<CREDENTIAL.o365>>",
+          "scope": "https://api.botframework.com/.default"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive commands",
+      "disabled": false,
+      "guid": "9ffa793409b3858d11a2dc26856ce866",
+      "options": {
+        "secret": "6ad0746215df5b2751d72052b4c8a11e",
+        "verbs": "get,post",
+        "include_headers": "false",
+        "path": "6505e690cb3bc2cdb7edbc972c1e0781"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/microsoft-teams.png\n\n# Slash Commands\nThis is an example of a slash command to analyze a domain from within Microsoft Teams\n\nYou can read about how to set this up here: https://www.tines.com/blog/chatbots-for-security-and-it-teams\nand build more complex chatbots here: \nhttps://www.tines.com/blog/chatbots-for-security-and-it-teams-part-2-microsoft-teams",
+      "position": [
+        120.0,
+        -855.0
+      ],
+      "guid": "f7f3c445997784c74bbbbc5db05c35e1",
+      "width": null
+    },
+    {
+      "content": "Note this credential should ideally be set up separately following the guide opposite, it is included here for illustration purposes",
+      "position": [
+        735.0,
+        -825.0
+      ],
+      "guid": "af818c4147be8e64bd9eb0fb86f6237d",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 4,
+      "receiver": 0
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 2
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 7,
+      "receiver": 6
+    },
+    {
+      "source": 8,
+      "receiver": 5
+    },
+    {
+      "source": 9,
+      "receiver": 8
+    }
+  ],
+  "diagram_layout": "{\"768b78b40f68c6907d93b1b81da4e5c5\":[435,-450],\"d6f808ed429b0f09c3a6017f922352b7\":[435,-375],\"764c91a8f8ebe5d10d16a23f6fa68941\":[690,-675],\"c6a73f28c8bb00923c9b27c71ee53ac8\":[435,-315],\"89ce4e600c62d635bec959ed806529ac\":[435,-525],\"aea08d27f2f9d95ef9fe1a5a89344a89\":[435,-750],\"9d93dda0fcf1e7e7441fa10a172b0dce\":[435,-585],\"12f51766921d3907cf38e319244dd263\":[435,-660],\"b06ba98434c16c6b610ddc5d1d274175\":[435,-825],\"9ffa793409b3858d11a2dc26856ce866\":[435,-885]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Analyze domains via slash command in Microsoft Teams Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

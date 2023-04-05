@@ -1,0 +1,1574 @@
+{
+  "schema_version": 4,
+  "name": "Analyze files with VMRay",
+  "description": "Submit files for analysis to the VMRay Sandbox. After completing the analysis, screenshots will be downloaded to facilitate quick decision-making. With Microsoft Office files, any identified macros will be extracted and made available for analysis.\n\ntags: VMRay, Sandbox, Macro, Malware, File, Intermediate, Microsoft, Slack, MicrosoftTeams, Analyze\nicons: 🗳, vmray, 📸\nvisibility: public\n\n\n",
+  "guid": "e0575d89919e979f97aad498f390937a",
+  "slug": "analyze_files_with_vmray",
+  "exported_at": "2022-07-11T17:26:47Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Deep Analysis",
+      "disabled": false,
+      "guid": "89c8610df1a4a206b3fa97273dd2b983",
+      "options": {
+        "url": "https://cloud.vmray.com/rest/analysis/<<get_analyzer_report.body.data.first.analysis_id>>/archive/logs%2fsummary.json",
+        "content_type": "form",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "Authorization": "api_key <<CREDENTIAL.vmray>>"
+        },
+        "retry_on_status": [
+          "500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Malicious",
+      "disabled": false,
+      "guid": "9cb84eb1c79c101158653537a66f3ddc",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "path": "<<check_status.body.data.submission_severity>><<get_analyzer_report.body.data.first.analysis_severity>>",
+            "value": "\\bsuspicious"
+          },
+          {
+            "type": "regex",
+            "path": "<<check_status.body.data.submission_severity>><<get_analyzer_report.body.data.first.analysis_severity>>",
+            "value": "blacklisted"
+          },
+          {
+            "type": "regex",
+            "path": "<<check_status.body.data.submission_severity>><<get_analyzer_report.body.data.first.analysis_severity>>",
+            "value": "\\bmalicious"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Attachment KnownGood",
+      "disabled": false,
+      "guid": "413fb5b686e3e59f6229cfe32ab76e31",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "true",
+            "path": "<<check_if_knowngood.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Analyzer Report",
+      "disabled": false,
+      "guid": "4c4ecbaf695656e46ba1796310fecac4",
+      "options": {
+        "url": "https://cloud.vmray.com/rest/analysis/<%if hash_not_found.rule_matched%>submission/<<explode_submissions.submissions.submission_id>><%else%>sample/<<search_for_hash_in_vmray.body.data.first.sample_id>><%endif%>",
+        "content_type": "form",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "Authorization": "api_key <<CREDENTIAL.vmray>>"
+        },
+        "retry_on_status": [
+          "500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Malicious Results",
+      "disabled": false,
+      "guid": "a044a4c5db3773d771a95b939200f619",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "new": "<%if hash_not_found.rule_matched%>true<%else%>false<%endif%>",
+          "engine": "VMRay",
+          "analysis_date": "<<get_analyzer_report.body.data.first.analysis_created>>",
+          "file_name": "<<receive_file.body.file.name>>",
+          "analysis_link": "<<DEFAULT(get_analyzer_report.body.data.first.analysis_webif_url, \"Not Available\")>>",
+          "md5_hash": "<<get_hash.md5>>",
+          "report": "=get_analyzer_report.body",
+          "error_msg": "<%if submit_file.body.data.errors[0].error_msg%><<submit_file.body.data.errors[0].error_msg>><%else%>no_error<%endif%>",
+          "malicious": "true",
+          "submission_severity": "<<DEFAULT(check_status.body.data.submission_severity, \"Not Available\")>>",
+          "macros": {
+            "macro_list": "=IF(LIQUID_SIZE(extract_macros.macro_body, \"dot_notation\") > 0, extract_macros.macro_body, \"No macros found\")",
+            "macros_found": "<%if extract_macros.macros_found = \"true\"%>true<%else%>false<%endif%>"
+          },
+          "screenshots": {
+            "screenshots_found": "<%if get_screenshots.screenshots_found%>true<%else%>false<%endif%>",
+            "screenshot_list": "=IF(LIQUID_SIZE(get_screenshots.screenshots, \"dot_notation\") > 0, get_screenshots.screenshots, \"No screenshots found\")"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Scan Complete",
+      "disabled": false,
+      "guid": "f4478583d0077405a8faebea56b45b88",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "true",
+            "path": "<<check_status.body.data.submission_finished>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Attachment Not KnownGood",
+      "disabled": false,
+      "guid": "b0b6061e5c79a6259b0c3714a5cca3d3",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "false",
+            "path": "<<check_if_knowngood.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay",
+      "disabled": false,
+      "guid": "733846b6e506ad6b4b7d399e82427546",
+      "options": {
+        "mode": "delay",
+        "seconds": "60"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search for hash in VMRay",
+      "disabled": false,
+      "guid": "11be9c6fd748a4c57cdb751cc90efccd",
+      "options": {
+        "url": "https://cloud.vmray.com/rest/sample/md5/<<get_hash.md5>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "api_key <<CREDENTIAL.vmray>>"
+        },
+        "retry_on_status": [
+          "500",
+          "429"
+        ],
+        "log_error_on_status": [
+          "500",
+          "404",
+          "400"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Error",
+      "disabled": false,
+      "guid": "3bfbd3a7c90e5297e5ae82e6a5c907e0",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "<<receive_file.body.file.name>>",
+            "path": "<<submit_file.body.data.errors[0].submission_filename>>"
+          },
+          {
+            "type": "field>value",
+            "value": "50",
+            "path": "<<set_counter.counter>>"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Scan Running",
+      "disabled": false,
+      "guid": "f6cb11997886a9c69fdc90d568b79121",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "false",
+            "path": "<<check_status.body.data.submission_finished>>"
+          },
+          {
+            "type": "field<=value",
+            "value": "50",
+            "path": "<<set_counter.counter>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Clean",
+      "disabled": false,
+      "guid": "39e9243fdf9edbf15dab70839d9662ef",
+      "options": {
+        "story": "<<STORY.analyze_files_with_vmray>>",
+        "payload": {
+          "body": {
+            "file": {
+              "contents": "JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRlci9GbGF0ZURlY29kZT4+CnN0cmVhbQp4nD2OywoCMQxF9/mKu3YRk7bptDAIDuh+oOAP+AAXgrOZ37etjmSTe3ISIljpDYGwwrKxRwrKGcsNlx1e31mt5UFTIYucMFiqcrlif1ZobP0do6g48eIPKE+ydk6aM0roJG/RegwcNhDr5tChd+z+miTJnWqoT/3oUabOToVmmvEBy5IoCgplbmRzdHJlYW0KZW5kb2JqCgozIDAgb2JqCjEzNAplbmRvYmoKCjUgMCBvYmoKPDwvTGVuZ3RoIDYgMCBSL0ZpbHRlci9GbGF0ZURlY29kZS9MZW5ndGgxIDIzMTY0Pj4Kc3RyZWFtCnic7Xx5fFvVlf+59z0tdrzIu7xFz1G8Kl7i2HEWE8vxQlI3iRM71A6ksSwrsYptKZYUE9omYStgloZhaSlMMbTsbSPLAZwEGgNlusxQ0mHa0k4Z8muhlJb8ynQoZVpi/b736nkjgWlnfn/8Pp9fpNx3zz33bPecc899T4oVHA55KIEOkUJO96DLvyQxM5WI/omIpbr3BbU/3J61FPBpItOa3f49g1948t/vI4rLIzL8dM/A/t3vn77ZSpT0LlH8e/0eV98jn3k0mSj7bchY2Q/EpdNXm4hyIIOW9g8Gr+gyrq3EeAPGVQM+t+uw5VrQ51yBcc6g6wr/DywvGAHegbE25Br0bFR/ezPGR4kq6/y+QPCnVBYl2ijka/5hjz95S8kmok8kEFl8wDG8xQtjZhRjrqgGo8kcF7+I/r98GY5TnmwPU55aRIhb9PWZNu2Nvi7mRM9/C2flx5r+itA36KeshGk0wf5MWfQ+y2bLaSOp9CdkyxE6S3dSOnXSXSyVllImbaeNTAWNg25m90T3Rd+ii+jv6IHoU+zq6GOY/yL9A70PC/5NZVRHm0G/nTz0lvIGdUe/Qma6nhbRWtrGMslFP8H7j7DhdrqDvs0+F30fWtPpasirp0ZqjD4b/YDK6Gb1sOGVuCfoNjrBjFF31EuLaQmNckf0J9HXqIi66Wv0DdjkYFPqBiqgy+k6+jLLVv4B0J30dZpmCXyn0mQ4CU0b6RIaohEapcfoByyVtRteMbwT/Wz0TTJSGpXAJi+9xWrZJv6gmhBdF/05XUrH6HtYr3hPqZeqDxsunW6I/n30Ocqgp1g8e5o9a6g23Hr2quj90W8hI4toOTyyGXp66Rp6lr5P/05/4AejB2kDdUDzCyyfaawIHv8Jz+YH+AHlZarAanfC2hDdR2FE5DidoGfgm3+l0/QGS2e57BOsl93G/sATeB9/SblHOar8i8rUR+FvOxXCR0F6kJ7Efn6RXmIGyK9i7ewzzMe+xP6eneZh/jb/k2pWr1H/op41FE2fnv5LdHP0j2SlHPokXUkH4duv0QQdpR/Sj+kP9B/0HrOwVayf3c/C7DR7m8fxJXwL9/O7+IP8m8pm5TblWbVWXa9err6o/tzwBcNNJpdp+oOHpm+f/ub0j6JPRX+E3EmC/CJqhUevQlY8SCfpZUj/Gb1KvxT5A/lr2Q72aWgJsBvYHeyb7AX2I/ZbrJLkewlfy5uh1ceH4aer+e38Dmh/Ce9T/Of8Vf47/kfFoCxRVip7lfuVsDKpnFJ+rVrUIrVCXa5uUXeoUUSm2nCxocPwiOFxw3OGd4z1xj6j3/gb09Wma83/dLbs7L9N03T/dHh6ArlrRiZdCU98lR5A3h9FDH4Aj/4QFp+mdxGFHFbAimH3atbK2tgm9il2GfOwq9n17O/Yl9k97AH2LawAa+Am2O7gjbyDu7iHX8uv57fwo3gf59/nP+Gv8DOwPEuxKw5lubJR2aFcqgxhDUHlgHItPHub8pjykvKy8qbyG+UMopalLlZD6pXq3erD6lH1R4ZPGgbxfsBw0jBl+JHhA8MHRm7MMeYZK42fMT5i/KXJaFppajfdaPoX03+Y/SyPlcFybX614NnYg4v5YzxdPcjOAJHPVErGyh2IQwd2xX9QgzKNuCSJediWwbPVNMFpdKph8AfZCaplL9BBI1dQidXTFGG/4KfV5/lF9GPWw7LVh5Uhww94AT2OanSYP81PsPV0lNfzS/i9CrE32CP0BvL9CrqDXc4C9Dg7w9awz7M6dpD+hWcqHexaqo8+wFUWxzaydwgW0FVqH33646sgW02/oLemv6omqp9DfZqkuxDRb9Br7FH6MzNE30Z1U1CNXKgyNyPfryNR9XZinx3EfsxGBRkwvkRHxYliqjOuU6+kd+g/6S3DcWTUelTSN6e96lfVX0XrouXYYdhl9Aj2XT9djB3zBrLkGYzF6DLs9HjUkmrs6nbaQX30eVS926Lh6L3Ra6L7oz76R/D+mS1jf2Zj2BGT4Kin7+H9RfoZuwn78OL/3ikw3UdT9FtmZYWsGvvhjGGf4bDhMcNRw7cNLxqXw9vX0j3I6F8im+OxAjf9iH5Lf2JmxCabllEN7F0F27togHcrz1ATyyE/9mwJ6vh6fSUBSLka3rsX+/kZ7I13UCcuo2/TK4yzLKzIDf1myGmDn3eB+iFE8Bo2AUwfqnYZ/Q7rTmKreBD6nJB0F6rWFGz6Bf0a3o5Ku5ahLjSzSyDrT/Qp6oOGldTOxhGBJ2k1Kmuz8k/w91JmofVsCfs6+HqwQ5Mon1YbfsU4LZveHF3FvcozOGOiwI/h9Mqli9heWJGMdZylDLaFaqe3wYaXiZyNnc6GdRfVr12zelVdbc2K6uVVlRXlyxxlpSXFRYVL7UsKNNvi/LzcnGxrVmZGelpqiiU5KTFhUXyc2WQ0qApntKzF3tqjhYt6wmqRfcOGcjG2u4BwzUP0hDWgWhfShLUeSaYtpHSCcveHKJ0xSucsJbNo9VRfvkxrsWvhF5vt2iTbsbUL8C3N9m4tfEbCmyR8WMKJgAsKwKC1WPubtTDr0VrCrfv6R1t6miFufFF8k73JE1++jMbjFwFcBCicZfePs6x1TAI8q2XNOCdzIowK59ibW8LZ9mZhQVgpbHH1hdu3drU05xYUdJcvC7Mmt703TPb14WSHJKEmqSZsbAqbpBrNK1ZDN2njy6ZGb560UG+PI6HP3ue6rCusuLqFjhQH9DaHs6583To3hPDUpq7r58/mKqMtVq8mhqOj12vhqa1d82cLxLW7GzLAywtbe0ZbofpmOLGtQ4M2fl13V5hdB5WaWIlYVWx9HnuLwPR8RgvH2dfb+0c/04PQ5IyGadv+gkhOjvNY9DTltGijnV32gnBDrr3b1Zw3nk6j2/ZPZDu17IUz5cvGLSkxx44nJetAQuJ8wDM7JyFJLqC2bbOeZcIi+0YkRFhza7Cky441rRIXzyoada8CGV7dDFzhPkTEG45r6hm1rBF4wR82FFrs2ugfCRlgP/P2QoxLxxgLLX8kAYo8mU01zM/AYYcjXFYmUsTUhJjCxnVyXFu+bN8kX2n3WzR0cB+1w7eu7jWVcH9BgQjwTZNO6sUgfGhrV2ysUW9uhJyVju4w7xEzUzMzGdvFzKGZmVn2Hjsy+ah8EMgIm4tm/yVbMtNa+teEWebHTHti820d9ratO7q0ltEe3bdtnQtGsflVs3M6FE5r6lJyuQ7xXEXOIikvmyUWg66EsFqIf0aZ1H1hBUkpEUxrDVt6NsSu3fEFBR/JM2kyz2OajL4juGQ3x6ZbGV7jWDheu2C8wLqEUQX2qkW8rXPH6Gj8grlWFKDR0Va71jraM+qajB7qtWsW++gx/jB/eNTf0jMT0Mno8Ztyw603d2MR/WwNkpXT+nE7u2HruJPd0LGj65gFT283dHZFOONNPeu7x5dirusYbkWcEstnsWKkiRG1MSR6hJvlVO4xJ9EhOatKhBy7JxlJnHkGx8g9yWM4i8ThVY7bFBF8A9449U20/ihn00bTJG9wppFBnVYo3qROM8o2Gw3TXHmaFVEcbnatZHVY3qs/W7/Z8m79prP11ADY8gEuy6sKUgpSCnFhuIH4QFOmPnAa6C+kqVPQhScYMrjwnGUhGx10rigxlMRfnOVRPQmGsqzVWRsyuzP7Mw2rs1bmXp97t+GuRQZbSiEjnpZamGwxZxcfMTHTZHRqIm5RDUy82Zl2qIBpBVUFvCAlVSPNUmXhlkl+04S2vMPqgGk7hW2bLDv3vufYu+mMNLJB2kg797KdaQXVWZmZqRnpuBfE217AUlZU163jtTVFRcVF9jt4/lM9V032lNft3nRN79fPvsxKXv1c3YZd9fUDHeueMBzPK3pu+s0fPnHNmLutzKY+90FtUuolLzz22JO7U5PEs/ct0d+oHbivy6R7nVmfStmTcpdBiTNmG+t5fUobb0t5k5uSJ3nQmaIuyqT4jPT0+DhjWnpRRgZNslJnUqZTW1pzJJNFM1lmjhWLdmYuWVpz2Dpm5X7rO1b+eyuzxi8qijOLqWTQjpnZO2Zmzs5qqJdr3zvsEKvfjNUPO95D23Sm3iIjVW+BFxrOCC+wnQW1RqN9SVFRLaKWnpm5onrlSgEqm9c84738sU+ybNu2hg3DZSz7vu29n37sLj42bT3tWbsl9Dqb+svPxToP4H73y+o6KmZrj1EpjNmZEt9gMBoTMoyZCTVKjbnGWmNv5i3mFmuzPUFTKks74npKD5XeV/p148OmhxKeMD6REC49VXq6NIlKK0vbMXGy9LVSY6kzJ6+mAeNDctJgKlBNOfmZcFkk3lQgPLdYNVlSUopz8/KKiuMZGZMtRakpzh21PSnMl8JSJnmrMzkntyg/DzhfHuvJY3nAHS1EdBl8HCEqFsmUHNcgeudK2F0M0mJnI1o92tLimmLnmotqKotfKn6tWEkuthUfKlaoWCuuKo4Wq8XZJb+K+Vq4OPZCtp2Bl9/budeBRHtv707RwefS6+LdcKbhDEtJXU1oy6vYsGPvToTBkVaQsXJFdWbWSnnNzEAIapCDS4xGCRbNgAeYctPU7ruqWh+4LPRASf70m/nFW9f2V0y/ubhhZWN/+fSbatFtj3Zu396567LmL5/t5ru+WlG/4aa7pjlvvWfHstZr7z77AWKWNL1V3YbcTGM1R1NLDCxtMnraaU1IrjFnJibXmMTFKC6GTOC4cI4tZ00NgqomLkoyWjilGdU0rioKg9vTeizMMsmOOFMXJSdWJpWQllGV0ZOhvJPBMoR/lxTViN6Zmre4JiMrK0ddrTit2TUHFaZMsmJnHJcjVD8xSsXTiTNvZY1GVagW2enfGYs52LHpbDau+Gc9u7nF0/xrh2Pv8CbLu69Tw5mdlQ3StSx1dYr0a+pqAKYki9joDibjsrMtbOloC69BxY+oFjoefYdY9J1xBc/veHXjRDlGhuhvnEmJKQ1plrRsXFKtDQacIRMYiD6CcUxWd1pBWloBMyUp9iXFxWLL1CUxx/T7zD59Y1Nh06cOtm/dnL2+tvfT2WrR2ST+hw/4sZ29Fy1J+UVioFvUwDvxLPg+amAy7rdHnIVGw7H0Y1blYgPbY/iJgaemFCYmJVGupRAuSSZz5jlVL9OWX5Xfk+/PP5RvyLckayzmLFH48hYWvtm6J6pe6urKudq3IqVAQ/HLSDeKymfP5nLj14i6dyf7V5a07cBjvV/a/JnvP/vAkX1Nn95QO2Y4nlnw6pHrJ70pGWd/qj433VPR29jenxiPbPoS1nMt1hNHw84Gs0E1GgpNmrnKfNL8mlmtNB82c7OZFFWsJ47MpgbjFjyKb1Nw8vAcbVHVIr5IjZu/iPj5i0D9eg8ABnPL2LkXvWKw1GM1WEhGgWxfUs6cXcv7zt5rOP7+9IPvn71NVCcrHP5rw8uowpPO6pUqK1M1i5bSrR6yGszqSSvPyEzh6amZKUlpyWRJSmNk4elx5uRFbNeiKAwTZSbeyFKSY4VYVh2c13jYFomPkr2iwbzF3G5WzCWWypRdKTxlkqnOxKS0Ip6+i8YypzJ5JkL3ZFxCTWZ21hXHuJfk0hx76zeJ0/KDnfXv7sx+naxYm1gVWgMuq6uT8UJ5EMUhbUVtjSgLWSZRBDIyVmTYURLs1ntX3x26IlDUtO6i2n/+5+k371WL2r9wbcfS71hWb2179YOnlI0i126Hsd9AbMTZPnKM4rAPG1DnnHHtcfxQXDhuKu5U3O/jDLa4nriDcWNAGBSjCQe/kkzMSafwxKjQTtwiGA1GkxrPTUVMFXs5rmBpjZpt1o8ah34LIAOEJcjQyOhgAcOONJjL0G5n2dNvsmz1SaZOf/CXT6hFOEDYPAs7xBaccpYK+wztBn7IEDZMGU4Zfm8w2Aw9hoOGMSAMMAY3JVwpYjRjCWWr51ii614R02s4/udWeKMRZ3Ixzqp0ymNfO0aW6PvO1kWr7477SuJdlkcMD8efiDuROJljNqezDfxiY2v8lsWPJD5pfDLnu/HfS/hJ/CsJ75v+lJiYl5yX4czNr8lwJqXUJGeczHgpQ5GFLnlxg+yTstDzW5wJyUmp7Uk9STzJmspEFmTn1rAVqcLsiXytRvZLSmO9ozzWW/Nk70xOSq4ZE/flFpi9KzUVmTehLkq1igxcushEBawyo2BLEkvKqVy8a7Fv8X2L1cXJBWYnirY5O9/bGPPGpjNy+2w68y6KwBkUOWe61VmS3mB1Lk7GJdeCS15KgyxqDWdlEUyFEaBIFcaASPagE31khhTnnSyEkoEwgeNMzGeJLjwRF79ODhsLGhwk6F93oCjvlOqTnPBSklCaJNQnOeEskkJRnBwOHKP1uAtD8HbupZ0OhiPHrhUX1VpoRTUpBfL+JE0chiZjFv8zs65868j0767zsvSXz7BU41mncrVr/Y5i5YpLLquvZ2xb5Vfuf+K2V5kZ1fm70898/qYNbODKg01NAfkxmPiI79d7nvlx/8ldyfV/NGeb5adDD/yqfu5Tf5reavwyqgdDbWMzH58RmdZNb6amuQ/UPvQBU4IRKMN36Q71V3SLKZ8OqAFK4qtx53sJ3Qncl/hjZMX4dtEw1wielfQ4s7H/5JN8UtGUIeV/qw1qyPBZXXoClSANxIsjISppO+65Nlt82AgCu0u9ksTduzRYXhXJFy9HiuTCnaEOK9TFLDqsUjrr12EDWdnndNgI+A4dNtF32Dd02ExF3K/DcTTK79LhePU5RdPhRdRr+qUOJ9Buc7MOJxqPmh/T4SS6LPnTs347mHxch+E2y2od5qRa1umwQsss63VYpXjLkA4bKMFyhQ4bAV+rwybqtRzWYTOlWf6gw3HUkmLQ4XjuSvmEDi+i5WmPz35btiLtFzqcqOxIT9bhJKrI8sISpgqvJ2V9SYdVysl6UMIG4OOzTuqwSplZ35ewEXhj1ms6rFJq1hsSNom4ZP1JhxGLrKiEzcAnWNN0WCWr1SbhOBFfa50OI77ZtToMOdkNOoz4Zl+sw5CZfZ8OI77ZEzqM+Gb/ow4jvtm/0mHEN+dhHUZ8c17UYcQ391M6jPhq2TqM+Gqf1WHEV/tfOoz4Ft8p4Xjhq+J/12H4qji2xkXAp5Zk67BKi0scEk4QaynZqMOwv2SrhJNE5pd4dFilvJKQhC1Szm06LOR8TcJpwuclz+owfF7yXQmnC3tKfqbDsKfkTQlnAJ9eynRYJa00Q8KZgr60VodBX9ok4WxJv1OHBf1eCeeKHCi9TYeRA6X3SDhf2FM6rsOwp/QpCdsk/fd1WNC/LOGlIgdK39Jh5EDpHyVcJvxTlqjD8E9ZzM5yUQnKSnVYnYHN0v+zMOwvk/ljlusq26rDAr9LwAkx+v06LPDXS1jGpex+HRZ6H6VO2k9+8tBucpEbvUaPonVSv4Q3kY+G0II6lYaK6aNhwOLqAt4rKTRgBsBfAahZ4l3/Q0mVs5Zp1IGZAQrN0gSA24g+pm85rca7isp1qFpiG8ExgH4bePbAhqDk2gZ5AbRh2odrH6iGMe8C5Xqpo+8cO9fMo9FmqdbQJVJKYNbqFdBahbeGKr8JWDdmfZj3wbNBKj2vlI+SMUdbPs+uznn4b0nPCr/1QcYg+mG6HDih7b/vcw1YD7zlhU1BaZvwkYaxoAnqUrcjHhq1S36NiqS+Tbhuge7d0vcu0As+D6QKb49ITiGt4jw2xeLsg15hkx+0+z+SyiPzS9CNSKv2zOr16tlbLqPso17d6s1ypl960QVrls3aPixnvDJTO3ANSatjEYll1SrkUpO0JCi9POO3Ydiigcql52Iso7zS930yw0TODUld8+Pu1mW5pG2Cc1BKFHb3Q/+glBjzviatdkl9bj0asRlhdUCPh0uuMca3fzb+Xj3b/XoEPdI3AZmNsdXNRMil2x+S2jSpYb5VM5EXvhHjESm7f142CFqflBXTPYOPeTuoe8StZ2rgHLogZHqkV7zoY7LdOiYkPS0yai6nfXLnDkuPDkh+YamI56DONaPBLfn36Vq9+kpj+1FImPPCblAKaTHsnF+9und9+kq8kj4kR3NRDcgsHZDWnT8nZmprYHYtYm5QypuTIerF5bq1Lt3/bln1NH2XzvisT+reI7ExfrHDvHoM++W+8+s54sNV7Oh9urdjEuaqvUvGKpYdmvShW1+/V0ZtQNL45d6LZeOQ5IytZH52e2czS+z8K/TIDEprRG7u0/dWrO4MzNoxKEdz2Rv80IkU+ND63LqOXikhJD3dtyA3PbQX+BnPitx2z65wt8xtTebAFdK3AZl3wdl6Eou6sD2234N61YjtpoCeZXPVMzY7KCPioislf8xqIdctZ+cyLaa9T3rLL3fJ/tlVzOgekjVTzLukJ4Z1HWIPxbwYlPwzFs9I98scGpR1c8a2Cnn2BTG3BmdqJeSKd4Wkml9hK2R1GgRFv9xLA4AGAQ3JCHnkKEC7ZA7EIl4xS/l/V8OIzJgYrWeels2o9J0491vRmpB5At4CrDgBWnH9pMS3ANOBq8jNi3EStOC9SWI7KRFPU6J1ymwKnCfXtFl8bJ/EPOrXfT6Xo3/dKTYXmZmKPBPnXjm7H/ShWZ3u2doWy+e582h+tYxVjrk6Gtu/Xr1mBvQ9vUdK8czWRLFbu3VtYnfv02tp7+xpFNMZ/BjPzNTOkdnq5NF3nGc2p4dl/Qjq+3m3no/n89fMLhQe88yTMreLz9XXp5+AIgN7ZWWMWd2rR2ZIl3y+CBXLVS30VKwin5sV52qeqW2iirnkvagLWgd0bwf0GvJRuoX3twMzV2f3nxMLj36XMf+eK1a9XdIiv/SsV7/T+Wtirum5ODSvts3oFZWkT3raO+8UGZ53r7xslnp4Xt7Ond0f7ylh3aCUP5NXvgXyRmT8L5fRnH8fOlMf5yh9oI3doYakx4X8/tn1xOyan92DekWN+T+2q/x6fsxV3oU59HErmsuPjXLt50Zu5t5LnDke/Q4ttprY/Z5bRnXoQzEY/pC/5yQH5N1qSN71x86hffLeaITm313919GfkTes3/959Wee893FnRvHmLfm7ljdUua5+3gmYq4P+Xr332TtnJfP1bDwvF9okUe/iw3i7JmRIJ5PGin2JFCCe/gaqsPzl4brcozK8XxVI5+yxKcj26lNp6zC7HLM1OhwHZ7G6iTXSqrFs4BoQvrfdtb990/GmbnKD3lv9jzs3O/37Ha5PdqjWme/R9vkG/IFgdKafMN+37Ar6PUNaf4Bd4XW7Aq6/guiSiFM6/ANhAQmoG0cAt/y1aurynGprtAaBwa0bd49/cGAts0T8Azv8/Q1DntdA+t9A30zMtdIjCZQay7xDAeE6BUVVVVaySave9gX8O0Ols6RzKeQ2HIpq1PCj2idw64+z6Br+HLNt/tjLdeGPXu8gaBn2NOneYe0IEi3d2jtrqBWpHVu0rbs3l2huYb6NM9AwDPSD7KKWUlYs2/PsMvfv38+yqM1D7tGvEN7BK8X7i3Xtvl6IXqz193vG3AFlgnpw16316V1uEJDfVgIXLWqusk3FPQMCtuG92sBF7wIR3l3a32egHfP0DIttnY3qFxeTA76hj1af2jQNQTzNXe/a9jlxjIw8LoDWIdrSMPcfrF+L9zuxwI9bk8g4IM6sSAX5Ifc/ZpXFyUWHxryaCPeYL90w6DP1ye4BQyzgzDEDacGZnDBEc9Q0OsBtRtAaHh/hSY97dvnGXYh3sFhjys4iCnB4A4h5gGhTMTRMyxN2B0aGAAobYX6QR+UeIf6QoGgXGoguH/AM98TIlsDQotneNA7JCmGfZdDrAv2u0NQFAtgn9e1xyfmR/rhc63fM+CHR3zaHu8+jySQae/SBuAObdAD3w153SB3+f0euHHI7YGSmLu9wlma5wosZtAzsF/D2gLInQEhY9A7IN0b1DdSQNfnBkevRwsFkFLSm569IWFsyC38r+32YcmQiEUFgyJPsPRhD+IeRGogTAG4TKYnhoOuPa4rvUMQ7Qm6l8WcBvY+b8A/4NovVAjuIc9IwO/ywzSQ9MHEoDcgBAty/7Bv0CelVfQHg/41lZUjIyMVg3rCVrh9g5X9wcGBysGg+NuSysHALpdYeIVA/pUMI54BYD2SZfOWzo2tG5saOzdu2axtadU+ubGpZXNHi9Z48baWlk0tmzsT4xPjO/vh1hmvCReLmMBQrCAoPXqeLSYXIxJZrLl3v7bfFxKcbpFt8LPcR7G0RHLIHEV8sf2GQO7aM+zxiEys0LrB1u9CGvh6xTYCZ3CBMSI7R0Q6eRA4j/D0sMcdRJx3w49zdokQ+vZ4JIkM8SwfQoPs7Q0FIRpm+rCj5i2oODBjFBJ51hWzzCLbtH2ugZCrFxnmCiBD5nNXaNuHZM7un1kF1qRXLqS3Swv4PW4vis65K9fgxSGZbYLX1dfnFTmBrByWVXmZQA9L38rd/SGjBryDXrEgKJF0I77hywOxJJX5KJG+ERTUUO+AN9Av9EBWzN2DSFTYj1D592ux5NU9tFCR9MfG3XOLE9Vrb8gTkGpQ99ye4SF9BcO63ZI40O8LDfRhD+3zekZi5eqc5Qs6RNKDCtA3V+Jm1wizZGF1B+diLBbm0q3efX6x0uRZBn3f64KgxxVcIwi2dzTiEChZVVNXqtUtX1VeVVNVFRe3vQ3IquXLa2pwrVtRp9WtrF1duzox/iN23cduRjGq1M2T+xCPqx79Jknc6sz/mGXhTJBCLBG3Bm8toJnD7qaFH3NrOqZV/9Bj/oyOU25QnlG+o5zEdXz+/AL8ha8NLnxtcOFrgwtfG1z42uDC1wYXvja48LXBha8NLnxtcOFrgwtfG1z42uDC1wYXvjb4f/hrg9nPD7z0UZ8sxGY+iT6WrT6JCS2gPXf2Ylk1AguoZnCt9BbGl9N7oH8LuIWfOiycm+GZub/ynVfi3OwlEppPE8NskKN98vOOhfMLZ9r10zckn/18clfOpz7f/HxP+T7Shz7Vpq5T16pN6kp1lepUL1Lb1NXzqc8733neT3TmsK3nrCeGaRMjthw08+fmsG36venlH7J4Hp6l0C8VO7Jk3vws7q/Nm7/SN3+1vI/LK/3/y1O0mH5K53l9mzqVr1AyY2SLTilfnrCkVzsnlbsnktOqnY0W5U5qR+MUVjbRFBonn3IbHUTjIG+LlC+vPiaAifikagvobyIN7RCaQmO4Mjl2ogn6mybSMoX4ayLJKZLvs5GqmhgwYbFWtzemK1cQUzzKENnJphxAvxi9G30++l6lD5VC2OmcSLZUH4K+BpA3KBkoQzalUcmkavTNSg7lSrJQJCmmJxQpKatujFeaFKskSVYSUY9silkxRapt2glF/NmwU7lhIm6RsO+GiCWj+hnlOsVE6aA6BKosW/IzSjxVoomVdE7EJVYfbkxQOrHMTrjFpoj/rH+fvDqVoQgEQV+LkkeZmLtcyacM9K3K4kiGbeqEcrsk+zshBfrWRcwrRDeRmFQ91RiniL8HCCu3wuO3Sm2HJ4pWVVNjkVJCVYr4EwlNOQjooPjP4soooFGEaRShGUVoRmHFKBkR+RsxcyNoKpUrya+M0GG0+wCrEJkRgQePSWBpSfUxJVuxwhOWE/AdAzZnIi5JWGaNpKZJMutEQlJ1wzNKgLagcRgfnMiyVvtOKGVyKcsmrLmCwR+JS4DrsmKxAGOmiMEzSp6yWHoiX3og3GjDmFGyYiPGf8BPCe/wl/mPRXzFT/rI/h/1/kW9/2Gsj07xUxPQ4pzk/yz60415/A0I28VfpfsAcX6CP4+jxsZ/zieFFfxn/Bg1oH8F4z70x9CvQH88UvA92ySfnEAH2++JJGaKxfLnI45KHbAV6kBWrg6kZlY3FvLn+LOUBxE/Rb8U/bN8ipagP4nein6KB+l76J/gtbQW/VG9/w5/WuQ0f4o/iTPTxiciScKEcMQkuiMRo+i+FaHYqL3S9jT/Fn+cckD6zUhRDrCPTBQttSWfgDzGH+TBSL4ttTGe38+62LsgGqNXRE+p/IFInRByOPK0ZjvGD/PDTmuds9BZ7nxIqSqsKq96SNEKtXKtTntIa7TwW8kA52HD8ptwxfnMkT1oTrTD/MaIWhduPIs1iXVxOoTrmIR6cPVLiHC1zM6+I6EGfh1tQeOQcQDtINohtKtIxfVKtM+ifQ7t8xITRAuhjaB8+MHhB4cfHH7J4QeHHxx+cPglh19qD6EJjh5w9ICjBxw9kqMHHD3g6AFHj+QQ9vaAo0dytIOjHRzt4GiXHO3gaAdHOzjaJUc7ONrB0S45nOBwgsMJDqfkcILDCQ4nOJySwwkOJzickqMKHFXgqAJHleSoAkcVOKrAUSU5qsBRBY4qyaGBQwOHBg5Ncmjg0MChgUOTHBo4NHBoksMCDgs4LOCwSA4LOCzgsIDDIjksMj4hNMFxGhynwXEaHKclx2lwnAbHaXCclhynwXEaHKf5yLhyqvEFsJwCyymwnJIsp8ByCiynwHJKspwCyymwnNKXHpTO4EibA2gH0Q6hCd4p8E6Bdwq8U5J3SqZXCE3whsERBkcYHGHJEQZHGBxhcIQlRxgcYXCEJccYOMbAMQaOMckxBo4xcIyBY0xyjMnEDaEJjr89Kf/m0PCrWJcZhys/xEplf5Delv0BekX2n6dx2X+OHpL9Z+lq2V9JdbIfoSLZQ57sg2Qzs4itLrkxEyVgC9ouNB/afWhH0E6imST0EtpraFFe61yiJpu2mO4zHTGdNBmOmE6beLJxi/E+4xHjSaPhiPG0kWuNuTxR1lGUFvqivB7E9fdoOERwbZBQA6+B3hrU2Vq8a3iNM+WM9vsy9lIZO1nGjpSxL5axxjh+MVNlpcOdPofhrMuZULTO9gpaXVHxOlSmW598O8sWKVppm2RPx7pSpwP922jjaA+hXY1Wh1aNVo5WiGaTuDLQdzmX6CKfRitGK0DThArKzMTdTWqK2XmMJ7KHJl5IpDihp7gEfCcixVXoJiPFW9A9FSnutTXGsSepWNwGsScQucfRH4nYXsf0N2PdNyK2E+geidhq0O2MFFeguzRS/KKtMZFtJ5sqWDv1vgPrFv22iO0SkG2N2ErROSLFRYK6DIoKMVvKuuh19IU619KYJnvEthbdkohttaA2U7EIPDNSuTTPgCZ6ZQIG/f4Y61KZc5HtjO1229tg/x0ci/T4mTaponupcJJd4oy3PV3+VRA32iKN8YIe58O43odF/4TtocIbbfdAFit80na3rcJ2a/mkGehbYPeNUkXEdrU2yR93ptkO2apswfLXbQHbJ2wu2zbbzkLgI7bLbE8LM6mbdfHHn7S1Q+BGrKIwYru4cFKa2Grbb3Paim2rtaeFf2lVTG5d+dPCA1Qd074M/i0rnBQ5vr1ukqU4y0zvmA6bLjWtN6012U1LTItN+aZ0c6rZYk4yJ5jjzWaz0ayauZnM6eLnHRzizyvTjeKv18moiqsqYQsXVx77S1POzJw+QeE0pY23daxnbeEpN7X1auH3OuyTLH7rjrDBvp6FU9uorXN9eJWjbdIU3Rauc7SFTe2Xdo0zdms3sGF+wySjzq5JFhWo63LFD1GNM7rultxjxFj2dbd0d5M1c1+DtSF1Xcrq1ubzXHr0q2PuZZ0P5ofvauvoCj+W3x2uFkA0v7stfJX4mapjPJkntjQf40mi6+46pvp5css2gVf9zd0ge12SIZuTQEbFogOZeT1pggz1ZL0gQ4xidEVgB12B6EAXn0hFkq4oPlHSqUzQjb+itTSPa5qkKSR6RdK8UkjzaJAx4G0eLyqSVHaNdQkq1mXXpGGlUpDNBpJymyTBk5tNCrIxqSxcOUdSqJPUzpLUSl0Km6OxxWjSS2Zo0ktA4/gfvjzrHWxieejA8+KXv3rsLR60nvBN+/qt4UO9mjZ+IKT/JFhRT6+7X/QuTzhk9zSHD9ibtfHlz59n+nkxvdzePE7Pt3R2jT/v9DRHljuXt9hdzd0TDfVdjQt03Tirq6v+PMLqhbAuoauh8TzTjWK6QehqFLoaha4GZ4PU1eIVed/eNW6m9eJ3QWQ/wRfFI4d7cgu612da/OtEQh9bW2A9kHtcJfYILXJ0hxPs68OJaGKqvLG8UUxhn4mpJPHzbvqU9cDagtzj7BF9ygJ0in09zbiWBFFbuHZrW7igY0eXSJWw03X+mAXES05bqcXbjH8YB2XDez4lBc77Cp7vFQqFAuIScuApuS1c1tEWXrkVlphMUNXT3A1cxQxOUSRuPC6uZTI6hUkHjGBBoU5ADiZ+I8AZj6cuEx8zjpm4eFQITuTkV/uewQl+EA3PcXwkUimfl/nIxJJC8fwSnKisjfV4PhV9JKegWvwUQR1YRV8Y650p5QAOFx4uP1w3VjhWPlZnFD+08BCQtofEURqpfEihoCMw4wiAwW6K/XQB9N0fycuXiscE4HB0OwLyN17ow6526L8jA6fPOjagSw1I8cGZgMTwAYoRxyYdoRmmkM4iJ0OSRSr8P1jbNhMKZW5kc3RyZWFtCmVuZG9iagoKNiAwIG9iagoxMDgyNQplbmRvYmoKCjcgMCBvYmoKPDwvVHlwZS9Gb250RGVzY3JpcHRvci9Gb250TmFtZS9CQUFBQUErQXJpYWwtQm9sZE1UCi9GbGFncyA0Ci9Gb250QkJveFstNjI3IC0zNzYgMjAwMCAxMDExXS9JdGFsaWNBbmdsZSAwCi9Bc2NlbnQgOTA1Ci9EZXNjZW50IDIxMQovQ2FwSGVpZ2h0IDEwMTAKL1N0ZW1WIDgwCi9Gb250RmlsZTIgNSAwIFI+PgplbmRvYmoKCjggMCBvYmoKPDwvTGVuZ3RoIDI3Mi9GaWx0ZXIvRmxhdGVEZWNvZGU+PgpzdHJlYW0KeJxdkc9uhCAQxu88BcftYQNadbuJMdm62cRD/6S2D6AwWpKKBPHg2xcG2yY9QH7DzDf5ZmB1c220cuzVzqIFRwelpYVlXq0A2sOoNElSKpVwe4S3mDpDmNe22+JgavQwlyVhbz63OLvRw0XOPdwR9mIlWKVHevioWx+3qzFfMIF2lJOqohIG3+epM8/dBAxVx0b6tHLb0Uv+Ct43AzTFOIlWxCxhMZ0A2+kRSMl5RcvbrSKg5b9cskv6QXx21pcmvpTzLKs8p8inPPA9cnENnMX3c+AcOeWBC+Qc+RT7FIEfohb5HBm1l8h14MfIOZrc3QS7YZ8/a6BitdavAJeOs4eplYbffzGzCSo83zuVhO0KZW5kc3RyZWFtCmVuZG9iagoKOSAwIG9iago8PC9UeXBlL0ZvbnQvU3VidHlwZS9UcnVlVHlwZS9CYXNlRm9udC9CQUFBQUErQXJpYWwtQm9sZE1UCi9GaXJzdENoYXIgMAovTGFzdENoYXIgMTEKL1dpZHRoc1s3NTAgNzIyIDYxMCA4ODkgNTU2IDI3NyA2NjYgNjEwIDMzMyAyNzcgMjc3IDU1NiBdCi9Gb250RGVzY3JpcHRvciA3IDAgUgovVG9Vbmljb2RlIDggMCBSCj4+CmVuZG9iagoKMTAgMCBvYmoKPDwKL0YxIDkgMCBSCj4+CmVuZG9iagoKMTEgMCBvYmoKPDwvRm9udCAxMCAwIFIKL1Byb2NTZXRbL1BERi9UZXh0XT4+CmVuZG9iagoKMSAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDQgMCBSL1Jlc291cmNlcyAxMSAwIFIvTWVkaWFCb3hbMCAwIDU5NSA4NDJdL0dyb3VwPDwvUy9UcmFuc3BhcmVuY3kvQ1MvRGV2aWNlUkdCL0kgdHJ1ZT4+L0NvbnRlbnRzIDIgMCBSPj4KZW5kb2JqCgoxMiAwIG9iago8PC9Db3VudCAxL0ZpcnN0IDEzIDAgUi9MYXN0IDEzIDAgUgo+PgplbmRvYmoKCjEzIDAgb2JqCjw8L1RpdGxlPEZFRkYwMDQ0MDA3NTAwNkQwMDZEMDA3OTAwMjAwMDUwMDA0NDAwNDYwMDIwMDA2NjAwNjkwMDZDMDA2NT4KL0Rlc3RbMSAwIFIvWFlaIDU2LjcgNzczLjMgMF0vUGFyZW50IDEyIDAgUj4+CmVuZG9iagoKNCAwIG9iago8PC9UeXBlL1BhZ2VzCi9SZXNvdXJjZXMgMTEgMCBSCi9NZWRpYUJveFsgMCAwIDU5NSA4NDIgXQovS2lkc1sgMSAwIFIgXQovQ291bnQgMT4+CmVuZG9iagoKMTQgMCBvYmoKPDwvVHlwZS9DYXRhbG9nL1BhZ2VzIDQgMCBSCi9PdXRsaW5lcyAxMiAwIFIKPj4KZW5kb2JqCgoxNSAwIG9iago8PC9BdXRob3I8RkVGRjAwNDUwMDc2MDA2MTAwNkUwMDY3MDA2NTAwNkMwMDZGMDA3MzAwMjAwMDU2MDA2QzAwNjEwMDYzMDA2ODAwNkYwMDY3MDA2OTAwNjEwMDZFMDA2RTAwNjkwMDczPgovQ3JlYXRvcjxGRUZGMDA1NzAwNzIwMDY5MDA3NDAwNjUwMDcyPgovUHJvZHVjZXI8RkVGRjAwNEYwMDcwMDA2NTAwNkUwMDRGMDA2NjAwNjYwMDY5MDA2MzAwNjUwMDJFMDA2RjAwNzIwMDY3MDAyMDAwMzIwMDJFMDAzMT4KL0NyZWF0aW9uRGF0ZShEOjIwMDcwMjIzMTc1NjM3KzAyJzAwJyk+PgplbmRvYmoKCnhyZWYKMCAxNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMTE5OTcgMDAwMDAgbiAKMDAwMDAwMDAxOSAwMDAwMCBuIAowMDAwMDAwMjI0IDAwMDAwIG4gCjAwMDAwMTIzMzAgMDAwMDAgbiAKMDAwMDAwMDI0NCAwMDAwMCBuIAowMDAwMDExMTU0IDAwMDAwIG4gCjAwMDAwMTExNzYgMDAwMDAgbiAKMDAwMDAxMTM2OCAwMDAwMCBuIAowMDAwMDExNzA5IDAwMDAwIG4gCjAwMDAwMTE5MTAgMDAwMDAgbiAKMDAwMDAxMTk0MyAwMDAwMCBuIAowMDAwMDEyMTQwIDAwMDAwIG4gCjAwMDAwMTIxOTYgMDAwMDAgbiAKMDAwMDAxMjQyOSAwMDAwMCBuIAowMDAwMDEyNDk0IDAwMDAwIG4gCnRyYWlsZXIKPDwvU2l6ZSAxNi9Sb290IDE0IDAgUgovSW5mbyAxNSAwIFIKL0lEIFsgPEY3RDc3QjNEMjJCOUY5MjgyOUQ0OUZGNUQ3OEI4RjI4Pgo8RjdENzdCM0QyMkI5RjkyODI5RDQ5RkY1RDc4QjhGMjg+IF0KPj4Kc3RhcnR4cmVmCjEyNzg3CiUlRU9GCg==",
+              "name": "test.pdf"
+            }
+          }
+        },
+        "send_payload_as_body": "false"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Clean",
+      "disabled": false,
+      "guid": "a70b7bcec7a5d480833fffd1a2521ec9",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "path": "<<check_status.body.data.submission_severity>><<get_analyzer_report.body.data.first.analysis_severity>>",
+            "value": "not_suspicious"
+          },
+          {
+            "type": "regex",
+            "path": "<<check_status.body.data.submission_severity>><<get_analyzer_report.body.data.first.analysis_severity>>",
+            "value": "whitelisted"
+          },
+          {
+            "type": "regex",
+            "path": "<<check_status.body.data.submission_severity>><<get_analyzer_report.body.data.first.analysis_severity>>",
+            "value": "unknown"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Submissions",
+      "disabled": false,
+      "guid": "a69a342a398b05c2eaa6383c2e2a4f41",
+      "options": {
+        "mode": "explode",
+        "path": "=submit_file.body.data.submissions",
+        "to": "submissions"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check Status",
+      "disabled": false,
+      "guid": "a2ddef2c4a98c6e8716e3bcbc3ae72e9",
+      "options": {
+        "url": "https://cloud.vmray.com/rest/submission/<<explode_submissions.submissions.submission_id>>",
+        "content_type": "form",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "Authorization": "api_key <<CREDENTIAL.vmray>>"
+        },
+        "retry_on_status": [
+          "500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Hash Not Found",
+      "disabled": false,
+      "guid": "ce5cf91aa0da0247d7c8348265b4591d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(search_for_hash_in_vmray.body.data, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay",
+      "disabled": false,
+      "guid": "2ad091fab718d06dcffb1ec1e8e13a86",
+      "options": {
+        "mode": "delay",
+        "seconds": "120"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Hash Found",
+      "disabled": false,
+      "guid": "66ad46c8a8a3d3c18ac008e91be4b4ec",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(search_for_hash_in_vmray.body.data, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive File",
+      "disabled": false,
+      "guid": "5b261370198eef6d7aab7daacd670e59",
+      "options": {
+        "secret": "baa805116ce48adc26fe463b223d1a78",
+        "verbs": "get,post",
+        "path": "8da5dc2b60e2543706febdb28902f54f"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Analyzer Report",
+      "disabled": false,
+      "guid": "9d007417c0d8430f647c6937a6105406",
+      "options": {
+        "url": "https://cloud.vmray.com/rest/analysis/sample/<<search_for_hash_in_vmray.body.data.first.sample_id>>",
+        "content_type": "form",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "Authorization": "api_key <<CREDENTIAL.vmray>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Counter",
+      "disabled": false,
+      "guid": "75a7156477e444c0742828b03d9ee3a8",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "counter": "<<PLUS(set_counter.counter, 1)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Configure Jobrule",
+      "disabled": false,
+      "guid": "c25aab0c8b386be06754705c04db85cd",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "Windows_Help_File": "vmray:win10_64_th2:def:chm",
+          "macOS_Mach-O": "vmray:macos_10.13.1:def:macos_exe",
+          "Windows_Batch_Files": "vmray:win10_64_th2:def:bat",
+          "PowerShell_Scripts": "vmray:win10_64_th2:def:powershell",
+          "HTML_Applications": "vmray:win10_64_th2:def:hta",
+          "Microsoft_Access_Database": "vmray:win7_64_sp1-mso2013:def:ms_office",
+          "Microsoft_Office_Documents": "vmray:win10_64_th2:def:ms_office",
+          "Windows_PE_x86-64": "vmray:win10_64_th2:def:exe",
+          "Windows_PE_x86": "vmray:win10_64_th2:def:exe",
+          "Windows_Script_Files": "vmray:win10_64_th2:def:windows_script_files",
+          "Windows_Driver_x86-32": "vmray:win7_32_sp1:def:exe",
+          "Java_File": "vmray:win10_64_th2:def:java-1.8.0_144",
+          "HTML_Document": "vmray:win10_64_th2:def:html_ie",
+          "Custom": "vmray:win10_64_th2:def:by_ext",
+          "Macromedia_Flash": "vmray:win10_64_th2:def:flash_ie",
+          "MSI_Setup": "vmray:win10_64_th2:def:msi",
+          "URL": "vmray:win10_64_th2:def:ie",
+          "PDF_Document": "vmray:win10_64_th2-pdf:def:adobe-reader-64-DC-2018.009.20044"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Submit File",
+      "disabled": false,
+      "guid": "3166eb945d16e43092936aa7f479e7fd",
+      "options": {
+        "url": "https://cloud.vmray.com/rest/sample/submit?jobrule_entries={\"Windows Help File\": [\"<<configure_jobrule.Windows_Help_File>>\"],\"macOS Mach-O\": [\"<<configure_jobrule[\"macOS_Mach-O\"]>>\"],\"Windows Batch Files\": [\"<<configure_jobrule.Windows_Batch_Files>>\"],\"PowerShell Scripts\": [\"<<configure_jobrule.PowerShell_Scripts>>\"],\"HTML Applications\": [\"<<configure_jobrule.HTML_Applications>>\"],\"Microsoft Access Database\": [\"<<configure_jobrule.Microsoft_Access_Database>>\"],\"Microsoft Office Documents\": [\"<<configure_jobrule.Microsoft_Office_Documents>>\"],\"Windows PE (x86-64)\": [\"<<configure_jobrule[\"Windows_PE_x86-64\"]>>\"],\"Windows PE (x86)\": [\"<<configure_jobrule.Windows_PE_x86>>\"],\"Windows Script Files\": [\"<<configure_jobrule.Windows_Script_Files>>\"],\"Windows Driver (x86-32)\": [\"<<configure_jobrule[\"Windows_Driver_x86-32\"]>>\"],\"Java File\": [\"<<configure_jobrule.Java_File>>\"],\"HTML Document\": [\"<<configure_jobrule.HTML_Document>>\"],\"Custom\": [\"<<configure_jobrule.Custom>>\"],\"Macromedia Flash\": [\"<<configure_jobrule.Macromedia_Flash>>\"],\"MSI Setup\": [\"<<configure_jobrule.MSI_Setup>>\"],\"PDF Document\": [\"<<configure_jobrule.PDF_Document>>\"]}",
+        "content_type": "data",
+        "method": "post",
+        "payload": {
+          "file": {
+            "contents": "<<BASE64_DECODE(receive_file.body.file.contents)>>",
+            "filename": "<<receive_file.body.file.name>>",
+            "name": "sample_file"
+          }
+        },
+        "headers": {
+          "Authorization": "api_key <<CREDENTIAL.vmray>>"
+        },
+        "retry_on_status": [
+          "500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if KnownGood",
+      "disabled": false,
+      "guid": "b57cb7dd5a4002e07ce144c4bd68bf2d",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "<<get_hash.md5>>",
+            "path": "=RESOURCE.knowngood_hashes"
+          },
+          {
+            "type": "regex",
+            "value": ".png",
+            "path": "<<receive_attachments.file_name>>"
+          }
+        ],
+        "emit_no_match": "true",
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Hash",
+      "disabled": false,
+      "guid": "438408855f37a5079b871c104ffc5e6c",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "md5": "<<BASE64_DECODE(receive_file.body.file.contents) |> MD5(%)>>",
+          "sha256": "<<BASE64_DECODE(receive_file.body.file.contents) |> SHA256(%)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Known Good Results",
+      "disabled": false,
+      "guid": "2005d4b8abdfbffbbf02cd78aaa8a676",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "new": "knowngood",
+          "engine": "VMRay",
+          "analysis_date": "knowngood",
+          "file_name": "<<receive_file.body.file.name>>",
+          "analysis_link": "Not Available",
+          "md5_hash": "<<get_hash.md5>>",
+          "report": "Not Available",
+          "error_msg": "Known Good File",
+          "malicious": "knowngood",
+          "submission_severity": "Not Available",
+          "macros": {
+            "macro_list": "Not Available",
+            "macros_found": "false"
+          },
+          "screenshots": {
+            "screenshots_found": "false",
+            "screenshot_list": "Not Available"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Clean Results",
+      "disabled": false,
+      "guid": "bc37eb2a687983154c7da4bfe63e4bf6",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "new": "<%if hash_not_found.rule_matched%>true<%else%>false<%endif%>",
+          "engine": "VMRay",
+          "analysis_date": "<<get_analyzer_report.body.data.first.analysis_created>>",
+          "file_name": "<<receive_file.body.file.name>>",
+          "analysis_link": "<<DEFAULT(get_analyzer_report.body.data.first.analysis_webif_url, \"Not Available\")>>",
+          "md5_hash": "<<get_hash.md5>>",
+          "report": "=get_analyzer_report.body",
+          "error_msg": "<%if submit_file.body.data.errors[0].error_msg%><<submit_file.body.data.errors[0].error_msg>><%else%>no_error<%endif%>",
+          "malicious": "false",
+          "submission_severity": "<<DEFAULT(check_status.body.data.submission_severity, \"Not Available\")>>",
+          "macros": {
+            "macro_list": "=IF(LIQUID_SIZE(extract_macros.macro_body, \"dot_notation\") > 0, extract_macros.macro_body, \"No macros found\")",
+            "macros_found": "<%if extract_macros.macros_found = \"true\"%>true<%else%>false<%endif%>"
+          },
+          "screenshots": {
+            "screenshots_found": "<%if get_screenshots.screenshots_found%>true<%else%>false<%endif%>",
+            "screenshot_list": "=IF(LIQUID_SIZE(get_screenshots.screenshots, \"dot_notation\") > 0, get_screenshots.screenshots, \"No screenshots found\")"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Error Results",
+      "disabled": false,
+      "guid": "ee2192e3aa5fa180d431544e381fc166",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "new": "false",
+          "engine": "VMRay",
+          "analysis_date": "error in submission",
+          "file_name": "<<receive_file.body.file.name>>",
+          "analysis_link": "Not Available",
+          "md5_hash": "<<get_hash.md5>>",
+          "report": "=get_analyser_report.body",
+          "error_msg": "<%if submit_file.body.data.errors[0].error_msg%><<submit_file.body.data.errors[0].error_msg>><%else%>An unknown error occurred<%endif%>",
+          "malicious": "error",
+          "submission_severity": "Not Available",
+          "macros": {
+            "macro_list": "No macros found",
+            "macros_found": "false"
+          },
+          "screenshots": {
+            "screenshots_found": "false",
+            "screenshot_list": "No screenshots found"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Extract Macros",
+      "disabled": false,
+      "guid": "41e7ad4155a29902c9332f93987d9ca6",
+      "options": {
+        "payload": {
+          "static_data_array": "=get_deep_analysis.body.static_data",
+          "analysis_job_id": "<<get_analyzer_report.body.data.first.analysis_job_id>>",
+          "macro_array": "<<get_deep_analysis.body.static_data>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "c7139434a81c4e357f59aefca66dc13c",
+        "slug": null,
+        "exported_at": "2022-07-11T17:26:47Z",
+        "agents": [
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Explode Macro Array",
+            "disabled": false,
+            "guid": "64a4fe1777a9ae7881ddd4aaaa53fe1c",
+            "options": {
+              "mode": "explode",
+              "path": "=explode_static_array.individual_static.office.macros",
+              "to": "individual_macro"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Trigger if Office Macro",
+            "disabled": false,
+            "guid": "8dbeec5ac040f33fde32ca0bca7f2065",
+            "options": {
+              "rules": [
+                {
+                  "type": "field>value",
+                  "value": "0",
+                  "path": "<<LIQUID_SIZE(explode_static_array.individual_static.office.macros, \"dot_notation\")>>"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Implode Macro Array",
+            "disabled": false,
+            "guid": "b666ffceea36d1179e38cb2a680ee551",
+            "options": {
+              "mode": "implode",
+              "guid_path": "=explode_macro_array.guid",
+              "size_path": "=LIQUID_SIZE(explode_macro_array, \"dot_notation\")"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Trigger if Empty Array",
+            "disabled": false,
+            "guid": "e3b90fa22d85ab2d2d8333003d6599d9",
+            "options": {
+              "rules": [
+                {
+                  "type": "field==value",
+                  "value": "0",
+                  "path": "<<LIQUID_SIZE(input.static_data_array, \"dot_notation\")>>"
+                },
+                {
+                  "type": "regex",
+                  "value": "^$",
+                  "path": "<<LIQUID_SIZE(input.static_data_array, \"dot_notation\")>>"
+                },
+                {
+                  "type": "regex",
+                  "value": "^$",
+                  "path": "<<JSONPATH(input.static_data_array, \"*office.macros\")>>"
+                }
+              ],
+              "must_match": "1"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Explode Static Array",
+            "disabled": false,
+            "guid": "5f873ad80c8ba9e394fd95faabee92f7",
+            "options": {
+              "mode": "explode",
+              "path": "=input.static_data_array",
+              "to": "individual_static"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Get Macro Content",
+            "disabled": false,
+            "guid": "a7f7431c6b058b1cec6a01a5b161db74",
+            "options": {
+              "url": "https://cloud.vmray.com/rest/analysis/job/<<input.analysis_job_id>>/archive/<<explode_macro_array.individual_macro.source>>",
+              "content_type": "form",
+              "method": "get",
+              "payload": {},
+              "headers": {
+                "Authorization": "api_key <<CREDENTIAL.vmray>>"
+              },
+              "log_error_on_status": []
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "d349602f434cce729e79005a65faa7bf",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "b1ad10a778fc11fd9d49ea980e09cd3c",
+            "options": {
+              "payload": {
+                "macros_found": "false",
+                "macro_body": ""
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "01835828bb42b30dd2a283d9da140e66",
+            "options": {
+              "payload": {
+                "macros_found": "true",
+                "macro_body": "=JSONPATH(implode_macro_array, \"*get_macro_content.body\")"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 5
+          },
+          {
+            "source": 0,
+            "receiver": 3
+          },
+          {
+            "source": 1,
+            "receiver": 0
+          },
+          {
+            "source": 2,
+            "receiver": 8
+          },
+          {
+            "source": 3,
+            "receiver": 7
+          },
+          {
+            "source": 4,
+            "receiver": 1
+          },
+          {
+            "source": 5,
+            "receiver": 2
+          },
+          {
+            "source": 6,
+            "receiver": 4
+          }
+        ],
+        "diagram_layout": "{\"64a4fe1777a9ae7881ddd4aaaa53fe1c\":[-195,375],\"8dbeec5ac040f33fde32ca0bca7f2065\":[-195,300],\"b666ffceea36d1179e38cb2a680ee551\":[-195,525],\"e3b90fa22d85ab2d2d8333003d6599d9\":[-420,450],\"5f873ad80c8ba9e394fd95faabee92f7\":[-195,225],\"a7f7431c6b058b1cec6a01a5b161db74\":[-195,450],\"d349602f434cce729e79005a65faa7bf\":[-195,105],\"b1ad10a778fc11fd9d49ea980e09cd3c\":[-420,615],\"01835828bb42b30dd2a283d9da140e66\":[-195,615]}"
+      }
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Get Screenshots",
+      "disabled": false,
+      "guid": "926c4b9927a1a41977188f8146f05575",
+      "options": {
+        "payload": {
+          "screenshots": "=get_deep_analysis.body.screenshots",
+          "analysis_job_id": "<<get_analyzer_report.body.data.first.analysis_job_id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "2744d8d4cd0441025b2d8fe881e75b2a",
+        "slug": null,
+        "exported_at": "2022-07-11T17:26:47Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Get Screenshot",
+            "disabled": false,
+            "guid": "e9a9f31cf0703b8b3bae75a7ad59f76f",
+            "options": {
+              "url": "https://cloud.vmray.com/rest/analysis/job/<<input.analysis_job_id>>/archive/<<explode_screenshot_array.individual_screenshot.screenshot_archive_path>>",
+              "content_type": "form",
+              "method": "get",
+              "payload": {},
+              "headers": {
+                "Authorization": "api_key <<CREDENTIAL.vmray>>"
+              },
+              "log_error_on_status": []
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Trigger if Empty Array",
+            "disabled": false,
+            "guid": "47c46b7cd0d974fb06ccaa980d597556",
+            "options": {
+              "rules": [
+                {
+                  "type": "field==value",
+                  "value": "0",
+                  "path": "<<LIQUID_SIZE(input.screenshots, \"dot_notation\")>>"
+                },
+                {
+                  "type": "regex",
+                  "value": "^$",
+                  "path": "<<input.screenshots>>"
+                }
+              ],
+              "must_match": "1"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Implode Screenshot Array",
+            "disabled": false,
+            "guid": "2f8c4fb211fc70d72f34f8535475de2e",
+            "options": {
+              "mode": "implode",
+              "guid_path": "=explode_screenshot_array.guid",
+              "size_path": "=LIQUID_SIZE(explode_screenshot_array, \"dot_notation\")"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Explode Screenshot Array",
+            "disabled": false,
+            "guid": "65394cda3e5f9e9193ab43631da7f90f",
+            "options": {
+              "mode": "explode",
+              "path": "=input.screenshots",
+              "to": "individual_screenshot"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "a5644b595278c6057e5a05670b50130b",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "a5f2ee362d171c03c5a3dd0ccd7c1b9b",
+            "options": {
+              "payload": {
+                "screenshots": "=JSONPATH(implode_screenshot_array, \"*get_screenshot.body\")",
+                "screenshots_found": "true"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "35ecfbcbe808caa9c500ccd7da45a523",
+            "options": {
+              "payload": {
+                "screenshots": "",
+                "screenshots_found": "false"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 2
+          },
+          {
+            "source": 1,
+            "receiver": 6
+          },
+          {
+            "source": 2,
+            "receiver": 5
+          },
+          {
+            "source": 3,
+            "receiver": 0
+          },
+          {
+            "source": 4,
+            "receiver": 3
+          },
+          {
+            "source": 4,
+            "receiver": 1
+          }
+        ],
+        "diagram_layout": "{\"e9a9f31cf0703b8b3bae75a7ad59f76f\":[-90,720],\"47c46b7cd0d974fb06ccaa980d597556\":[-345,615],\"2f8c4fb211fc70d72f34f8535475de2e\":[-90,810],\"65394cda3e5f9e9193ab43631da7f90f\":[-90,615],\"a5644b595278c6057e5a05670b50130b\":[-180,510],\"a5f2ee362d171c03c5a3dd0ccd7c1b9b\":[-90,900],\"35ecfbcbe808caa9c500ccd7da45a523\":[-345,900]}"
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Story Overview\nhttps://image-uploads.tines.com/vmray_logo.png\n\n\nThis Story receives a file, and will compare the file hash against a known good list of files. If the file is not known good, VMRay will be searched for the hash and, if it is not found, the file will be uploaded for analysis.\n\nThis Story also extracts screenshots of the file, any detected macros, and other metadata about the file that may be useful for analysis.",
+      "position": [
+        -465.0,
+        -1335.0
+      ],
+      "guid": "077f3492b3e834cfe999890bc5bcd6a6",
+      "width": 270
+    },
+    {
+      "content": "Test action containing a clean file demonstration purposes.\n\nThis Story requires the Base64 Encoded Contents of a file, and the file name.",
+      "position": [
+        615.0,
+        -1110.0
+      ],
+      "guid": "a6cf26aae03a31e1309c1598590ddb2a",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\n- [ ] A VMRay API Key stored in a credential called `vmray`\n- [ ] A Resource called `known_good_hashes` containing an array of hashes that should be considered safe, and the file should not be submitted for analysis.\n- [ ] See the sample Send To Story Action for an example on how to use this Story.",
+      "position": [
+        -465.0,
+        -825.0
+      ],
+      "guid": "083c69d6c6ea1d2b36f5418f23085e9a",
+      "width": null
+    },
+    {
+      "content": "Both the MD5 and SHA256 Hashes of the file will be generated for use and reference.",
+      "position": [
+        300.0,
+        -960.0
+      ],
+      "guid": "1dbd27191aeaf04afc01ead0f3c85bea",
+      "width": null
+    },
+    {
+      "content": "The file hash will be compared against the known good file list.\nAdditionally, any `.png` files will be removed at this stage.",
+      "position": [
+        345.0,
+        -825.0
+      ],
+      "guid": "d44137edc9ecfff8a60cf117c431409f",
+      "width": null
+    },
+    {
+      "content": "If the hash has not been seen by VMRay before, submit it for analysis. \n\nAfter being submitted successfully, the Story will wait two minutes after the initial submission before checking the status of the analysis, and then every 60 seconds after that.\n",
+      "position": [
+        285.0,
+        -525.0
+      ],
+      "guid": "165c9590a484a4fde83c29fee0f5dacf",
+      "width": null
+    },
+    {
+      "content": "If, after 50 attempts, the analysis has not completed, the Story will return an error.\n\nThis number is configurable in the `Error` Trigger Action",
+      "position": [
+        -300.0,
+        -510.0
+      ],
+      "guid": "70241069cf9c54592c03087fbcd63cdf",
+      "width": null
+    },
+    {
+      "content": "After the analysis has completed, or been retrieved from an earlier submission, another API call is made to get the more detailed analysis from VMRay.",
+      "position": [
+        450.0,
+        150.0
+      ],
+      "guid": "d8c0c88b73e50b8bca4ed811c74a179b",
+      "width": null
+    },
+    {
+      "content": "As a final step, the Stories will attempt to extract any identified macros, and download any screenshots that VMRay was able to create.\n\nDouble click into the Groups to view the underlying Actions.",
+      "position": [
+        -90.0,
+        210.0
+      ],
+      "guid": "6a2b22a2a1efcb929d306db3208ef007",
+      "width": null
+    },
+    {
+      "content": "The analysis results will then be summarised and made available to other Stories.\n\nAdditionally, this Story can be extended to send a notification via email to to Slack/Teams containing the results of the analysis.",
+      "position": [
+        210.0,
+        525.0
+      ],
+      "guid": "ac3b696234863d55f29c0cccbc5e4286",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 28
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 2,
+      "receiver": 25
+    },
+    {
+      "source": 3,
+      "receiver": 0
+    },
+    {
+      "source": 5,
+      "receiver": 3
+    },
+    {
+      "source": 6,
+      "receiver": 8
+    },
+    {
+      "source": 7,
+      "receiver": 14
+    },
+    {
+      "source": 8,
+      "receiver": 17
+    },
+    {
+      "source": 8,
+      "receiver": 15
+    },
+    {
+      "source": 9,
+      "receiver": 27
+    },
+    {
+      "source": 10,
+      "receiver": 7
+    },
+    {
+      "source": 12,
+      "receiver": 26
+    },
+    {
+      "source": 13,
+      "receiver": 16
+    },
+    {
+      "source": 14,
+      "receiver": 20
+    },
+    {
+      "source": 15,
+      "receiver": 21
+    },
+    {
+      "source": 16,
+      "receiver": 14
+    },
+    {
+      "source": 17,
+      "receiver": 19
+    },
+    {
+      "source": 18,
+      "receiver": 24
+    },
+    {
+      "source": 19,
+      "receiver": 0
+    },
+    {
+      "source": 20,
+      "receiver": 9
+    },
+    {
+      "source": 20,
+      "receiver": 10
+    },
+    {
+      "source": 20,
+      "receiver": 5
+    },
+    {
+      "source": 21,
+      "receiver": 22
+    },
+    {
+      "source": 22,
+      "receiver": 9
+    },
+    {
+      "source": 22,
+      "receiver": 13
+    },
+    {
+      "source": 23,
+      "receiver": 6
+    },
+    {
+      "source": 23,
+      "receiver": 2
+    },
+    {
+      "source": 24,
+      "receiver": 23
+    },
+    {
+      "source": 28,
+      "receiver": 29
+    },
+    {
+      "source": 29,
+      "receiver": 1
+    },
+    {
+      "source": 29,
+      "receiver": 12
+    }
+  ],
+  "diagram_layout": "{\"89c8610df1a4a206b3fa97273dd2b983\":[210,150],\"9cb84eb1c79c101158653537a66f3ddc\":[390,375],\"413fb5b686e3e59f6229cfe32ab76e31\":[-135,-765],\"4c4ecbaf695656e46ba1796310fecac4\":[15,75],\"a044a4c5db3773d771a95b939200f619\":[390,450],\"f4478583d0077405a8faebea56b45b88\":[15,-60],\"b0b6061e5c79a6259b0c3714a5cca3d3\":[105,-765],\"733846b6e506ad6b4b7d399e82427546\":[210,-285],\"11be9c6fd748a4c57cdb751cc90efccd\":[105,-675],\"3bfbd3a7c90e5297e5ae82e6a5c907e0\":[-225,-360],\"f6cb11997886a9c69fdc90d568b79121\":[210,-60],\"39e9243fdf9edbf15dab70839d9662ef\":[615,-975],\"a70b7bcec7a5d480833fffd1a2521ec9\":[150,375],\"a69a342a398b05c2eaa6383c2e2a4f41\":[105,-360],\"a2ddef2c4a98c6e8716e3bcbc3ae72e9\":[15,-210],\"ce5cf91aa0da0247d7c8348265b4591d\":[105,-585],\"2ad091fab718d06dcffb1ec1e8e13a86\":[15,-285],\"66ad46c8a8a3d3c18ac008e91be4b4ec\":[585,-585],\"5b261370198eef6d7aab7daacd670e59\":[105,-1050],\"9d007417c0d8430f647c6937a6105406\":[585,75],\"75a7156477e444c0742828b03d9ee3a8\":[15,-135],\"c25aab0c8b386be06754705c04db85cd\":[105,-510],\"3166eb945d16e43092936aa7f479e7fd\":[105,-435],\"b57cb7dd5a4002e07ce144c4bd68bf2d\":[105,-840],\"438408855f37a5079b871c104ffc5e6c\":[105,-945],\"2005d4b8abdfbffbbf02cd78aaa8a676\":[-135,-600],\"bc37eb2a687983154c7da4bfe63e4bf6\":[150,450],\"ee2192e3aa5fa180d431544e381fc166\":[-225,-135],\"41e7ad4155a29902c9332f93987d9ca6\":[210,225],\"926c4b9927a1a41977188f8146f05575\":[210,300]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "5b261370198eef6d7aab7daacd670e59",
+  "exit_agent_guids": [
+    "a044a4c5db3773d771a95b939200f619",
+    "2005d4b8abdfbffbbf02cd78aaa8a676",
+    "bc37eb2a687983154c7da4bfe63e4bf6",
+    "ee2192e3aa5fa180d431544e381fc166"
+  ],
+  "exit_agent_guid": "a044a4c5db3773d771a95b939200f619",
+  "send_to_stories": [],
+  "form": {
+    "name": "Analyze files with VMRay Form",
+    "description": "Upload a File for Analysis in VMRay",
+    "fields": [
+      {
+        "name": "File",
+        "description": "",
+        "required": false,
+        "type": "FILE_UPLOAD",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "world",
+    "agent_guid": "5b261370198eef6d7aab7daacd670e59",
+    "success_message": "Thank you for your submission"
+  }
+}

@@ -1,0 +1,183 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Find and Relate Similar Alerts - ML",
+    "aliasName": null,
+    "tag": "#PostUpdate #system",
+    "description": "Finds similar alerts based on the filter criteria you have specified and adds correlations to similar alerts using the recommendation APIs (ML).",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/4a9adb3a-1a68-4b28-8096-ea12210dfeab",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/1c9680e1-7faa-4b3a-ac01-8d18640768ee",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "fieldsForSimilarity": "[{\"name\": \"emailSubject\"},{\"name\": \"emailFrom\"}]",
+                "considerAlertsInLastXDays": "30"
+            },
+            "status": null,
+            "top": "111",
+            "left": "287",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "222b4034-a7aa-4621-af06-4614c51d04e9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "478b382a-4382-4048-88e5-66c65bd1e1eb",
+                "resources": [
+                    "alerts"
+                ],
+                "inputVariables": [],
+                "step_variables": {
+                    "input": {
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "30",
+            "left": "120",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "1c9680e1-7faa-4b3a-ac01-8d18640768ee"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Similarity Request Payload",
+            "description": null,
+            "arguments": {
+                "payload": "{\n    'id': '{{vars.input.records[0][\"@id\"]| replace(\"\/api\/3\/alerts\/\", \"\")}}',\n    'index': 'cyops_alerts',\n    'module_type': 'alerts',\n    'fields': {{ vars.fieldsForSimilarity}},\n    'filter': {\n      'logic': 'AND',\n      'filters': [\n        {\n          'type': 'datetime',\n          'logic': 'AND',\n          '_field': 'createDate',\n          '_value': {\n            'differenceType': 'days',\n            'differenceValue': -{{ vars.considerAlertsInLastXDays }}\n          },\n          'filters': [\n            {\n              'type': 'datetime',\n              'field': 'createDate',\n              'value': '0,0,-{{vars.considerAlertsInLastXDays}},\"end\",\"end\",\"end\"',\n              'operator': 'gt'\n            }\n          ],\n          '_operator': 'gt'\n        }\n      ]\n    },\n    'query_type': 'similar',\n    'output_fields': ['@id']\n}"
+            },
+            "status": null,
+            "top": "200",
+            "left": "440",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "0aa3f668-0276-4263-9231-fb3ca6e54ba2"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Similar Alerts",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/similar",
+                    "body": "{{vars.payload}}",
+                    "method": "POST"
+                },
+                "version": "3.0.0",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "293",
+            "left": "590",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "4ea30bf5-524e-4288-97c1-50b89260c575"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Correlate Similar Alerts And Update State",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.steps.Find_Similar_Alerts.data.result | length > 0}}",
+                "resource": {
+                    "state": {
+                        "id": 223,
+                        "@id": "\/api\/3\/picklists\/89dc3716-1818-4286-ab75-0d49714aea0f",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Similar Alerts Correlated",
+                        "listName": "\/api\/3\/picklist_names\/2f9ed741-25fe-475a-9f12-64336288eebf",
+                        "itemValue": "Similar Alerts Correlated",
+                        "orderIndex": 3
+                    },
+                    "alerts": "{{vars.steps.Find_Similar_Alerts.data.result | json_query(\"[*][\\\"@id\\\"][]\")}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "tagsOperation": "OverwriteTags",
+                "collectionType": "\/api\/3\/alerts",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "386",
+            "left": "747",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "6639935f-cf36-4d93-a1e0-ffbf4dfca04e"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Similarity Request Payload",
+            "targetStep": "\/api\/3\/workflow_steps\/0aa3f668-0276-4263-9231-fb3ca6e54ba2",
+            "sourceStep": "\/api\/3\/workflow_steps\/222b4034-a7aa-4621-af06-4614c51d04e9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "81ea26a0-e1de-4bc4-ba78-7d3d34d71cd2"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Similarity Settings",
+            "targetStep": "\/api\/3\/workflow_steps\/222b4034-a7aa-4621-af06-4614c51d04e9",
+            "sourceStep": "\/api\/3\/workflow_steps\/1c9680e1-7faa-4b3a-ac01-8d18640768ee",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1188f92e-11c5-441d-95ca-2aeed9a9d73d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Similarity Request Payload -> Find Similar Alerts in the Last 30 Days",
+            "targetStep": "\/api\/3\/workflow_steps\/4ea30bf5-524e-4288-97c1-50b89260c575",
+            "sourceStep": "\/api\/3\/workflow_steps\/0aa3f668-0276-4263-9231-fb3ca6e54ba2",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "03722af4-21d8-492e-bd6e-b3211642731b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Similar Alerts in the Last 30 Days -> Correlate Similar Alerts And Update State",
+            "targetStep": "\/api\/3\/workflow_steps\/6639935f-cf36-4d93-a1e0-ffbf4dfca04e",
+            "sourceStep": "\/api\/3\/workflow_steps\/4ea30bf5-524e-4288-97c1-50b89260c575",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b1c80115-f1ab-470e-8c15-1d871a65baed"
+        }
+    ],
+    "priority": null,
+    "uuid": "f7639996-c5ff-4d65-8571-cd11b792fd2f",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualTrigger"
+    ]
+}

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_0430dko" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.7.2">
+  <bpmn:process id="PtchSysForCVE" name="Patch Systems for CVE" isExecutable="true" camunda:versionTag="Shareable_Workflow">
+    <bpmn:exclusiveGateway id="Gateway_0j4nbya" name="Expedited patching needed?">
+      <bpmn:incoming>Flow_0zo9ksc</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hl37nw</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1ya3hth</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Activity_0qtj365" name="NOC &#10;Deploys Patches Following Policy">
+      <bpmn:incoming>Flow_1hl37nw</bpmn:incoming>
+      <bpmn:outgoing>Flow_03fymwp</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_03o9klm" name="SOC &#10;and NOC Close Respective Tickets">
+      <bpmn:incoming>Flow_1v4o0ae</bpmn:incoming>
+      <bpmn:incoming>Flow_1cfa5jx</bpmn:incoming>
+      <bpmn:outgoing>Flow_0s0izpf</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Activity_1r740gt" name="SOAR Updates Configuration Management that CVE is Addressed">
+      <bpmn:incoming>Flow_0s0izpf</bpmn:incoming>
+      <bpmn:outgoing>Flow_1gtia0s</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Activity_07uiq3t" name="NOC Verifies Patch Rollout">
+      <bpmn:incoming>Flow_03fymwp</bpmn:incoming>
+      <bpmn:incoming>Flow_1ymnp3p</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ifpeq4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Activity_0hhsnkq" name="SOAR Scans Patched Systems via Vulnerability Scan">
+      <bpmn:incoming>Flow_1ifpeq4</bpmn:incoming>
+      <bpmn:outgoing>Flow_19emwwb</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_0wjlo4m" name="Systems vulnerable?">
+      <bpmn:incoming>Flow_19emwwb</bpmn:incoming>
+      <bpmn:outgoing>Flow_1v4o0ae</bpmn:outgoing>
+      <bpmn:outgoing>Flow_08pjhae</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Activity_1ugq63h" name="SOC Develops Mitigation Strategy">
+      <bpmn:incoming>Flow_08pjhae</bpmn:incoming>
+      <bpmn:outgoing>Flow_0a7sfuh</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_03etbv6" name="End">
+      <bpmn:incoming>Flow_1gtia0s</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1hl37nw" name="Yes" sourceRef="Gateway_0j4nbya" targetRef="Activity_0qtj365" />
+    <bpmn:sequenceFlow id="Flow_1ya3hth" name="No" sourceRef="Gateway_0j4nbya" targetRef="Activity_0sksymr" />
+    <bpmn:sequenceFlow id="Flow_03fymwp" sourceRef="Activity_0qtj365" targetRef="Activity_07uiq3t" />
+    <bpmn:sequenceFlow id="Flow_1ymnp3p" sourceRef="Activity_0sksymr" targetRef="Activity_07uiq3t" />
+    <bpmn:sequenceFlow id="Flow_1v4o0ae" name="No" sourceRef="Gateway_0wjlo4m" targetRef="Activity_03o9klm" />
+    <bpmn:sequenceFlow id="Flow_1cfa5jx" sourceRef="Activity_1f94k9d" targetRef="Activity_03o9klm" />
+    <bpmn:sequenceFlow id="Flow_0s0izpf" sourceRef="Activity_03o9klm" targetRef="Activity_1r740gt" />
+    <bpmn:sequenceFlow id="Flow_1gtia0s" sourceRef="Activity_1r740gt" targetRef="Event_03etbv6" />
+    <bpmn:sequenceFlow id="Flow_1ifpeq4" sourceRef="Activity_07uiq3t" targetRef="Activity_0hhsnkq" />
+    <bpmn:sequenceFlow id="Flow_19emwwb" sourceRef="Activity_0hhsnkq" targetRef="Gateway_0wjlo4m" />
+    <bpmn:sequenceFlow id="Flow_08pjhae" name="Yes" sourceRef="Gateway_0wjlo4m" targetRef="Activity_1ugq63h" />
+    <bpmn:sequenceFlow id="Flow_0a7sfuh" sourceRef="Activity_1ugq63h" targetRef="Activity_1f94k9d" />
+    <bpmn:startEvent id="StartEvent_1" name="Verify CVE Patch Testing">
+      <bpmn:outgoing>Flow_04zc34m</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_1cqjxno" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_04zc34m" sourceRef="StartEvent_1" targetRef="Activity_0c6m3vr" />
+    <bpmn:serviceTask id="Activity_0c6m3vr" name="SOAR Extracts Operator Recommendation">
+      <bpmn:incoming>Flow_04zc34m</bpmn:incoming>
+      <bpmn:outgoing>Flow_0zo9ksc</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0zo9ksc" sourceRef="Activity_0c6m3vr" targetRef="Gateway_0j4nbya" />
+    <bpmn:serviceTask id="Activity_0sksymr" name="NOC &#10;Deploys Patch via Config Management Schedule">
+      <bpmn:incoming>Flow_1ya3hth</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ymnp3p</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Activity_1f94k9d" name="SOC Deploys Mitigation">
+      <bpmn:incoming>Flow_0a7sfuh</bpmn:incoming>
+      <bpmn:outgoing>Flow_1cfa5jx</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="PtchSysForCVE">
+      <bpmndi:BPMNEdge id="Flow_0zo9ksc_di" bpmnElement="Flow_0zo9ksc">
+        <di:waypoint x="370" y="177" />
+        <di:waypoint x="415" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04zc34m_di" bpmnElement="Flow_04zc34m">
+        <di:waypoint x="215" y="177" />
+        <di:waypoint x="270" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0a7sfuh_di" bpmnElement="Flow_0a7sfuh">
+        <di:waypoint x="1160" y="177" />
+        <di:waypoint x="1200" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08pjhae_di" bpmnElement="Flow_08pjhae">
+        <di:waypoint x="1005" y="177" />
+        <di:waypoint x="1060" y="177" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1024" y="159" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19emwwb_di" bpmnElement="Flow_19emwwb">
+        <di:waypoint x="910" y="177" />
+        <di:waypoint x="955" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ifpeq4_di" bpmnElement="Flow_1ifpeq4">
+        <di:waypoint x="770" y="177" />
+        <di:waypoint x="810" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1gtia0s_di" bpmnElement="Flow_1gtia0s">
+        <di:waypoint x="1440" y="297" />
+        <di:waypoint x="1482" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0s0izpf_di" bpmnElement="Flow_0s0izpf">
+        <di:waypoint x="1300" y="297" />
+        <di:waypoint x="1340" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1cfa5jx_di" bpmnElement="Flow_1cfa5jx">
+        <di:waypoint x="1250" y="217" />
+        <di:waypoint x="1250" y="257" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1v4o0ae_di" bpmnElement="Flow_1v4o0ae">
+        <di:waypoint x="980" y="202" />
+        <di:waypoint x="980" y="297" />
+        <di:waypoint x="1200" y="297" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="988" y="247" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ymnp3p_di" bpmnElement="Flow_1ymnp3p">
+        <di:waypoint x="620" y="287" />
+        <di:waypoint x="720" y="287" />
+        <di:waypoint x="720" y="217" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03fymwp_di" bpmnElement="Flow_03fymwp">
+        <di:waypoint x="620" y="177" />
+        <di:waypoint x="670" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ya3hth_di" bpmnElement="Flow_1ya3hth">
+        <di:waypoint x="440" y="202" />
+        <di:waypoint x="440" y="287" />
+        <di:waypoint x="520" y="287" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="448" y="209" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hl37nw_di" bpmnElement="Flow_1hl37nw">
+        <di:waypoint x="465" y="177" />
+        <di:waypoint x="520" y="177" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="484" y="159" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Gateway_0j4nbya_di" bpmnElement="Gateway_0j4nbya" isMarkerVisible="true">
+        <dc:Bounds x="415" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="396" y="102" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0qtj365_di" bpmnElement="Activity_0qtj365">
+        <dc:Bounds x="520" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_03o9klm_di" bpmnElement="Activity_03o9klm">
+        <dc:Bounds x="1200" y="257" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1r740gt_di" bpmnElement="Activity_1r740gt">
+        <dc:Bounds x="1340" y="257" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_07uiq3t_di" bpmnElement="Activity_07uiq3t">
+        <dc:Bounds x="670" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0hhsnkq_di" bpmnElement="Activity_0hhsnkq">
+        <dc:Bounds x="810" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0wjlo4m_di" bpmnElement="Gateway_0wjlo4m" isMarkerVisible="true">
+        <dc:Bounds x="955" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="951" y="114" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ugq63h_di" bpmnElement="Activity_1ugq63h">
+        <dc:Bounds x="1060" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_03etbv6_di" bpmnElement="Event_03etbv6" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="1482" y="279" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1491" y="322" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1mlu1vi_di" bpmnElement="StartEvent_1" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="179" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="155" y="202" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1n5bcsu_di" bpmnElement="Activity_0c6m3vr">
+        <dc:Bounds x="270" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_18qb7lr_di" bpmnElement="Activity_0sksymr">
+        <dc:Bounds x="520" y="247" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0cphmb5_di" bpmnElement="Activity_1f94k9d">
+        <dc:Bounds x="1200" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

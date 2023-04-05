@@ -1,0 +1,205 @@
+{
+  "schema_version": 4,
+  "name": "Query AWS IAM users in groups",
+  "description": "Query AWS Identity and Access Management (IAM) users within an account. If a user is in more than one group, create a ticket for each associated group in Jira. \n\ntags: AWS, IdentityandAccessManagement, UserAccess, Identify, Jira, Beginner,\nicons: aws, 🔎,🏘\nvisibility: public",
+  "guid": "eb309f48203c5f141de1577a4eb24c75",
+  "slug": "query_aws_iam_users_in_groups",
+  "exported_at": "2022-07-11T17:25:39Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List all users in AWS IAM",
+      "disabled": false,
+      "guid": "39f1b24492978b890c4cdad94ef25eae",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        },
+        "payload": {
+          "Action": "ListUsers",
+          "Version": "2010-05-08"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List all groups for user in AWS IAM",
+      "disabled": false,
+      "guid": "73d5fa4e6afd19fe305d54b9eec86e28",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        },
+        "payload": {
+          "Action": "ListGroupsForUser",
+          "Version": "2010-05-08",
+          "UserName": "<<explode_each_user_returned.individual_user.UserName>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode each user returned",
+      "disabled": false,
+      "guid": "140e291d087a0b7fbe6f8c4dd001bbb2",
+      "options": {
+        "mode": "explode",
+        "path": "=list_all_users_in_aws_iam.body.ListUsersResponse.ListUsersResult.Users.member",
+        "to": "individual_user"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check group count",
+      "disabled": false,
+      "guid": "89d6dfd3a7acf41ef429b75871048501",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "1",
+            "path": "<<LIQUID_SIZE(list_all_groups_for_user_in_aws_iam.body.ListGroupsForUserResponse.ListGroupsForUserResult.Groups.member)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create issue in Jira with tables",
+      "disabled": false,
+      "guid": "7d6cbdf1a7e3fb742b5348275a181340",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Unassigned"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "h2. User <<explode_each_user_returned.individual_user.UserName>> IAM Groups\n|*Employee Name*| <<explode_each_user_returned.individual_user.UserName>> |\n|*Department*| Testing Dept |\n|*Title*| QA Tester |\n|*Manager*| Some Name |\n|*AWS Groups*|<%for member in list_all_groups_for_user_in_aws_iam.body.ListGroupsForUserResponse.ListGroupsForUserResult.Groups.member%><<member.GroupName>>, <%endfor%>|",
+            "summary": "AWS IAM User Groups"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "[](https://image-uploads.tines.com/framed-logo-aws.png)\n\n#AWS IAM Users \nThis Story will query AWS to gather all users within an account. For each user returned the Story will then return each group the user is associated with. \n\nIf a user is in more than one group, an individual Jira ticket will be created for that user and will list each group the user is associated with.\n\n\n#Resources Needed: \njira_domain - URL of Jira \njira_username - User name of Jira account with permissions to create issue in specified project \n\n#Credential Needed: \naws_ec2: role based access with permission to query AWS for User and Group information\ncredential_jira: user account credentials with permissions to create, update, and close tickets within specified Jira project\n\n",
+      "position": [
+        90.0,
+        105.0
+      ],
+      "guid": "83bbc8d5ac8e88a6e78e2d773b4c67fb",
+      "width": null
+    },
+    {
+      "content": "**An individual Jira ticket will be created for each user in the AWS Account. For large AWS environments that do not want to have individual Jira tickets per user consider using an Event Transform with an Implode to have all users in a single ticket.**",
+      "position": [
+        675.0,
+        210.0
+      ],
+      "guid": "09c58345bf49b02d6bcfccc7f9c191d1",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    }
+  ],
+  "diagram_layout": "{\"39f1b24492978b890c4cdad94ef25eae\":[405,150],\"73d5fa4e6afd19fe305d54b9eec86e28\":[405,300],\"140e291d087a0b7fbe6f8c4dd001bbb2\":[405,225],\"89d6dfd3a7acf41ef429b75871048501\":[405,390],\"7d6cbdf1a7e3fb742b5348275a181340\":[405,465]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Query AWS IAM users in groups Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

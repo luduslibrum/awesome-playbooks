@@ -1,0 +1,155 @@
+{
+  "schema_version": 4,
+  "name": "Delete an email from a specified user's mailbox",
+  "description": "Connect to the Microsoft Office 365 API to delete an email from the specified user's mailbox using the provided mail ID.\n\ntags: Microsoft, Delete, Email, Spam, Intermediate\nicons: microsoft, 📧, 🗑\nvisibility: public",
+  "guid": "04d966bb7b8a6b2a5faab899a77e6948",
+  "slug": "delete_an_email_from_a_specified_user_s_mailbox",
+  "exported_at": "2022-07-11T17:35:07Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Mail Details",
+      "disabled": false,
+      "guid": "81cd53bddd7519ab5114bf82c454c092",
+      "options": {
+        "secret": "4a9091cd944df40de83008f2fedd2b27",
+        "verbs": "get,post",
+        "path": "64d1904d19236577566817ed7e556b06"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "10f75510cfcec69611ff0eb27a1b763e",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "error": "<%if delete_a_message_by_message_id_using_msgraph_for_office365.status = 204%>false<%else%>true<%endif%>",
+          "mail_id": "<<receive_mail_details.body.mail_id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Delete Mail Test",
+      "disabled": false,
+      "guid": "14e57c2f6d7bea13c02ad1646d4e9712",
+      "options": {
+        "story": "<<STORY.delete_an_email_from_a_specified_user_s_mailbox>>",
+        "payload": {
+          "user_email": "user@example.com",
+          "mail_id": "<<mail_id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete a Message by Message ID using MSGraph for Office365",
+      "disabled": false,
+      "guid": "7e2c14797a960c922e0506a2254e9453",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/users/<<receive_mail_details.body.user_email>>/messages/<<receive_mail_details.body.mail_id>>",
+        "method": "delete",
+        "content_type": "json",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.o365_delete_any_mail>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Azure App Creation\n\n1. Create a new App Registration in https://portal.azure.com\n2. Enter a name, set the Account Type to be `Single tenant`.\n3. Add the 'Redirect URL'. This can be found when creating an OAuth Credential in Tines. It's in the format of `https://<tinesdomain>/oauth2/callback`\n4. Hit 'Register' to create the app\n5. Select 'API Permissions' from the left bar, and choose 'Add Permission'.\n6. Select `Microsoft Graph` and `Application Permissions`.\n7. Search for and add `Mail.ReadWrite`. This permission is needed to delete mails from the user's mailbox.\n8. Save these permissions, and select `Grant Admin Consent for <domain>`. \n9. Select `Certificates and Secrets` from the left bar, and select `New client secret`. Select the expiration time (max 24 months). The token will need to be regenerated after this time. Make a note of this value.\n10. Make a note of the Application ID found in 'Overview' on the left bar. \n",
+      "position": [
+        615.0,
+        45.0
+      ],
+      "guid": "c829f515bca2773aecc863420577be5d",
+      "width": null
+    },
+    {
+      "content": "# OAuth Credential\n\nCreate a new Credential in Tines with the following values:\n\n1. Type `OAuth 2.0`\n2. Client ID: `Application ID` from Azure app registration\n3. Client Secret: ` Client Secret` from Azure app registration\n4. Scope: `https://graph.microsoft.com/.default`\n5. Grant Type: `Client credentials`\n6. OAuth URL: `https://login.microsoftonline.com/<O365_TENANT_ID>/oauth2/v2.0/authorize`\n7. OAuth token URL: `https://login.microsoftonline.com/<O365_TENANT_ID>/oauth2/v2.0/token`",
+      "position": [
+        945.0,
+        135.0
+      ],
+      "guid": "f0a46a50a5fdba96854463bf0a31efb9",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/microsoft_logo_transparent.png\n\n\n# Story Overview\n\nThis Story is configured to act as a Send To Story. It can be initiated using the StS Action with a specified `mail_id`, and `user_email`.\n\nThis Story will search for and delete that mail from the user's mailbox.",
+      "position": [
+        -45.0,
+        90.0
+      ],
+      "guid": "14a4cd5aa44ee7096bfc602547d62b22",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"81cd53bddd7519ab5114bf82c454c092\":[255,15],\"10f75510cfcec69611ff0eb27a1b763e\":[255,195],\"14e57c2f6d7bea13c02ad1646d4e9712\":[0,15],\"7e2c14797a960c922e0506a2254e9453\":[255,90]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "81cd53bddd7519ab5114bf82c454c092",
+  "exit_agent_guids": [
+    "10f75510cfcec69611ff0eb27a1b763e"
+  ],
+  "exit_agent_guid": "10f75510cfcec69611ff0eb27a1b763e",
+  "send_to_stories": [],
+  "form": {
+    "name": "New story for martin@tines.io Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

@@ -1,0 +1,323 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Scheduled Configuration Export",
+    "aliasName": null,
+    "tag": null,
+    "description": "Export template name and email address to be updated in 'Configuration' step. \nCan be used to schedule Configuration Export and send as email.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/20289298-cdd6-4052-8fa0-11e2603dca00",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/809089b6-8cde-4005-a588-62acbd749a4a",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Trigger the export",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{ \"\/api\/export?fileName=\"+ vars.exportFileName + \"&template=\" + vars.templateID}}",
+                    "body": "",
+                    "method": "PUT"
+                },
+                "version": "3.1.2",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": {
+                    "jobUuid": "{{vars.result.data['jobUuid']}}"
+                }
+            },
+            "status": null,
+            "top": "260",
+            "left": "500",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "77aa921a-038e-4cbf-bb30-cb347185f0e6"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "currentTime": "{{ arrow.utcnow() }}",
+                "emailAddress": "example@example.com",
+                "templateName": "FortiSOAR Playbook Collections Export",
+                "exportFileName": "FortiSOARPlaybookCollectionExport"
+            },
+            "status": null,
+            "top": "100",
+            "left": "180",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "cdaad54a-5d62-47e2-88f5-876e49a16d7a"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Wait for export to complete",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/3\/export_jobs\/{{vars.jobUuid}}",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "3.1.2",
+                "do_until": {
+                    "delay": "30",
+                    "retries": "10",
+                    "condition": "{{vars.result.data['status'] == 'Export Complete'}}"
+                },
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "360",
+            "left": "660",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "a2379dc3-ae21-462b-98d1-95ad1227c120"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send Email With Attachment",
+            "description": null,
+            "arguments": {
+                "name": "Exchange",
+                "config": "6875b93b-2c6c-4a61-b21b-af83b4912738",
+                "params": {
+                    "body": "<p>FortiSOAR Configuration Export at {{ vars.currentTime }}<\/p>",
+                    "subject": "FortiSOAR Configuration Export at {{ vars.currentTime }}",
+                    "iri_list": "{{vars.steps.Wait_for_export_to_complete.data['file']['@id']}}",
+                    "cc_recipients": "",
+                    "to_recipients": "{{vars.emailAddress}}",
+                    "bcc_recipients": "",
+                    "inline_iri_list": ""
+                },
+                "version": "3.4.4",
+                "connector": "exchange",
+                "operation": "send_email",
+                "operationTitle": "Send Email",
+                "pickFromTenant": false,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "380",
+            "left": "1140",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "c4bd071e-35a8-4bba-89a0-2ae29bab6683"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Export Completed",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/c4bd071e-35a8-4bba-89a0-2ae29bab6683",
+                        "condition": "{{ vars.steps.Wait_for_export_to_complete.data['status'] == 'Export Complete' }}",
+                        "step_name": "Send Email With Attachment"
+                    },
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/cebd446c-b17f-42c2-9bd5-ed4525d46039",
+                        "step_name": "Send Warning Email"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "460",
+            "left": "820",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "2d025f13-c381-41ac-8f33-0e88210ddd7d"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send Warning Email",
+            "description": null,
+            "arguments": {
+                "name": "Exchange",
+                "config": "6875b93b-2c6c-4a61-b21b-af83b4912738",
+                "params": {
+                    "body": "<p>FortiSOAR Configuration Export at&nbsp; has <strong><span style=\"color: #e03e2d;\">failed<\/span><\/strong>. Refer to the Playbook Execution History for more details.<\/p>",
+                    "subject": "FortiSOAR Configuration Export at {{vars.currentTime}} Failed",
+                    "iri_list": "",
+                    "cc_recipients": "",
+                    "to_recipients": "{{vars.emailAddress}}",
+                    "bcc_recipients": "",
+                    "inline_iri_list": ""
+                },
+                "version": "3.4.4",
+                "connector": "exchange",
+                "operation": "send_email",
+                "operationTitle": "Send Email",
+                "pickFromTenant": false,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "560",
+            "left": "1140",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "cebd446c-b17f-42c2-9bd5-ed4525d46039"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Cleanup Exported File",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/3\/export_jobs\/{{vars.jobUuid}}",
+                    "body": "",
+                    "method": "DELETE"
+                },
+                "version": "3.1.2",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "460",
+            "left": "1440",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "45754fac-20c6-484d-aecb-064ffebfd103"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find template by name",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "query": "{\n\"logic\": \"AND\",\n\"filters\": [{\"field\": \"name\", \"operator\": \"eq\", \"value\": \"{{vars.templateName}}\"}]\n}",
+                    "resource": "export_templates"
+                },
+                "version": "3.1.2",
+                "connector": "cyops_utilities",
+                "operation": "query_cyops_resource",
+                "operationTitle": "FSR: Find Record",
+                "step_variables": {
+                    "templateID": "{{vars.result.data[0].uuid}}"
+                }
+            },
+            "status": null,
+            "top": "180",
+            "left": "340",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "8cf2e18a-9316-43ae-99a7-9c23fce35423"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "20",
+            "left": "20",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "809089b6-8cde-4005-a588-62acbd749a4a"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Triggered the export -> Wait for export to complete",
+            "targetStep": "\/api\/3\/workflow_steps\/a2379dc3-ae21-462b-98d1-95ad1227c120",
+            "sourceStep": "\/api\/3\/workflow_steps\/77aa921a-038e-4cbf-bb30-cb347185f0e6",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "711c85ea-08f5-47f2-bf05-5535901c29b9"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Wait for export to complete -> Export Completed",
+            "targetStep": "\/api\/3\/workflow_steps\/2d025f13-c381-41ac-8f33-0e88210ddd7d",
+            "sourceStep": "\/api\/3\/workflow_steps\/a2379dc3-ae21-462b-98d1-95ad1227c120",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "8bec90d8-3a32-467f-9e2e-57587fa16e5e"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Export Completed -> Send Email",
+            "targetStep": "\/api\/3\/workflow_steps\/c4bd071e-35a8-4bba-89a0-2ae29bab6683",
+            "sourceStep": "\/api\/3\/workflow_steps\/2d025f13-c381-41ac-8f33-0e88210ddd7d",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "e1cc6f4e-5949-4e63-972e-296762c840fa"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Export Completed -> Copy  of Send Email",
+            "targetStep": "\/api\/3\/workflow_steps\/cebd446c-b17f-42c2-9bd5-ed4525d46039",
+            "sourceStep": "\/api\/3\/workflow_steps\/2d025f13-c381-41ac-8f33-0e88210ddd7d",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "8c5066a4-2a96-4407-83bc-e6f117388a25"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Send Email With Attachment -> Cleanup Exported File",
+            "targetStep": "\/api\/3\/workflow_steps\/45754fac-20c6-484d-aecb-064ffebfd103",
+            "sourceStep": "\/api\/3\/workflow_steps\/c4bd071e-35a8-4bba-89a0-2ae29bab6683",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e2f71fe8-282d-4ee1-8801-8072177f1dee"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Send Warning Email -> Cleanup Exported File",
+            "targetStep": "\/api\/3\/workflow_steps\/45754fac-20c6-484d-aecb-064ffebfd103",
+            "sourceStep": "\/api\/3\/workflow_steps\/cebd446c-b17f-42c2-9bd5-ed4525d46039",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "8b68d559-6bfc-44e6-b52a-894be8cda4b3"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Find template by name",
+            "targetStep": "\/api\/3\/workflow_steps\/8cf2e18a-9316-43ae-99a7-9c23fce35423",
+            "sourceStep": "\/api\/3\/workflow_steps\/cdaad54a-5d62-47e2-88f5-876e49a16d7a",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c06efbda-8560-4035-bc9b-d84f3114da96"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find template by name -> Triggered the export",
+            "targetStep": "\/api\/3\/workflow_steps\/77aa921a-038e-4cbf-bb30-cb347185f0e6",
+            "sourceStep": "\/api\/3\/workflow_steps\/8cf2e18a-9316-43ae-99a7-9c23fce35423",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d09caf22-c859-4690-bea7-710992938cde"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/cdaad54a-5d62-47e2-88f5-876e49a16d7a",
+            "sourceStep": "\/api\/3\/workflow_steps\/809089b6-8cde-4005-a588-62acbd749a4a",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "01aee494-3d2f-429f-9656-100eb445aa6a"
+        }
+    ],
+    "priority": null,
+    "uuid": "50c52dad-78d2-4941-849f-7e0e5d209761",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Scheduled"
+    ]
+}

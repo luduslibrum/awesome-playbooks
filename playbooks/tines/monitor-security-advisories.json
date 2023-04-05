@@ -1,0 +1,468 @@
+{
+  "schema_version": 4,
+  "name": "Monitor security advisories",
+  "description": "Stay on top of new security vulnerabilities, remediation strategies, and applicable updates for the affected software.\n\ntags: Monitor, Deduplicate, Cisco, Palo Alto Networks, ThreatIntelligence, Beginner, RSS\nicons: 🖥, 👮, 🌎\nvisibility: public",
+  "guid": "1bb89c1d2a1c40551f2d28079a5d2997",
+  "slug": "monitor_security_advisories",
+  "exported_at": "2022-07-11T17:50:28Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Palo Alto Advisories",
+      "disabled": false,
+      "guid": "ec13f53e5b7aa3a46d0e4c6fa647eac6",
+      "options": {
+        "url": "https://security.paloaltonetworks.com/rss.xml",
+        "content_type": "json",
+        "method": "get",
+        "payload": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": [
+        {
+          "cron": "0 9 * * *",
+          "timezone": "Etc/UTC"
+        }
+      ]
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Recent Advisories",
+      "disabled": false,
+      "guid": "cee9d595f9a1603811285395fe01afd7",
+      "options": {
+        "mode": "explode",
+        "path": "=get_palo_alto_advisories.body.rss.channel.item",
+        "to": "individual_advisory",
+        "limit": "10"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if GlobalProtect Advisory",
+      "disabled": false,
+      "guid": "b3e9cbee8278984750577bbe9d00291e",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "GlobalProtect",
+            "path": "<<explode_recent_advisories.individual_advisory.title>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Advisories",
+      "disabled": false,
+      "guid": "25709318d2450ef0028675c62793af69",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "100",
+        "path": "<<explode_recent_advisories.individual_advisory.title>><<explode_recent_advisories.individual_advisory.link>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Email to GlobalProtect Customers",
+      "disabled": false,
+      "guid": "c5c9f82db370273aa5e4402983bfa177",
+      "options": {
+        "recipients": [
+          "<<email>>"
+        ],
+        "subject": "New Palo Alto Security Advisory for GlobalProtect Found",
+        "body": "Dear Customer, <br /><br />A new advisory for Palo Alto GlobalProtect was released on <<explode_recent_advisories.individual_advisory.date>>.<br /><br /><b>Title:</b> <<explode_recent_advisories.individual_advisory.title>><br /><b>Link: </b> <<explode_recent_advisories.individual_advisory.link>><br /><br />Thanks,<br /><br />The Tines Team"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Traps Advisory",
+      "disabled": false,
+      "guid": "57b80549d36dae187acb68933f25cd40",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Traps",
+            "path": "<<explode_recent_advisories.individual_advisory.title>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Email to Traps Customers",
+      "disabled": false,
+      "guid": "56f2e45a8a3d24c7586666522dea16c7",
+      "options": {
+        "recipients": [
+          "<<email>>"
+        ],
+        "subject": "New Palo Alto Security Advisory for Traps Found",
+        "body": "Dear Customer, <br /><br />A new advisory for Palo Alto Traps was released on <<explode_recent_advisories.individual_advisory.date>>.<br /><br /><b>Title:</b> <<explode_recent_advisories.individual_advisory.title>><br /><b>Link: </b> <<explode_recent_advisories.individual_advisory.link>><br /><br />Thanks,<br /><br />The Tines Team"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Cisco Security Advisories",
+      "disabled": false,
+      "guid": "619bf7f66131d3865f99f31afa408a58",
+      "options": {
+        "url": "https://tools.cisco.com/security/center/publicationService.x",
+        "method": "get",
+        "payload": {},
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": [
+        {
+          "cron": "0 9 * * *",
+          "timezone": "Etc/UTC"
+        }
+      ]
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Recent Advisories",
+      "disabled": false,
+      "guid": "96c2a5f8d22a1f104e1a21a47c419d07",
+      "options": {
+        "mode": "explode",
+        "path": "=get_cisco_security_advisories.body",
+        "to": "individual_advisory"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Events",
+      "disabled": false,
+      "guid": "85a03b93e764823993e96d3cf6773ae6",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "100",
+        "path": "<<explode_recent_advisories.individual_advisory.identifier>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Webex",
+      "disabled": false,
+      "guid": "cb6a8fc7cfa08f2bf59084ab9f3df687",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "webex",
+            "path": "<<explode_recent_advisories.individual_advisory.title>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if UCS Director",
+      "disabled": false,
+      "guid": "7815e4712744851d3edc8e144baf3e28",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "ucs director",
+            "path": "<<explode_recent_advisories.individual_advisory.title>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Email to Webex Customers",
+      "disabled": false,
+      "guid": "1beb1f2de53b1e1ba67c7d451daba066",
+      "options": {
+        "recipients": [
+          "<<email>>"
+        ],
+        "subject": "New Cisco Security Advisory for Webex Found",
+        "body": "Dear Customer, <br /><br />A new advisory for Cisco Webex was released on <<explode_recent_advisories.individual_advisory.firstPublished>>.<br /><br /><b>Title:</b> <<explode_recent_advisories.individual_advisory.title>><br /><b>Details: </b> <<explode_recent_advisories.individual_advisory.summary>><br /><br />Thanks,<br /><br />The Tines Team"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Email to UCS Director Customers",
+      "disabled": false,
+      "guid": "f6ab69bb9d5e8220eb61f8019f6069e2",
+      "options": {
+        "recipients": [
+          "<<email>>"
+        ],
+        "subject": "New Cisco Security Advisory for UCS Director Found",
+        "body": "Dear Customer, <br /><br />A new advisory for Cisco UCS Director was released on <<explode_recent_advisories.individual_advisory.firstPublished>>.<br /><br /><b>Title:</b> <<explode_recent_advisories.individual_advisory.title>><br /><b>Details: </b> <<explode_recent_advisories.individual_advisory.summary>><br /><br />Thanks,<br /><br />The Tines Team"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "363d95fa18fddd62dbaea3f1eaa397e4",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Username"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "A new advisory for Palo Alto GlobalProtect was released on <<explode_recent_advisories.individual_advisory.date>>.\n\nTitle <<explode_recent_advisories.individual_advisory.title>>\n\n\nLink: <<explode_recent_advisories.individual_advisory.link>>",
+            "summary": "New Palo Alto Advisory"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/paloalto.png\n\nStay on top of new security vulnerabilities, remediation strategies, and applicable updates for the affected software.\n\nIn this story we pull from vendor RSS feeds, deduplicate the advisories, trigger on tools we might be using and then send an email advising about the vulnerability or create a Jira ticket with details",
+      "position": [
+        75.0,
+        120.0
+      ],
+      "guid": "4be943587e1dee9bd7dc06ceda597455",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/cisco.png",
+      "position": [
+        630.0,
+        120.0
+      ],
+      "guid": "4d87046ca8c0d50273a8d8aac0d11009",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 14
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 11
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 12
+    },
+    {
+      "source": 11,
+      "receiver": 13
+    }
+  ],
+  "diagram_layout": "{\"ec13f53e5b7aa3a46d0e4c6fa647eac6\":[-165,135],\"cee9d595f9a1603811285395fe01afd7\":[-165,240],\"b3e9cbee8278984750577bbe9d00291e\":[-165,435],\"25709318d2450ef0028675c62793af69\":[-165,345],\"c5c9f82db370273aa5e4402983bfa177\":[-165,555],\"57b80549d36dae187acb68933f25cd40\":[105,435],\"56f2e45a8a3d24c7586666522dea16c7\":[105,555],\"619bf7f66131d3865f99f31afa408a58\":[360,135],\"96c2a5f8d22a1f104e1a21a47c419d07\":[360,240],\"85a03b93e764823993e96d3cf6773ae6\":[360,345],\"cb6a8fc7cfa08f2bf59084ab9f3df687\":[360,435],\"7815e4712744851d3edc8e144baf3e28\":[600,435],\"1beb1f2de53b1e1ba67c7d451daba066\":[360,555],\"f6ab69bb9d5e8220eb61f8019f6069e2\":[600,555],\"363d95fa18fddd62dbaea3f1eaa397e4\":[-375,555]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Monitor security advisories Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "definitionVersion" : "1.0.0",
+  "name" : "Archive.org Wayback Machine Query",
+  "panX" : 400.0,
+  "panY" : 124.0,
+  "logLevel" : "WARN",
+  "description" : "Query for a Host or URL Indicator in Archive.org's Wayback Machine (https://archive.org/web/web.php).",
+  "jobList" : [ {
+    "id" : 12669,
+    "appCatalogItem" : {
+      "programName" : "Http Client",
+      "displayName" : "HTTP Client",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Wayback API Call",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "httpclient_proxy"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "http://archive.org/wayback/available"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "parameters"
+      },
+      "value" : "[{\"key\":\"url\",\"value\":\"#Trigger:1209:trg.action.item!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "action"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ignore_ssl_trust"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 150.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"http_client.response.output_content\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 12676,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.1"
+    },
+    "name" : "Json Path 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:12669:http_client.response.output_content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping_as_string"
+      },
+      "value" : "[{\"key\":\"archiveURL\",\"value\":\"archived_snapshots.closest.url\"},{\"key\":\"archiveDate\",\"value\":\"archived_snapshots.closest.timestamp\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 400.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"archiveDate\",\"type\":\"String\"},{\"name\":\"archiveURL\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 12678,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Set Variable 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"successMessage\",\"value\":\"This indicator was archived on #App:12676:archiveDate!String . You can view it here:\\u003ca href\\u003d\\\"#App:12676:archiveURL!String \\\" target\\u003d\\\"_blank\\\"\\u003e #App:12676:archiveURL!String\\u003c/a\\u003e.\"}]"
+    } ],
+    "locationLeft" : 660.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"successMessage\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 12679,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"message\",\"value\":\"#App:12678:successMessage!String\"},{\"key\":\"message\",\"value\":\"#App:12680:failureMessage!String\"}]"
+    } ],
+    "locationLeft" : 1020.0,
+    "locationTop" : -60.0,
+    "outputVariables" : "[{\"name\":\"message\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 12680,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Set Variable 2",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"failureMessage\",\"value\":\"This indicator was not found in archive.org.\"}]"
+    } ],
+    "locationLeft" : 660.0,
+    "locationTop" : 200.0,
+    "outputVariables" : "[{\"name\":\"failureMessage\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 12669,
+    "sourceTriggerId" : 1209
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 12669,
+    "targetJobId" : 12676
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 12676,
+    "targetJobId" : 12678
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 12680,
+    "targetJobId" : 12679
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 12678,
+    "targetJobId" : 12679
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 12679,
+    "targetTriggerId" : 1209
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 12676,
+    "targetJobId" : 12680
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 1209,
+    "name" : "Query Web Archive for Indicator",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : -90.0,
+    "locationTop" : 150.0,
+    "httpBasicAuthEnable" : false,
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "#App:12679:message!String",
+    "anyOrg" : true,
+    "orFilters" : false,
+    "fireOnDuplicate" : false,
+    "userActionTypes" : "Host,URL",
+    "renderBodyAsTip" : true,
+    "outputVariables" : "[{\"name\":\"trg.action.item\",\"type\":\"String\"}]"
+  } ],
+  "dateExported" : "1/30/18 2:19 PM"
+}

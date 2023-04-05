@@ -1,0 +1,374 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Flag Indicators Linked across multiple alerts",
+    "aliasName": null,
+    "tag": "#system",
+    "description": "Flags changes made in indicators that are linked to multiple alerts.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/4a9adb3a-1a68-4b28-8096-ea12210dfeab",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/07eef9cc-142b-42a5-99a2-6f121172d9f7",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "indicators",
+                "resources": [
+                    "indicators"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "array",
+                            "field": "alerts",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "20",
+            "left": "20",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "07eef9cc-142b-42a5-99a2-6f121172d9f7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Is Indicator Linked to Multiple Alerts",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/160fb242-9fb9-443b-93ea-00e0622a4a8d",
+                        "step_name": "No further action required"
+                    },
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/7df36e09-f2f5-471c-9215-f378e479fc64",
+                        "condition": "{{ vars.input.records[0].alerts | length > 1 }}",
+                        "step_name": "Configuration"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "180",
+            "left": "180",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "825c23d0-ff8f-4dd4-af7b-6274a2be3359"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Was previously linked to multiple alerts",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/9f665769-8db0-4a75-98a3-f3d0b52d0e32",
+                        "condition": "{{ (vars.previous.data.alerts | length) > 1 }}",
+                        "step_name": "Find Flag Comment"
+                    },
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/ba511c44-0bba-4392-a500-b362c3b9ba50",
+                        "step_name": "Create a new note"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "280",
+            "left": "780",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "2e154160-abe2-4f1c-82d9-aad9276219ed"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Flag Comment",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "indicators.uuid",
+                            "value": "{{vars.input.records[0].uuid}}",
+                            "operator": "eq",
+                            "_operator": "eq"
+                        },
+                        {
+                            "type": "primitive",
+                            "field": "content",
+                            "value": "%is observed across multiple alerts%",
+                            "operator": "like",
+                            "_operator": "like"
+                        },
+                        {
+                            "type": "primitive",
+                            "field": "isDeleted",
+                            "value": "false",
+                            "operator": "eq",
+                            "_operator": "eq"
+                        }
+                    ],
+                    "__selectFields": [
+                        "id",
+                        "content"
+                    ]
+                },
+                "module": "comments?$limit=30",
+                "checkboxFields": true,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "400",
+            "left": "1080",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "9f665769-8db0-4a75-98a3-f3d0b52d0e32"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "alertsToUpdate": "{{vars.input.records[0].alerts[0:19]}}",
+                "commentMatchString": "is observed across multiple alerts"
+            },
+            "status": null,
+            "top": "280",
+            "left": "500",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "7df36e09-f2f5-471c-9215-f378e479fc64"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create a new note",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "type": {
+                        "id": 247,
+                        "@id": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                        "icon": null,
+                        "uuid": "ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Comment",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/0841c1eb-a0a3-4abd-b29c-9f68e4d9b14f",
+                        "itemValue": "Comment",
+                        "orderIndex": 1
+                    },
+                    "alerts": "{{vars.alertsToUpdate}}",
+                    "people": [],
+                    "content": "<span style=\"font-size: 15px; color: #DE7A13;\" class=\"fa fa-exclamation-triangle\"><\/span>&nbsp;   {{vars.input.records[0].typeofindicator.itemValue}}<span style=\"background:#ba6204; color: #fff;\" class=\"badge badge-pill badge-danger\">{{vars.input.records[0].value}}<\/span>  is observed across multiple alerts",
+                    "__replace": "",
+                    "indicators": "[\"{{vars.input.records[0]['@id']}}\"]",
+                    "isImportant": false,
+                    "peopleUpdated": false
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "__recommend": [],
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": {
+                    "commentIRI": "{{vars.result['@id']}}"
+                }
+            },
+            "status": null,
+            "top": "280",
+            "left": "1760",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "ba511c44-0bba-4392-a500-b362c3b9ba50"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "No further action required",
+            "description": null,
+            "arguments": {
+                "params": [],
+                "version": "3.1.2",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "100",
+            "left": "500",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "160fb242-9fb9-443b-93ea-00e0622a4a8d"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Note found",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/fb7ecfd6-5de3-4d5c-9d29-1b69b84f8eb8",
+                        "condition": "{{ vars.steps.Find_Flag_Comment | length > 0 }}",
+                        "step_name": "Link to alerts"
+                    },
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/ba511c44-0bba-4392-a500-b362c3b9ba50",
+                        "step_name": "Create a new note"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "400",
+            "left": "1380",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "130d71d4-ac0e-4418-bdbf-3597bf6e03cf"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Link to alerts",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "__link": {
+                        "alerts": "{{vars.alertsToUpdate}}"
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.steps.Find_Flag_Comment[0]['@id']}}",
+                "__recommend": [],
+                "collectionType": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "500",
+            "left": "1760",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "fb7ecfd6-5de3-4d5c-9d29-1b69b84f8eb8"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Was previously linked to multiple alerts -> Find Flag Comment",
+            "targetStep": "\/api\/3\/workflow_steps\/9f665769-8db0-4a75-98a3-f3d0b52d0e32",
+            "sourceStep": "\/api\/3\/workflow_steps\/2e154160-abe2-4f1c-82d9-aad9276219ed",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "cc75ea52-a4dc-4c37-901b-f7845e559810"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Was previously linked to multiple alerts -> Create a new note",
+            "targetStep": "\/api\/3\/workflow_steps\/ba511c44-0bba-4392-a500-b362c3b9ba50",
+            "sourceStep": "\/api\/3\/workflow_steps\/2e154160-abe2-4f1c-82d9-aad9276219ed",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "6058fccb-f402-452e-b6ce-902fbe765567"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Indicator Linked to Multiple Alerts -> No further action required",
+            "targetStep": "\/api\/3\/workflow_steps\/160fb242-9fb9-443b-93ea-00e0622a4a8d",
+            "sourceStep": "\/api\/3\/workflow_steps\/825c23d0-ff8f-4dd4-af7b-6274a2be3359",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "1cbef47f-be7a-4541-9b92-4dc3f543eb63"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Is Indicator Linked to Multiple Alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/825c23d0-ff8f-4dd4-af7b-6274a2be3359",
+            "sourceStep": "\/api\/3\/workflow_steps\/07eef9cc-142b-42a5-99a2-6f121172d9f7",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ccfc7396-c0b5-44b0-9697-64fdfbcdadb9"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Indicator Linked to Multiple Alerts -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/7df36e09-f2f5-471c-9215-f378e479fc64",
+            "sourceStep": "\/api\/3\/workflow_steps\/825c23d0-ff8f-4dd4-af7b-6274a2be3359",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "4cad044d-4100-48d5-b2cf-f394595ab3a4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Was previously linked to multiple alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/2e154160-abe2-4f1c-82d9-aad9276219ed",
+            "sourceStep": "\/api\/3\/workflow_steps\/7df36e09-f2f5-471c-9215-f378e479fc64",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "eb310dd3-7df8-40fa-831c-56b94a32f25e"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Flag Comment -> Note found",
+            "targetStep": "\/api\/3\/workflow_steps\/130d71d4-ac0e-4418-bdbf-3597bf6e03cf",
+            "sourceStep": "\/api\/3\/workflow_steps\/9f665769-8db0-4a75-98a3-f3d0b52d0e32",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "3abc0209-5255-4057-aad4-33ddb696d0c5"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Note found -> Link to alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/fb7ecfd6-5de3-4d5c-9d29-1b69b84f8eb8",
+            "sourceStep": "\/api\/3\/workflow_steps\/130d71d4-ac0e-4418-bdbf-3597bf6e03cf",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "74eb32cb-b07e-43a0-8c35-d96fe1ff4bec"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Note found -> Create a new note",
+            "targetStep": "\/api\/3\/workflow_steps\/ba511c44-0bba-4392-a500-b362c3b9ba50",
+            "sourceStep": "\/api\/3\/workflow_steps\/130d71d4-ac0e-4418-bdbf-3597bf6e03cf",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "45a88fc5-7019-4064-afc5-bef4496b65fb"
+        }
+    ],
+    "priority": null,
+    "uuid": "ae61dedc-4963-4aa9-a7d0-4341898086ad",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "PostUpdate"
+    ]
+}

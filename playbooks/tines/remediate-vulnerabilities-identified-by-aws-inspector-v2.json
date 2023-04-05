@@ -1,0 +1,563 @@
+{
+  "schema_version": 4,
+  "name": "Remediate vulnerabilities identified by AWS Inspector v2",
+  "description": "Receive vulnerability information from AWS Inspector v2 and create a JIRA ticket with the details. Then, use a prompt within the ticket to remediate specific vulnerabilities (e.g. SSH, RDP open).  \n\ntags: AWS, VulnerabilityManagement, Threats, Jira, Intermediate,\nicons: AWS, 📈, 🧑‍🔧\nvisibility: public",
+  "guid": "679025561aa52299c20fdd4b61b21544",
+  "slug": "remediate_vulnerabilities_identified_by_aws_inspector_v2",
+  "exported_at": "2022-07-11T17:47:05Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get AWS Inspector Incidents",
+      "disabled": false,
+      "guid": "9dc7c4dfb17a8d85ff6ea63049139566",
+      "options": {
+        "url": "https://inspector2.<<RESOURCE.aws_region>>.amazonaws.com/findings/list",
+        "method": "post",
+        "headers": {
+          "Accept": "application/json",
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode AWS Findings",
+      "disabled": false,
+      "guid": "00463fef5ecd38096957084790a6bffc",
+      "options": {
+        "mode": "explode",
+        "path": "=get_aws_inspector_incidents.body.findings",
+        "to": "individual_item"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira with Tables",
+      "disabled": false,
+      "guid": "5b6ea088461447c23137fe60354fc319",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Unassigned"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "h2. AWS Inspector Windows Findings\n|*Windows Instance*| <<explode_aws_findings.individual_item.resources[0].id>>|\n|*Finding*| <<explode_aws_findings.individual_item.title>>| \n|*Region*| <<explode_aws_findings.individual_item.resources[0].region>>|\n|*IP Address*| <<explode_aws_findings.individual_item.resources[0].details.awsEc2Instance.ipV4Addresses>>|\n|*Severity*| <<explode_aws_findings.individual_item.severity>>|\n|*Status*| <<explode_aws_findings.individual_item.status>>|\n|*Remediation*| <<explode_aws_findings.individual_item.remediation.recommendation>>|\n|*Date Found*| <<DATE(explode_aws_findings.individual_item.firstObservedAt, \"%A, %b %d\")>>|\n[Click Here to Remediate Issue | <<PROMPT>>",
+            "summary": "AWS Inspector Findings for Windows Instance"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for Windows Instance Network Reachable Issue",
+      "disabled": false,
+      "guid": "0555b00d05079f1064baa03ca8a5223c",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "NETWORK_REACHABILITY",
+            "path": "<<explode_aws_findings.individual_item.type>>"
+          },
+          {
+            "type": "regex",
+            "value": "Port 3389 is reachable from an Internet Gateway",
+            "path": "<<explode_aws_findings.individual_item.title>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for Linux Instance Network Reachable Issue",
+      "disabled": false,
+      "guid": "72f42ed63fcb1d5492691f63ec76cc68",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "NETWORK_REACHABILITY",
+            "path": "<<explode_aws_findings.individual_item.type>>"
+          },
+          {
+            "type": "regex",
+            "value": "Port 22 is reachable from an Internet Gateway",
+            "path": "<<explode_aws_findings.individual_item.title>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Find AWS EC2 instance that matches instance id",
+      "disabled": false,
+      "guid": "bd2bb99e7d2dbcb9c3981be93262761a",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=DescribeInstances&Filter.1.Name=instance-id&Filter.1.Value=<<explode_aws_findings.individual_item.resources[0].id>>&Version=2016-11-15",
+        "method": "get",
+        "content_type": "form",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Confirm Remediation",
+      "disabled": false,
+      "guid": "b66e2653843e7bc527cd889234e2e6af",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "yes",
+            "path": "<<create_issue_in_jira_with_tables.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Revoke AWS EC2 Security Group Rules",
+      "disabled": false,
+      "guid": "21e15aaf19625fc4cb3b9cf7394c21b5",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com/?Action=RevokeSecurityGroupIngress&Version=2016-11-15&GroupId=<<find_aws_ec2_instance_that_matches_instance_id.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.groupSet.item.groupId>>&IpPermissions.1.IpProtocol=tcp&IpPermissions.1.FromPort=3389&IpPermissions.1.ToPort=3389&IpPermissions.1.IpRanges.1.CidrIp=<<get_aws_ec2_security_group_ip_range_cidr.body.DescribeSecurityGroupsResponse.securityGroupInfo.item.ipPermissionsEgress.item.ipRanges.item.cidrIp>>",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get AWS EC2 Security Group IP Range CIDR",
+      "disabled": false,
+      "guid": "94530e466ca32dd5da0c6150a2ab9e8a",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com/?Action=DescribeSecurityGroups&Version=2016-11-15&GroupName.1=<<find_aws_ec2_instance_that_matches_instance_id.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.groupSet.item.groupName>>",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira with Tables",
+      "disabled": false,
+      "guid": "75f7f1373858f95f64ace59bf16aa8fc",
+      "options": {
+        "url": "https://{{.RESOURCE.jira_domain}}/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Unassigned"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "h2. AWS Inspector Windows Findings\n|*Windows Instance*| <<explode_aws_findings.individual_item.resources[0].id>> |\n|*Finding*| <<explode_aws_findings.individual_item.title>>| \n|*Region*| <<explode_aws_findings.individual_item.resources[0].region>>|\n|*IP Address*| <<explode_aws_findings.individual_item.resources[0].details.awsEc2Instance.ipV4Addresses>>|\n|*Severity*| <<explode_aws_findings.individual_item.severity>>|\n|*Status*| <<explode_aws_findings.individual_item.status>> |\n|*Remediation*| <<explode_aws_findings.individual_item.remediation.recommendation>>|\n|*Date Found*| <<DATE(explode_aws_findings.individual_item.firstObservedAt, \"%A, %b %d\")>>|\n[Click Here to Remediate Issue | <<Prompt>> ",
+            "summary": "AWS Inspector Findings for Windows Instance"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Find AWS EC2 instance that matches instance id",
+      "disabled": false,
+      "guid": "3c6e4bffaf14379b5a613505e8b02014",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=DescribeInstances&Filter.1.Name=instance-id&Filter.1.Value=<<explode_aws_findings.individual_item.resources[0].id>>&Version=2016-11-15",
+        "method": "get",
+        "content_type": "form",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Confirm Remediation",
+      "disabled": false,
+      "guid": "7b30af2cbd47357e749ebc522ce75d69",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "yes",
+            "path": "<<create_issue_in_jira_with_tables.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Revoke AWS EC2 Security Group Rules",
+      "disabled": false,
+      "guid": "186e8b7f6a987f3d07eb79f5ef9ea682",
+      "options": {
+        "url": "https://ec2.{{RESOURCE.aws_region}}.amazonaws.com/?Action=RevokeSecurityGroupIngress&Version=2016-11-15&GroupId={{find_aws_ec2_instance_that_matches_instance_id.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.groupSet.item.groupId}}&IpPermissions.1.IpProtocol=tcp&IpPermissions.1.FromPort=3389&IpPermissions.1.ToPort=3389&IpPermissions.1.IpRanges.1.CidrIp={{get_aws_ec2_security_group_ip_range_cidr.body.DescribeSecurityGroupsResponse.securityGroupInfo.item.ipPermissionsEgress.item.ipRanges.item.cidrIp}}",
+        "method": "get",
+        "headers": {
+          "Authorization": " <<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get AWS EC2 Security Group IP Range CIDR",
+      "disabled": false,
+      "guid": "ed1fdd9795292b75ff2de12143957799",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com/?Action=DescribeSecurityGroups&Version=2016-11-15&GroupName.1=<<find_aws_ec2_instance_that_matches_instance_id.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.groupSet.item.groupName>>",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Jira Ticket",
+      "disabled": false,
+      "guid": "14fd9968805353ade4e69557b594a9db",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/issue/<<create_issue_in_jira_with_tables.body.key>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Jira Ticket",
+      "disabled": false,
+      "guid": "58936d31a397e7e7a9faa6b9ae2b94ab",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/issue/<<create_issue_in_jira_with_tables.body.key>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "After receiving the incidents from AWS Inspector this example story will look specifically for Network Reachability events that match on either port 3389 or port 22 being open to the internet. \n\nThe spect event findings and enriched details can be exported to a ticketing system for review. Within the ticket details the story has a prompt that will allow the user to execute the remediation from Jira directly. ",
+      "position": [
+        1020.0,
+        105.0
+      ],
+      "guid": "f73ff38a3129e9c951f8b638da6d78cc",
+      "width": null
+    },
+    {
+      "content": "![](https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Amazon_Web_Services_Logo.svg/1920px-Amazon_Web_Services_Logo.svg.png)",
+      "position": [
+        420.0,
+        15.0
+      ],
+      "guid": "0dfab791997c06e6f93315d2da584286",
+      "width": null
+    },
+    {
+      "content": "AWS Inspector 2 - This story leverages the new AWS Inspector 2 APIs to get AWS Inspector findings. The story will filter and focus specifically on the Network Reachability  findings regarding instances having open ports to the internet (3389,22). \n\nA Jira ticket with the appropriate enriched event information is created. The ticket assignee has the option to remediate the findings from within the Jira ticket if they choose to. \n\nResources: \njira_domain - URL of Jira domain\njira_username - Username of Jira account with permissions to create Issue in specified project\n\nCredential: \naws_ec2: user account credentials with permissions to query cloud trail and deactivate a user account (if executed) \ncredential_jira: user account credentials with permissions to create tickets within specified Jira project",
+      "position": [
+        420.0,
+        255.0
+      ],
+      "guid": "c29f837ed03e2a08e7b337bd02ea128f",
+      "width": null
+    },
+    {
+      "content": "Depending on the port that is opened to the internet the steps for remediation will be different. Either port 3389 will be removed from the Security Group or port 22. ",
+      "position": [
+        1035.0,
+        600.0
+      ],
+      "guid": "8c6e26b92c9deb282560110d7ce282ec",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 2,
+      "receiver": 6
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    },
+    {
+      "source": 4,
+      "receiver": 9
+    },
+    {
+      "source": 5,
+      "receiver": 8
+    },
+    {
+      "source": 6,
+      "receiver": 5
+    },
+    {
+      "source": 7,
+      "receiver": 14
+    },
+    {
+      "source": 8,
+      "receiver": 7
+    },
+    {
+      "source": 9,
+      "receiver": 11
+    },
+    {
+      "source": 10,
+      "receiver": 13
+    },
+    {
+      "source": 11,
+      "receiver": 10
+    },
+    {
+      "source": 12,
+      "receiver": 15
+    },
+    {
+      "source": 13,
+      "receiver": 12
+    }
+  ],
+  "diagram_layout": "{\"9dc7c4dfb17a8d85ff6ea63049139566\":[1050,-75],\"00463fef5ecd38096957084790a6bffc\":[1050,30],\"5b6ea088461447c23137fe60354fc319\":[735,210],\"0555b00d05079f1064baa03ca8a5223c\":[735,105],\"72f42ed63fcb1d5492691f63ec76cc68\":[1350,105],\"bd2bb99e7d2dbcb9c3981be93262761a\":[735,405],\"b66e2653843e7bc527cd889234e2e6af\":[735,315],\"21e15aaf19625fc4cb3b9cf7394c21b5\":[735,615],\"94530e466ca32dd5da0c6150a2ab9e8a\":[735,510],\"75f7f1373858f95f64ace59bf16aa8fc\":[1350,210],\"3c6e4bffaf14379b5a613505e8b02014\":[1350,405],\"7b30af2cbd47357e749ebc522ce75d69\":[1350,315],\"186e8b7f6a987f3d07eb79f5ef9ea682\":[1350,615],\"ed1fdd9795292b75ff2de12143957799\":[1350,510],\"14fd9968805353ade4e69557b594a9db\":[735,720],\"58936d31a397e7e7a9faa6b9ae2b94ab\":[1350,720]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Remediate vulnerabilities identified by AWS Inspector v2 Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

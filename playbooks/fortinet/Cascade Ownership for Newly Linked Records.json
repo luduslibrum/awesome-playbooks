@@ -1,0 +1,260 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Cascade Ownership for Newly Linked Records",
+    "aliasName": null,
+    "tag": null,
+    "description": "Assign war room responders as owners on all newly linked records such as alerts, incident, indicators, e",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/c9282ce9-1cef-4e0b-94da-3b84c32381ff",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/a6065d02-c0a9-49e4-8060-6e1189e6bb34",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Data List",
+            "description": null,
+            "arguments": {
+                "tasks": "{{vars.record_metadata.tasks | json_query('[*][\"@id\"][]') or []}}",
+                "alerts": "{{vars.record_metadata.alerts | json_query('[*][\"@id\"][]') or []}}",
+                "assets": "{{vars.record_metadata.assets | json_query('[*][\"@id\"][]') or []}}",
+                "owners": "{{vars.record_metadata.owners | json_query('[*][\"@id\"][]') or []}}",
+                "incidents": "{{vars.record_metadata.incidents | json_query('[*][\"@id\"][]') or []}}",
+                "indicators": "{{vars.record_metadata.indicators | json_query('[*][\"@id\"][]') or []}}",
+                "attachments": "{{vars.record_metadata.attachments | json_query('[*][\"@id\"][]') or []}}",
+                "user_owners": "{{vars.record_metadata.userOwners | json_query('[*][\"@id\"][]') or []}}",
+                "announcements": "{{vars.record_metadata.announcements | json_query('[*][\"@id\"][]') or []}}"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "5125f3f1-805e-4957-9837-e49370e7fb1f"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Combine Data Set",
+            "description": null,
+            "arguments": {
+                "iri_list": "{{vars.linked_alerts | union(vars.linked_announcements) | union(vars.linked_assets) | union(vars.linked_attachments) | union(vars.linked_incidents) | union(vars.linked_indicators) | union(vars.linked_tasks)}}"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "70e44f94-4814-4e70-a051-52b3a3586714"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Identify Changed Entities",
+            "description": null,
+            "arguments": {
+                "linked_tasks": "{% if vars.previous.data.tasks %}{{vars.tasks | difference(vars.previous.data.tasks) | list}}{% else %}[]{% endif %}",
+                "linked_alerts": "{% if vars.previous.data.alerts %}{{vars.alerts | difference(vars.previous.data.alerts) | list}}{% else %}[]{% endif %}",
+                "linked_assets": "{% if vars.previous.data.assets %}{{vars.assets | difference(vars.previous.data.assets) | list}}{% else %}[]{% endif %}",
+                "linked_incidents": "{% if vars.previous.data.incidents %}{{vars.incidents | difference(vars.previous.data.incidents) | list}}{% else %}[]{% endif %}",
+                "linked_indicators": "{% if vars.previous.data.indicators %}{{vars.indicators | difference(vars.previous.data.indicators) | list}}{% else %}[]{% endif %}",
+                "linked_attachments": "{% if vars.previous.data.attachments %}{{vars.attachments | difference(vars.previous.data.attachments) | list}}{% else %}[]{% endif %}",
+                "linked_announcements": "{% if vars.previous.data.announcements %}{{vars.announcements | difference(vars.previous.data.announcements) | list}}{% else %}[]{% endif %}"
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "57932435-3bb3-437e-9964-659637ed8abd"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Ownership",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.iri_list}}",
+                    "__bulk": true,
+                    "condition": "",
+                    "batch_size": 100
+                },
+                "resource": {
+                    "__link": {
+                        "owners": "{{vars.owners}}",
+                        "userOwners": "{{vars.user_owners}}"
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.item}}",
+                "__recommend": [],
+                "collectionType": "\/api\/3\/alerts",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "705",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "b1051fee-f01f-4084-a945-384745f48ed2"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "warrooms",
+                "resources": [
+                    "warrooms"
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": [],
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "OR",
+                    "filters": [
+                        {
+                            "type": "array",
+                            "field": "alerts",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "array",
+                            "field": "incidents",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "array",
+                            "field": "indicators",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "array",
+                            "field": "announcements",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "array",
+                            "field": "attachments",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "array",
+                            "field": "tasks",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "array",
+                            "field": "owners",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "array",
+                            "field": "userOwners",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "a6065d02-c0a9-49e4-8060-6e1189e6bb34"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Related Records",
+            "description": null,
+            "arguments": {
+                "record_metadata": "{{(vars.input.records[0]['@id'] + \"?$relationships=true\") | fromIRI}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "b1ea9fc4-3d50-402d-8c2e-a6cd59046e38"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Find Related Records",
+            "targetStep": "\/api\/3\/workflow_steps\/b1ea9fc4-3d50-402d-8c2e-a6cd59046e38",
+            "sourceStep": "\/api\/3\/workflow_steps\/a6065d02-c0a9-49e4-8060-6e1189e6bb34",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "47e6dd9c-e03d-4fff-b590-25219e0f488d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Related Records -> Create Data List",
+            "targetStep": "\/api\/3\/workflow_steps\/5125f3f1-805e-4957-9837-e49370e7fb1f",
+            "sourceStep": "\/api\/3\/workflow_steps\/b1ea9fc4-3d50-402d-8c2e-a6cd59046e38",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "68872ab0-3e9e-439c-80c1-390a970cd7b4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Combine Data Set -> Update Ownership",
+            "targetStep": "\/api\/3\/workflow_steps\/b1051fee-f01f-4084-a945-384745f48ed2",
+            "sourceStep": "\/api\/3\/workflow_steps\/70e44f94-4814-4e70-a051-52b3a3586714",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c0fd15fc-aeb2-433c-a838-1f20e59df68f"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create Data List -> Copy  of Identify Changed Entities",
+            "targetStep": "\/api\/3\/workflow_steps\/57932435-3bb3-437e-9964-659637ed8abd",
+            "sourceStep": "\/api\/3\/workflow_steps\/5125f3f1-805e-4957-9837-e49370e7fb1f",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d351731e-c7b0-4c77-a6d2-8b439bbcd322"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Copy  of Identify Changed Entities -> Combine Data Set",
+            "targetStep": "\/api\/3\/workflow_steps\/70e44f94-4814-4e70-a051-52b3a3586714",
+            "sourceStep": "\/api\/3\/workflow_steps\/57932435-3bb3-437e-9964-659637ed8abd",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c4439054-18a2-4922-b67b-a584727175a4"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "bc00d73b-0296-4c82-860d-017ad3d06191",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system"
+    ]
+}

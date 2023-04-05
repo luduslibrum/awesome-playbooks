@@ -1,0 +1,1398 @@
+{
+  "schema_version": 4,
+  "name": "Import Story backups from GitHub to Tines copy 5",
+  "description": "This Story will pull Tines Story Export json files from a GitHub repository and import them into a Tines tenant under a specified team and folder. \n\ntags: Github, Tines, Import, Backups, Intermediate\nicons: github, ↪️, tines\nvisibility: public",
+  "guid": "8e7f52415fb5296eed923907a9970cf6",
+  "slug": "import_story_backups_from_github_to_tines_copy_5",
+  "exported_at": "2022-07-11T17:24:13Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Github Repository Contents",
+      "disabled": false,
+      "guid": "a6077f809e0e08d50105071d6fa7dd75",
+      "options": {
+        "url": "https://api.github.com/repos/YourUser/YourRepo/contents",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Github File Contents",
+      "disabled": false,
+      "guid": "aee30412ceac9c6284b1037328c3affa",
+      "options": {
+        "url": "https://api.github.com/repos/YourUser/YourRepo/contents/<<explode_repo_contents.files.path>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Repo Contents",
+      "disabled": false,
+      "guid": "944b550aa70e0b68ceadc531c9b23aab",
+      "options": {
+        "mode": "explode",
+        "path": "=get_github_repository_contents.body",
+        "to": "files"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Ignore .gitignore and workflow Files",
+      "disabled": false,
+      "guid": "2437a087d8ffcdfa7e38da7a80952c74",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "gitignore|workflows",
+            "path": "<<explode_repo_contents>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List Story Folders in Tines",
+      "disabled": false,
+      "guid": "77f71e859376d471352296ea4229f5f7",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/folders",
+        "method": "get",
+        "headers": {
+          "content-type": "application/json",
+          "x-user-email": "<<RESOURCE.tines_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_api>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Tines Team and Story Folder ID",
+      "disabled": false,
+      "guid": "7712d91f504ecebde13559aa8c859c11",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "team_id": "<<matched_team>>",
+          "folder_id": "<<matched_folder>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Download Github JSON File Contents",
+      "disabled": false,
+      "guid": "8ec71b33ea157b50eb7ef31ac0a8928c",
+      "options": {
+        "url": "<<get_github_file_contents.body.download_url>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Import Stories to Tines",
+      "disabled": false,
+      "guid": "300b2446420a200a8adff2d5bf7e2d55",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/stories/import",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "new_name": "<<download_github_file_contents.body.name>>",
+          "team_id": "<<set_tines_team_and_story_folder_id.team_id>>",
+          "folder_id": "<<set_tines_team_and_story_folder_id.folder_id>>",
+          "data": "<<JSON(download_github_file_contents.body)>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_api>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Story Exists",
+      "disabled": false,
+      "guid": "3cf4781c76ea606a536280e890559851",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<matched_story_id>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Existing Story Name to Backup",
+      "disabled": false,
+      "guid": "2cff61250951b15ebd588f2074e26dd0",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/stories/<<matched_story_id>>",
+        "method": "put",
+        "content_type": "json",
+        "payload": {
+          "name": "<<download_github_file_contents.body.name>> - Backup:<<DATE(\"now\", \"%Y-%m-%dT%l:%M:%S\")>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_api>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Incoming Form Submission",
+      "disabled": false,
+      "guid": "b0a9c38b27196c4876e16c0789ca6cff",
+      "options": {
+        "path": "014f700a9f52b8618d53308950928e35",
+        "secret": "09b7be9911e7fef03e04200ae786dd30",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List Teams in Tines",
+      "disabled": false,
+      "guid": "d39adf1a22f439b270123159c329df9c",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/teams",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_api>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Check if Team Found in Tines",
+      "disabled": false,
+      "guid": "ed8c9b0d9435dbf429ff00baafeb7ec8",
+      "options": {
+        "mode": "message_only",
+        "loop": "=list_teams_in_tines.body.teams",
+        "payload": {
+          "check_if_found": "<%for result in LOOP.value.name%><%if result = incoming_form_submission.body.tines_team_name%>found<%else%>nomatch<%endif%><%endfor%>",
+          "teamid": "<<LOOP.value.id>>",
+          "team_name": "<<LOOP.value.name>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Matched Team",
+      "disabled": false,
+      "guid": "b00e08615201f1836862e73f78100799",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "=WHERE(check_if_team_found_in_tines, \"check_if_found\", \"found\") |> GET(%, \"teamid\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Team Found",
+      "disabled": false,
+      "guid": "b6f27f76aa90f5a35c3b46651c6de21d",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "\\d+",
+            "path": "<<matched_team>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Team Not Found",
+      "disabled": false,
+      "guid": "ca6add63693954f53af879a12987beb0",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<matched_team>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Matched Folder",
+      "disabled": false,
+      "guid": "8fd76b12f1edf62833f0efa421f186bc",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "<<WHERE(check_if_folder_found_in_tines, \"check_if_found\", \"found\") |> GET(%, \"folderid\")>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Folder Found",
+      "disabled": false,
+      "guid": "fd4e7168d497df7461ab501406d81cf4",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "\\d+",
+            "path": "<<matched_folder>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Folder Not Found",
+      "disabled": false,
+      "guid": "a1b892dcc6027a9311daa10c28094e39",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<matched_folder>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Story Import Folder in Tines",
+      "disabled": false,
+      "guid": "62ce223cd865d38100ee98b6eacb6d12",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/folders/",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "name": "<<incoming_form_submission.body.tines_import_folder_name>>",
+          "content_type": "STORY",
+          "team_id": "<<matched_team>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_api>>"
+        },
+        "disable_ssl_verification": true
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Tines Team and Story Folder ID",
+      "disabled": false,
+      "guid": "3c78adcb945a087391802ae0f648fd1c",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "team_id": "<<matched_team>>",
+          "folder_id": "<<create_story_import_folder_in_tines.body.id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Error Message!",
+      "disabled": false,
+      "guid": "e73599438ca35246766eca35d75a3276",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "The Team name \"<<incoming_form_submission.body.tines_team_name>>\" was not found. Please review teams, submissions are case sensitive!"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Overwrie Yes",
+      "disabled": false,
+      "guid": "993b188eb1de70af2e4d1d34b0c068b9",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Yes",
+            "path": "<<incoming_form_submission.body.overwrite_existing_stories.first>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Overwrite No",
+      "disabled": false,
+      "guid": "b705bbb9dc6b74d88572ef7ac7c01ebe",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "No",
+            "path": "<<incoming_form_submission.body.overwrite_existing_stories.first>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Locate Existing Story ID",
+      "disabled": false,
+      "guid": "edfac0cb824beb3da5be7c99c0ec2bfe",
+      "options": {
+        "mode": "message_only",
+        "loop": "=stories_array_done.allstories",
+        "payload": {
+          "check_if_found": "<%if AND(LOOP.value.name = download_github_file_contents.body.name, LOOP.value.team_id = matched_team)%>found<%else%>nomatch<%endif%>",
+          "storyid": "<<LOOP.value.id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Matched Story ID",
+      "disabled": false,
+      "guid": "5da78bfa5f4f78f579f6af1a12bd3b2e",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "<<WHERE(locate_existing_story_id, \"check_if_found\", \"found\") |> GET(%, \"storyid\")>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Message!",
+      "disabled": false,
+      "guid": "0a1946323d9224860ab297cf0490e4d3",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "The Story \"<<download_github_file_contents.body.name>>\" already exists in the team \"<<WHERE(check_if_team_found_in_tines, \"check_if_found\", \"found\") |> GET(%, \"team_name\")>>\". \"Overwrite Existing Stories\" was NOT selected on the form submission. - Note the story may exist in another folder in this team."
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Import Stories to Tines",
+      "disabled": false,
+      "guid": "64290bac453ba3ce7b1277abe463866a",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/stories/import",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "new_name": "<<download_github_file_contents.body.name>>",
+          "team_id": "<<set_tines_team_and_story_folder_id.team_id>>",
+          "folder_id": "<<set_tines_team_and_story_folder_id.folder_id>>",
+          "data": "<<JSON(download_github_file_contents.body)>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_api>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Check if Folder Found in Tines",
+      "disabled": false,
+      "guid": "acbad096a996840af5e1a566b901d21b",
+      "options": {
+        "mode": "message_only",
+        "loop": "=list_story_folders_in_tines.body.folders",
+        "payload": {
+          "check_if_found": "<%if AND(LOOP.value.name = incoming_form_submission.body.tines_import_folder_name, LOOP.value.team_id = matched_team)%>found<%else%>nomatch<%endif%>",
+          "folderid": "<<LOOP.value.id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List Stories in Tines",
+      "disabled": false,
+      "guid": "387fe5714c05d7056159fe9a19e4956f",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/stories",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_api>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Has More Pages",
+      "disabled": false,
+      "guid": "ad21b68bc208d42d2d3cd2f1d1c469cf",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "path": "<<list_stories_in_tines.body.meta.next_page>>",
+            "value": "^$"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Stories Array Done",
+      "disabled": false,
+      "guid": "c713d268ae69ec1da87b03df42f1a98c",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "allstories": "=set_stories_array.first"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List Stories in Tines",
+      "disabled": false,
+      "guid": "789c15c913f2ac8de1a37d283bb5a1a0",
+      "options": {
+        "url": "<<list_stories_in_tines.body.meta.next_page>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_api>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Has No More Pages",
+      "disabled": false,
+      "guid": "67eb1444f515f20e3e879cfe33239188",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "path": "<<list_stories_in_tines.body.meta.next_page>>",
+            "value": "^$"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Story Does Not Exist",
+      "disabled": false,
+      "guid": "5f3077e84854f5cb035cad1fe3504b98",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<matched_story_id>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Stories Array",
+      "disabled": false,
+      "guid": "796a8c2c419246a5f88ad362644f4c3c",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Stories Array",
+      "disabled": false,
+      "guid": "cb9014c4f62046b9d6618a25e3c6cb8e",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": [
+          "=CONCAT(set_stories_array, list_stories_in_tines.body.stories)"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Error Message",
+      "disabled": false,
+      "guid": "2d0c2f8c741130e3d36d514ed33878c1",
+      "options": {
+        "recipients": [
+          "<<incoming_form_submission.body.email>>"
+        ],
+        "sender_name": "Tines",
+        "subject": "ERROR: Import Stories From Github",
+        "body": "<<error_message>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Message",
+      "disabled": false,
+      "guid": "c7754ccfef3b6321457be07bf0efc516",
+      "options": {
+        "recipients": [
+          "<<incoming_form_submission.body.email>>"
+        ],
+        "sender_name": "Tines",
+        "subject": "NOTICE: Import Stories From Github",
+        "body": "<<message>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Success Results",
+      "disabled": false,
+      "guid": "36ce7ef208bca3e85b5608be0a438f4b",
+      "options": {
+        "recipients": [
+          "<<incoming_form_submission.body.email>>"
+        ],
+        "sender_name": "Tines",
+        "subject": "SUCCESS: Import Stories From Github",
+        "body": "<<success_results_message>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Success Results Message",
+      "disabled": false,
+      "guid": "690a85250f825e34bd5a98abe090a81e",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "<h2>The following stories were Successfully Imported to your Tines tenant!</h2><br>\n<b>Team:</b> <<incoming_form_submission.body.tines_team_name>><br>\n<b>Folder:</b> <<incoming_form_submission.body.tines_import_folder_name>><br>\n<b>Stories:</b><br>\n<<NEAT_JSON(compile_successful_imports) |> REPLACE(%, \"[\") |> REPLACE(%, \"]\") |> REPLACE(%, \",\", \"<br>\") |> REPLACE(%, \"\\\"\\\"\")>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Compile Successful Imports",
+      "disabled": false,
+      "guid": "49db200c375f47d14aeabfccc3a31509",
+      "options": {
+        "mode": "implode",
+        "item_path": "=import_stories_to_tines.body.name",
+        "guid_path": "=STORY_RUN_GUID()",
+        "size_path": "=LIQUID_SIZE(explode_repo_contents, \"dot_notation\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Successful Imports Array Has Results",
+      "disabled": false,
+      "guid": "f22b3cbc11ffca89529d8f50c160c27f",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<compile_successful_imports>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "- [ ] Update YourUser and YourRepo in URL path",
+      "position": [
+        555.0,
+        -75.0
+      ],
+      "guid": "2fc1f655f813a1a056c8baf0b1d00be9",
+      "width": null
+    },
+    {
+      "content": "- [ ] Update YourUser and YourRepo in URL path",
+      "position": [
+        570.0,
+        1020.0
+      ],
+      "guid": "a2c62bb6b6acdd476fdd0073d6ebc567",
+      "width": null
+    },
+    {
+      "content": "# Action Attributes To Update:",
+      "position": [
+        555.0,
+        -165.0
+      ],
+      "guid": "d776fff06ccdea4d199f886fa66a79fd",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements:",
+      "position": [
+        -105.0,
+        195.0
+      ],
+      "guid": "c9e839e6a95bed8f9f2811306e6bcdac",
+      "width": null
+    },
+    {
+      "content": "# Tines\n\n# Credentials\n- [ ] .CREDENTIAL.github\n- [ ] .CREDENTIAL.tines_api\n\n# Resources\n- [ ] .RESOURCE.tines_email ",
+      "position": [
+        -105.0,
+        255.0
+      ],
+      "guid": "db741025557e7b88ed859eff65857bff",
+      "width": null
+    },
+    {
+      "content": "![](https://image-uploads.tines.com/github.png)\n\n# Story Overview\n\nThis Story will pull Tines Story Export json files from a GitHub Repo and import them into a Tines tenant under a specified team and folder. \n\nUse the Story Form to submit your import. The results will be emailed to the specified address in the form.",
+      "position": [
+        -105.0,
+        -255.0
+      ],
+      "guid": "eee4ff7b931baf9f159876daf43d6780",
+      "width": null
+    },
+    {
+      "content": "Pagination Loop - This builds a large array of all Stories in tenant.",
+      "position": [
+        -90.0,
+        1440.0
+      ],
+      "guid": "fc6fe445eeef22f8aeea8b54aafb9895",
+      "width": null
+    },
+    {
+      "content": "Sets initial empty array for loop below.",
+      "position": [
+        -90.0,
+        1200.0
+      ],
+      "guid": "c75e327a06647841c1f002c5fc532e3d",
+      "width": null
+    },
+    {
+      "content": "If matched set here, below triggers check if match present or match null, if match is null the story does not exist.",
+      "position": [
+        -90.0,
+        1680.0
+      ],
+      "guid": "0a65fd25b126f5daa1391730a8bc8354",
+      "width": null
+    },
+    {
+      "content": "Explodes file list to import each Story in own event.",
+      "position": [
+        -90.0,
+        870.0
+      ],
+      "guid": "1dbbfb52e68c5ccf5bc9249f000aeeae",
+      "width": null
+    },
+    {
+      "content": "Creates an array with Story names of the imported Stories.",
+      "position": [
+        1035.0,
+        2070.0
+      ],
+      "guid": "c4503fe49de4ce8887da2210f609c1a3",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 11
+    },
+    {
+      "source": 1,
+      "receiver": 6
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 1
+    },
+    {
+      "source": 4,
+      "receiver": 12
+    },
+    {
+      "source": 5,
+      "receiver": 2
+    },
+    {
+      "source": 6,
+      "receiver": 35
+    },
+    {
+      "source": 7,
+      "receiver": 41
+    },
+    {
+      "source": 8,
+      "receiver": 23
+    },
+    {
+      "source": 8,
+      "receiver": 22
+    },
+    {
+      "source": 9,
+      "receiver": 27
+    },
+    {
+      "source": 10,
+      "receiver": 0
+    },
+    {
+      "source": 11,
+      "receiver": 4
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 15
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    },
+    {
+      "source": 14,
+      "receiver": 28
+    },
+    {
+      "source": 15,
+      "receiver": 21
+    },
+    {
+      "source": 16,
+      "receiver": 18
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 17,
+      "receiver": 5
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 20,
+      "receiver": 2
+    },
+    {
+      "source": 21,
+      "receiver": 37
+    },
+    {
+      "source": 22,
+      "receiver": 9
+    },
+    {
+      "source": 23,
+      "receiver": 26
+    },
+    {
+      "source": 24,
+      "receiver": 25
+    },
+    {
+      "source": 25,
+      "receiver": 8
+    },
+    {
+      "source": 25,
+      "receiver": 34
+    },
+    {
+      "source": 26,
+      "receiver": 38
+    },
+    {
+      "source": 27,
+      "receiver": 41
+    },
+    {
+      "source": 28,
+      "receiver": 16
+    },
+    {
+      "source": 29,
+      "receiver": 36
+    },
+    {
+      "source": 30,
+      "receiver": 32
+    },
+    {
+      "source": 31,
+      "receiver": 24
+    },
+    {
+      "source": 32,
+      "receiver": 36
+    },
+    {
+      "source": 33,
+      "receiver": 31
+    },
+    {
+      "source": 34,
+      "receiver": 7
+    },
+    {
+      "source": 35,
+      "receiver": 29
+    },
+    {
+      "source": 36,
+      "receiver": 33
+    },
+    {
+      "source": 36,
+      "receiver": 30
+    },
+    {
+      "source": 38,
+      "receiver": 41
+    },
+    {
+      "source": 40,
+      "receiver": 39
+    },
+    {
+      "source": 41,
+      "receiver": 42
+    },
+    {
+      "source": 42,
+      "receiver": 40
+    }
+  ],
+  "diagram_layout": "{\"a6077f809e0e08d50105071d6fa7dd75\":[270,-75],\"aee30412ceac9c6284b1037328c3affa\":[270,1035],\"944b550aa70e0b68ceadc531c9b23aab\":[270,870],\"2437a087d8ffcdfa7e38da7a80952c74\":[270,945],\"77f71e859376d471352296ea4229f5f7\":[270,90],\"7712d91f504ecebde13559aa8c859c11\":[270,780],\"8ec71b33ea157b50eb7ef31ac0a8928c\":[270,1110],\"300b2446420a200a8adff2d5bf7e2d55\":[765,1845],\"3cf4781c76ea606a536280e890559851\":[270,1770],\"2cff61250951b15ebd588f2074e26dd0\":[270,1920],\"b0a9c38b27196c4876e16c0789ca6cff\":[270,-150],\"d39adf1a22f439b270123159c329df9c\":[270,15],\"ed8c9b0d9435dbf429ff00baafeb7ec8\":[270,165],\"b00e08615201f1836862e73f78100799\":[270,255],\"b6f27f76aa90f5a35c3b46651c6de21d\":[270,330],\"ca6add63693954f53af879a12987beb0\":[540,330],\"8fd76b12f1edf62833f0efa421f186bc\":[270,525],\"fd4e7168d497df7461ab501406d81cf4\":[270,600],\"a1b892dcc6027a9311daa10c28094e39\":[540,600],\"62ce223cd865d38100ee98b6eacb6d12\":[540,675],\"3c78adcb945a087391802ae0f648fd1c\":[540,780],\"e73599438ca35246766eca35d75a3276\":[540,405],\"993b188eb1de70af2e4d1d34b0c068b9\":[270,1845],\"b705bbb9dc6b74d88572ef7ac7c01ebe\":[540,1845],\"edfac0cb824beb3da5be7c99c0ec2bfe\":[270,1620],\"5da78bfa5f4f78f579f6af1a12bd3b2e\":[270,1695],\"0a1946323d9224860ab297cf0490e4d3\":[540,1920],\"64290bac453ba3ce7b1277abe463866a\":[270,2010],\"acbad096a996840af5e1a566b901d21b\":[270,420],\"387fe5714c05d7056159fe9a19e4956f\":[270,1290],\"ad21b68bc208d42d2d3cd2f1d1c469cf\":[270,1455],\"c713d268ae69ec1da87b03df42f1a98c\":[525,1545],\"789c15c913f2ac8de1a37d283bb5a1a0\":[270,1530],\"67eb1444f515f20e3e879cfe33239188\":[525,1455],\"5f3077e84854f5cb035cad1fe3504b98\":[765,1770],\"796a8c2c419246a5f88ad362644f4c3c\":[270,1200],\"cb9014c4f62046b9d6618a25e3c6cb8e\":[270,1380],\"2d0c2f8c741130e3d36d514ed33878c1\":[540,480],\"c7754ccfef3b6321457be07bf0efc516\":[540,2010],\"36ce7ef208bca3e85b5608be0a438f4b\":[765,2325],\"690a85250f825e34bd5a98abe090a81e\":[765,2250],\"49db200c375f47d14aeabfccc3a31509\":[765,2085],\"f22b3cbc11ffca89529d8f50c160c27f\":[765,2160]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Import Story backups from GitHub to Tines Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Tines Team Name",
+        "description": "(Case sensitive)",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Overwrite Existing Stories",
+        "description": "(Existing Stories will be backed up)",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Tines Import Folder Name",
+        "description": "Enter an existing folder name (Case sensitive) or name of Import Folder to be created.",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Email",
+        "description": "(Email to send Import results)",
+        "required": true,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "b0a9c38b27196c4876e16c0789ca6cff",
+    "success_message": "Thank you for your submission"
+  }
+}

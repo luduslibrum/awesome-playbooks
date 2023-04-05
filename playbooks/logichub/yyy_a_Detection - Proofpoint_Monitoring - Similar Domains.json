@@ -1,0 +1,553 @@
+{
+  "flows": [
+    {
+      "name": "yyy_a_Detection - Proofpoint_Monitoring - Similar Domains",
+      "nodes": [
+        {
+          "id": "2f1fe052-f473-40bf-a46e-cedf708dbc98",
+          "name": "Proofpoint_Sender_Addresses",
+          "kind": "eventType",
+          "isLeaf": false,
+          "eventType": "eventType-26",
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 80,
+          "y": 0,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "EventTypeContentKind",
+            "id": "eventType-26"
+          },
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data: Proofpoint_Sender_Addresses",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "d68dc5bd-b79e-4709-abc8-7e043b614486",
+          "name": "Match_From_Corpus",
+          "kind": "augmentation",
+          "lql": "matchSimilarFromCorpus(Extract_TLD, \"corpusTLDModel\", \"tld\")",
+          "operator": "matchSimilarFromCorpus",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 468,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "matchSimilarFromCorpus"
+          },
+          "categoryKind": "MachineLearning",
+          "iconTitle": "Machine Learning: Match Similar From Corpus",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "2f5b4124-f326-4e34-a58e-13db25ec324e",
+          "name": "Calculate_Levenshtein",
+          "kind": "augmentation",
+          "lql": "`SELECT *, levenshtein(thisDomain, previous_tld) AS levenshteinScore FROM Extract_TLD_From_previousDomain`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 824,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "6a56e545-8bc4-4ab6-b83a-4ade2622e0ea",
+          "name": "Extract_TLD_From_previousDomain",
+          "kind": "augmentation",
+          "lql": "`SELECT *, regexp_extract(previousDomain, '([^.]*\\.[^.]{2,3}(?:\\.[^.]{2,3})?$)') AS previous_tld FROM Rename_Fields`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 692,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "ba8fd172-cf34-477c-9ab5-cd5613f0aaaa",
+          "name": "Extract_TLD",
+          "kind": "augmentation",
+          "lql": "`select *, regexp_extract(domain,'([^.]*\\.[^.]{2,3}(?:\\.[^.]{2,3})?$)') AS tld from Recent_Senders`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 356,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "ac07b9ef-d656-4208-948a-6438c739af62",
+          "name": "Extract_Initial_JSON_fields",
+          "kind": "augmentation",
+          "lql": "`select get_json_object(_raw, \"$.filter.qid\") AS qid, get_json_object(_raw, \"$.filter.disposition\") AS disposition, get_json_object(_raw, \"$.msg.header.subject[0]\") AS subject, get_json_object(_raw, \"$.envelope.rcpts\") AS rcpts, get_json_object(_raw, \"$.connection.host\") AS host, get_json_object(_raw, \"$.connection.ip\") AS ip, get_json_object(_raw, \"$.filter.routeDirection\") AS direction, get_json_object(_raw, \"$.msg.parsedAddresses.from[0]\") AS parsed_sender, get_json_object(_raw, \"$.msg.header.reply-to[0]\") AS replyto, GET_JSON_OBJECT(_raw,\"$.msgParts\") as msgParts, * from Proofpoint_Sender_Addresses`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 80,
+          "y": 132,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "9225d939-c5a1-4170-a07e-30ef561ffe6e",
+          "name": "Recent_Senders",
+          "kind": "augmentation",
+          "lql": "`select min(lhub_ts) AS first_seen, max(lhub_ts) AS last_seen, count(*) AS _count, collect_set(qid) AS qids from Extract_Initial_JSON_fields where direction='inbound' and disposition='continue' GROUP BY sender, domain`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 244,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "aa8327c4-0f52-42c4-8e07-d509ad21df82",
+          "name": "Rename_Fields",
+          "kind": "augmentation",
+          "lql": "`select sender AS thisSender, lhub_sender AS previousSender, tld AS thisDomain, substring_index(lhub_sender, '@', -1) AS previousDomain, lhub_cosineSimilarity AS cosineSimilarity,lhub__previousEmails AS previousEmails, qids from Match_From_Corpus order by lhub_cosineSimilarity desc\n`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 580,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "01d8a4ec-5890-4cd6-8800-698ceeb0461b",
+          "name": "Explode_qids_to_rows",
+          "kind": "augmentation",
+          "lql": "`select *, explode(qids) qid from Similar_Sender_Domains`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 1048,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "95e51c81-34e5-4215-9df4-ef110364018d",
+          "name": "Join_qids_to_original_data",
+          "kind": "augmentation",
+          "lql": "autoJoinTables([Explode_qids_to_rows,Extract_Initial_JSON_fields])",
+          "operator": "autoJoinTables",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 80,
+          "y": 1160,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "autoJoinTables"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Auto Join Tables",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "26c31871-d026-4bf7-88d2-e1b7a0702e79",
+          "name": "Convert_rcpts_to_array",
+          "kind": "augmentation",
+          "lql": "jsonListToArray(Join_qids_to_original_data, \"rcpts\")",
+          "operator": "jsonListToArray",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 80,
+          "y": 1272,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "jsonListToArray"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Json List To Array",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "55dca26d-b50a-47d7-b19e-055fcf2689c9",
+          "name": "Explode_rcpts_to_individual_recipients",
+          "kind": "augmentation",
+          "lql": "`select lhub_ts, thisSender, previousSender, thisDomain AS thisSendersDomain, previousDomain AS previousSimilarDomain, cosineSimilarity, previousEmails, qids, previous_tld, levenshteinScore, qid, msgParts, _sourcecategory, _source, _collectorid, ip, _raw, _format, rcpts, subject, _blockid, _sourcehost, domain, disposition, host, _receipttime, _sourcename, _sourceid, direction, replyto, _messagetime, _size, _time, sender, _collector, _messagecount, _messageid, parsed_sender, array_rcpts, explode(array_rcpts) individual_recipients from Convert_rcpts_to_array`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 80,
+          "y": 1384,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "7959d1d1-e815-4c2f-9630-a655c83fad25",
+          "name": "INDICATOR_Email_From_Similar_TLD_Delivered",
+          "kind": "augmentation",
+          "lql": "`select 'LH00265' AS alert_id, 'Email From Similar TLD Delivered' AS alert_type, 'Initial Access' AS tactic, 'Spearphishing Link' AS technique, 1.0 AS lhub_score, 1.0 AS risk_score, 1.0 AS fidelity_score, lhub_ts AS alert_time, individual_recipients AS dest_user, parsed_sender AS src_user, \" \" AS src_ip, \n\" \" AS src_machine_name, TO_JSON(STRUCT(subject,thisSendersDomain,previousSimilarDomain,levenshteinScore)) AS additional_data from Explode_rcpts_to_individual_recipients`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 80,
+          "y": 1516,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "fc33c267-7b2e-4594-85cd-e17b733a1807",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "c403007c-d712-4da9-aeb3-888527cd45e5"
+          ],
+          "isExplainable": true,
+          "x": 80,
+          "y": 1818,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "cd6e48d9-a15c-4683-a423-724c7f5220ff",
+          "name": "Similar_Sender_Domains",
+          "kind": "augmentation",
+          "lql": "`select * from Calculate_Levenshtein where levenshteinScore>0 AND levenshteinScore<4`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 936,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "c403007c-d712-4da9-aeb3-888527cd45e5",
+          "name": "LogicHub_MDR_Format_Alert_for_Sumo",
+          "kind": "step",
+          "inputs": [
+            "7959d1d1-e815-4c2f-9630-a655c83fad25"
+          ],
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Format event output to send to SumoLogic destination",
+          "isExplainable": true,
+          "x": 80,
+          "y": 1648,
+          "vertices": [],
+          "title": "LogicHub MDR: Format Alert for Sumo",
+          "moduleId": "logichub.mdr.format_alert_for_sumo",
+          "moduleVersion": {
+            "majorVersion": 1,
+            "minorVersion": 31,
+            "patchVersion": 0,
+            "contentResourceVersionBranch": "Local"
+          },
+          "moduleParameters": {
+            "parent0": "INDICATOR_Email_From_Similar_TLD_Delivered"
+          },
+          "stepParams": {
+            "kind": "module",
+            "title": "LogicHub MDR: Format Alert for Sumo"
+          },
+          "isEditable": true,
+          "isStepImplementable": false,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "id": "logichub.mdr.format_alert_for_sumo",
+            "name": "LogicHub MDR: Format Alert for Sumo",
+            "latestAvailableVersion": {
+              "majorVersion": 1,
+              "minorVersion": 31,
+              "patchVersion": 0,
+              "contentResourceVersionBranch": "Local"
+            }
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "ModuleContentKind",
+            "id": "logichub.mdr.format_alert_for_sumo"
+          },
+          "categoryKind": "Module",
+          "iconTitle": "Module: LogicHub MDR: Format Alert for Sumo",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1033",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [
+    {
+      "id": "eventType-26",
+      "data": {
+        "name": "Proofpoint_Sender_Addresses",
+        "query": "_sourceCategory=security/email/proofpoint/prod|json auto|where %\"envelope.from\" != \"\"|parse regex field=%\"envelope.from\" \".*@(?<domain>.*)\"|%\"envelope.from\" as sender|fields _time, domain, sender, _raw",
+        "keyColumns": "domain,sender",
+        "connection": "connection-2",
+        "connectionTypeEntities": {
+          "entities": [
+            {
+              "connectionType": {
+                "connectionType": "sumologic",
+                "value": "query"
+              },
+              "connectionTypeDetail": {
+                "query": "_sourceCategory=security/email/proofpoint/prod|json auto|where %\"envelope.from\" != \"\"|parse regex field=%\"envelope.from\" \".*@(?<domain>.*)\"|%\"envelope.from\" as sender|fields _time, domain, sender, _raw",
+                "connection": "connection-2"
+              }
+            }
+          ]
+        },
+        "defaultConnectionType": {
+          "connectionType": "sumologic",
+          "value": "query"
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "connection-2",
+      "data": {
+        "connectionType": "sumologic",
+        "name": "SumoLogic",
+        "isActive": false,
+        "account": "",
+        "secret": "",
+        "url": "https://api.us2.sumologic.com/api/v1"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "logichub.mdr.format_alert_for_sumo",
+      "name": "LogicHub MDR: Format Alert for Sumo",
+      "description": "Format event output to send to a SumoLogic destination",
+      "templateNodes": [
+        {
+          "name": "alert_output_for_sumo",
+          "templateLQL": "`SELECT \n/* always include lhub_score in the final output */\nlhub_score,\n\n/* format the final JSON output */\nTO_JSON(STRUCT(\n\n/* Required/Standard fields first */\nlhub_score, alert_time,\nlh_batch_end, lh_batch_id, lh_hostname, lh_alert_id,\nalert_id, alert_type, technique, tactic, risk_score, fidelity_score,\n\n/* All other fields EXCEPT additional_data */\nattack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user,\n\n/* place additional_data last so it will be at the bottom of the JSON formatted output */\nadditional_data)) AS alert_output\nFROM validate_required_input`",
+          "isOutput": true
+        },
+        {
+          "name": "ensure_defined_fields_exist",
+          "templateLQL": "ensureTableHasColumns(comment_ensure_table_has_columns, \"lhub_score, lhub_ts, alert_title, alert_time, alert_id, alert_type, technique, tactic, risk_score, fidelity_score, additional_data, attack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user\")",
+          "isOutput": false
+        },
+        {
+          "name": "final_columns",
+          "templateLQL": "`SELECT \n/* Required/standard fields first */\nlh__new_score AS lhub_score,\nlh__new_ts AS lhub_ts,\nlh__new_ts AS alert_time,\nlh_batch_end, lh_batch_id, lh_hostname, lh_alert_id,\nalert_id,\n\n/* Legacy support for \"alert_title\" which is now called \"alert_type\" */\nCOALESCEEMPTY(alert_type, alert_title) AS alert_type,\n\ntechnique, tactic, risk_score, fidelity_score,\n\n/* All other supported fields */\nadditional_data, attack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user\n\nFROM calculate_new_score_and_time`",
+          "isOutput": false
+        },
+        {
+          "name": "add_batch_metadata",
+          "templateLQL": "addExecutionMetadata(ensure_defined_fields_exist)",
+          "isOutput": false
+        },
+        {
+          "name": "calculate_new_score_and_time",
+          "templateLQL": "`SELECT \n/* If lhub_score = 0, keep it 0, otherwise use the greater of the original value or risk times fidelity */\nCASE DOUBLE(lhub_score) WHEN 0 THEN DOUBLE(lhub_score) ELSE GREATEST(risk_score * fidelity_score, DOUBLE(lhub_score)) END AS lh__new_score,\n\n/* For timestamp, look first for alert_time, then lhub_ts, then batch end time */\nCASE\n  WHEN BIGINT(alert_time) IS NOT NULL THEN BIGINT(alert_time)\n  WHEN BIGINT(lhub_ts) IS NOT NULL THEN BIGINT(lhub_ts) ELSE BIGINT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.interval_end_millis\"))\nEND AS lh__new_ts,\n\nREGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), '://(.*?)/') AS lh_hostname,\nREGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), '(batch-\\\\d+)$') AS lh_batch_id,\nBIGINT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.interval_end_millis\")) AS lh_batch_end,\n\n/* Generate a unique (mostly) event ID from the batch number + lhub_id */\nBIGINT(PRINTF('%s%s', REGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), 'batch-(\\\\d+)$'), lhub_id)) AS lh_alert_id,\n*\nFROM add_batch_metadata`",
+          "isOutput": false
+        },
+        {
+          "name": "comment_ensure_table_has_columns",
+          "templateLQL": "`\n/* Since some columns are only conditionally required, there has to be a step to explicitly check for values in those fields anyway, so to keep it simple, all possible fields are protected in ensureTableHasColumns, and some are validated later to ensure that they have a value.\n\nFields supported but not part of the final JSON schema:\n- lhub_score - can be used to override final score\n- lhub_ts - when available, used to calculate alert_time\n- alert_title - legacy support, but since renamed to alert_type\n\nNot expected from input but allowed when available:\n- alert_time: calculated from lhub_ts or batch time, but if this is available then we'll accept it as truth\n\nAfter that, ALL SUPPORTED FIELDS from supported schema\nhttps://logichub.atlassian.net/wiki/spaces/CON/pages/797671425/Output+Schema+for+LogicHub+Content\n*/\n\nselect * from %%%parent0%%%`",
+          "isOutput": false
+        },
+        {
+          "name": "check_for_required_fields",
+          "templateLQL": "`/*\nOnce all calculations are done, verify that all the required fields have values.\nNote that some fields allow empty strings for the time being, as long as they aren't null. This is just to allow us to transition into this new alert schema while we figure it all out.\n*/\n\nSELECT *,\nCASE\n    /* array_sort will put nulls at the end, so this is a quick way to check all required inputs at once */\n    WHEN ELEMENT_AT(ARRAY_SORT(ARRAY(alert_id, alert_type, technique, tactic, risk_score, fidelity_score)), -1) IS NULL THEN 'One or more required inputs is missing or null. Required fields: alert_id, alert_type, technique, tactic, risk_score, fidelity_score'\n    WHEN TRIM(alert_id) = '' THEN 'alert_id cannot be empty'\n    WHEN TRIM(alert_type) = '' THEN 'alert_type cannot be empty'\n    WHEN risk_score NOT IN (1, 2, 3) THEN PRINTF('Invalid value for risk_score (%s). Acceptable values are from 1 (low), 2 (medium) and 3 (high).', risk_score)\n    WHEN fidelity_score NOT IN (1, 2, 3) THEN PRINTF('Invalid value for fidelity_score (%s). Acceptable values are from 1 (low), 2 (medium) and 3 (high).', fidelity_score)\n    WHEN FLOAT(lhub_score) IS NULL THEN 'Unable to calculate lhub_score from provided columns'\n    WHEN lhub_score > 10 OR lhub_score < 0 THEN PRINTF('Invalid value for lhub_score (%s). Acceptable values are from 0-10.', lhub_score)\nEND AS error\n\nFROM final_columns`",
+          "isOutput": false
+        },
+        {
+          "name": "validate_required_input",
+          "templateLQL": "forceFail(check_for_required_fields, \"error\")",
+          "isOutput": false
+        }
+      ],
+      "steps": [
+        {
+          "name": "Module Parameters",
+          "description": "",
+          "inputs": [
+            {
+              "id": "parent0",
+              "description": "Parent node",
+              "label": "Parent Node",
+              "dataType": "node",
+              "inputType": "columnSelect",
+              "dependsOn": "",
+              "columnTemplating": false
+            }
+          ],
+          "isVariadic": false
+        }
+      ],
+      "isPublished": true,
+      "author": "chad@logichub.com",
+      "categories": [],
+      "isEditable": true,
+      "integrations": [],
+      "innerModules": [],
+      "tags": [],
+      "moduleVersion": {
+        "majorVersion": 1,
+        "minorVersion": 31,
+        "patchVersion": 0,
+        "contentResourceVersionBranch": "Local"
+      },
+      "isDataSource": "No",
+      "resourceFormatVersion": 3,
+      "weight": 0
+    }
+  ],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

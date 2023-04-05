@@ -1,0 +1,551 @@
+{
+  "schema_version": 4,
+  "name": "Interact with a device controlled by VMware Carbon Black",
+  "description": "Interact with a device administered by VMware Carbon Black using Live Response. This Story can be called from a larger Story to dynamically address one or many endpoints.\n\ntags: CarbonBlack, EDR, Intermediate\nicons: 🕹, 💻 ,carbonblack,  \nvisibility: public",
+  "guid": "195d3874986b5bce274a9d07a265cbf7",
+  "slug": "interact_with_a_device_controlled_by_vmware_carbon_black",
+  "exported_at": "2022-07-11T17:46:58Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Command",
+      "disabled": false,
+      "guid": "9d38e60a20be625dc9d623a659512002",
+      "options": {
+        "path": "a2f12b1642528985ae541c49e2cdb714",
+        "secret": "be1f3c2c2224dc7b4598e4f9edaa45eb",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Publish Body as output",
+      "disabled": false,
+      "guid": "baf4cad91104905082bea1f70b4df450",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "return_body": "=get_command_results.body"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Open Live Response Session",
+      "disabled": false,
+      "guid": "86781d223e8d88a1ad1f466e842ee3a3",
+      "options": {
+        "url": "https://<<RESOURCE.carbon_black_url>>/appservices/v6/orgs/<<RESOURCE.carbon_black_orgkey>>/liveresponse/sessions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "device_id": "<<receive_command.body.device_id>>"
+        },
+        "headers": {
+          "X-Auth-Token": "<<CREDENTIAL.carbon_black_apikey>>/<<RESOURCE.carbon_black_user>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Live Response Session",
+      "disabled": false,
+      "guid": "a6300396e87b00b78e29c10d80672249",
+      "options": {
+        "url": "https://<<RESOURCE.carbon_black_url>>/appservices/v6/orgs/<<RESOURCE.carbon_black_orgkey>>/liveresponse/sessions/<<open_live_response_session.body.id>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "X-Auth-Token": "<<CREDENTIAL.carbon_black_apikey>>/<<RESOURCE.carbon_black_user>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "End Live Response Session",
+      "disabled": false,
+      "guid": "a08db3d118fd4656090bc82112e54636",
+      "options": {
+        "url": "https://<<RESOURCE.carbon_black_url>>/appservices/v6/orgs/<<RESOURCE.carbon_black_orgkey>>/liveresponse/sessions/<<open_live_response_session.body.id>>",
+        "content_type": "json",
+        "method": "delete",
+        "payload": {},
+        "headers": {
+          "X-Auth-Token": "<<CREDENTIAL.carbon_black_apikey>>/<<RESOURCE.carbon_black_user>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait for Session live",
+      "disabled": false,
+      "guid": "8081cffcaae7d4d4532c7eb4894d1f72",
+      "options": {
+        "mode": "delay",
+        "seconds": "10"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Session Active",
+      "disabled": false,
+      "guid": "ddfad78c381cb7011f04ea8882c8254c",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "ACTIVE",
+            "path": "<<get_live_response_session.body.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Session Pending",
+      "disabled": false,
+      "guid": "a8a4498ac33a657a97f1b2cc21936d9e",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "PENDING",
+            "path": "<<get_live_response_session.body.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Trigger Memdump",
+      "disabled": false,
+      "guid": "5868e3e8a3669d7028372dcfb619b1c9",
+      "options": {
+        "story": "<<STORY.interact_with_a_device_controlled_by_vmware_carbon_black>>",
+        "payload": {
+          "device_id": "<<device_id_int>>",
+          "command": "memdump",
+          "path": "<<path>><<DATE(\"now\", \"%Y-%m-%d\")>>.txt"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Run Command",
+      "disabled": false,
+      "guid": "55044965667590881dc6369a1a872a2d",
+      "options": {
+        "url": "https://<<RESOURCE.carbon_black_url>>/appservices/v6/orgs/<<RESOURCE.carbon_black_orgkey>>/liveresponse/sessions/<<open_live_response_session.body.id>>/commands",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "name": "<<receive_command.body.command>>",
+          "path": "<<receive_command.body.path>>"
+        },
+        "headers": {
+          "X-Auth-Token": "<<CREDENTIAL.carbon_black_apikey>>/<<RESOURCE.carbon_black_user>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Command Results",
+      "disabled": false,
+      "guid": "a589943e436659cddffe171fb3c72ef6",
+      "options": {
+        "url": "https://<<RESOURCE.carbon_black_url>>/appservices/v6/orgs/<<RESOURCE.carbon_black_orgkey>>/liveresponse/sessions/<<open_live_response_session.body.id>>/commands/<<run_command.body.id>>",
+        "method": "get",
+        "content_type": "json",
+        "payload": {
+          "name": "<<receive_command.body.command>>",
+          "path": "<<receive_command.body.path>>"
+        },
+        "headers": {
+          "X-Auth-Token": "<<CREDENTIAL.carbon_black_apikey>>/<<RESOURCE.carbon_black_user>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait for Command Completion",
+      "disabled": false,
+      "guid": "43f59907131d0f865ebde81458e0ce8c",
+      "options": {
+        "mode": "delay",
+        "seconds": "10"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Command Running",
+      "disabled": false,
+      "guid": "4b3f0f29a123d5595ba76e9afed49b89",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "RUNNING",
+            "path": "<<get_command_results.body.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Command Successful",
+      "disabled": false,
+      "guid": "d8e14a6e6205dc8cc31d848efb8289b3",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "COMPLETE",
+            "path": "<<get_command_results.body.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "List Processes",
+      "disabled": false,
+      "guid": "c6e969f9a786878307c014564a927f07",
+      "options": {
+        "story": "<<STORY.interact_with_a_device_controlled_by_vmware_carbon_black>>",
+        "payload": {
+          "device_id": "<<device_id_int>>",
+          "command": "process list"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "List Files in a Specific Path",
+      "disabled": false,
+      "guid": "5c21777db2d35c42ec9cdc1bb09dcd98",
+      "options": {
+        "story": "<<STORY.interact_with_a_device_controlled_by_vmware_carbon_black>>",
+        "payload": {
+          "device_id": "<<device_id_int>>",
+          "command": "directory list",
+          "path": "<<path>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Command ERROR",
+      "disabled": false,
+      "guid": "02c321ec2ffbc5e81ac661f04c77ca09",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "ERROR",
+            "path": "<<get_command_results.body.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Sample Command List\n\nA sample of very useful commands to run in Live Response.  The full list can be found [here ](https://developer.carbonblack.com/reference/carbon-black-cloud/platform/latest/live-response-api/#get-commands-list)",
+      "position": [
+        1515.0,
+        405.0
+      ],
+      "guid": "63081ea1f0084c9b6a81333b2c0c4031",
+      "width": null
+    },
+    {
+      "content": "[CarbonBlack](https://image-uploads.tines.com/carbonblack.jpeg)\n# Summary:\nInteract with a device administered by VMware Carbon Black using Live Response.  This story can be used as a Send-to-Story from a Parent Story to dynamically address one or many endpoints.\n\n# Requirements:\nResources\n`carbon_black_user` - API ID for the associated key\n`carbon_black_url` - Carbon Black URL for your region e.g. `defense.conferdeploy.net`\n`carbon_black_orgkey` - Your Org Key. Can be found in the \"API Access\" tab under \"Settings\"\n\nCredentials\nText - `carbon_black_apikey` - API key\n\n# Inputs:\n`device_id` - Carbon Black ID of device you are calling\n`command` - Command to be executed on the device\n`path` - File path, contextual to each Live Response command.\n",
+      "position": [
+        285.0,
+        375.0
+      ],
+      "guid": "4d85f0d0ce55a0a072c309bcd398ec2e",
+      "width": null
+    },
+    {
+      "content": "Receive the incoming payload containing necessary input, and request a Live Response session to the received `device_id`",
+      "position": [
+        1170.0,
+        405.0
+      ],
+      "guid": "63d67ec0b4c85b786d1381800892595c",
+      "width": null
+    },
+    {
+      "content": "Loop to wait for the Live Response Session to become Active",
+      "position": [
+        1170.0,
+        630.0
+      ],
+      "guid": "882470f1d1ef0c1c39e10f889649ff51",
+      "width": null
+    },
+    {
+      "content": "Execute command and enter a loop to wait for execution to complete.  If the command results in Error, follow an error path.",
+      "position": [
+        1170.0,
+        990.0
+      ],
+      "guid": "949f21e751f0b71bb4f448deeae4cd45",
+      "width": null
+    },
+    {
+      "content": "Close Live Response Session and publish the output of the command.  In a SendToStory environment, this is the payload that would be returned to the Parent Story",
+      "position": [
+        1170.0,
+        1245.0
+      ],
+      "guid": "861146c0dc3f7a7883f27805aba85729",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 6
+    },
+    {
+      "source": 3,
+      "receiver": 7
+    },
+    {
+      "source": 4,
+      "receiver": 1
+    },
+    {
+      "source": 5,
+      "receiver": 3
+    },
+    {
+      "source": 6,
+      "receiver": 9
+    },
+    {
+      "source": 7,
+      "receiver": 5
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 16
+    },
+    {
+      "source": 10,
+      "receiver": 12
+    },
+    {
+      "source": 10,
+      "receiver": 13
+    },
+    {
+      "source": 11,
+      "receiver": 10
+    },
+    {
+      "source": 12,
+      "receiver": 11
+    },
+    {
+      "source": 13,
+      "receiver": 4
+    }
+  ],
+  "diagram_layout": "{\"9d38e60a20be625dc9d623a659512002\":[900,390],\"baf4cad91104905082bea1f70b4df450\":[900,1335],\"86781d223e8d88a1ad1f466e842ee3a3\":[900,480],\"a6300396e87b00b78e29c10d80672249\":[900,690],\"a08db3d118fd4656090bc82112e54636\":[900,1245],\"8081cffcaae7d4d4532c7eb4894d1f72\":[900,585],\"ddfad78c381cb7011f04ea8882c8254c\":[900,810],\"a8a4498ac33a657a97f1b2cc21936d9e\":[615,630],\"5868e3e8a3669d7028372dcfb619b1c9\":[1530,540],\"55044965667590881dc6369a1a872a2d\":[900,900],\"a589943e436659cddffe171fb3c72ef6\":[900,1035],\"43f59907131d0f865ebde81458e0ce8c\":[615,945],\"4b3f0f29a123d5595ba76e9afed49b89\":[615,1110],\"d8e14a6e6205dc8cc31d848efb8289b3\":[900,1155],\"c6e969f9a786878307c014564a927f07\":[1530,630],\"5c21777db2d35c42ec9cdc1bb09dcd98\":[1530,720],\"02c321ec2ffbc5e81ac661f04c77ca09\":[1200,1110]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "9d38e60a20be625dc9d623a659512002",
+  "exit_agent_guids": [
+    "baf4cad91104905082bea1f70b4df450"
+  ],
+  "exit_agent_guid": "baf4cad91104905082bea1f70b4df450",
+  "send_to_stories": [],
+  "form": {
+    "name": "Interact with a device controlled by VMware Carbon Black Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

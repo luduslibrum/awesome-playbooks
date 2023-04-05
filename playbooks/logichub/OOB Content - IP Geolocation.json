@@ -1,0 +1,541 @@
+{
+  "flows": [
+    {
+      "name": "OOB Content - IP Geolocation",
+      "nodes": [
+        {
+          "id": "start-node-4e4819a9-9a22-4125-817f-d61165cf1cbb",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 70,
+          "y": 0,
+          "vertices": [],
+          "title": "Trigger",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "9dcdd824-ff9c-4dd8-87f1-12901973fc41",
+          "name": "Configure_Extract_JSON_Fields",
+          "kind": "augmentation",
+          "lql": "`select *, get_json_object(\\`result\\`, '$.source_ip') as source_ip, get_json_object(\\`result\\`, '$.event_time_epoch') as event_time_epoch, get_json_object(\\`result\\`, '$.username') as username, get_json_object(\\`result\\`, '$.event_category') as event_category from sheets`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 0,
+          "y": 280,
+          "vertices": [],
+          "title": "Configure: Extract JSON Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "SelectNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "68fa2166-0b61-4ce4-a467-ad52e6fa2daf",
+          "name": "operator_geoIpLookup",
+          "kind": "augmentation",
+          "lql": "geoIpLookup(Configure_Extract_JSON_Fields, $.source_ip, \"country.names.en\", \"location.time_zone\")",
+          "operator": "geoIpLookup",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator lookup ip addresses from the GeoIP2 database",
+          "isExplainable": true,
+          "x": 0,
+          "y": 434,
+          "vertices": [],
+          "title": "geo",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "geoIpLookup"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "geoIpLookup"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Geo Ip Lookup",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "d4d3fa63-cb31-45bc-9903-a3f4af6bb5d7",
+          "name": "sheets",
+          "kind": "task",
+          "lql": "runAction(_Start_Node, \"logichub.google_sheets\", 33, \"read_sheet\", {\"google_sheets_url\": \"https://docs.google.com/spreadsheets/d/171OOD4mc4tT7K9OzlZjgT8iXlJNe-o60_n37q5FZPWM/edit#gid=0\", \"__lh_action_timeout_sec\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Google Sheets is a spreadsheet program included as part of the free, web-based Google Docs Editors suite offered by Google.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 112,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "read_sheet",
+            "integrationId": "logichub.google_sheets",
+            "integrationInstanceId": 33,
+            "data": {
+              "google_sheets_url": "https://docs.google.com/spreadsheets/d/171OOD4mc4tT7K9OzlZjgT8iXlJNe-o60_n37q5FZPWM/edit#gid=0",
+              "__lh_action_timeout_sec": ""
+            }
+          },
+          "title": "sheets",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.google_sheets",
+            "logoUrl": "https://lhub-public.s3.amazonaws.com/integrations/google-sheets.png",
+            "name": "Google Sheets",
+            "actionId": "read_sheet",
+            "actionName": "Read Sheet"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.google_sheets/read_sheet"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Google Sheets - Read Sheet",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "bf3628a7-754e-481e-872e-2710fad51fa6",
+          "name": "sheet",
+          "kind": "task",
+          "lql": "runAction(operator_geoIpLookup, \"logichub.google_sheets\", 33, \"write_sheet\", {\"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\", \"google_sheets_url\": \"https://docs.google.com/spreadsheets/d/171OOD4mc4tT7K9OzlZjgT8iXlJNe-o60_n37q5FZPWM/edit#gid=0\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "Google Sheets is a spreadsheet program included as part of the free, web-based Google Docs Editors suite offered by Google.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 602,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "write_sheet",
+            "integrationId": "logichub.google_sheets",
+            "integrationInstanceId": 33,
+            "data": {
+              "__lh_action_timeout_sec": "",
+              "__lh_rows_to_process": "",
+              "google_sheets_url": "https://docs.google.com/spreadsheets/d/171OOD4mc4tT7K9OzlZjgT8iXlJNe-o60_n37q5FZPWM/edit#gid=0",
+              "__lh_multithread_count": ""
+            }
+          },
+          "title": "sheet",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.google_sheets",
+            "logoUrl": "https://lhub-public.s3.amazonaws.com/integrations/google-sheets.png",
+            "name": "Google Sheets",
+            "actionId": "write_sheet",
+            "actionName": "Write Sheet"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.google_sheets/write_sheet"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Google Sheets - Write Sheet",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1061",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "OOTB_Sheets_Connection",
+      "descriptor": {
+        "id": "logichub.google_sheets",
+        "name": "Google Sheets",
+        "description": "Google Sheets is a spreadsheet program included as part of the free, web-based Google Docs Editors suite offered by Google.",
+        "logoUrl": "https://lhub-public.s3.amazonaws.com/integrations/google-sheets.png",
+        "documentationSlug": "google-sheets",
+        "categories": [
+          "cloud"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m88.21"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "Google Sheets Authentication Information",
+              "description": "Enter authentication information for the Google Sheets integration.",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "google_json_file",
+                  "description": "JSON File containing service account keys and other details",
+                  "label": "Keys File",
+                  "dataType": "string",
+                  "inputType": "encryptedFile",
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python3 -m src.google_sheets.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "read_sheet",
+            "name": "Read Sheet",
+            "description": "Reads data from Google Sheet.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "google_sheets_url",
+                      "description": "Enter the value for sheet url. Example: https://docs.google.com/spreadsheets/d/1nrsLE/edit#gid=0",
+                      "label": "Google Sheets URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.sheets_id_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_read_sheet_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "write_sheet",
+            "name": "Write Sheet",
+            "description": "Writes table data into Google Sheet",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "google_sheets_url",
+                      "description": "Enter the value for sheet url. Example: https://docs.google.com/spreadsheets/d/1nrsLE/edit#gid=0",
+                      "label": "Google Sheets URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.sheets_id_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_write_sheet_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "read_dynamic_sheet",
+            "name": "Read Sheet (Dynamic URL)",
+            "description": "Reads data from Google Sheet.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "google_sheets_url",
+                      "description": "Jinja-Templated text containing the value of sheet url. Example: {{sheet_url}}",
+                      "label": "Google Sheets URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.sheets_dynamic_id_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_read_dynamic_sheet_exec"
+            },
+            "isDataSource": "Optional",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "write_dynamic_sheet",
+            "name": "Write Sheet (Dynamic URL)",
+            "description": "Writes table data into Google Sheet",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "google_sheets_url",
+                      "description": "Jinja-Templated text containing the value of sheet url. Example: https://docs.google.com/spreadsheets/d/{{spreadsheetId}}/edit#gid={{gid}}",
+                      "label": "Google Sheets URL",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "google_sheets_omit_columns",
+                      "description": "Jinja-Templated text containing the CSVs of the columns to omit to write in the Sheet. Example: https://docs.google.com/spreadsheets/d/{{spreadsheetId}}/edit#gid={{gid}}",
+                      "label": "Google Sheets Omit Columns",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.google_sheets.sheets_dynamic_id_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.google_sheets.action_write_dynamic_sheet_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "1.1.4",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-12-16T13:39:28Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:07:27.649Z",
+          "errorMessage": "This imported connection is using a different version of the Google Sheets (logichub.google_sheets) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "google_json_file": "****restricted****",
+        "__lh_is_default_connection": "false",
+        "__lh_table_key_value": "",
+        "__lh_ssl_verify": "",
+        "__lh_label": "OOTB_Sheets_Connection"
+      },
+      "id": 33,
+      "isDefault": false
+    }
+  ],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

@@ -1,0 +1,966 @@
+{
+  "schema_version": 4,
+  "name": "Triage Slack help desk queries",
+  "description": "Acknowledge and triage questions in Slack or messages with question mark emojis.\n\ntags: Slack, Support, Jira, Triage, Intermediate\nicons: ⚡️,🔮, ✏️\nvisibility: public",
+  "guid": "5778064dc58dbc3d67bfd7aa4f7db34d",
+  "slug": "triage_slack_help_desk_queries",
+  "exported_at": "2022-07-11T17:32:28Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Get Slack Messages",
+      "disabled": false,
+      "guid": "152a47ccb4bb7a2d4c543a8ce8639230",
+      "options": {
+        "secret": "e4e6e54305e3604acead8a6d4fbee9af",
+        "verbs": "get,post",
+        "response_code": "200",
+        "response": "<<body.challenge>>",
+        "response_headers": {
+          "content-type": "text/plain"
+        },
+        "path": "9e82c304731118326bcf789996c08aed",
+        "metadata": {
+          "product": "Slack",
+          "vendor": "Slack",
+          "agent_type": "Webhook",
+          "description": "Respond to Slack's webhook confirmation challenge request."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No Threads or Bots",
+      "disabled": false,
+      "guid": "4c98281f242e979896e711ecd7dafd26",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<get_slack_messages.body.event.thread_ts>>"
+          },
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<get_slack_messages.body.event.bot_id>>"
+          },
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<get_slack_messages.body.event.reaction>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Find Questions",
+      "disabled": false,
+      "guid": "81f393fc9eade32630ab7508f30309e4",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=explode_sentences.sentence",
+            "regexp": "\\?$",
+            "to": "data"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Triage the Question in Slack",
+      "disabled": false,
+      "guid": "66087399e4c325a41ec8bbfa396768c0",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Yes"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"yes\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "No"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"unknown\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "channel": "<<DEFAULT(get_slack_messages.body.event.channel, get_slack_messages.channel)>>",
+          "text": "Hey! Would you like to open up a support ticket for your question? It helps us track issues better and deliver you a prompt response!",
+          "thread_ts": "<<format_thread_ts.message>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Format Thread TS",
+      "disabled": false,
+      "guid": "394cfe1acb95a3590faa8d302941df17",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "message": "\"<<LOCAL.ts>>\""
+        },
+        "local": {
+          "ts": "=get_slack_messages.body.event.ts"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Catch Prompt",
+      "disabled": false,
+      "guid": "e53d05c82f1adc91d77063dac883035c",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<triage_the_question_in_slack.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "9067dc7aee461d694d4fbd05fd31f8a1",
+      "options": {
+        "mode": "delay",
+        "seconds": 7200
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Events",
+      "disabled": false,
+      "guid": "49ba8ff2cce0a986741e61bd611ededa",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "100",
+        "path": "<<STORY_RUN_GUID()>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "ac208bb14027ab75df53b5cc9346345e",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "THD"
+            },
+            "issuetype": {
+              "name": "Support"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "Question:\n<<get_slack_messages.body.event.text>>\n\nSlack:\n<<search_team_info_in_slack.body.team.name>>\n\nSlack Link:\nhttps://<<search_team_info_in_slack.body.team.domain>>.slack.com/archives/<<DEFAULT(get_slack_messages.body.event.channel, get_slack_messages.channel)>>/p<<REPLACE(get_slack_messages.body.event.ts, \".\", \"\")>>",
+            "summary": "Slack Question from <<get_user_info_in_slack.body.user.name>> ",
+            "reporter": {
+              "id": "5f9078e99c31840076e9e35c"
+            }
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Yes",
+      "disabled": false,
+      "guid": "aee170b57a765e908a5f2eac37a67bf3",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "yes",
+            "path": "<<triage_the_question_in_slack.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Team Info in Slack",
+      "disabled": false,
+      "guid": "090363971d26842300ac60ade7bc7381",
+      "options": {
+        "url": "https://slack.com/api/team.info",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "team": "<<get_slack_messages.body.team_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Ticket Update",
+      "disabled": false,
+      "guid": "68388caac2341c1ed4d31b8c30704c1f",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<DEFAULT(get_slack_messages.body.event.channel, get_slack_messages.channel)>>",
+          "text": "Great! Your ticket is <<create_issue_in_jira.body.key>>. We'll be with your shortly!",
+          "thread_ts": "<<format_thread_ts.message>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check Success",
+      "disabled": false,
+      "guid": "f0ff379e3aba0ffccc41f73692510091",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "201",
+            "path": "<<create_issue_in_jira.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Failure",
+      "disabled": false,
+      "guid": "c009f55974f793536ae60f80bd5d483b",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<DEFAULT(get_slack_messages.body.event.channel, get_slack_messages.channel)>>",
+          "text": "Oy, something went terribly wrong when I was creating the ticket. My apologies. We'll be with you soon regardless I promise!",
+          "thread_ts": "<<format_thread_ts.message>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check Fail",
+      "disabled": false,
+      "guid": "ae5b9b3ec71265c13a86136fcf0634cd",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "201",
+            "path": "<<create_issue_in_jira.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Only Ask Every Hour Per Channel",
+      "disabled": false,
+      "guid": "d4940e6f6b7685944fb8286f54ae7802",
+      "options": {
+        "mode": "deduplicate",
+        "period": "3600",
+        "path": "<<get_slack_messages.body.event.channel>><<get_slack_messages.body.event.team>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If No",
+      "disabled": false,
+      "guid": "f350127dcdbc431e40cae35cd19040c5",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "no",
+            "path": "<<triage_the_question_in_slack.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send No Response",
+      "disabled": false,
+      "guid": "81f131d7e5910d77c9a5e3bfe5c5a166",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<DEFAULT(get_slack_messages.body.event.channel, get_slack_messages.channel)>>",
+          "text": "Gotcha, I won't open a ticket for now.",
+          "thread_ts": "<<format_thread_ts.message>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Find Sentences",
+      "disabled": false,
+      "guid": "c987326d1b8fee01a10d2d45437c96dc",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_slack_messages.body.event.text",
+            "regexp": "[A-Z].*?[\\.!?]",
+            "to": "sentences"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Sentences",
+      "disabled": false,
+      "guid": "298ae454c5aa99347fc546f2dfbcdf62",
+      "options": {
+        "mode": "explode",
+        "path": "=find_sentences.sentences",
+        "to": "sentence"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Question",
+      "disabled": false,
+      "guid": "5239628cd72e68046ed749f1e8c90742",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "100",
+        "path": "<<get_slack_messages.body.event.text>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No Reply",
+      "disabled": false,
+      "guid": "28062f2180e28f81bbe89a83aa2f9b7b",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "foo\\d+bar",
+            "path": "<<somekey.subkey.subkey.goal>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is Question Emoji",
+      "disabled": false,
+      "guid": "f7005b951e465e813af0153584aa3d3d",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "question",
+            "path": "<<get_slack_messages.body.event.reaction>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Slack Conversation",
+      "disabled": false,
+      "guid": "1eca852d4b79dca1776c18ba65629106",
+      "options": {
+        "url": "https://slack.com/api/conversations.history",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "channel": "<<get_slack_messages.body.event.item.channel>>",
+          "latest": "<<get_slack_messages.body.event.item.ts>>",
+          "limit": 1,
+          "inclusive": true
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Slack Messages",
+      "disabled": false,
+      "guid": "c5cca9a91ab5b092b93d00b4f463bb2b",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "body": {
+            "event": "=get_slack_conversation.body.messages.first"
+          },
+          "channel": "<<get_slack_messages.body.event.item.channel>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get User Info in Slack",
+      "disabled": false,
+      "guid": "35dbf6471c180624dfce77b3ca93f4d3",
+      "options": {
+        "url": "https://slack.com/api/users.info",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "user": "<<get_slack_messages.body.event.user>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Post",
+      "disabled": false,
+      "guid": "9f901887fbdc18d0491431b2f4dbb589",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "100",
+        "path": "<<get_slack_messages.body.event.text>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Ignore User Email Domains",
+      "disabled": false,
+      "guid": "10519ad4dda7e544e0fc6181e9100385",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "tines.io",
+            "path": "<<get_user_info_in_slack.body.user.profile.email>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Slack Help Desk Triage\n\nSubscribe to [Slack Events API](https://api.slack.com/apis/connections/events-api) to receive real time notifications of new messages and emojis in use. If those messages contain questions or are tagged with a question emoji, the Slack bot will created a threaded reply asking the user if they want to open a ticket for help.\n\nRequirements:\n- [ ] Slack Event subscription watching for bot events of: `message.channels`, `message.groups`, and `reaction_added` sending to the **Get Slack Messages** webhook\n- [ ] Slack Bot with `chat:write`, `channels:history`, `groups:history`, `reactions:read`, `user:profile:read`, `users:read`, `team:read`, `users:read:email` scopes\n- [ ] Jira API key as a Credential named `jira`\n- [ ] A Credential named `slack` with the Slack Bot API token",
+      "position": [
+        255.0,
+        645.0
+      ],
+      "guid": "d5c3ca62467d03279890619d2709109d",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/Slack_RGB.png",
+      "position": [
+        915.0,
+        645.0
+      ],
+      "guid": "ab00b95b5db3adf7020364017a102178",
+      "width": null
+    },
+    {
+      "content": "Option\n\nEdit the **Ignore User Email Domains** to ignore questions from certain user organizations in Slack",
+      "position": [
+        825.0,
+        810.0
+      ],
+      "guid": "704fec9bf2155442c7506c3f5c47d9f5",
+      "width": null
+    },
+    {
+      "content": "Option\n\nModify **Only Ask Every Hour Per Channel** in order to triage requests more frequently",
+      "position": [
+        915.0,
+        1275.0
+      ],
+      "guid": "66071490881694a9c8e3eefb9812aec1",
+      "width": null
+    },
+    {
+      "content": "Option\n\nEdit **Create Issue in Jira** to send to your Jira project and the data added to the Jira issue",
+      "position": [
+        270.0,
+        1785.0
+      ],
+      "guid": "79766e73b71c457a635a49bd24875f6d",
+      "width": null
+    },
+    {
+      "content": "# Prompt Timers\n\nAsk the user if they would like to open a ticket and wait 2 hours for a response. If there is no response, continue on the **No Reply** Path",
+      "position": [
+        960.0,
+        1485.0
+      ],
+      "guid": "f3d8097a4f439a173a6510c0af5bf41f",
+      "width": null
+    },
+    {
+      "content": "Choose the emoji which should trigger the triage reach out by putting the name of the emoji in this Trigger Action",
+      "position": [
+        1020.0,
+        990.0
+      ],
+      "guid": "5c44adda81251155e7f76c010b1463d9",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 25
+    },
+    {
+      "source": 1,
+      "receiver": 18
+    },
+    {
+      "source": 2,
+      "receiver": 20
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 6
+    },
+    {
+      "source": 4,
+      "receiver": 3
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 21
+    },
+    {
+      "source": 7,
+      "receiver": 16
+    },
+    {
+      "source": 7,
+      "receiver": 9
+    },
+    {
+      "source": 8,
+      "receiver": 14
+    },
+    {
+      "source": 8,
+      "receiver": 12
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 8
+    },
+    {
+      "source": 12,
+      "receiver": 11
+    },
+    {
+      "source": 14,
+      "receiver": 13
+    },
+    {
+      "source": 15,
+      "receiver": 4
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 19,
+      "receiver": 2
+    },
+    {
+      "source": 20,
+      "receiver": 26
+    },
+    {
+      "source": 22,
+      "receiver": 23
+    },
+    {
+      "source": 23,
+      "receiver": 24
+    },
+    {
+      "source": 24,
+      "receiver": 26
+    },
+    {
+      "source": 25,
+      "receiver": 27
+    },
+    {
+      "source": 25,
+      "receiver": 22
+    },
+    {
+      "source": 26,
+      "receiver": 15
+    },
+    {
+      "source": 27,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"152a47ccb4bb7a2d4c543a8ce8639230\":[690,630],\"4c98281f242e979896e711ecd7dafd26\":[555,855],\"81f393fc9eade32630ab7508f30309e4\":[555,1080],\"66087399e4c325a41ec8bbfa396768c0\":[675,1485],\"394cfe1acb95a3590faa8d302941df17\":[675,1410],\"e53d05c82f1adc91d77063dac883035c\":[795,1560],\"9067dc7aee461d694d4fbd05fd31f8a1\":[570,1560],\"49ba8ff2cce0a986741e61bd611ededa\":[675,1635],\"ac208bb14027ab75df53b5cc9346345e\":[570,1860],\"aee170b57a765e908a5f2eac37a67bf3\":[570,1710],\"090363971d26842300ac60ade7bc7381\":[570,1785],\"68388caac2341c1ed4d31b8c30704c1f\":[465,2010],\"f0ff379e3aba0ffccc41f73692510091\":[465,1935],\"c009f55974f793536ae60f80bd5d483b\":[690,2010],\"ae5b9b3ec71265c13a86136fcf0634cd\":[690,1935],\"d4940e6f6b7685944fb8286f54ae7802\":[675,1305],\"f350127dcdbc431e40cae35cd19040c5\":[810,1710],\"81f131d7e5910d77c9a5e3bfe5c5a166\":[810,1785],\"c987326d1b8fee01a10d2d45437c96dc\":[555,930],\"298ae454c5aa99347fc546f2dfbcdf62\":[555,1005],\"5239628cd72e68046ed749f1e8c90742\":[555,1155],\"28062f2180e28f81bbe89a83aa2f9b7b\":[1020,1710],\"f7005b951e465e813af0153584aa3d3d\":[825,1005],\"1eca852d4b79dca1776c18ba65629106\":[825,1080],\"c5cca9a91ab5b092b93d00b4f463bb2b\":[825,1155],\"35dbf6471c180624dfce77b3ca93f4d3\":[690,705],\"9f901887fbdc18d0491431b2f4dbb589\":[675,1230],\"10519ad4dda7e544e0fc6181e9100385\":[555,780]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Triage Slack help desk queries Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

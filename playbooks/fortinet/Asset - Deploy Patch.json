@@ -1,0 +1,150 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Asset - Deploy Patch",
+    "aliasName": null,
+    "tag": "#ManualAction",
+    "description": "Deploys the specified Patch on the selected asset using 'Microsoft SCCM'.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/65c8f70c-82f9-4415-99d7-53a8fc58242e",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Deploy Patch",
+            "description": null,
+            "arguments": {
+                "name": "Microsoft SCCM",
+                "params": {
+                    "patch_name": "xx-yy",
+                    "collection_name": "yy-zz",
+                    "additional_params": "-DeploymentType Required -DisableOperationsManagerAlert $True -GenerateOperationsManagerAlert $True -GenerateSuccessAlert $True -ProtectedType RemoteDistributionPoint -UnprotectedType UnprotectedDistributionPoint -UserNotification DisplaySoftwareCenterOnly -TimeBasedOn LocalTime -VerbosityLevel AllMessages -AcceptEula"
+                },
+                "version": "1.0.0",
+                "connector": "microsoft-sccm",
+                "operation": "deploy_patch",
+                "operationTitle": "Deploy Patch",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "7e569a7a-0ae1-41b3-8e98-80d94b413193"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "8d700625-8df4-428f-a0ea-0bda49b06a70",
+                "title": "Deploy Specified Patch",
+                "resources": [
+                    "assets"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "patchID",
+                        "type": "string",
+                        "label": "Patch ID",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": true,
+                        "_expanded": true,
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "patchID": "{{vars.request.data[\"patchID\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "assets": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": false,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "65c8f70c-82f9-4415-99d7-53a8fc58242e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Seek Admins Permission",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "status": {
+                        "id": 80,
+                        "@id": "\/api\/3\/picklists\/d26464e0-1df4-46c2-a032-018911ba0c40",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": "#bf9937",
+                        "listName": "\/api\/3\/picklist_names\/ce294c1f-9318-425f-9a12-2957292f4cbf",
+                        "itemValue": "Pending",
+                        "orderIndex": 2
+                    },
+                    "assignedTo": "\/api\/3\/people\/3451141c-bac6-467c-8d72-85e0fab569ce",
+                    "playbookiri": "api\/3\/workflows\/1a87f05c-7b1d-4843-b64e-fe043e9320d8",
+                    "playbookname": "Asset > Deploy Patch",
+                    "playbookuuid": "1a87f05c-7b1d-4843-b64e-fe043e9320d8",
+                    "approvaldescription": "Please approve deploying patch {{vars.request.data.patchID}} on Asset:{{vars.request.data.records[0].hostname}}"
+                },
+                "collection": "approvals",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/6832e556-b9c7-497a-babe-feda3bd27dcg",
+            "uuid": "d3ac09e5-df37-436a-ae11-581b352f5524"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Seek Admins Permission -> Deploy Patch",
+            "targetStep": "\/api\/3\/workflow_steps\/7e569a7a-0ae1-41b3-8e98-80d94b413193",
+            "sourceStep": "\/api\/3\/workflow_steps\/d3ac09e5-df37-436a-ae11-581b352f5524",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "61d335aa-0f59-4fb6-a043-2b6e28a4043e"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Seek Admins Permission",
+            "targetStep": "\/api\/3\/workflow_steps\/d3ac09e5-df37-436a-ae11-581b352f5524",
+            "sourceStep": "\/api\/3\/workflow_steps\/65c8f70c-82f9-4415-99d7-53a8fc58242e",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c89cc021-6562-407f-9909-cc78d8306246"
+        }
+    ],
+    "priority": null,
+    "uuid": "517065be-17a2-43e1-a682-d04cbfe416cd",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction"
+    ]
+}

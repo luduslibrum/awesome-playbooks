@@ -1,0 +1,716 @@
+{
+  "name" : "VirusTotal - Search Terms",
+  "type" : "Standard",
+  "panX" : 102.0,
+  "panY" : 100.0,
+  "logLevel" : "TRACE",
+  "description" : "This playbook utilizes a search term for VirusTotals premium API /search endpoint. Once that data is returned, the file hashes are stored in ThreatConnect. The query is set in the 'Set Query and Tag Term' step. Both of those will also be applied as tags for easy management and data filtering.",
+  "version" : "1.46",
+  "comment" : "Auto-Saved on Tue Mar 17 19:07:24 UTC 2020",
+  "jobList" : [ {
+    "id" : 57224,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.20"
+    },
+    "name" : "GET VT Query",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://www.virustotal.com/api/v3/intelligence/search"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[{\"key\":\"query\",\"value\":\"#App:57225:query!String\"},{\"key\":\"limit\",\"value\":\"40\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 380.0,
+    "locationTop" : 270.0,
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 57225,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Set Query and Tag Term",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"tag\",\"value\":\"VirusTotal Search\"},{\"key\":\"query\",\"value\":\"carona virus\"}]"
+    } ],
+    "locationLeft" : 702.0,
+    "locationTop" : 0.0,
+    "outputVariables" : "[{\"name\":\"query\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"tag\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 57226,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v2.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "2.0.5"
+    },
+    "name" : "Extract Data",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:60776:mergeHttpContent!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[{\"key\":\"type\",\"value\":\"data[].type\"},{\"key\":\"md5\",\"value\":\"data[].attributes.md5\"},{\"key\":\"sha1\",\"value\":\"data[].attributes.sha1\"},{\"key\":\"sha256\",\"value\":\"data[].attributes.sha256\"},{\"key\":\"name\",\"value\":\"data[].attributes.meaningful_name\"},{\"key\":\"fileSize\",\"value\":\"data[].attributes.size\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"cursor\",\"value\":\"meta.cursor\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 760.0,
+    "locationTop" : 400.0,
+    "outputVariables" : "[{\"name\":\"fileSize\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"sha1\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"cursor\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"md5\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"sha256\",\"type\":\"StringArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 60748,
+    "appCatalogItem" : {
+      "programName" : "Cache Store",
+      "displayName" : "Cache Store",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Create Cursor Cache",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "cache_name"
+      },
+      "value" : "Cursor"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "start"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "expire_seconds"
+      },
+      "value" : "600"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "cache_key"
+      },
+      "value" : "Cursor"
+    } ],
+    "locationLeft" : 234.0,
+    "locationTop" : 0.0
+  }, {
+    "id" : 60749,
+    "appCatalogItem" : {
+      "programName" : "TCPB - FillArray v1.0",
+      "displayName" : "Fill Array",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Iterator Array",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "length"
+      },
+      "value" : "1000"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "value"
+      },
+      "value" : "1"
+    } ],
+    "locationLeft" : 468.0,
+    "locationTop" : 0.0,
+    "outputVariables" : "[{\"name\":\"array\",\"type\":\"StringArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 60750,
+    "appCatalogItem" : {
+      "programName" : "Iterator",
+      "displayName" : "Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Iterator",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_inputs"
+      },
+      "value" : "[{\"key\":\"placeholder\",\"value\":\"#App:60749:array!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_outputs"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 920.0,
+    "locationTop" : 0.0,
+    "layoutRequiredInputParams" : "[\"array_inputs\"]",
+    "layoutDisplayedInputParams" : "[\"array_inputs\",\"array_outputs\"]"
+  }, {
+    "id" : 60751,
+    "appCatalogItem" : {
+      "programName" : "Cache Lookup",
+      "displayName" : "Cache Lookup",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Cache Lookup",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_miss"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "cache_name"
+      },
+      "value" : "Cursor"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "cache_key"
+      },
+      "value" : "Cursor"
+    } ],
+    "locationLeft" : -80.0,
+    "locationTop" : 360.0,
+    "outputVariables" : "[{\"name\":\"cache.lookup.results\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 60752,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Starting Value",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:60751:cache.lookup.results!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "start"
+    } ],
+    "locationLeft" : 160.0,
+    "locationTop" : 280.0
+  }, {
+    "id" : 60753,
+    "appCatalogItem" : {
+      "programName" : "Break Iterator",
+      "displayName" : "Break Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "No further work, break iteration",
+    "jobParameterList" : [ ],
+    "locationLeft" : 160.0,
+    "locationTop" : 430.0
+  }, {
+    "id" : 60775,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.20"
+    },
+    "name" : "GET VT Query with Cursor",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[{\"key\":\"query\",\"value\":\"#App:57225:query!String\"},{\"key\":\"cursor\",\"value\":\"#App:60751:cache.lookup.results!String\"},{\"key\":\"limit\",\"value\":\"40\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://www.virustotal.com/api/v3/intelligence/search"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 390.0,
+    "locationTop" : 380.0,
+    "outputVariables" : "[{\"name\":\"http.content\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 60776,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge HTTP Content",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"mergeHttpContent\",\"value\":\"#App:57224:http.content!String #App:60775:http.content!String\"}]"
+    } ],
+    "locationLeft" : 630.0,
+    "locationTop" : 350.0,
+    "outputVariables" : "[{\"name\":\"mergeHttpContent\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 60777,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Cursor Check",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "null"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:57226:cursor!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "not equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1190.0,
+    "locationTop" : 290.0
+  }, {
+    "id" : 60778,
+    "appCatalogItem" : {
+      "programName" : "Cache Store",
+      "displayName" : "Cache Store",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Store New Cursor",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:57226:cursor!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "cache_name"
+      },
+      "value" : "Cursor"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "expire_seconds"
+      },
+      "value" : "600"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "cache_key"
+      },
+      "value" : "Cursor"
+    } ],
+    "locationLeft" : 1330.0,
+    "locationTop" : 180.0
+  }, {
+    "id" : 60779,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "No More Results",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"noMoreResults\",\"value\":\"Continuation Finished\"}]"
+    } ],
+    "locationLeft" : 1310.0,
+    "locationTop" : 390.0
+  }, {
+    "id" : 60783,
+    "appCatalogItem" : {
+      "programName" : "Cache Store",
+      "displayName" : "Cache Store",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Erase Cursor Cache",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "cache_key"
+      },
+      "value" : "Cursor"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "expire_seconds"
+      },
+      "value" : "1"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "cache_name"
+      },
+      "value" : "Cursor"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "1"
+    } ],
+    "locationLeft" : 1530.0,
+    "locationTop" : 390.0
+  }, {
+    "id" : 60784,
+    "appCatalogItem" : {
+      "programName" : "Break Iterator",
+      "displayName" : "Break Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Finished",
+    "jobParameterList" : [ ],
+    "locationLeft" : 1740.0,
+    "locationTop" : 390.0
+  }, {
+    "id" : 61165,
+    "appCatalogItem" : {
+      "programName" : "TCPB - FileCreate v1.1",
+      "displayName" : "Create ThreatConnect File",
+      "programVersion" : "1.1.24"
+    },
+    "name" : "Create ThreatConnect File",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rating"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "#App:57225:query!String|#App:57225:tag!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:57226:md5!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "File"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Myles Org"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "sha1"
+      },
+      "value" : "#App:57226:sha1!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "occurrence_date"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "occurrence_path"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "occurrence_name"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "file_size"
+      },
+      "value" : "#App:57226:fileSize!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "confidence"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "sha256"
+      },
+      "value" : "#App:57226:sha256!StringArray"
+    } ],
+    "locationLeft" : 960.0,
+    "locationTop" : 400.0
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60748,
+    "targetJobId" : 60749
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 60748,
+    "sourceTriggerId" : 6220
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60751,
+    "targetJobId" : 60752
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60751,
+    "targetJobId" : 60753
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60752,
+    "targetJobId" : 57224
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60752,
+    "targetJobId" : 60775
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 57224,
+    "targetJobId" : 60776
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60775,
+    "targetJobId" : 60776
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60776,
+    "targetJobId" : 57226
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60777,
+    "targetJobId" : 60778
+  }, {
+    "type" : "EndLoop",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 60778,
+    "targetJobId" : 60750
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60777,
+    "targetJobId" : 60779
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60779,
+    "targetJobId" : 60783
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60783,
+    "targetJobId" : 60784
+  }, {
+    "type" : "StartLoop",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60750,
+    "targetJobId" : 60751
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60749,
+    "targetJobId" : 57225
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 57225,
+    "targetJobId" : 60750
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 57226,
+    "targetJobId" : 61165
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61165,
+    "targetJobId" : 60777
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 6220,
+    "name" : "HttpLink Trigger 1",
+    "type" : "HttpLink",
+    "eventType" : "External",
+    "locationLeft" : 0.0,
+    "locationTop" : 0.0,
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "",
+    "anyOrg" : true,
+    "playbookTriggerFilterList" : [ ],
+    "cacheMinutes" : 120,
+    "cacheParams" : "{\"includeMethod\":false,\"includeBody\":false,\"queryParams\":[],\"headerNames\":[]}"
+  } ],
+  "playbookLabels" : [ {
+    "playbookLabelType" : {
+      "label" : "VirusTotal"
+    }
+  } ],
+  "exportablePipes" : [ ]
+}

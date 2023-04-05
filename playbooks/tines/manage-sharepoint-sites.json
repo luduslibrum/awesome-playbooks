@@ -1,0 +1,786 @@
+{
+  "schema_version": 4,
+  "name": "Manage Sharepoint sites",
+  "description": "Query the Microsoft Office 365 API to get reporting information about all current Sharepoint sites and send this information to Jira.\n\ntags: Sharepoint, Microsoft, Report, Intermediate, MicrosoftTeams, Jira, Notify\nicons: microsoft, 🔎, jira\nvisibility: public",
+  "guid": "b4d337050e405ad6e7400ff5efa637ee",
+  "slug": "manage_sharepoint_sites",
+  "exported_at": "2022-07-11T17:27:22Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Site by ID in Sharepoint",
+      "disabled": false,
+      "guid": "f1e279dafb3dc44e6c787d9223abccae",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/sites/<<RESOURCE.sharepoint_site_id>>",
+        "method": "get",
+        "content_type": "json",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.office365>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Current User's Profile using MSGraph for Office365",
+      "disabled": false,
+      "guid": "1efed0e2e0c50b1e5defb3c24818c42f",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/me/",
+        "method": "get",
+        "content_type": "json",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.office365>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get the Default Site in Sharepoint",
+      "disabled": false,
+      "guid": "aa7e928048b83c763b1c2177e3d4acc6",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/sites/root",
+        "method": "get",
+        "content_type": "json",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.office365>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Site Drives in Sharepoint Online",
+      "disabled": false,
+      "guid": "303e0423a78503824f261140977d0dd2",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/sites/<<RESOURCE.sharepoint_site_id>>/drives",
+        "method": "get",
+        "content_type": "json",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.office365>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Sharepoint Information in Jira with Tables",
+      "disabled": false,
+      "guid": "6d6d69910639568ff0a87c1cde872105",
+      "options": {
+        "url": "https://<<RESOURCE.jiradomain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "h2. Sharepoint Site Information\n|*Default Site*| <<get_the_default_site_in_sharepoint.body.webUrl>> |\n|*Display Name*| <<get_the_default_site_in_sharepoint.body.displayName>>|\n|*Host Name*|<<get_the_default_site_in_sharepoint.body.siteCollection.hostname>> |\n|*Date Created*| <<DATE(get_the_default_site_in_sharepoint.body.createdDateTime, \"%A, %b %d\")>> |\n|*Sharepoint Individual Sites*| <<get_site_by_id_in_sharepoint.body.name>> |\n|*Site URL*| <<get_site_by_id_in_sharepoint.body.webUrl>>|\n|*Date Created*| <<DATE(get_site_by_id_in_sharepoint.body.createdDateTime, \"%A, %b %d\")>> |\n|*Last Modified*| <<DATE(get_site_by_id_in_sharepoint.body.lastModifiedDateTime, \"%A, %b %d\")>>|\n\nh2. Shaun's Site Drive Information\n|*Name*| <<get_site_drives_in_sharepoint_online.body.value[0].name>>|\n|*Date Created*| <<DATE(get_site_drives_in_sharepoint_online.body.value[0].createdDateTime, \"%A, %b %d\")>> |\n|*Drive Type*| <<get_site_drives_in_sharepoint_online.body.value[0].driveType>>|\n|*Quota State*| <<get_site_drives_in_sharepoint_online.body.value[0].quota.state>>| \n|*Quota Used*| <<get_site_drives_in_sharepoint_online.body.value[0].quota.used>>|\n|*Quota Remaining*| <<get_site_drives_in_sharepoint_online.body.value[0].quota.remaining>>|\n|*Quota Total*| <<get_site_drives_in_sharepoint_online.body.value[0].quota.total>>|\n|*Files Deleted*| <<get_site_drives_in_sharepoint_online.body.value[0].quota.deleted>>|\n\n[Click here to provision additional  storage to this Sharepoint site |<<PROMPT(\"expand\")>>]\n",
+            "summary": "Sharepoint Report example - tables"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch Team Roster",
+      "disabled": false,
+      "guid": "b895152217df883174a8e5ee8abec177",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/<<RESOURCE.teams_tines_team_id>>/members",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.msteams_bot>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start Conversation with User",
+      "disabled": false,
+      "guid": "df06dd8ffb1d682a0fcd0641ee0e107f",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "bot": {
+            "id": "<<RESOURCE.microsoft_teams_bot_id>>",
+            "name": "Tines Bot"
+          },
+          "members": [
+            {
+              "id": "<<get_member_information.id>>"
+            }
+          ],
+          "channelData": {
+            "tenant": {
+              "id": "<<get_member_information.tenantID>>"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.msteams_bot>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send card to user",
+      "disabled": false,
+      "guid": "3180e8ecf89d31ffa6624f2e84305117",
+      "options": {
+        "url": "https://{{RESOURCE.microsoft_serviceurl}}/v3/conversations/{{start_conversation_with_user.body.id}}/activities",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "type": "message",
+          "from": {
+            "id": "{{RESOURCE.microsoft_teams_bot_id}}",
+            "name": "Tines Bot"
+          },
+          "recipient": {
+            "id": "<<get_member_information.id>>"
+          },
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.thumbnail",
+              "content": {
+                "title": "Sharepoint Report Alert",
+                "subtitle": "A new report has just been created in Jira",
+                "text": "A new report has just been created in Jira with the JIRA ID: {{create_sharepoint_information_in_jira_with_tables.body.key}}",
+                "images": [
+                  {
+                    "url": "https://logo.clearbit.com/tines.com",
+                    "alt": "Tines"
+                  }
+                ],
+                "buttons": [
+                  {
+                    "type": "openUrl",
+                    "title": "View Jira Report",
+                    "value": "https://tinesio.atlassian.net/browse/{{create_sharepoint_information_in_jira_with_tables.body.key}}"
+                  },
+                  {
+                    "type": "openUrl",
+                    "title": "Close Jira Ticket",
+                    "value": "{%prompt close%}"
+                  },
+                  {
+                    "type": "openUrl",
+                    "title": "Notify Sharepoint User",
+                    "value": "{%prompt user%}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer {{CREDENTIAL.botbot}}"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Close Issue",
+      "disabled": false,
+      "guid": "9a74b3e63b8f7e7abd6817104822a2a0",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "close",
+            "path": "<<send_card_to_user.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Jira Ticket",
+      "disabled": false,
+      "guid": "f3bd20f80431ebc4e601c86a3dd30351",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/issue/<<create_sharepoint_information_in_jira_with_tables.body.key>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Notify Sharepoint User",
+      "disabled": false,
+      "guid": "215458123f432b14bc0ad68d99727189",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "user",
+            "path": "<<send_card_to_user.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch Team Roster",
+      "disabled": false,
+      "guid": "43637ccce867804c287d4444c820c0ba",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/<<RESOURCE.teams_tines_team_id>>/members",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.botbot>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start Conversation with User",
+      "disabled": false,
+      "guid": "348c57559c1897113ae83cc1ca7bf13f",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "bot": {
+            "id": "<<RESOURCE.microsoft_teams_bot_id>>",
+            "name": "Tines Bot"
+          },
+          "members": [
+            {
+              "id": "<<get_member_information.id>>"
+            }
+          ],
+          "channelData": {
+            "tenant": {
+              "id": "<<get_member_information.tenantID>>"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.botbot>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send card to Sharepoint user",
+      "disabled": false,
+      "guid": "a151015959c4e222b7250043eaa81680",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/<<start_conversation_with_user.body.id>>/activities",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "type": "message",
+          "from": {
+            "id": "<<RESOURCE.microsoft_teams_bot_id>>",
+            "name": "Tines Bot"
+          },
+          "recipient": {
+            "id": "<<get_member_information.id>>"
+          },
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.thumbnail",
+              "content": {
+                "title": "Sharepoint Quota Alert",
+                "subtitle": "A new report has just been created in Jira",
+                "text": "A new report has just been created in Jira with the JIRA ID: <<create_sharepoint_information_in_jira_with_tables.body.key>> indicating your Sharepoint Site is reaching Storage Quota",
+                "images": [
+                  {
+                    "url": "https://logo.clearbit.com/tines.com",
+                    "alt": "Tines"
+                  }
+                ],
+                "buttons": [
+                  {
+                    "type": "openUrl",
+                    "title": "View Jira Report",
+                    "value": "https://tinesio.atlassian.net/browse/<<create_sharepoint_information_in_jira_with_tables.body.key>>"
+                  },
+                  {
+                    "type": "openUrl",
+                    "title": "Request Additional Storage",
+                    "value": "<<PROMPT(\"storage\")>>"
+                  },
+                  {
+                    "type": "openUrl",
+                    "title": "Close Ticket",
+                    "value": "<<PROMPT(\"close\")>>"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.botbot>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Close Issue",
+      "disabled": false,
+      "guid": "feba304f1100be642d427268249c5a26",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "close",
+            "path": "<<send_card_to_sharepoint_user.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Jira Ticket",
+      "disabled": false,
+      "guid": "fd589e96dbb0edaac0e40060a9f43930",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/issue/<<create_sharepoint_information_in_jira_with_tables.body.key>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Request Additional Storage",
+      "disabled": false,
+      "guid": "8471933197b46f5fb1c35939d105061c",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "storage",
+            "path": "<<send_card_to_sharepoint_user.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is Quota State Nearing",
+      "disabled": false,
+      "guid": "c5fb8af83f05563b48adeeeaa8f60283",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "nearing",
+            "path": "<<get_site_drives_in_sharepoint_online.body.value[0].quota.state>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get member information",
+      "disabled": false,
+      "guid": "18695b44084f6333022f027701c637ba",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "id": "<<WHERE(fetch_team_roster.body, \"name\", users_name) |> GET(%, \"id\")>>",
+          "tenantID": "<<WHERE(fetch_team_roster.body, \"name\", user_name) |> GET(%, \"tenantId\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get member information",
+      "disabled": false,
+      "guid": "1bcbe492648c2aa5aa6da671a897e401",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "id": "<<WHERE(fetch_team_roster.body, \"name\", users_name) |> GET(%, \"id\")>>",
+          "tenantID": "<<WHERE(fetch_team_roster.body, \"name\", user_name) |> GET(%, \"tenantId\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "[](https://logos-world.net/wp-content/uploads/2020/09/Microsoft-Logo-700x394.png)\n\nThis Story queries Office 365 for all Sharepoint sites currently present. For each site that is returned it is added to a Jira ticket to provide high-level information about the site, including storage consumed. \n\nThe Story will then notify an administrator of the Jira report, and allow them to notify the Sharepoint user via Microsoft Teams. \n\nThe Sharepoint user can close the ticket or request additional storage be allocated to their Sharepoint site.",
+      "position": [
+        199.0,
+        39.0
+      ],
+      "guid": "6a47ed5e5c74d85915a114be2e9cc4af",
+      "width": null
+    },
+    {
+      "content": "The Sharepoint user can be notified via Teams of the current Sharepoint storage usage. If the user would like to request additional storage the request can be sent to an administrator to approve.  ",
+      "position": [
+        1024.0,
+        864.0
+      ],
+      "guid": "f243c46920dec7e2290bec41e7b7c6f0",
+      "width": null
+    },
+    {
+      "content": "Once Sharepoint administrator has approved additional storage space can be added to quota. ",
+      "position": [
+        1159.0,
+        1284.0
+      ],
+      "guid": "ee7a822dc32c9027663c3085bad8e3d8",
+      "width": null
+    },
+    {
+      "content": "Quota Expansion can be determined based on Quota State: https://docs.microsoft.com/en-us/onedrive/developer/rest-api/resources/quota?view=odsp-graph-online\n",
+      "position": [
+        799.0,
+        489.0
+      ],
+      "guid": "bf42510f86dd3f7688c69b06e9be9008",
+      "width": null
+    },
+    {
+      "content": "# Azure App Creation\n\n1. Create a new App Registration in https://portal.azure.com\n2. Enter a name, set the Account Type to be `Single tenant`.\n3. Add the 'Redirect URL'. This can be found when creating an OAuth Credential in Tines. It's in the format of `https://<tinesdomain>/oauth2/callback`\n4. Hit 'Register' to create the app\n5. Select 'API Permissions' from the left bar, and choose 'Add Permission'.\n6. Select `Microsoft Graph` and `Application Permissions`.\n7. Search for and add `Sites.ReadWrite.All` & `Sites.Search.All`. This permission is needed to query Sharepoint for site information.\n8. Save these permissions, and select `Grant Admin Consent for <domain>`. \n9. Select `Certificates and Secrets` from the left bar, and select `New client secret`. Select the expiration time (max 24 months). The token will need to be regenerated after this time. Make a note of this value.\n10. Make a note of the Application ID found in 'Overview' on the left bar. \n",
+      "position": [
+        1140.0,
+        -30.0
+      ],
+      "guid": "f1e5b67c6510ee0544a00d375b8f05cf",
+      "width": null
+    },
+    {
+      "content": "# OAuth Credential\n\nCreate a new Credential in Tines with the following values:\n\n1. Type `OAuth 2.0`\n2. Client ID: `Application ID` from Azure app registration\n3. Client Secret: ` Client Secret` from Azure app registration\n4. Scope: `https://graph.microsoft.com/.default`\n5. Grant Type: `Client credentials`\n6. OAuth URL: `https://login.microsoftonline.com/<O365_TENANT_ID>/oauth2/v2.0/authorize`\n7. OAuth token URL: `https://login.microsoftonline.com/<O365_TENANT_ID>/oauth2/v2.0/token`",
+      "position": [
+        1455.0,
+        -30.0
+      ],
+      "guid": "98cd97a3235d41ceb5d6973ac2025d0b",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 0
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 17
+    },
+    {
+      "source": 5,
+      "receiver": 18
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 7,
+      "receiver": 10
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 11,
+      "receiver": 19
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    },
+    {
+      "source": 13,
+      "receiver": 16
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 17,
+      "receiver": 5
+    },
+    {
+      "source": 18,
+      "receiver": 6
+    },
+    {
+      "source": 19,
+      "receiver": 12
+    }
+  ],
+  "diagram_layout": "{\"f1e279dafb3dc44e6c787d9223abccae\":[525,210],\"1efed0e2e0c50b1e5defb3c24818c42f\":[525,0],\"aa7e928048b83c763b1c2177e3d4acc6\":[525,105],\"303e0423a78503824f261140977d0dd2\":[525,300],\"6d6d69910639568ff0a87c1cde872105\":[525,405],\"b895152217df883174a8e5ee8abec177\":[525,585],\"df06dd8ffb1d682a0fcd0641ee0e107f\":[525,735],\"3180e8ecf89d31ffa6624f2e84305117\":[525,825],\"9a74b3e63b8f7e7abd6817104822a2a0\":[525,900],\"f3bd20f80431ebc4e601c86a3dd30351\":[525,975],\"215458123f432b14bc0ad68d99727189\":[750,900],\"43637ccce867804c287d4444c820c0ba\":[750,990],\"348c57559c1897113ae83cc1ca7bf13f\":[750,1140],\"a151015959c4e222b7250043eaa81680\":[750,1230],\"feba304f1100be642d427268249c5a26\":[615,1320],\"fd589e96dbb0edaac0e40060a9f43930\":[615,1395],\"8471933197b46f5fb1c35939d105061c\":[855,1320],\"c5fb8af83f05563b48adeeeaa8f60283\":[525,510],\"18695b44084f6333022f027701c637ba\":[525,660],\"1bcbe492648c2aa5aa6da671a897e401\":[750,1065]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Manage Sharepoint sites Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

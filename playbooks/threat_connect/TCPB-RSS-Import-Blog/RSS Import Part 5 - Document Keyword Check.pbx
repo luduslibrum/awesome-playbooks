@@ -1,0 +1,498 @@
+{
+  "name" : "RSS Import Part 5 - Document Keyword Check",
+  "type" : "Standard",
+  "panX" : 249.0,
+  "panY" : 20.0,
+  "logLevel" : "TRACE",
+  "description" : "When triggered, this will -\r\nGet the list of keywords from the datastore in ElasticSearch\r\nConvert the document to a set of strings\r\nDo a regex capture on any keywords that match between the two\r\nFor those that match it will create the tag for the group \r\nIt will also additionally tag the document with the actual keywords within those that match",
+  "priority" : 6,
+  "version" : "1.24",
+  "comment" : "Auto-Saved on Wed Apr 15 14:47:47 UTC 2020",
+  "jobList" : [ {
+    "id" : 61708,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DocumentDownload v1.0",
+      "displayName" : "Get ThreatConnect Document",
+      "programVersion" : "1.0.26"
+    },
+    "name" : "Get Document",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_id"
+      },
+      "value" : "#Trigger:6875:trg.tc.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Document"
+    } ],
+    "locationLeft" : 390.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"tc.document.entity\",\"type\":\"Binary\"}]",
+    "playbookRetryDelayMinutes" : 5,
+    "playbookRetryMaxRetries" : 12
+  }, {
+    "id" : 61709,
+    "appCatalogItem" : {
+      "programName" : "TCPB - BinaryToString v1.0",
+      "displayName" : "Binary To String",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Convert Document to String",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:61708:tc.document.entity!Binary"
+    } ],
+    "locationLeft" : 620.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"b2s.text\",\"type\":\"String\"}]"
+  }, {
+    "id" : 61710,
+    "appCatalogItem" : {
+      "programName" : "DataStore",
+      "displayName" : "DataStore",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Retrieve Keywords from DataStore",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "domain_type"
+      },
+      "value" : "Organization"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "organization_name"
+      },
+      "value" : "Angel Test Source"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "db_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "type_name"
+      },
+      "value" : "Angel_keywords2"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "request_entity"
+      },
+      "value" : "{ \"from\" : 0, \"size\": 5000}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "path"
+      },
+      "value" : ""
+    } ],
+    "locationLeft" : 390.0,
+    "locationTop" : 340.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"datastore.response\",\"type\":\"String\"}]"
+  }, {
+    "id" : 61711,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.9"
+    },
+    "name" : "Extract KeyWords",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping_as_string"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:61710:datastore.response!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"Coronavirus_Keywords\",\"value\":\"$..data[*].Coronavirus.[*]\"},{\"key\":\"Covid19_Keywords\",\"value\":\"$..data[*].Covid19.[*]\"},{\"key\":\"Wuhan_Keywords\",\"value\":\"$..data[*].Wuhan.[*]\"}]"
+    } ],
+    "locationLeft" : 620.0,
+    "locationTop" : 340.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"Wuhan_Keywords\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"Coronavirus_Keywords\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"Covid19_Keywords\",\"type\":\"StringArray\"}]"
+  }, {
+    "id" : 61712,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Change Delimiter",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : "|"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"join.Coronavirus\",\"value\":\"#App:61711:Coronavirus_Keywords!StringArray\"},{\"key\":\"join.Covid19\",\"value\":\"#App:61711:Covid19_Keywords!StringArray\"},{\"key\":\"join.Wuhan\",\"value\":\"#App:61711:Wuhan_Keywords!StringArray\"}]"
+    } ],
+    "locationLeft" : 830.0,
+    "locationTop" : 340.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"join.Coronavirus\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"join.Covid19\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"join.Wuhan\",\"type\":\"String\"}]"
+  }, {
+    "id" : 61713,
+    "appCatalogItem" : {
+      "programName" : "TCPB - RegexExtract v1.0",
+      "displayName" : "Regex Extract",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "KeyWord Hits",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern_mapping"
+      },
+      "value" : "[{\"key\":\"regex.Coronavirus\",\"value\":\"#App:61714:enclosure.Coronavirus!String\"},{\"key\":\"regex.Covid19\",\"value\":\"#App:61714:enclosure.Covid19!String\"},{\"key\":\"regex.Wuhan\",\"value\":\"#App:61714:enclosure.Wuhan!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#App:61709:b2s.text!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_groups"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_nulls"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1240.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"regex.Wuhan\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"regex.Coronavirus\",\"type\":\"StringArray\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"regex.Covid19\",\"type\":\"StringArray\"}]"
+  }, {
+    "id" : 61714,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Set Enclosure",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"enclosure.Coronavirus\",\"value\":\"(#App:61712:join.Coronavirus!String)\"},{\"key\":\"enclosure.Covid19\",\"value\":\"(#App:61712:join.Covid19!String)\"},{\"key\":\"enclosure.Wuhan\",\"value\":\"(#App:61712:join.Wuhan!String)\"}]"
+    } ],
+    "locationLeft" : 1030.0,
+    "locationTop" : 340.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"enclosure.Coronavirus\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"enclosure.Wuhan\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"enclosure.Covid19\",\"type\":\"String\"}]"
+  }, {
+    "id" : 61715,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Convert To String",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"Coronavirus\",\"value\":\"#App:61713:regex.Coronavirus!StringArray\"},{\"key\":\"Covid19\",\"value\":\"#App:61713:regex.Covid19!StringArray\"},{\"key\":\"Wuhan\",\"value\":\"#App:61713:regex.Wuhan!StringArray\"}]"
+    } ],
+    "locationLeft" : 70.0,
+    "locationTop" : 630.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"Coronavirus\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"Covid19\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"Wuhan\",\"type\":\"String\"}]"
+  }, {
+    "id" : 61716,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Coronavirus Check",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "does not contain"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:61715:Coronavirus!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "null"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 380.0,
+    "locationTop" : 550.0
+  }, {
+    "id" : 61718,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Coronavirus Keywords",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "#App:61713:regex.Coronavirus!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:6875:trg.tc.entity!TCEntity"
+    } ],
+    "locationLeft" : 600.0,
+    "locationTop" : 560.0
+  }, {
+    "id" : 61719,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Covid19",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "null"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:61715:Covid19!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "does not contain"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 380.0,
+    "locationTop" : 700.0
+  }, {
+    "id" : 61721,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Covid19 Keywords",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "#App:61713:regex.Covid19!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:6875:trg.tc.entity!TCEntity"
+    } ],
+    "locationLeft" : 600.0,
+    "locationTop" : 720.0
+  }, {
+    "id" : 61722,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Wuhan Check",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:61715:Wuhan!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "does not contain"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "null"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 380.0,
+    "locationTop" : 850.0
+  }, {
+    "id" : 61724,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TagCreate v1.0",
+      "displayName" : "Create ThreatConnect Tag",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Wuhan Keywords",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : "#App:61713:regex.Wuhan!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "entity"
+      },
+      "value" : "#Trigger:6875:trg.tc.entity!TCEntity"
+    } ],
+    "locationLeft" : 600.0,
+    "locationTop" : 860.0
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61708,
+    "targetJobId" : 61709
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61710,
+    "targetJobId" : 61711
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61711,
+    "targetJobId" : 61712
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61709,
+    "targetJobId" : 61713
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 61708,
+    "sourceTriggerId" : 6875
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 61710,
+    "sourceTriggerId" : 6875
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61712,
+    "targetJobId" : 61714
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61714,
+    "targetJobId" : 61713
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61713,
+    "targetJobId" : 61715
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61715,
+    "targetJobId" : 61716
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61715,
+    "targetJobId" : 61719
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61715,
+    "targetJobId" : 61722
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61722,
+    "targetJobId" : 61724
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61719,
+    "targetJobId" : 61721
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 61716,
+    "targetJobId" : 61718
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 6875,
+    "name" : "Document Trigger Tag (parseme)",
+    "type" : "Document",
+    "eventType" : "AddTag",
+    "locationLeft" : 60.0,
+    "locationTop" : 290.0,
+    "playbookTriggerFilterList" : [ {
+      "fieldType" : "Tag",
+      "operatorType" : "Contains",
+      "value" : "parseme"
+    } ],
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"trg.tc.entity\",\"type\":\"TCEntity\"}]"
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

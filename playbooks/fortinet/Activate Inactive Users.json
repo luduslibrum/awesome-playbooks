@@ -1,0 +1,137 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Activate Inactive Users",
+    "aliasName": null,
+    "tag": null,
+    "description": "Find the Inactive users and activate them",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/20289298-cdd6-4052-8fa0-11e2603dca00",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/dc590b79-f9b5-4ffe-8377-5766012a7698",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "fce68480-6b55-47ad-9bc3-6da07e623032",
+                "resources": [
+                    "alerts"
+                ],
+                "inputVariables": [],
+                "step_variables": {
+                    "input": {
+                        "params": [],
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": true,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "dc590b79-f9b5-4ffe-8377-5766012a7698"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Inactive Users",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "csActive",
+                            "value": false,
+                            "operator": "eq",
+                            "_operator": "eq"
+                        }
+                    ]
+                },
+                "module": "people?$limit=1000",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "3861130e-969f-45f7-8e24-72de7b827c14"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Activate Users",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.steps.Find_Inactive_Users}}",
+                    "parallel": false,
+                    "condition": ""
+                },
+                "arguments": {
+                    "IRI": "{{vars.item['@id']}}",
+                    "uuid": "{{vars.item['userId']}}",
+                    "status": "1",
+                    "csActive": "true",
+                    "activeStatus": "1"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/e1e5bc95-e204-42f2-be6d-a4985d20a844"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "a8d52a1e-44cc-4328-860f-9ed510713b75"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Find Inactive Users",
+            "targetStep": "\/api\/3\/workflow_steps\/3861130e-969f-45f7-8e24-72de7b827c14",
+            "sourceStep": "\/api\/3\/workflow_steps\/dc590b79-f9b5-4ffe-8377-5766012a7698",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9827106c-3f5a-4a06-b8fe-ba76963b2dbb"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Inactive Users -> Activate Users",
+            "targetStep": "\/api\/3\/workflow_steps\/a8d52a1e-44cc-4328-860f-9ed510713b75",
+            "sourceStep": "\/api\/3\/workflow_steps\/3861130e-969f-45f7-8e24-72de7b827c14",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a7c7361e-ff1b-4e5a-ae64-b3737f60e916"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "05f2d2af-7a44-48b0-a46b-7ded4ea0e17a",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualTrigger",
+        "Alerts"
+    ]
+}

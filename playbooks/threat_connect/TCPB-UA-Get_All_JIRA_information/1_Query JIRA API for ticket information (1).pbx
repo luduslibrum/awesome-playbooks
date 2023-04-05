@@ -1,0 +1,1430 @@
+{
+  "name" : "1_Query JIRA API for ticket information",
+  "type" : "Standard",
+  "panX" : 20.0,
+  "panY" : 337.0,
+  "logLevel" : "INFO",
+  "description" : "",
+  "version" : "5.0",
+  "comment" : "Query JIRA API for Ticket Information",
+  "jobList" : [ {
+    "id" : 42105,
+    "appCatalogItem" : {
+      "programName" : "Iterator",
+      "displayName" : "Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "iterate over users/comments",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_inputs"
+      },
+      "value" : "[{\"key\":\"it.comments\",\"value\":\"#App:42123:jmes.Comments!StringArray\"},{\"key\":\"it.users\",\"value\":\"#App:42123:jmes.comments_user!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_outputs"
+      },
+      "value" : "[{\"key\":\"it.out.comments\",\"value\":\"#App:42106:logger.content!String\"}]"
+    } ],
+    "locationLeft" : 900.0,
+    "locationTop" : 360.0,
+    "outputVariables" : "[{\"name\":\"it.out.comments\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"it.users\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"it.comments\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"array_inputs\"]",
+    "layoutDisplayedInputParams" : "[\"array_inputs\",\"array_outputs\"]"
+  }, {
+    "id" : 42106,
+    "appCatalogItem" : {
+      "programName" : "Logger",
+      "displayName" : "Logger",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Create Array of users/comments",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "logging"
+      },
+      "value" : "INFO"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "log_message"
+      },
+      "value" : "User: #App:42105:it.users!String \nComment: #App:42105:it.comments!String\n===\n\n==="
+    } ],
+    "locationLeft" : 880.0,
+    "locationTop" : 540.0,
+    "outputVariables" : "[{\"name\":\"logger.content\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42107,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Replace Temporary Seperator",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:42124:j.Comments!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "(===,|===)"
+    } ],
+    "locationLeft" : 1270.0,
+    "locationTop" : 360.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42108,
+    "appCatalogItem" : {
+      "programName" : "TCPB - CompressFile v1.0",
+      "displayName" : "Compress File",
+      "programVersion" : "1.0.8"
+    },
+    "name" : "Compress File",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "file_name"
+      },
+      "value" : "#App:42117:v.JIRA_TICKET!String.txt"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:42122:v.Description!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "password"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "algorithm"
+      },
+      "value" : "ZIP"
+    } ],
+    "locationLeft" : 1900.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"compress.data\",\"type\":\"Binary\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42109,
+    "appCatalogItem" : {
+      "programName" : "TCPB - UncompressFile v1.0",
+      "displayName" : "Uncompress File",
+      "programVersion" : "1.0.8"
+    },
+    "name" : "Decompress File",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:42108:compress.data!Binary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "algorithm"
+      },
+      "value" : "ZIP"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "password"
+      },
+      "value" : ""
+    } ],
+    "locationLeft" : 2140.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"uncompress.filename\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"uncompress.data\",\"type\":\"Binary\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42110,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Response",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"result\",\"value\":\"#App:42132:v.Success.Attachments!String\"},{\"key\":\"result\",\"value\":\"#App:42114:v.fail.NoAttribute!String\"},{\"key\":\"result\",\"value\":\"#App:42133:v.fail.Attachments!String\"},{\"key\":\"result\",\"value\":\"#App:42131:v.Document_from_JIRA_Create_Fail!String\"}]"
+    } ],
+    "locationLeft" : 1870.0,
+    "locationTop" : -230.0,
+    "outputVariables" : "[{\"name\":\"result\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42111,
+    "appCatalogItem" : {
+      "programName" : "Iterator",
+      "displayName" : "Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Download Attachments",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_inputs"
+      },
+      "value" : "[{\"key\":\"it.attachment_urls\",\"value\":\"#App:42123:jmes.attachment_urls!StringArray\"},{\"key\":\"it.filenames\",\"value\":\"#App:42123:jmes.attachment_filenames!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_outputs"
+      },
+      "value" : "[{\"key\":\"it.out.Entity\",\"value\":\"#App:42134:tc.document!TCEntity\"}]"
+    } ],
+    "locationLeft" : 3620.0,
+    "locationTop" : 290.0,
+    "outputVariables" : "[{\"name\":\"it.attachment_urls\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"it.out.Entity\",\"type\":\"TCEntityArray\",\"loopVariables\":false},{\"name\":\"it.filenames\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"array_inputs\"]",
+    "layoutDisplayedInputParams" : "[\"array_inputs\",\"array_outputs\"]"
+  }, {
+    "id" : 42112,
+    "appCatalogItem" : {
+      "programName" : "TCPB - GroupRetrieve v1.0",
+      "displayName" : "Get ThreatConnect Group",
+      "programVersion" : "1.0.25"
+    },
+    "name" : "Get Existing Group",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "name"
+      },
+      "value" : "#Trigger:4696:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Group"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      }
+    } ],
+    "locationLeft" : 900.0,
+    "locationTop" : -180.0,
+    "outputVariables" : "[{\"name\":\"tc.groups.count\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"tc.group\",\"type\":\"TCEntity\",\"loopVariables\":false},{\"name\":\"tc.group.attributes\",\"type\":\"KeyValueArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42113,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set JIRA Base URL",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.JIRA_BASE_URL\",\"value\":\"https://your.jira.server.here:8443\"}]"
+    } ],
+    "locationLeft" : 460.0,
+    "locationTop" : -230.0,
+    "outputVariables" : "[{\"name\":\"v.JIRA_BASE_URL\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42114,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "No Attribute \"JIRA Ticket ID\" found",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.fail.NoAttribute\",\"value\":\"Error: JIRA Ticket ID attribute does not exist.\"}]"
+    } ],
+    "locationLeft" : 1650.0,
+    "locationTop" : -230.0,
+    "outputVariables" : "[{\"name\":\"v.fail.NoAttribute\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42115,
+    "appCatalogItem" : {
+      "programName" : "TCPB - IndicatorRetrieveByValue v1.1",
+      "displayName" : "Get ThreatConnect Indicator by Value",
+      "programVersion" : "1.1.21"
+    },
+    "name" : "Get All Attributes",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "#Trigger:4696:trg.action.owner!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "#Trigger:4696:trg.action.type!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_variable"
+      },
+      "value" : "indicator"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "values"
+      },
+      "value" : "#Trigger:4696:trg.action.item!String"
+    } ],
+    "locationLeft" : 690.0,
+    "locationTop" : -230.0,
+    "outputVariables" : "[{\"name\":\"tc.indicator.attributes\",\"type\":\"KeyValueArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42116,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Attributes",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"Attributes\",\"value\":\"#App:42115:tc.indicator.attributes!KeyValueArray\"},{\"key\":\"Attributes\",\"value\":\"#App:42112:tc.group.attributes!KeyValueArray\"}]"
+    } ],
+    "locationLeft" : 1120.0,
+    "locationTop" : -230.0,
+    "outputVariables" : "[{\"name\":\"Attributes\",\"type\":\"KeyValueArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42117,
+    "appCatalogItem" : {
+      "programName" : "TCPB - ValueLookup v1.0",
+      "displayName" : "Value Lookup",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Extract JIRA ID",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"v.JIRA_TICKET\",\"value\":\"JIRA Ticket ID\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_array"
+      },
+      "value" : "#App:42116:Attributes!KeyValueArray"
+    } ],
+    "locationLeft" : 1280.0,
+    "locationTop" : -230.0,
+    "outputVariables" : "[{\"name\":\"v.JIRA_TICKET\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42118,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Attribute exist?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "null"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:42117:v.JIRA_TICKET!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    } ],
+    "locationLeft" : 1510.0,
+    "locationTop" : -240.0
+  }, {
+    "id" : 42119,
+    "appCatalogItem" : {
+      "programName" : "Basic Encoding",
+      "displayName" : "Encode Base64",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Encode JIRA Credentials",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "basicUser"
+      },
+      "value" : "buddy"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "password"
+      },
+      "value" : ""
+    } ],
+    "locationLeft" : 460.0,
+    "locationTop" : -30.0,
+    "outputVariables" : "[{\"name\":\"basic.encode.signature\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42120,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set JIRA Source URL",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.JIRA_Source_URL\",\"value\":\"#App:42113:v.JIRA_BASE_URL!String/browse/#App:42117:v.JIRA_TICKET!String\"}]"
+    } ],
+    "locationLeft" : 690.0,
+    "locationTop" : -30.0,
+    "outputVariables" : "[{\"name\":\"v.JIRA_Source_URL\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42121,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.17"
+    },
+    "name" : "Query JIRA",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"Content-Type\",\"value\":\"application/json\"},{\"key\":\"Authorization\",\"value\":\"Basic #App:42119:basic.encode.signature!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "#App:42113:v.JIRA_BASE_URL!String/rest/api/latest/issue/#App:42117:v.JIRA_TICKET!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[{\"key\":\"fields\",\"value\":\"*all\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 900.0,
+    "locationTop" : -30.0,
+    "outputVariables" : "[{\"name\":\"http.content\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 42122,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Format Desc/Comments",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.Description\",\"value\":\"Description: #App:42123:jmes.Desc!String \\n\\nComments: #App:42128:m.Comments!String\"}]"
+    } ],
+    "locationLeft" : 1660.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"v.Description\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42123,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v2.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "2.0.5"
+    },
+    "name" : "Extract Data",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[{\"key\":\"jmes.Comments\",\"value\":\"fields.comment.comments[0:100].body\"},{\"key\":\"jmes.comments_user\",\"value\":\"fields.comment.comments[0:100].author.name\"},{\"key\":\"jmes.attachment_filenames\",\"value\":\"fields.attachment[].filename\"},{\"key\":\"jmes.attachment_urls\",\"value\":\"fields.attachment[].content\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"jmes.Desc\",\"value\":\"fields.description\"},{\"key\":\"jmes.comments_user_string\",\"value\":\"fields.comment.comments[0:100].author.name\"},{\"key\":\"jmes.filenames_string\",\"value\":\"fields.attachment[].filename\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:42121:http.content!String"
+    } ],
+    "locationLeft" : 460.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"jmes.comments_user_string\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"jmes.comments_user\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"jmes.filenames_string\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"jmes.Comments\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"jmes.Desc\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"jmes.attachment_urls\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"jmes.attachment_filenames\",\"type\":\"StringArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42124,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Join Comments",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"j.Comments\",\"value\":\"#App:42105:it.out.comments!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    } ],
+    "locationLeft" : 1060.0,
+    "locationTop" : 360.0,
+    "outputVariables" : "[{\"name\":\"j.Comments\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42125,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Comments exist?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:42123:jmes.comments_user_string!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    } ],
+    "locationLeft" : 710.0,
+    "locationTop" : 220.0
+  }, {
+    "id" : 42126,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Attachments exist?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:42123:jmes.filenames_string!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 3470.0,
+    "locationTop" : 210.0
+  }, {
+    "id" : 42127,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set no Comments Found",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.fail_comments\",\"value\":\"No comments found for JIRA ticket: #App:42117:v.JIRA_TICKET!String\"}]"
+    } ],
+    "locationLeft" : 900.0,
+    "locationTop" : 250.0,
+    "outputVariables" : "[{\"name\":\"v.fail_comments\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42128,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Comments",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"m.Comments\",\"value\":\"#App:42107:find_replace.output!String\"},{\"key\":\"m.Comments\",\"value\":\"#App:42127:v.fail_comments!String\"}]"
+    } ],
+    "locationLeft" : 1490.0,
+    "locationTop" : 250.0,
+    "outputVariables" : "[{\"name\":\"m.Comments\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42129,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v2.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "2.0.5"
+    },
+    "name" : "Extract Ticket Details",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:42121:http.content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"jmes.Issue_Type\",\"value\":\"fields.issuetype.name\"},{\"key\":\"jmes.Priority\",\"value\":\"fields.priority.name\"}]"
+    } ],
+    "locationLeft" : 690.0,
+    "locationTop" : 100.0
+  }, {
+    "id" : 42130,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DocumentCreate v1.0",
+      "displayName" : "Create ThreatConnect Document",
+      "programVersion" : "1.0.25"
+    },
+    "name" : "Create Jira Document in ThreatConnect",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Document"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:42117:v.JIRA_TICKET!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Source\",\"value\":\"#App:42120:v.JIRA_Source_URL!String\"},{\"key\":\"Description\",\"value\":\"#App:42122:v.Description!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "add_to_malware"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "vault_pw"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : "#Trigger:4696:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Customer Org"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_data"
+      },
+      "value" : "#App:42109:uncompress.data!Binary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "document_file_name"
+      },
+      "value" : "#App:42109:uncompress.filename!String"
+    } ],
+    "locationLeft" : 2750.0,
+    "locationTop" : 220.0,
+    "outputVariables" : "[{\"name\":\"tc.document\",\"type\":\"TCEntity\",\"loopVariables\":false},{\"name\":\"tc.document.web_link\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42131,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set Document Create Fail",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.Document_from_JIRA_Create_Fail\",\"value\":\"There was an error creating a document in the platform for the JIRA ticket: #App:42117:v.JIRA_TICKET!String \\n\\nWith the URL: #App:42120:v.JIRA_Source_URL!String \\n\\nCheck logs for details.\"}]"
+    } ],
+    "locationLeft" : 3000.0,
+    "locationTop" : 270.0,
+    "outputVariables" : "[{\"name\":\"v.Document_from_JIRA_Create_Fail\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42132,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set Success",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.Success.Attachments\",\"value\":\"Document successfully created Click \\u003ca href\\u003d\\\"#App:42130:tc.document.web_link!String\\\"\\u003e here \\u003c/a\\u003e to be redirected to associated document\"}]"
+    } ],
+    "locationLeft" : 4010.0,
+    "locationTop" : 190.0,
+    "outputVariables" : "[{\"name\":\"v.Success.Attachments\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42133,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "No Attachments",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.fail.Attachments\",\"value\":\"Document successfully created Click \\u003ca href\\u003d\\\"#App:42130:tc.document.web_link!String\\\"\\u003e here \\u003c/a\\u003e to be redirected to associated document.\"}]"
+    } ],
+    "locationLeft" : 3620.0,
+    "locationTop" : 190.0,
+    "outputVariables" : "[{\"name\":\"v.fail.Attachments\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42134,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DocumentCreate v1.0",
+      "displayName" : "Create ThreatConnect Document",
+      "programVersion" : "1.0.25"
+    },
+    "name" : "Create Attachment",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Source\",\"value\":\"#App:42120:v.JIRA_Source_URL!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:42111:it.filenames!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_data"
+      },
+      "value" : "#App:42140:http.content!Binary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Customer Org"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "document_file_name"
+      },
+      "value" : "#App:42111:it.filenames!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "vault_pw"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Document"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "add_to_malware"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 3710.0,
+    "locationTop" : 530.0,
+    "outputVariables" : "[{\"name\":\"tc.document\",\"type\":\"TCEntity\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42135,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AssociationCreate v1.0",
+      "displayName" : "Create Association",
+      "programVersion" : "1.0.10"
+    },
+    "name" : "Create Association",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "one_to_one"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "association_entities"
+      },
+      "value" : "#App:42111:it.out.Entity!TCEntityArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "source_entities"
+      },
+      "value" : "#App:42139:m.DocumentEntity!TCEntity"
+    } ],
+    "locationLeft" : 3790.0,
+    "locationTop" : 290.0
+  }, {
+    "id" : 42136,
+    "appCatalogItem" : {
+      "programName" : "Break Iterator",
+      "displayName" : "Break Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Break Iterator 1",
+    "jobParameterList" : [ ],
+    "locationLeft" : 3920.0,
+    "locationTop" : 590.0
+  }, {
+    "id" : 42137,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AddAttribute v1.0",
+      "displayName" : "Add ThreatConnect Attribute",
+      "programVersion" : "1.0.10"
+    },
+    "name" : "Update Description Attribute",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "source_entities"
+      },
+      "value" : "#App:42141:tc.group!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "update_type"
+      },
+      "value" : "Update First Occurrence"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "apply_to_all"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_types"
+      },
+      "value" : "[{\"key\":\"Source\",\"value\":\"#App:42120:v.JIRA_Source_URL!String\"},{\"key\":\"Description\",\"value\":\"#App:42122:v.Description!String\"}]"
+    } ],
+    "locationLeft" : 2760.0,
+    "locationTop" : 100.0
+  }, {
+    "id" : 42138,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DocumentUpload v1.0",
+      "displayName" : "Upload a file to a Document",
+      "programVersion" : "1.0.25"
+    },
+    "name" : "Upload file to a Document",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "filename"
+      },
+      "value" : "#App:42109:uncompress.filename!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_id"
+      },
+      "value" : "#App:42112:tc.group!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_data"
+      },
+      "value" : "#App:42109:uncompress.data!Binary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Document"
+    } ],
+    "locationLeft" : 3000.0,
+    "locationTop" : 100.0
+  }, {
+    "id" : 42139,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Document Entity",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"m.DocumentEntity\",\"value\":\"#App:42130:tc.document!TCEntity #App:42141:tc.group!TCEntity\"}]"
+    } ],
+    "locationLeft" : 3310.0,
+    "locationTop" : 220.0,
+    "outputVariables" : "[{\"name\":\"m.DocumentEntity\",\"type\":\"TCEntity\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42140,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.17"
+    },
+    "name" : "Retrieve JIRA attachments",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "#App:42111:it.attachment_urls!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"Authorization\",\"value\":\"Basic #App:42119:basic.encode.signature!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 3510.0,
+    "locationTop" : 530.0,
+    "outputVariables" : "[{\"name\":\"http.content\",\"type\":\"Binary\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 42141,
+    "appCatalogItem" : {
+      "programName" : "TCPB - GroupRetrieve v1.0",
+      "displayName" : "Get ThreatConnect Group",
+      "programVersion" : "1.0.25"
+    },
+    "name" : "Get Document Group",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Document"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "name"
+      },
+      "value" : "#App:42117:v.JIRA_TICKET!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "#Trigger:4696:trg.action.owner!String"
+    } ],
+    "locationLeft" : 2370.0,
+    "locationTop" : 100.0,
+    "outputVariables" : "[{\"name\":\"tc.group\",\"type\":\"TCEntity\",\"loopVariables\":false}]"
+  }, {
+    "id" : 42142,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Group empty?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "not equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:42112:tc.groups.count!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "0"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 2600.0,
+    "locationTop" : 90.0
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 42113,
+    "sourceTriggerId" : 4696
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42113,
+    "targetJobId" : 42115
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42108,
+    "targetJobId" : 42109
+  }, {
+    "type" : "StartLoop",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42105,
+    "targetJobId" : 42106
+  }, {
+    "type" : "EndLoop",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 42106,
+    "targetJobId" : 42105
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42127,
+    "targetJobId" : 42128
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42105,
+    "targetJobId" : 42124
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42124,
+    "targetJobId" : 42107
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42107,
+    "targetJobId" : 42128
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42125,
+    "targetJobId" : 42105
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42125,
+    "targetJobId" : 42127
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42119,
+    "targetJobId" : 42120
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42120,
+    "targetJobId" : 42121
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42121,
+    "targetJobId" : 42123
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42126,
+    "targetJobId" : 42111
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42130,
+    "targetJobId" : 42131
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42117,
+    "targetJobId" : 42118
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42118,
+    "targetJobId" : 42119
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42118,
+    "targetJobId" : 42114
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42114,
+    "targetJobId" : 42110
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42131,
+    "targetJobId" : 42110
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42132,
+    "targetJobId" : 42110
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42133,
+    "targetJobId" : 42110
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 42110,
+    "targetTriggerId" : 4696
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42123,
+    "targetJobId" : 42125
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42115,
+    "targetJobId" : 42112
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42112,
+    "targetJobId" : 42116
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42115,
+    "targetJobId" : 42116
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42116,
+    "targetJobId" : 42117
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42111,
+    "targetJobId" : 42135
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42126,
+    "targetJobId" : 42133
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42135,
+    "targetJobId" : 42132
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42134,
+    "targetJobId" : 42136
+  }, {
+    "type" : "EndLoop",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 42134,
+    "targetJobId" : 42111
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42137,
+    "targetJobId" : 42138
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42138,
+    "targetJobId" : 42139
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42130,
+    "targetJobId" : 42139
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42139,
+    "targetJobId" : 42126
+  }, {
+    "type" : "StartLoop",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42111,
+    "targetJobId" : 42140
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42140,
+    "targetJobId" : 42134
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42123,
+    "targetJobId" : 42129
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42128,
+    "targetJobId" : 42122
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42129,
+    "targetJobId" : 42122
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42109,
+    "targetJobId" : 42141
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42122,
+    "targetJobId" : 42108
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42141,
+    "targetJobId" : 42142
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42142,
+    "targetJobId" : 42137
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 42142,
+    "targetJobId" : 42130
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 4696,
+    "name" : "Query JIRA API for ticket information",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : 170.0,
+    "locationTop" : -360.0,
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "#App:42110:result!String",
+    "anyOrg" : true,
+    "userActionTypes" : "Address,EmailAddress,Host,File,URL,Adversary",
+    "renderBodyAsTip" : true,
+    "playbookTriggerFilterList" : [ ],
+    "outputVariables" : "[{\"name\":\"trg.action.type\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"trg.action.entity\",\"type\":\"TCEntity\",\"loopVariables\":false},{\"name\":\"trg.action.item\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"trg.action.owner\",\"type\":\"String\",\"loopVariables\":false}]",
+    "cacheMinutes" : 120,
+    "cacheParams" : "{\"includeMethod\":false,\"includeBody\":false,\"queryParams\":[],\"headerNames\":[]}"
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

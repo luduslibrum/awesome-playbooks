@@ -1,0 +1,524 @@
+{
+  "name" : "Symantec Threat Intelligence API - Network Protection Playbook ",
+  "type" : "Standard",
+  "panX" : 267.0,
+  "panY" : 727.0,
+  "logLevel" : "TRACE",
+  "description" : "",
+  "priority" : 7,
+  "version" : "1.220",
+  "comment" : "Auto-Saved on Wed Apr 28 16:46:12 UTC 2021",
+  "jobList" : [ {
+    "id" : 22179,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AddAttribute v1.0",
+      "displayName" : "Add ThreatConnect Attribute",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Add Network Protection State Attribute",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "update_type"
+      },
+      "value" : "Update First Occurrence"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_types"
+      },
+      "value" : "[{\"key\":\"Symantec ThreatIntel Protection Status\",\"value\":\"#App:22188:jmes.State!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "source_entities"
+      },
+      "value" : "#Trigger:2379:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "apply_to_all"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 530.0,
+    "locationTop" : -400.0
+  }, {
+    "id" : 22178,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Validate Results",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "not equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:22188:jmes.State!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "None"
+    } ],
+    "locationLeft" : 270.0,
+    "locationTop" : -380.0
+  }, {
+    "id" : 22188,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v3.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "3.0.0"
+    },
+    "name" : "Extract Watchtower Network Protection API response",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:22180:http.content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"jmes.State\",\"value\":\"state[*].join(\\u0027 : \\u0027,[technology, threatName, \\u0027firstDefsetVersion\\u0027, firstDefsetVersion]) || to_array(\\u0027None\\u0027) | join(`, `, @)\"}]"
+    } ],
+    "locationLeft" : -50.0,
+    "locationTop" : -400.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"jmes.State\",\"type\":\"String\"}]"
+  }, {
+    "id" : 22187,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Failed to invoke Symantec ThreatIntel Network Protection API",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.Failure\",\"value\":\"A problem occurred contacting the Symantec ThreatIntel API service, please try again later\"}]"
+    } ],
+    "locationLeft" : 1020.0,
+    "locationTop" : -550.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"v.Failure\",\"type\":\"String\"}]"
+  }, {
+    "id" : 22186,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "No Results",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.NoResults\",\"value\":\"No results from Network Protection API\"}]"
+    } ],
+    "locationLeft" : 1020.0,
+    "locationTop" : -80.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"v.NoResults\",\"type\":\"String\"}]"
+  }, {
+    "id" : 22185,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Response Merge",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"m.Response\",\"value\":\"#App:22187:v.Failure!String #App:22186:v.NoResults!String #App:22184:success!String\"}]"
+    } ],
+    "locationLeft" : 1340.0,
+    "locationTop" : -550.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"m.Response\",\"type\":\"String\"}]"
+  }, {
+    "id" : 22184,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.14"
+    },
+    "name" : "Success Message",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"success\",\"value\":\"Success- \\u003ca href\\u003d\\u0027/auth/report/report.xhtml?report\\u003d#App:22183:tc.group.id!String\\u0026owner\\u003d#Trigger:2379:trg.action.owner!String\\u0027\\u003elink to report\\u003c/a\\u003e\"}]"
+    } ],
+    "locationLeft" : 1020.0,
+    "locationTop" : -400.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"success\",\"type\":\"String\"}]"
+  }, {
+    "id" : 22183,
+    "appCatalogItem" : {
+      "programName" : "TCPB - GroupCreate v1.0",
+      "displayName" : "Create ThreatConnect Group",
+      "programVersion" : "1.0.26"
+    },
+    "name" : "Create Network Protection Report",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "Symantec ThreatIntel Network Protection Report - #Global:0:gbl.timestamp.iso!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "Symantec ThreatIntel Network Protection"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Source\",\"value\":\"#Trigger:2379:trg.action.item!String\"},{\"key\":\"Description\",\"value\":\"Network Protection State: #App:22188:jmes.State!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "halt_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : "#Trigger:2379:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "additional_fields"
+      },
+      "value" : "[{\"key\":\"fileName\",\"value\":\"None\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "#Trigger:2379:trg.action.owner!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Report"
+    } ],
+    "locationLeft" : 780.0,
+    "locationTop" : -400.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"tc.group.id\",\"type\":\"String\"}]"
+  }, {
+    "id" : 22182,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v3.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "3.0.0"
+    },
+    "name" : "Extract WatchTower Access Token",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:22181:http.content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"access_token\",\"value\":\"access_token\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 200.0,
+    "locationTop" : -550.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"access_token\",\"type\":\"String\"}]"
+  }, {
+    "id" : 22181,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.20"
+    },
+    "name" : "HTTP Client: WatchTower Auth",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"Content-Type\",\"value\":\"application/x-www-form-urlencoded\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[{\"key\":\"grant_type\",\"value\":\"client_credentials\"},{\"key\":\"client_secret\",\"value\":\"${ORGANIZATION:KEYCHAIN:Symantec ThreatIntel client_secret}\"},{\"key\":\"client_id\",\"value\":\"${ORGANIZATION:TEXT:Symantec ThreatIntel client_id}\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "POST"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://api.sep.securitycloud.symantec.com/v1/oauth2/tokens"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : -50.0,
+    "locationTop" : -550.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"http.content\",\"type\":\"String\"}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"body\",\"urlencode_body\",\"multipart\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 22180,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.20"
+    },
+    "name" : "HTTP Client Invoke WatchTower Network Protection API",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"Authorization\",\"value\":\"#App:22182:access_token!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://api.sep.securitycloud.symantec.com/v1/threat-intel/protection/network/#Trigger:2379:trg.action.item!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    } ],
+    "locationLeft" : 440.0,
+    "locationTop" : -550.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"http.content\",\"type\":\"String\"}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22178,
+    "targetJobId" : 22186
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22179,
+    "targetJobId" : 22183
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22178,
+    "targetJobId" : 22179
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22180,
+    "targetJobId" : 22188
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 22185,
+    "targetTriggerId" : 2379
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22182,
+    "targetJobId" : 22180
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22181,
+    "targetJobId" : 22182
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22184,
+    "targetJobId" : 22185
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22180,
+    "targetJobId" : 22187
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22186,
+    "targetJobId" : 22185
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22187,
+    "targetJobId" : 22185
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 22181,
+    "sourceTriggerId" : 2379
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22188,
+    "targetJobId" : 22178
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 22183,
+    "targetJobId" : 22184
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 2379,
+    "name" : "Symantec Threat Intelligence API - Network Protection",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : -160.0,
+    "locationTop" : -710.0,
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "#App:22185:m.Response!String",
+    "anyOrg" : true,
+    "userActionTypes" : "Host,Address",
+    "overrideRunAsUser" : true,
+    "renderBodyAsTip" : true,
+    "playbookTriggerFilterList" : [ ],
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"trg.action.item\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"trg.action.owner\",\"type\":\"String\"},{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"trg.action.entity\",\"type\":\"TCEntity\"}]",
+    "cacheMinutes" : 120,
+    "cacheParams" : "{\"includeMethod\":false,\"includeBody\":false,\"queryParams\":[],\"headerNames\":[]}"
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

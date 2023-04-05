@@ -1,0 +1,2368 @@
+{
+  "flows": [
+    {
+      "name": "OOB Content - CrowdStrike Hash Blocking",
+      "nodes": [
+        {
+          "id": "start-node-664bf136-0a96-49be-8c1b-b509cd4ba199",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 70,
+          "y": 0,
+          "vertices": [],
+          "title": "Trigger",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "50216b87-37d7-44c1-a132-56b831c2f4a2",
+          "name": "Configure_Extract_JSON_Fields",
+          "kind": "augmentation",
+          "lql": "`select get_json_object(\\`result\\`, '$.has_error') as has_error, get_json_object(\\`result\\`, '$.error') as error, \\`sha256\\` as sha256 from CrowdStrike_IOC`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 0,
+          "y": 448,
+          "vertices": [],
+          "title": "Configure: Extract JSON Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "SelectNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "fd132f11-7f1d-4633-9e24-795c6d482fd9",
+          "name": "Create_a_filter",
+          "kind": "augmentation",
+          "lql": "`select * from Configure_Extract_JSON_Fields where ( has_error = 'true' )`",
+          "operator": "SELECT",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "Filter rows with basic boolean statements",
+          "isExplainable": true,
+          "x": 0,
+          "y": 602,
+          "vertices": [],
+          "title": "Create a filter",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "formType": "ConditionNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Filter",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "bf87c2cc-d552-4854-9c68-fd39e9391cd4",
+          "name": "CrowdStrike_IOC",
+          "kind": "task",
+          "lql": "runAction(Get_Data_from_CSV_or_Json_File, \"logichub.crowdstrike_v2\", 28, \"create-ioc-v2\", {\"crowdstrike_indicator_values\": \"{{sha256}}\", \"__lh_action_timeout_sec\": \"\", \"crowdstrike_ioc_tags\": \"\", \"crowdstrike_ioc_source\": \"\", \"crowdstrike_ioc_type\": \"sha256\", \"crowdstrike_ioc_platforms\": \"linux\", \"__lh_rows_to_process\": \"\", \"crowdstrike_ioc_host_groups\": \"\", \"crowdstrike_ioc_action\": \"prevent\", \"crowdstrike_ioc_severity\": \"critical\", \"crowdstrike_ioc_applied_globally\": \"true\", \"crowdstrike_ioc_description\": \"\", \"crowdstrike_ioc_expiration\": \"\", \"time_between_consecutive_requests_milliseconds\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Crowdstrike Falcon Host uniquely combines an array of powerful methods to provide prevention against the rapidly changing tactics, techniques and procedures (TTPs) used by adversaries to breach organizations - including commodity malware, zero-day malware and even advanced malware-free attacks.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 280,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "create-ioc-v2",
+            "integrationId": "logichub.crowdstrike_v2",
+            "integrationInstanceId": 28,
+            "data": {
+              "crowdstrike_indicator_values": "{{sha256}}",
+              "crowdstrike_ioc_description": "",
+              "__lh_multithread_count": "",
+              "crowdstrike_ioc_tags": "",
+              "crowdstrike_ioc_expiration": "",
+              "crowdstrike_ioc_platforms": "linux",
+              "crowdstrike_ioc_type": "sha256",
+              "crowdstrike_ioc_action": "prevent",
+              "crowdstrike_ioc_applied_globally": "true",
+              "crowdstrike_ioc_source": "",
+              "time_between_consecutive_requests_milliseconds": "",
+              "crowdstrike_ioc_host_groups": "",
+              "__lh_rows_to_process": "",
+              "__lh_action_timeout_sec": "",
+              "crowdstrike_ioc_severity": "critical"
+            }
+          },
+          "title": "CrowdStrike IOC",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.crowdstrike_v2",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/cs_logo.png",
+            "name": "CrowdStrike Falcon Host (OAuth Based)",
+            "actionId": "create-ioc-v2",
+            "actionName": "Create Custom IOCs"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.crowdstrike_v2/create-ioc-v2"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "5e0fa03c-12b0-4473-b8f6-636400ab2c89",
+          "name": "Get_Data_from_CSV_or_Json_File",
+          "kind": "fetchData",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "To get data from a CSV or JSON file, enter the URL of its location(unauthenticated) or upload the file directly below. You may also specify a file already uploaded to Logichub",
+          "isExplainable": true,
+          "x": 0,
+          "y": 112,
+          "vertices": [],
+          "fileData": {
+            "isFileUploadMode": false,
+            "url": "https://lh-public.s3.us-west-2.amazonaws.com/MD5_sha.csv"
+          },
+          "title": "Get Data from CSV or Json File",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1056",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "CrowdStrike Development Instance",
+      "descriptor": {
+        "id": "logichub.crowdstrike_v2",
+        "name": "CrowdStrike Falcon Host (OAuth Based)",
+        "description": "Crowdstrike Falcon Host uniquely combines an array of powerful methods to provide prevention against the rapidly changing tactics, techniques and procedures (TTPs) used by adversaries to breach organizations - including commodity malware, zero-day malware and even advanced malware-free attacks.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/cs_logo.png",
+        "documentationSlug": "crowdstrike_v2",
+        "categories": [
+          "investigative"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m91.10"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "CrowdStrike Falcon Host (OAuth Based) Authentication Information",
+              "description": "Enter authentication information for the CrowdStrike Falcon Host (OAuth Based) integration",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "crowdstrike_v2_server_url",
+                  "description": "URL to your CrowdStrike Falcon Host (OAuth Based) instance. Eg: https://api.crowdstrike.com",
+                  "label": "URL",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "crowdstrike_v2_client_id",
+                  "description": "Client ID of your CrowdStrike Falcon Host",
+                  "label": "Client ID",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false,
+                  "isCredential": true
+                },
+                {
+                  "id": "crowdstrike_v2_client_secret",
+                  "description": "Client Secret of your CrowdStrike Falcon Host",
+                  "label": "Client Secret",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python3 -m src.crowdstrike_v2.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "search-detects",
+            "name": "Search Detections",
+            "description": "Search for detection IDs that match a given query",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_query",
+                      "description": "Search all detection metadata for the provided string. Eg: 'malicious'",
+                      "label": "Query",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_sort",
+                      "description": "Sort detections using these options. (Default is 'Max Severity: Descending')",
+                      "label": "Sort",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "first_behavior|asc",
+                          "label": "First Behavior: Ascending"
+                        },
+                        {
+                          "value": "first_behavior|desc",
+                          "label": "First Behavior: Descending"
+                        },
+                        {
+                          "value": "last_behavior|asc",
+                          "label": "Last Behavior: Ascending"
+                        },
+                        {
+                          "value": "last_behavior|desc",
+                          "label": "Last Behavior: Descending"
+                        },
+                        {
+                          "value": "max_severity|asc",
+                          "label": "Max Severity: Ascending"
+                        },
+                        {
+                          "value": "max_severity|desc",
+                          "label": "Max Severity: Descending"
+                        },
+                        {
+                          "value": "max_confidence|asc",
+                          "label": "Max Confidence: Ascending"
+                        },
+                        {
+                          "value": "max_confidence|desc",
+                          "label": "Max Confidence: Descending"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_filter",
+                      "description": "Filter detections using a query in Falcon Query Language (FQL) An asterisk wildcard * includes all results. Eg: 'behaviors.behavior_id: {{behavior_id_column}}'",
+                      "label": "Filter",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_offset",
+                      "description": "The first detection to return, where 0 is the latest detection. Use with 'Limit' to manage pagination of results.",
+                      "label": "Offset",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_limit",
+                      "description": "The maximum number of detections to return in this response (default: 9999; max: 9999). Use with 'Offset' to manage pagination of results.",
+                      "label": "Limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_search-detects_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_search-detects_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_detection_details",
+            "name": "Get Detection Details",
+            "description": "Get detection details action allows you to view details for specific detections given one or more detection IDs.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Detection Details",
+                  "description": "Show detection details for each detection id in the input table",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_column_name",
+                      "description": "Column name from parent table to lookup value for detection id",
+                      "label": "Detection ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_column_name_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_detection_details_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "modify_detections",
+            "name": "Modify Detection",
+            "description": "Change the state and assignee of one or more detections.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_column_name",
+                      "description": "Column name from parent table to lookup value for detection id to modify",
+                      "label": "Detection ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_assignee",
+                      "description": "Column name from parent table to lookup value for uid of assignee to modify the detection with. An empty value will ignore the updation of assignee for that detection",
+                      "label": "Assignee",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_status",
+                      "description": "Status to modify all the detection with",
+                      "label": "Status",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "new",
+                          "label": "New"
+                        },
+                        {
+                          "value": "in_progress",
+                          "label": "In Progress"
+                        },
+                        {
+                          "value": "true_positive",
+                          "label": "True Positive"
+                        },
+                        {
+                          "value": "false_positive",
+                          "label": "False Positive"
+                        },
+                        {
+                          "value": "ignored",
+                          "label": "Ignored"
+                        },
+                        {
+                          "value": "closed",
+                          "label": "Closed"
+                        },
+                        {
+                          "value": "reopened",
+                          "label": "Reopened"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_comment",
+                      "description": "Jinja-templated comment to add to the detection. Comments are displayed with the detection in Falcon and usually used to provide context or notes for other Falcon users. A detection can have multiple comments over time. Eg: `Changed assignee of Detection: {{dection_id_column}} to {{assignee_uuid_column}} by LogicHub`",
+                      "label": "Comment",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_modify_detections_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_modify_detections_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "search_devices",
+            "name": "Search Devices",
+            "description": "Search for devices based on filter.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Search Devices",
+                  "description": "Search for devices based on filter",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_devices_filter_template",
+                      "description": "Jinja2 template for the device filter. Following are few examples. Find more on falcon api documentation. \r\n1. To find devices with host name \r\n hostname: '{{host_column}}'  \r\n\r\n 2. To find devices based on prefix or suffix use wildcard ' * ' (supported by few fields) \r\n hostname: '{{host_prefix_column}}*' \r\n\r\n3. To find devices with local ip  \r\n local_ip: '{{ip_column}}' \r\n\r\n4. To find devices which matches both hostname and platform '+' operator is used e.g. \r\n hostname: '{{host_column}}' + platform_name:'{{platform_column}}' \r\n\r\n5. To find devices which matches either hostname or platform name ' , ' operator is used e.g. \r\n hostname: '{{host_column}}' , platform_name:'{{platform_column}}' ",
+                      "label": "Devices Filter Template",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_devices_max_query_results",
+                      "description": "No of results to fetch. (Default is 100 results)",
+                      "label": "Max Number of Results",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_search_device_details_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_search_device_details_exec"
+            },
+            "isDataSource": "Optional",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_device_details",
+            "name": "Get Device Details",
+            "description": "Get device details action allows you to view details for specific devices given one or more device IDs.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Device Details",
+                  "description": "Show device details for each device id in the input table",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_column_name",
+                      "description": "Column name from parent table to lookup value for device id",
+                      "label": "Device ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_column_name_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_get_device_details_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "search-processes",
+            "name": "Search Processes",
+            "description": "Search for processes associated with a custom IOC type",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_ioc_type",
+                      "description": "Select IOC Type.",
+                      "label": "IOC Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "sha256",
+                          "label": "sha256"
+                        },
+                        {
+                          "value": "md5",
+                          "label": "md5"
+                        },
+                        {
+                          "value": "domain",
+                          "label": "domain"
+                        },
+                        {
+                          "value": "ipv4",
+                          "label": "ipv4"
+                        },
+                        {
+                          "value": "ipv6",
+                          "label": "ipv6"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_indicator_values",
+                      "description": "The string representation of the indicator",
+                      "label": "Indicator Values",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_device_id",
+                      "description": "Specify a host's ID to return only processes from that host",
+                      "label": "Device ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_devices_max_query_results",
+                      "description": "No of results to fetch. (Default is 100 results)",
+                      "label": "Max Number of Results",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_search-processes_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_search-processes_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_process_details",
+            "name": "Get Process Details",
+            "description": "Retrieve the details of a process that is running or that previously ran, given one or more process IDs.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Process Details",
+                  "description": "Show process details for each process id in the input table",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_column_name",
+                      "description": "Column name from parent table to lookup value for process id",
+                      "label": "Process ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_column_name_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_get_process_details_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "search-ioc",
+            "name": "Search IOCs (Deprecated)",
+            "description": "Search custom IOCs in your account",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_ioc_type",
+                      "description": "Select IOC Type.",
+                      "label": "IOC Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "sha256",
+                          "label": "sha256"
+                        },
+                        {
+                          "value": "md5",
+                          "label": "md5"
+                        },
+                        {
+                          "value": "domain",
+                          "label": "domain"
+                        },
+                        {
+                          "value": "ipv4",
+                          "label": "ipv4"
+                        },
+                        {
+                          "value": "ipv6",
+                          "label": "ipv6"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_indicator_values",
+                      "description": "The string representation of the indicator",
+                      "label": "Indicator Values",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_policies",
+                      "description": "Select Indicator Policy",
+                      "label": "Indicator Policy",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "detect",
+                          "label": "detect"
+                        },
+                        {
+                          "value": "none",
+                          "label": "none"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_sources",
+                      "description": "The source where this indicator originated. This can be used for tracking where this indicator was defined. Limit 200 characters.",
+                      "label": "Source",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_created_by",
+                      "description": "The user or API client who created the custom IOC",
+                      "label": "Created By",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_deleted_by",
+                      "description": "The user or API client who deleted the custom IOC",
+                      "label": "Deleted By",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_include_deleted",
+                      "description": "Select option to include deleted IOCs",
+                      "label": "Include Deleted",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "true",
+                          "label": "True"
+                        },
+                        {
+                          "value": "false",
+                          "label": "False"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_from",
+                      "description": "Find custom IOCs created after this time (RFC-3339 timestamp)",
+                      "label": "After Timestamp",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_to",
+                      "description": "Find custom IOCs created before this time (RFC-3339 timestamp)",
+                      "label": "Before Timestamp",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.common.time_between_rows_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_search-iocs_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_ioc_details",
+            "name": "Get IOC Details (Deprecated)",
+            "description": "Get IOC (Indicators of Compromise) details based on value and type.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get IOC Details",
+                  "description": "Get IOC (Indicators of Compromise) details based on value and type.",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_ioc_type",
+                      "description": "Select IOC Type.",
+                      "label": "IOC Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "sha256",
+                          "label": "sha256"
+                        },
+                        {
+                          "value": "md5",
+                          "label": "md5"
+                        },
+                        {
+                          "value": "domain",
+                          "label": "domain"
+                        },
+                        {
+                          "value": "ipv4",
+                          "label": "ipv4"
+                        },
+                        {
+                          "value": "ipv6",
+                          "label": "ipv6"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_value_column_name",
+                      "description": "Column name from parent table that contains ioc value.",
+                      "label": "IOC Value Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_get_ioc_details_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_get_ioc_details_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "create-ioc",
+            "name": "Create Custom IOCs (Deprecated)",
+            "description": "Create new IOCs to block custom domains, hashes or ips",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_ioc_type",
+                      "description": "Select IOC Type.",
+                      "label": "IOC Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "sha256",
+                          "label": "sha256"
+                        },
+                        {
+                          "value": "md5",
+                          "label": "md5"
+                        },
+                        {
+                          "value": "domain",
+                          "label": "domain"
+                        },
+                        {
+                          "value": "ipv4",
+                          "label": "ipv4"
+                        },
+                        {
+                          "value": "ipv6",
+                          "label": "ipv6"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_indicator_values",
+                      "description": "The string representation of the indicator",
+                      "label": "Indicator Values",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_policies",
+                      "description": "Select Indicator Policy",
+                      "label": "Indicator Policy",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "detect",
+                          "label": "detect"
+                        },
+                        {
+                          "value": "none",
+                          "label": "none"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_sources",
+                      "description": "The source where this indicator originated. This can be used for tracking where this indicator was defined. Limit 200 characters.",
+                      "label": "Source",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_expiration",
+                      "description": "Number of days this custom IOC is active. Only applies for the types 'domain', 'ipv4', and 'ipv6'. (Default is 30 days)",
+                      "label": "Expiration Days",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_description",
+                      "description": "Descriptive label for this custom IOC",
+                      "label": "IOC Description",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_create-ioc_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_create-ioc_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "search-ioc-v2",
+            "name": "Search IOCs",
+            "description": "Search custom IOCs in your account",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_ioc_filter",
+                      "description": "Jinja-Templated text containing FQL filter for IOC. Example: filter=type:\"sha256\"+severity:\"high\"+created_on:>\"2021-08-08T23:45:23.961043979Z\"",
+                      "label": "Filter",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_limit",
+                      "description": "Jinja-Templated text containing the number of IOCs to fetch (Default is 100000). Example: {{lim}}",
+                      "label": "Limit",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_search-iocs-v2_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_search-iocs-v2_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_ioc_details_v2",
+            "name": "Get IOC Details",
+            "description": "Get IOC (Indicators of Compromise) details based on ID.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get IOC Details",
+                  "description": "Get IOC (Indicators of Compromise) details based on value and type.",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_ioc_id",
+                      "description": "Jinja-Templated text containing the value of ioc ID. Example: {{id}}",
+                      "label": "IOC ID",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_get_ioc_details_v2_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_get_ioc_details_v2_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "create-ioc-v2",
+            "name": "Create Custom IOCs",
+            "description": "Create new IOCs to block custom domains, hashes or ips",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_ioc_type",
+                      "description": "Select IOC Type.",
+                      "label": "Indicator Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "sha256",
+                          "label": "SHA256"
+                        },
+                        {
+                          "value": "md5",
+                          "label": "MD5"
+                        },
+                        {
+                          "value": "domain",
+                          "label": "Domain"
+                        },
+                        {
+                          "value": "ipv4",
+                          "label": "IPv4"
+                        },
+                        {
+                          "value": "ipv6",
+                          "label": "IPv6"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_indicator_values",
+                      "description": "The string representation of the indicator",
+                      "label": "Indicator Value",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_ioc_action",
+                      "description": "Select Action",
+                      "label": "Action",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "no_action",
+                          "label": "No Action"
+                        },
+                        {
+                          "value": "allow",
+                          "label": "Allow"
+                        },
+                        {
+                          "value": "prevent_no_ui",
+                          "label": "Prevent No UI"
+                        },
+                        {
+                          "value": "prevent",
+                          "label": "Prevent"
+                        },
+                        {
+                          "value": "detect",
+                          "label": "Detect"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_severity",
+                      "description": "Select Severity (Required for the Prevent and Detect action)",
+                      "label": "Severity",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "informational",
+                          "label": "Informational"
+                        },
+                        {
+                          "value": "low",
+                          "label": "Low"
+                        },
+                        {
+                          "value": "medium",
+                          "label": "Medium"
+                        },
+                        {
+                          "value": "high",
+                          "label": "High"
+                        },
+                        {
+                          "value": "critical",
+                          "label": "Critical"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_platforms",
+                      "description": "Jinja-Templated text containing CSVs of platforms that the indicator applies to. Example: mac,linux,{{os}}",
+                      "label": "Platforms",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_ioc_source",
+                      "description": "Jinja-Templated text containing the source where this indicator originated. This can be used for tracking where this indicator was defined (Limit is 256 characters). Example: {{source}}",
+                      "label": "Source",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_ioc_description",
+                      "description": "Jinja-Templated text containing descriptive label for this custom IOC. Example: {{description}}",
+                      "label": "IOC Description",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_ioc_tags",
+                      "description": "Jinja-Templated text containing CSVs of tags to apply to the indicator. Example: test_tag,{{tags}}",
+                      "label": "Tags",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_ioc_host_groups",
+                      "description": "Jinja-Templated text containing CSVs of host group IDs that the indicator applies to. Example: sbcd,{{host_groups}}",
+                      "label": "Host Groups",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_ioc_applied_globally",
+                      "description": "Select option for applied globally (Default is False).",
+                      "label": "Applied Globally",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "true",
+                          "label": "True"
+                        },
+                        {
+                          "value": "false",
+                          "label": "False"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_ioc_expiration",
+                      "description": "Jinja-Templated text containing the value of the date on which the indicator will become inactive (format is 2021-04-17T09:12:36-00:00). Example: {{date}}",
+                      "label": "Expiration",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_create-ioc-v2_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_create-ioc-v2_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "rtr-send-command-single-host",
+            "name": "RTR Command: Single Host",
+            "description": "Send Real Time Response commands to a single host",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_command_scope",
+                      "description": "Select Scope of RTR Command",
+                      "label": "Command Scope",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "command",
+                          "label": "RTR Read Only Analyst"
+                        },
+                        {
+                          "value": "active-responder-command",
+                          "label": "RTR Active Responder"
+                        },
+                        {
+                          "value": "admin-command",
+                          "label": "RTR Administrator"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_device_id",
+                      "description": "The Host Agent ID of device on which an RTR command is to be sent.",
+                      "label": "Device ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_command_string",
+                      "description": "Full command string for the command. For example cd C:\\some_directory",
+                      "label": "Command String",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_rtr-send-command-single-host_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_rtr-send-command-single-host_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "control-hosts",
+            "name": "Take Action on Devices",
+            "description": "Take various actions on the hosts in your environment. Contain or lift containment on hosts. Delete or restore hosts.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_device_action_name",
+                      "description": "Select one of the actions",
+                      "label": "Action Name",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "contain",
+                          "label": "Contain - This action contains the host, which stops any network communications to locations other than the CrowdStrike cloud and IPs specified in your containment policy"
+                        },
+                        {
+                          "value": "lift_containment",
+                          "label": "Lift Containment: This action lifts containment on the host, which returns its network communications to normal"
+                        },
+                        {
+                          "value": "hide_host",
+                          "label": "Hide Host: This action will delete a host. After the host is deleted, no new detections for that host will be reported via UI or APIs"
+                        },
+                        {
+                          "value": "unhide_host",
+                          "label": "Unhide Host: This action will restore a host. Detection reporting will resume after the host is restored"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_device_id",
+                      "description": "The Host Agent ID of device on which an RTR command is to be sent.",
+                      "label": "Device ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_control-hosts_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_control-hosts_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "search-incidents",
+            "name": "Search Incidents",
+            "description": "Search for incidents by providing an FQL filter, sorting, and paging details",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_filter",
+                      "description": "Filter criteria in the form of an FQL query. For more information about FQL queries, see documentation (https://falcon.crowdstrike.com/support/documentation/45/falcon-query-language-fql) in Falcon.",
+                      "label": "Filter",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_sort",
+                      "description": "Enter jinja-templated property to sort on, followed by a dot (.), followed by the sort direction, either \"asc\" or \"desc\". Example: `{{property}}.{{direction}}` or `start.desc`",
+                      "label": "Sort",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "crowdstrike_limit",
+                      "description": "Max number of incidents to return. (Default is 500). Note: Crowdstrike allows us to fetch only 500 results in single API call, therefore a value greater than 500 will involve multiple API calls and may take some time. Increase Action Timeout, in case action gets timed out.",
+                      "label": "Limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_search_incidents_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_search_incidents_exec"
+            },
+            "isDataSource": "Optional",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get-incident",
+            "name": "Get Incident Details",
+            "description": "Get details on incidents by providing incident IDs",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_column_name",
+                      "description": "Column name from parent table to lookup value for incident id",
+                      "label": "Incident ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_column_name_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_get_incident_details_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "falconx-sandbox-upload",
+            "name": "Falcon X Sandbox File Upload",
+            "description": "Upload a file for sandbox analysis. After uploading, use `Falcon X Sandbox Analysis` to start analyzing the file. Refer https://help.logichub.com/docs/crowdstrike_v2#falcon-x-sandbox-file-upload for details on acceptable file formats.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_column_name",
+                      "description": "Column name from parent table that contains LogicHub File ID of the file to be uploaded.",
+                      "label": "File ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_file_name",
+                      "description": "Column name from parent table that contains File name of the file to be uploaded. (Defaults to LogicHub File ID, if column is not selected or if column value is empty)",
+                      "label": "File Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_comment",
+                      "description": "Jinja-templated descriptive comment to identify the file for other users.",
+                      "label": "Comment",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_falconx_file_upload_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_falconx_file_upload_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "falconx-sandbox-submit",
+            "name": "Falcon X Sandbox Analysis",
+            "description": "Submit either a URL or a sample SHA256 for sandbox analysis. For SHA256 analysis, a file needs to be uploaded to Falcon X first using action `Falcon X Sandbox File Upload`. This action waits for the analysis to complete for each row of input. Use appropriate number of `Thread Count` to make this action run faster. As per Crowdstrike, time required for each resource to be analyzed varies but is usually less than 15 minutes. Therefore, set `Action Timeout` appropriately.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "crowdstrike_type",
+                      "description": "Select type of analysis you want to run",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "sha256",
+                          "label": "SHA256"
+                        },
+                        {
+                          "value": "url",
+                          "label": "URL"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_column_name",
+                      "description": "Column name from parent table that contains URL or SHA256 of file to analyze. Appropriate `Type` above must be selected for the action to perform correctly.",
+                      "label": "URL/SHA256",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_environment_id",
+                      "description": "The environment relevant to the urls/sha being analyzed",
+                      "label": "Environment ID",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "300",
+                          "label": "Linux (Ubuntu 16.04, 64 bit)"
+                        },
+                        {
+                          "value": "200",
+                          "label": "Android Static Analysis"
+                        },
+                        {
+                          "value": "160",
+                          "label": "Windows 10 64 bit"
+                        },
+                        {
+                          "value": "110",
+                          "label": "Windows 7 64 bit"
+                        },
+                        {
+                          "value": "100",
+                          "label": "Windows 7 32 bit"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "crowdstrike_report_type",
+                      "description": "Select type of report you want to get. (Default is `Summarized`)",
+                      "label": "Report Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "detailed",
+                          "label": "Detailed"
+                        },
+                        {
+                          "value": "summarized",
+                          "label": "Summarized"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds. (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.crowdstrike_v2.action_falconx_analyze_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.crowdstrike_v2.action_falconx_analyze_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "1.2.0",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2022-02-09T11:09:06Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:06:14.986Z",
+          "errorMessage": "This imported connection is using a different version of the CrowdStrike Falcon Host (OAuth Based) (logichub.crowdstrike_v2) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_table_key_value": "",
+        "crowdstrike_v2_client_secret": "****restricted****",
+        "__lh_ssl_verify": "",
+        "crowdstrike_v2_server_url": "https://api.crowdstrike.com",
+        "crowdstrike_v2_client_id": "a0404cef8d5d4da8818334dfdec4f8d6",
+        "__lh_label": "CrowdStrike Development Instance"
+      },
+      "id": 28,
+      "isDefault": false
+    }
+  ],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

@@ -1,0 +1,477 @@
+{
+  "schema_version": 4,
+  "name": "Analyze suspicious URLs with Any.run",
+  "description": "Analyze suspicious URLs with Any.Run and receive an email with a summary of results, including a link to the full report once complete.\n\ntags: AnyRun, Intermediate, Analyze, Investigate, \nicons: 🏃, 🔬, 📧\nvisibility: public",
+  "guid": "74d37bfed776708acc11ec5302ac4871",
+  "slug": "analyze_suspicious_urls_with_any_run",
+  "exported_at": "2022-07-11T17:45:13Z",
+  "agents": [
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger Successful Submission",
+      "disabled": false,
+      "guid": "0cdfda6694a95b97c4c79cd8eb740697",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<scan_a_url_in_the_any_run_sandbox.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Form",
+      "disabled": false,
+      "guid": "25533cfe0b557a5c1ba0220a0ce6ae61",
+      "options": {
+        "path": "efff9aa92cc76e5994efb7c4af1dafa6",
+        "secret": "35f49cb4dbb49874942b6046a63ca521"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait for analysis",
+      "disabled": false,
+      "guid": "034cc2f322ee5c3bc56125c5484ebe2d",
+      "options": {
+        "mode": "delay",
+        "seconds": "<<TIMES(60, 10)>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Scan a URL in the any.run Sandbox",
+      "disabled": false,
+      "guid": "231a673c4a50c14f7357aa73386373d1",
+      "options": {
+        "url": "https://api.any.run/v1/analysis",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "obj_url": "<<form.body.url>>"
+        },
+        "headers": {
+          "Authorization": "API-Key <<CREDENTIAL.anyrun>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Analysis Results",
+      "disabled": false,
+      "guid": "13c1209e9bf7f3f32a729e840766b112",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "Any.run File Analysis Results - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "<body style=\"margin: 0;background-color: #FCF9F5;\">\n  <center class=\"wrapper\" style=\"width: 100%;table-layout: fixed;background-color: #FCF9F5;padding-bottom: 40px;\">\n    <table class=\"main\" align=\"center\" style=\"border-spacing: 0px;margin: 0 auto;width: 100%;max-width: 600px;background-color: #FFFFFF;font-family: sans-serif;color: #4a4a4a;\">\n      <!-- HEADER -->\n      <tr>\n        <td style=\"padding: 0;\">\n          <table width=\"100%\" style=\"border-spacing: 0;\">\n            <tr>\n              <td style=\"text-align: center; padding: 8px 0 4px; border-top: 2px; border-bottom: 3px solid;\">\n                <a href=\"#\"><img src=\"https://ci6.googleusercontent.com/proxy/nPFmlOl5u2tp9Og0HFrQEkCT2L2vaxxB--579Tp8GS4bvNHJR35InJt8XNXpMdI_FuElqu-m85JZAWn7nKQxNkbolPLRzHDUmruQVIGr-t-pYv92=s0-d-e1-ft#https://www.tines.com/logos/logo-tines-with-backdrop-light@2x.png\" width=\"100\" alt=\"\" style=\"border: 0;\"></a>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <!-- COLUMN SECTION -->\n      <tr>\n        <td style=\"padding: 0;\">\n          <table width=\"100%\" style=\"border-spacing: 0;\">\n            <tr>\n              <td class=\"two-columns\" style=\"padding: 35px 0 40px;font-size: 0;text-align: center;\">\n                <!-- Col 1-->\n                <table class=\"column\" style=\"border-spacing: 0;width: 100%;max-width: 300px;display: inline-block;vertical-align: top;\">\n                  <tr>\n                    <td class=\"padding\" style=\"padding: 20px;\">\n                      <table class=\"content\" style=\"border-spacing: 0;font-size: 15px;text-align: center;line-height: 20px;\">\n                        <tr>\n                          <td style=\"padding: 0;\">\n                            <a href=\"#\">\n                              <img src=\"https://www.datocms-assets.com/55802/1635420776-illustration-security-gate.png?dpr=1&fm=png&w=824\" alt=\"\" width=\"260\" style=\"max-width: 260px;border-radius: 8px;border: 0;\">\n                            </a>\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:10px;\">\n                            <p style=\"font-size: 17px;font-weight: bold;\">ANY.RUN - Interactive Sandbox</p>\n                            <p style=\"padding-bottom: 15px; font-family: 'Courier New', Courier, monospace; text-align: center;\">\n                              <strong>URL: </strong><<form.body.url>><br>\n                              <strong>Threat: </strong><<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.body.analysis.scores.verdict.threatLevelText>><br>\n                              <strong>Threat Level: </strong><<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.body.analysis.scores.verdict.threatLevel>><br>\n                            </p>\n                            <a href=\"<<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.body.analysis.permanentUrl>>\" class=\"button\" style=\"background-color: #2C9469;color: #ffffff;text-decoration: none;padding: 12px 20px;border-radius: 8px;font-weight: bold;letter-spacing: .5px;\">Full Results</a>\n                          </td>\n                        </tr>\n                      </table>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <!-- EMAIL LOGOS -->\n      <tr>\n        <td style=\"padding: 0;\">\n          <table style=\"border-spacing: 0;\">\n\n          </table>\n        </td>\n      </tr>\n      <!-- FOOTER SECTION -->\n      <tr>\n        <td style=\"padding: 0;\">\n          <table width=\"100%\" style=\"border-spacing: 0;\">\n            <tr>\n              <td style=\"text-align: center; padding: 8px 0 4px; border-top: 2px; border-bottom: 3px solid;\">\n                <a href=\"#\"><img src=\"https://ci4.googleusercontent.com/proxy/Nu-KkbA1FI6A_6Vr064Q-PftJ6lv4BBas9_GToS_lZUOFGS4Ye2-bw-rJlnEG_UGF3iP0brWs9H5W2mWt9DBOjHI9sGxIMtp1wXfXGg=s0-d-e1-ft#https://www.tines.com/logos/tines-icon-light-circle@2x.png\" width=\"50\" alt=\"\" style=\"border: 0;\"></a>\n              </td>\n            </tr>\n          </table>\n          </td>\n      </tr>\n      <tr>\n        <td style=\"padding: 0;\">\n          <table width=\"100%\" style=\"border-spacing: 0;\">\n          <tr>\n            <td style=\"text-align: center; padding: 8px 0 4px; border-top: 2px; border-bottom: 3px;\">\n              <a href=\"https://hub.tines.com/\" style=\"text-decoration:none\">Help Center</a> · \n              <a href=\"https://tines.com/blog\" style=\"text-decoration:none\">Blog</a> · \n              <a href=\"https://www.linkedin.com/company/tines-io/\" style=\"text-decoration:none\">LinkedIn</a> · \n              <a href=\"https://twitter.com/tines_io\" style=\"text-decoration:none\">Twitter</a> · \n              <a href=\"https://hq.tines.io/forms/6f8b122ccba3cb7e8e0d3531d1b70eb2\" style=\"text-decoration:none\">Slack Community</a> · \n              <a href=\"https://tines.com/careers\" style=\"text-decoration:none\">Careers</a> · \n              <a href=\"https://tines.com/terms\" style=\"text-decoration:none\">Terms</a> · \n              <a href=\"https://tines.com/privacy\" style=\"text-decoration:none\">Privacy</a>\n            </td>\n          </tr>\n        </table></td>\n      </tr>\n    </table>\n  </center>\n</body>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Retrieve detailed report of a recent any.run analysis by TaskId",
+      "disabled": false,
+      "guid": "5c1be77788f8c3470f3d3ca4153514f6",
+      "options": {
+        "url": "https://api.any.run/report/<<scan_a_url_in_the_any_run_sandbox.body.data.taskid>>/summary/json",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "API-Key <<CREDENTIAL.anyrun>>"
+        },
+        "timeout": 30
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Analysis Complete",
+      "disabled": false,
+      "guid": "8c803cca15bc522e55e11db5317b3a05",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Analysis Not Complete",
+      "disabled": false,
+      "guid": "123fc9d1a585f17d4aa7f034949df7e0",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "200",
+            "path": "<<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Increment Counter",
+      "disabled": false,
+      "guid": "1295114e01adaca4acab41aa1b692481",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "counter": "<<PLUS(increment_counter.counter, 1)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Counter Less Than 10",
+      "disabled": false,
+      "guid": "cf85dd549a5930ed63e748aeaedd2b6a",
+      "options": {
+        "rules": [
+          {
+            "type": "field<=value",
+            "value": "10",
+            "path": "<<increment_counter.counter>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "9d1e49f879568e2e65c349915db541c4",
+      "options": {
+        "mode": "delay",
+        "seconds": "<<TIMES(5, 60)>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Error Email",
+      "disabled": false,
+      "guid": "c98a38f83b64e0704a0b274afb3dfb83",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "ERROR Any.run File Analysis Results - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "An error has occurred when attempting to pull results from Any.run.<br>\nPlease check story: <a href=\"<<APPEND(META.tenant.domain, \"/stories/\") |> APPEND(%, META.story.id)>>\"><<META.story.name>></a>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Counter Greater Than 10",
+      "disabled": false,
+      "guid": "e258877aa25974f58509f588d2cd935f",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "10",
+            "path": "<<increment_counter.counter>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger Unsuccessful Submission",
+      "disabled": false,
+      "guid": "e96953fe43abeeff8a78f8cfcc65efc1",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "200",
+            "path": "<<submit_file_to_any_run_for_analysis.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Error",
+      "disabled": false,
+      "guid": "15d736b92a4b90bf5367e5a7e0266b02",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "Any.run File Analysis Error - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "An error has occurred when submitting file to Any.Run<br>\n\nPlease check story: <a href=\"<<APPEND(META.tenant.domain, \"/stories/\") |> APPEND(%, META.story.id)>>\"><<META.story.name>></a>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# **Any.Run URL Analysis**\n---- \n\nFill in the form with a suspicious URL and email and this story will create a Task on Any.run and analyse the URL. \n\nA simple result email will be sent to the provided email address. \n\n",
+      "position": [
+        120.0,
+        360.0
+      ],
+      "guid": "a768f904c896c9d91ada033fd3a4024a",
+      "width": null
+    },
+    {
+      "content": "[](https://image-uploads.tines.com/anyrun.png)",
+      "position": [
+        120.0,
+        75.0
+      ],
+      "guid": "89088877031803210f7c17ad5b1149b4",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 13
+    },
+    {
+      "source": 3,
+      "receiver": 0
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 12
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 5
+    },
+    {
+      "source": 12,
+      "receiver": 11
+    }
+  ],
+  "diagram_layout": "{\"0cdfda6694a95b97c4c79cd8eb740697\":[420,255],\"25533cfe0b557a5c1ba0220a0ce6ae61\":[420,90],\"034cc2f322ee5c3bc56125c5484ebe2d\":[420,345],\"231a673c4a50c14f7357aa73386373d1\":[420,165],\"13c1209e9bf7f3f32a729e840766b112\":[660,600],\"5c1be77788f8c3470f3d3ca4153514f6\":[420,420],\"8c803cca15bc522e55e11db5317b3a05\":[660,525],\"123fc9d1a585f17d4aa7f034949df7e0\":[420,525],\"1295114e01adaca4acab41aa1b692481\":[420,600],\"cf85dd549a5930ed63e748aeaedd2b6a\":[420,675],\"9d1e49f879568e2e65c349915db541c4\":[420,750],\"c98a38f83b64e0704a0b274afb3dfb83\":[195,750],\"e258877aa25974f58509f588d2cd935f\":[195,675],\"e96953fe43abeeff8a78f8cfcc65efc1\":[675,255],\"15d736b92a4b90bf5367e5a7e0266b02\":[675,345]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Analyze suspicious URLs with Any.run Form",
+    "description": "Submit a URL for analysis on Any.run",
+    "fields": [
+      {
+        "name": "URL",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Email",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "25533cfe0b557a5c1ba0220a0ce6ae61",
+    "success_message": "Thank you for your submission"
+  }
+}

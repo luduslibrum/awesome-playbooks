@@ -1,0 +1,2002 @@
+{
+  "flows": [
+    {
+      "name": "OOB Content - Automated Attachment Analysis from Email",
+      "nodes": [
+        {
+          "id": "start-node-29426291-4a19-4191-b29f-d11426b9335e",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 70,
+          "y": 0,
+          "vertices": [],
+          "title": "Trigger",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "d8229fdc-a42f-4972-9bbe-4c1b09027160",
+          "name": "Configure_Extract_JSON_Fields",
+          "kind": "augmentation",
+          "lql": "`select get_json_object(\\`result\\`, '$.URLs') as URLs, get_json_object(\\`result\\`, '$.From') as Email_From, get_json_object(\\`result\\`, '$.Message Headers.From') as Headers_From, get_json_object(\\`result\\`, '$.Subject') as Email_Subject, get_json_object(\\`result\\`, '$.To') as Email_To, result as result from IMAP`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 0,
+          "y": 280,
+          "vertices": [],
+          "title": "Extract IMAP Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "LQLEditor",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "8f60c1fd-d76e-4550-b9cb-033d36fcabd7",
+          "name": "Add_Field",
+          "kind": "augmentation",
+          "lql": "`SELECT \"chris.botelho@logichub.com\" AS email_recipient, \"Supicious Attachment Results\" AS email_subject, * FROM operator_tableToHtmlString`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Add one or more fields.",
+          "isExplainable": true,
+          "x": 0,
+          "y": 1078,
+          "vertices": [],
+          "title": "Add Email Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "formType": "LQLEditor",
+          "contentItemIdentifier": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Add Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "1ff22193-b8b6-4325-8f64-36a088b8def4",
+          "name": "operator_tableToHtmlString",
+          "kind": "augmentation",
+          "lql": "tableToHtmlString(Configure_Extract_JSON_Fields_1, \"100\")",
+          "operator": "tableToHtmlString",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator converts LQL table to HTML table",
+          "isExplainable": true,
+          "x": 0,
+          "y": 924,
+          "vertices": [],
+          "title": "Create HTML Table",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "tableToHtmlString"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "tableToHtmlString"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Table To Html String",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "cfe2ed5a-522b-41c0-b403-c3c01fdcefcc",
+          "name": "Configure_Extract_JSON_Fields_1",
+          "kind": "augmentation",
+          "lql": "`select \\`Email_Subject\\` as Email_Subject, \\`Headers_From\\` as Headers_From, \\`Email_From\\` as Email_From, \\`Email_To\\` as Email_To, get_json_object(\\`result\\`, '$.scan_date') as Virustotal_Scan_Date, get_json_object(\\`result\\`, '$.verbose_msg') as Scan_Message, get_json_object(\\`result\\`, '$.lh_report_url') as Report_URL, get_json_object(\\`result\\`, '$.scans.Kaspersky.detected') as Kaspersky_Detected, get_json_object(\\`result\\`, '$.scans.Kaspersky.result') as Kaspersky_Result, get_json_object(\\`result\\`, '$.positives') as Virustotal_Detections,get_json_object(\\`result\\`, '$.md5') as File_MD5 from VirusTotal`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 0,
+          "y": 770,
+          "vertices": [],
+          "title": "Extract Fields From VT Results",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "LQLEditor",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "4cbd72d6-444a-4f34-9e23-e3fa96c2faa5",
+          "name": "Attachment",
+          "kind": "step",
+          "inputs": [
+            "d8229fdc-a42f-4972-9bbe-4c1b09027160"
+          ],
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract the attachment id from emails fetched using an imap connection",
+          "isExplainable": true,
+          "x": 0,
+          "y": 434,
+          "vertices": [],
+          "title": "Extract Attachment",
+          "moduleId": "ExtractFirstAttachment",
+          "moduleVersion": {
+            "majorVersion": 1,
+            "minorVersion": 0,
+            "patchVersion": 0,
+            "contentResourceVersionBranch": "Local"
+          },
+          "moduleParameters": {
+            "parent0": "Configure_Extract_JSON_Fields",
+            "emailResultColumn": "result"
+          },
+          "stepParams": {
+            "kind": "module",
+            "title": "Extract First Attachment From Email"
+          },
+          "isEditable": false,
+          "isStepImplementable": false,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "id": "ExtractFirstAttachment",
+            "name": "Extract First Attachment From Email",
+            "latestAvailableVersion": {
+              "majorVersion": 1,
+              "minorVersion": 0,
+              "patchVersion": 0,
+              "contentResourceVersionBranch": "Local"
+            }
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "ModuleContentKind",
+            "id": "ExtractFirstAttachment"
+          },
+          "categoryKind": "Module",
+          "iconTitle": "Module: Extract First Attachment From Email",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "79fcdf99-c584-4a41-aa24-24d3502612d1",
+          "name": "SMTP",
+          "kind": "task",
+          "lql": "runAction(Add_Field, \"logichub.smtp\", 17, \"send_email\", {\"__lh_action_timeout_sec\": \"\", \"smtp_cc_email_column_name\": \"\", \"__lh_rows_to_process\": \"\", \"smtp_email_body_type\": \"htmlbody\", \"smtp_body_column_name\": \"$.htmlTable\", \"smtp_attachments_column_name\": \"\", \"smtp_bcc_email_column_name\": \"\", \"smtp_email_to_column_name\": \"$.email_recipient\", \"time_between_consecutive_requests_milliseconds\": \"\", \"smtp_subject_column_name\": \"$.email_subject\", \"smtp_attachment_extension\": \"\", \"smtp_email_from_column_name\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "Simple Mail Transfer Protocol (SMTP) is a standard communication protocol for sending email messages on business networks and the Internet.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 1232,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "send_email",
+            "integrationId": "logichub.smtp",
+            "integrationInstanceId": 17,
+            "data": {
+              "__lh_multithread_count": "",
+              "smtp_cc_email_column_name": "",
+              "smtp_bcc_email_column_name": "",
+              "smtp_body_column_name": "$.htmlTable",
+              "time_between_consecutive_requests_milliseconds": "",
+              "__lh_rows_to_process": "",
+              "smtp_email_from_column_name": "",
+              "smtp_attachment_extension": "",
+              "__lh_action_timeout_sec": "",
+              "smtp_attachments_column_name": "",
+              "smtp_email_body_type": "htmlbody",
+              "smtp_subject_column_name": "$.email_subject",
+              "smtp_email_to_column_name": "$.email_recipient"
+            }
+          },
+          "title": "Send Email",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.smtp",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/smtp1-logo.png",
+            "name": "SMTP",
+            "actionId": "send_email",
+            "actionName": "Send Email"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.smtp/send_email"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: SMTP - Send Email",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "9ceec964-79a3-4248-84db-680b890d6507",
+          "name": "IMAP",
+          "kind": "task",
+          "lql": "runAction(_Start_Node, \"logichub.imap\", 25, \"read_unread_emails\", {\"__lh_action_timeout_sec\": \"\", \"imap_mailbox_query_age\": \"\", \"imap_filter_criteria\": \"UNREAD\", \"imap_get_attachments\": \"True\", \"imap_mark_read\": \"True\", \"imap_mailbox_name\": \"Inbox\", \"imap_mailbox_message_limit\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Internet Message Access Protocol is a standard protocol used by e-mail clients to retrieve messages from a mail server over a TCP/IP connection. IMAP is defined by RFC 3501",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 112,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "read_unread_emails",
+            "integrationId": "logichub.imap",
+            "integrationInstanceId": 25,
+            "data": {
+              "imap_mailbox_name": "Inbox",
+              "imap_mailbox_message_limit": "",
+              "imap_filter_criteria": "UNREAD",
+              "imap_mark_read": "True",
+              "imap_mailbox_query_age": "",
+              "__lh_action_timeout_sec": "",
+              "imap_get_attachments": "True"
+            }
+          },
+          "title": "Get IMAP Messages",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.imap",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/imap-logo.png",
+            "iconUrl": "https://lhub-public.s3.amazonaws.com/integrations/imap_icon.svg",
+            "name": "IMAP",
+            "actionId": "read_unread_emails",
+            "actionName": "Read Emails"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.imap/read_unread_emails"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: IMAP - Read Emails",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "edf6fda7-7275-416e-ab05-8feb72945222",
+          "name": "VirusTotal",
+          "kind": "task",
+          "lql": "runAction(Attachment, \"logichub.virustotal\", 24, \"analyze_file\", {\"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\", \"vt_action_type\": \"report\", \"vt_column_name\": \"$.attach_id\", \"vt_time_between_consecutive_requests_millis\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Analyze suspicious files and URLs to detect types of malware including viruses, worms, and trojans.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 602,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "analyze_file",
+            "integrationId": "logichub.virustotal",
+            "integrationInstanceId": 24,
+            "data": {
+              "__lh_multithread_count": "",
+              "vt_action_type": "report",
+              "vt_column_name": "$.attach_id",
+              "__lh_rows_to_process": "",
+              "__lh_action_timeout_sec": "",
+              "vt_time_between_consecutive_requests_millis": ""
+            }
+          },
+          "title": "VirusTotal",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.virustotal",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/virius-total-logo.svg",
+            "name": "Virus Total",
+            "actionId": "analyze_file",
+            "actionName": "Analyze File"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.virustotal/analyze_file"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Virus Total - Analyze File",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1059",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [
+    {
+      "id": "ExtractFirstAttachment",
+      "name": "Extract First Attachment From Email",
+      "description": "Extract the attachment id from emails fetched using an imap connection",
+      "templateNodes": [
+        {
+          "name": "get_attach_id_list",
+          "templateLQL": "`select\n  get_json_object(%%%emailResultColumn%%%, \"$.Attachments[0].LogicHub File ID\") as attach_id,\n  get_json_object(%%%emailResultColumn%%%, \"$.Message-ID\") as msg_id,\n  * \n\nfrom %%%parent0%%%`",
+          "isOutput": true
+        }
+      ],
+      "steps": [
+        {
+          "name": "Module Parameters",
+          "description": "",
+          "inputs": [
+            {
+              "id": "parent0",
+              "description": "Parent 0",
+              "label": "Parent 0",
+              "dataType": "node",
+              "inputType": "columnSelect",
+              "dependsOn": "",
+              "columnTemplating": false
+            },
+            {
+              "id": "emailResultColumn",
+              "description": "Column containing email data as json",
+              "label": "Email Result Column",
+              "dataType": "column",
+              "inputType": "text",
+              "dependsOn": "parent0",
+              "columnTemplating": false
+            }
+          ],
+          "isVariadic": false
+        }
+      ],
+      "isPublished": true,
+      "categories": [
+        "phishing"
+      ],
+      "isEditable": false,
+      "integrations": [],
+      "innerModules": [],
+      "tags": [],
+      "moduleVersion": {
+        "majorVersion": 1,
+        "minorVersion": 0,
+        "patchVersion": 0,
+        "contentResourceVersionBranch": "Local"
+      },
+      "isDataSource": "No",
+      "resourceFormatVersion": 3,
+      "weight": 1
+    }
+  ],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "CB Testing - Logichub Demo",
+      "descriptor": {
+        "id": "logichub.smtp",
+        "name": "SMTP",
+        "description": "Simple Mail Transfer Protocol (SMTP) is a standard communication protocol for sending email messages on business networks and the Internet.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/smtp1-logo.png",
+        "documentationSlug": "smtp",
+        "categories": [
+          "messaging"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m88.21"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "SMTP Server and Account Authentication",
+              "description": "Enter authentication information for your SMTP connection",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_server_name",
+                  "description": "Server name for your SMTP connection",
+                  "label": "SMTP Server Name",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_server_port",
+                  "description": "Server port for your SMTP connection",
+                  "label": "SMTP Server Port",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_authentication_type",
+                  "description": "Authentication type for your SMTP connection",
+                  "label": "Authentication type",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "basic",
+                      "label": "Basic"
+                    },
+                    {
+                      "value": "ntlm",
+                      "label": "NTLM"
+                    },
+                    {
+                      "value": "none",
+                      "label": "None"
+                    }
+                  ],
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_use_encryption",
+                  "description": "Whether or not to use encryption",
+                  "label": "Use encryption",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "Yes",
+                      "label": "Yes"
+                    },
+                    {
+                      "value": "No",
+                      "label": "No"
+                    }
+                  ],
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_email_address",
+                  "description": "Email Address to send from",
+                  "label": "Email Address",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false,
+                  "isCredential": true
+                },
+                {
+                  "id": "smtp_username",
+                  "description": "Username if different from Email Address",
+                  "label": "Username",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_password",
+                  "description": "Password to log in with. Leave empty if using None Authentication type.",
+                  "label": "Password",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "optional": true,
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python -m src.smtp.instantiate"
+          }
+        },
+        "actions": [
+          {
+            "id": "send_email",
+            "name": "Send Email",
+            "description": "Sends an e-mail to a recipient using SMTP",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create and Send Email",
+                  "description": "Create and send an email using column names from the parent table",
+                  "inputs": [
+                    {
+                      "id": "smtp_subject_column_name",
+                      "description": "A column containing the subject title for e-mails",
+                      "label": "Subject Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_body_column_name",
+                      "description": "A column containing the body for outbound e-mails",
+                      "label": "Body Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_to_column_name",
+                      "description": "A column containing the e-mail addresses to send an e-mail to",
+                      "label": "Column containing the e-mail address for recipients",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_from_column_name",
+                      "description": "A column containing the e-mail addresses as sender to send an e-mail to",
+                      "label": "Column containing the from e-mail address",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_body_type",
+                      "description": "Select type of email body (Default is Plain Text)",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "plaintext",
+                          "label": "Plain Text"
+                        },
+                        {
+                          "value": "htmlbody",
+                          "label": "HTML"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_cc_email_column_name",
+                      "description": "Column containing e-mail addresses to attach as cc on an outbound e-mail",
+                      "label": "CC on outbound e-mail Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_bcc_email_column_name",
+                      "description": "Column containing e-mail addresses to attach as bcc on an outbound e-mail",
+                      "label": "BCC on outbound e-mail Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_attachments_column_name",
+                      "description": "Column containing one or more file IDs to attachment. (Can be a comma separated string of lhub_file_id values or a json dict in the format of {\"<lhub_id>\":\"<file_name>\"})",
+                      "label": "File Attachment",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_attachment_extension",
+                      "description": "If no file name is provided, add this extension to attached files.",
+                      "label": "Attachment File Extension",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.smtp.action_send-email_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.smtp.action_send-email_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          },
+          {
+            "id": "send_email_empty_table",
+            "name": "Send static email, If table is empty",
+            "description": "Sends an e-mail to a recipient with static input if table is empty",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "smtp_subject",
+                      "description": "Subject title for e-mails",
+                      "label": "Subject",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_body",
+                      "description": "Body for outbound e-mails",
+                      "label": "Body",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_to",
+                      "description": "E-mail addresses to send an e-mail to",
+                      "label": "E-mail address for recipients",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_from",
+                      "description": "E-mail addresses as sender to send an e-mail to",
+                      "label": "From E-mail address",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_body_type",
+                      "description": "Select type of email body (Default is Plain Text)",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "plaintext",
+                          "label": "Plain Text"
+                        },
+                        {
+                          "value": "htmlbody",
+                          "label": "HTML"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_cc_email",
+                      "description": "E-mail addresses to attach as cc on an outbound e-mail",
+                      "label": "CC on outbound e-mail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_bcc_email",
+                      "description": "E-mail addresses to attach as bcc on an outbound e-mail",
+                      "label": "BCC on outbound e-mail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.smtp.action_send-email-empty-table_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.smtp.action_send-email-empty-table_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "send_emails"
+            ]
+          }
+        ],
+        "version": "2.1.11",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-12-16T13:39:28Z",
+        "failedAttempt": {
+          "modified": "2022-08-03T12:36:03Z",
+          "errorMessage": "Failed to update connection: CB Testing - Logichub Demo from SMTP:2.1.11 to SMTP:2.1.12 added on 2022-08-03T12:36:03ZDetails: Authentication failed: (535, '5.7.8 Username and Password not accepted. Learn more at\\n5.7.8  https://support.google.com/mail/?p=BadCredentials p4-20020a17090a284400b001fd81970d1fsm184623pjf.47 - gsmtp')"
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "false",
+        "__lh_table_key_value": "",
+        "smtp_authentication_type": "basic",
+        "__lh_ssl_verify": "True",
+        "smtp_email_address": "logichub.automation.demo@gmail.com",
+        "smtp_server_port": "587",
+        "smtp_username": "logichub.automation.demo@gmail.com",
+        "smtp_password": "****restricted****",
+        "smtp_use_encryption": "Yes",
+        "smtp_server_name": "smtp.gmail.com",
+        "__lh_label": "CB Testing - Logichub Demo"
+      },
+      "id": 17,
+      "isDefault": false
+    },
+    {
+      "label": "CB Testing Imap - Logichub Demo",
+      "descriptor": {
+        "id": "logichub.imap",
+        "name": "IMAP",
+        "description": "Internet Message Access Protocol is a standard protocol used by e-mail clients to retrieve messages from a mail server over a TCP/IP connection. IMAP is defined by RFC 3501",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/imap-logo.png",
+        "iconUrl": "https://lhub-public.s3.amazonaws.com/integrations/imap_icon.svg",
+        "categories": [
+          "messaging"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m88.21"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "IMAP Server and Account Authentication",
+              "description": "Enter authentication information for your IMAP connection",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "imap_server_name",
+                  "description": "Server name for your IMAP connection",
+                  "label": "IMAP Server Name",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "imap_server_port",
+                  "description": "Server port for your IMAP connection",
+                  "label": "IMAP Server Port (usually 993)",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "imap_username",
+                  "description": "Username for IMAP",
+                  "label": "Email Address/Username",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false,
+                  "isCredential": true
+                },
+                {
+                  "id": "imap_password",
+                  "description": "Password to log in with.",
+                  "label": "Password",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python -m src.imap.instance_validate"
+          }
+        },
+        "actions": [
+          {
+            "id": "read_unread_emails",
+            "name": "Read Emails",
+            "description": "Reads e-mails using IMAP",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Read Email",
+                  "description": "Fetches emails for a specific mailbox ie inbox",
+                  "inputs": [
+                    {
+                      "id": "imap_mailbox_name",
+                      "description": "Mailbox name of a specific mailbox. For example: Inbox",
+                      "label": "Mailbox name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_filter_criteria",
+                      "description": "Whether to read ALL emails or UNREAD emails",
+                      "label": "ALL or UNREAD",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "ALL",
+                          "label": "ALL"
+                        },
+                        {
+                          "value": "UNREAD",
+                          "label": "UNREAD"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_mark_read",
+                      "description": "Automatically mark messages read when they are pulled by LogicHub. (Default is 'True' to mark read)",
+                      "label": "Mark Read",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "True",
+                          "label": "True"
+                        },
+                        {
+                          "value": "False",
+                          "label": "False"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_get_attachments",
+                      "description": "Automatically download attachments.Doing so may significantly increase processing time. (Default is 'True' to get attachment)",
+                      "label": "Download Attachments",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "True",
+                          "label": "True"
+                        },
+                        {
+                          "value": "False",
+                          "label": "False"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_mailbox_query_age",
+                      "description": "Filter messages based on maximum age (in seconds) since message receipt time (Default is to retrieve all messages)",
+                      "label": "Filtering: Maximum Message Age",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_mailbox_message_limit",
+                      "description": "Limit the number of messages to pull at once. (Default is 100 messages)",
+                      "label": "Filtering: Message Limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.imap.action_read-email_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.imap.action_read-email_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email",
+              "read_emails"
+            ]
+          },
+          {
+            "id": "add-labels",
+            "name": "Add Labels",
+            "description": "Adds labels to an email in GMail",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Add Labels",
+                  "description": "Adds labels to an email",
+                  "inputs": [
+                    {
+                      "id": "imap_mailbox_name",
+                      "description": "Jinja Template for Mailbox name of the mailbox to which UID belongs. For example: Inbox",
+                      "label": "Mailbox name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "imap_column_email_uid",
+                      "description": "Column name having UID of email",
+                      "label": "Email UID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_email_labels",
+                      "description": "Jinja Template for Comma separated list of labels to be added to email. e.g {{label1}},{{label2}}",
+                      "label": "Email Labels",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.imap.action_labels_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.imap.action_add-labels_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          },
+          {
+            "id": "remove-labels",
+            "name": "Remove Labels",
+            "description": "Remove labels from an email in GMail",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Remove Labels",
+                  "description": "Remove labels from an email",
+                  "inputs": [
+                    {
+                      "id": "imap_mailbox_name",
+                      "description": "Jinja Template for Mailbox name of the mailbox to which UID belongs. For example: Inbox",
+                      "label": "Mailbox name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "imap_column_email_uid",
+                      "description": "Column name having UID of email",
+                      "label": "Email UID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_email_labels",
+                      "description": "Jinja Template for Comma separated list of labels to be removed from email. e.g {{label1}},{{label2}}",
+                      "label": "Email Labels",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.imap.action_labels_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.imap.action_remove-labels_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          },
+          {
+            "id": "replace-labels",
+            "name": "Replace Labels",
+            "description": "Replace labels in an email in GMail",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Replace Labels",
+                  "description": "Replace labels in email",
+                  "inputs": [
+                    {
+                      "id": "imap_mailbox_name",
+                      "description": "Jinja Template for Mailbox name of the mailbox to which UID belongs. For example: Inbox",
+                      "label": "Mailbox name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "imap_column_email_uid",
+                      "description": "Column name having UID of email",
+                      "label": "Email UID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_email_labels",
+                      "description": "Jinja Template for Comma separated list of labels that will replace all labels of email. e.g {{label1}},{{label2}}",
+                      "label": "Email Labels",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.imap.action_labels_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.imap.action_replace-labels_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          },
+          {
+            "id": "move-email",
+            "name": "Move Email",
+            "description": "Move email to a folder in GMail",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Move Email",
+                  "description": "Move email to a folder",
+                  "inputs": [
+                    {
+                      "id": "imap_mailbox_name",
+                      "description": "Jinja Template for Mailbox name of the mailbox to which UID belongs. For example: Inbox",
+                      "label": "Mailbox name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "imap_column_email_uid",
+                      "description": "Column name having UID of email",
+                      "label": "Email UID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "imap_folder_name",
+                      "description": "Name of the folder in which email will be moved to",
+                      "label": "Folder Name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.imap.action_move-email_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.imap.action_move-email_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          },
+          {
+            "id": "delete-email",
+            "name": "Delete Email",
+            "description": "Delete an email in GMail",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Delete Email",
+                  "description": "Delete an email in GMail",
+                  "inputs": [
+                    {
+                      "id": "imap_mailbox_name",
+                      "description": "Jinja Template for Mailbox name of the mailbox to which UID belongs. For example: Inbox",
+                      "label": "Mailbox name",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "imap_column_email_uid",
+                      "description": "Column name having UID of email",
+                      "label": "Email UID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.imap.action_delete-email_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.imap.action_delete-email_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          }
+        ],
+        "version": "2.0.1",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-12-16T13:39:28Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T08:59:34.659Z",
+          "errorMessage": "This imported connection is using a different version of the IMAP (logichub.imap) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "false",
+        "__lh_table_key_value": "",
+        "__lh_ssl_verify": "True",
+        "imap_password": "****restricted****",
+        "imap_server_name": "imap.gmail.com",
+        "imap_username": "logichub.automation.demo@gmail.com",
+        "imap_server_port": "993",
+        "__lh_label": "CB Testing Imap - Logichub Demo"
+      },
+      "id": 25,
+      "isDefault": false
+    },
+    {
+      "label": "VirusTotal Default",
+      "descriptor": {
+        "id": "logichub.virustotal",
+        "name": "Virus Total",
+        "description": "Analyze suspicious files and URLs to detect types of malware including viruses, worms, and trojans.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/virius-total-logo.svg",
+        "documentationSlug": "virustotal",
+        "categories": [
+          "investigative",
+          "threat_intelligence"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m82.15"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "VirusTotal authentication",
+              "description": "Provide a name for the connection and an API key for authentication with VirusTotal",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "vt_apikey",
+                  "description": "API key for VirusTotal",
+                  "label": "API Key",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python3 -m src.virustotal.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "analyze_domain",
+            "name": "Analyze Domain",
+            "description": "Retrieves a domain report",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze Domain",
+                  "description": "Retrieves a domain report",
+                  "inputs": [
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing domain to submit to VirusTotal",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-domain_file_hash_ip-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_domain-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "analyze_file_hash",
+            "name": "Analyze File Hash",
+            "description": "Retrieves a file hash report",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze File Hash",
+                  "description": "Retrieves a file hash report",
+                  "inputs": [
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing file hash to submit to VirusTotal",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-domain_file_hash_ip-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_file_hash-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "analyze_ip_address",
+            "name": "Analyze IP Address",
+            "description": "Retrieves an IP address report",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze IP Address",
+                  "description": "Retrieves an IP address report",
+                  "inputs": [
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing IP address to submit to VirusTotal",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-domain_file_hash_ip-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_ip_address-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "analyze_url",
+            "name": "Analyze URL",
+            "description": "Analyze URL by VirusTotal",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze URL",
+                  "description": "Analyze URL by VirusTotal",
+                  "inputs": [
+                    {
+                      "id": "vt_action_type",
+                      "description": "Select one of the options.",
+                      "label": "Action Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "report",
+                          "label": "Submit for scan and wait for report"
+                        },
+                        {
+                          "value": "scan",
+                          "label": "Submit for scan"
+                        },
+                        {
+                          "value": "retrieve",
+                          "label": "Retrieve report for already submitted scan"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing either URL to submit for scan or Scan ID to retrieve report",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-analyze_url_file-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_url-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "analyze_file",
+            "name": "Analyze File",
+            "description": "Analyze File by VirusTotal",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Analyze File",
+                  "description": "Analyze File by VirusTotal",
+                  "inputs": [
+                    {
+                      "id": "vt_action_type",
+                      "description": "Select one of the options",
+                      "label": "Action Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "report",
+                          "label": "Submit for scan and wait for report"
+                        },
+                        {
+                          "value": "scan",
+                          "label": "Submit for scan"
+                        },
+                        {
+                          "value": "retrieve",
+                          "label": "Retrieve report for already submitted scan"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_column_name",
+                      "description": "Name of the column in the parent table containing either File ID to submit for scan or Scan ID to retrieve report",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "vt_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.virustotal.action-analyze_url_file-validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.virustotal.action-analyze_file-exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "3.0.0",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-09-06T04:33:37Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T08:59:34.615Z",
+          "errorMessage": "This imported connection is using a different version of the Virus Total (logichub.virustotal) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_label": "VirusTotal Default",
+        "__lh_ssl_verify": "",
+        "vt_apikey": "****restricted****",
+        "__lh_is_default_connection": ""
+      },
+      "id": 24,
+      "isDefault": false
+    }
+  ],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

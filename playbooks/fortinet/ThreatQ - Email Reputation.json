@@ -1,0 +1,165 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "ThreatQ - Email Reputation",
+    "aliasName": null,
+    "tag": null,
+    "description": "Retrieves the reputation of indicators of type 'Email' using ThreatQ.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_value"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/b135c052-e170-4cff-8cc7-9a4bfe607ccb",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/e3d28f19-13be-4765-a1b4-4bcd845c4937",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "e3d28f19-13be-4765-a1b4-4bcd845c4937"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configurations",
+            "description": null,
+            "arguments": {
+                "threshold": "5",
+                "useMockOutput": "true",
+                "indicator_value": "{{vars.input.params['indicator_value']}}",
+                "foundThreatQReputation": "false"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "66e2fe86-3030-454f-99c6-20201d6b1b7a"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Email Reputation from Threatq",
+            "description": null,
+            "arguments": {
+                "name": "ThreatQ",
+                "config": "7ff96ba9-d229-4736-a6c0-92e1387346c8",
+                "params": {
+                    "indicator": "{{vars.indicator_value}}",
+                    "indicator_type": "Email Address"
+                },
+                "version": "1.0.1",
+                "connector": "threatq",
+                "operation": "get_indicator_reputation",
+                "mock_result": "{\n    \"data\":\n    {\n                \"score\":{\n                \"manual_score\": null,\n                \"score_config_hash\":\"8997c768f92d122700d6e60a2e4\",\n                \"generated_score\": 0.001,\n                \"created_at\": \"2017-11-26 18:31:07\",\n                \"update_at\":\"2017-11-26 18:31:07\",\n                \"indicator_id\":6923\n            }\n        }\n}",
+                "ignore_errors": true,
+                "operationTitle": "Get Reputation",
+                "step_variables": {
+                    "foundThreatQReputation": "{{ ( vars.result.data.score and (vars.result.data.score | length > 0) ) | ternary(true,false) }}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "c3417f5e-1f91-45b3-86f8-81ad260d56f7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Compute Threat Summary",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "value": "<p><strong>{% if vars.foundThreatQReputation %}<\/strong><\/p>\n<p><strong>ThreatQ Summary:<\/strong><\/p>\n<table style=\"width: 732px;\">\n<tbody>\n<tr style=\"height: 16px;\">\n<td style=\"border: 1px solid black; text-align: left; width: 135px; height: 16px;\"><span style=\"font-size: 10pt;\">Manual Score<\/span><\/td>\n<td style=\"border: 1px solid black; text-align: left; width: 596px; height: 16px;\">\n<p><span style=\"font-size: 10pt;\">{{vars.steps.Get_Email_Reputation_from_Threatq.data['score']['manual_score']}}<\/span><\/p>\n<\/td>\n<\/tr>\n<tr style=\"height: 16px;\">\n<td style=\"border: 1px solid black; text-align: left; width: 135px; height: 16px;\"><span style=\"font-size: 10pt;\">Generated&nbsp;Score<\/span><\/td>\n<td style=\"border: 1px solid black; text-align: left; width: 596px; height: 16px;\">{{vars.steps.Get_Email_Reputation_from_Threatq.data['score']['generated_score']}}<\/td>\n<\/tr>\n<tr style=\"height: 16.9034px;\">\n<td style=\"border: 1px solid black; text-align: left; width: 135px; height: 16.9034px;\">&nbsp;<\/td>\n<td style=\"border: 1px solid black; text-align: left; width: 596px; height: 16.9034px;\">&nbsp;<\/td>\n<\/tr>\n<\/tbody>\n<\/table>\n<p><span style=\"font-size: 10pt;\">&nbsp;{% endif %}<\/span><\/p>"
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "format_richtext",
+                "operationTitle": "Utils: Format as RichText",
+                "step_variables": {
+                    "Reputation": "{% if vars.foundThreatQReputation %}\n{{vars.steps.Get_Email_Reputation_from_Threatq.data.score['generated_score']}}\n{%else%}0{%endif%}"
+                }
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "ec16d3e5-4e89-4f56-a437-6ddf2294e203"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "enrichment_summary",
+            "description": null,
+            "arguments": {
+                "tags": "None",
+                "source": "ThreatQ",
+                "reputation": "{% if vars.Reputation >= vars.threshold %}\"Malicious\"{% elif vars.Reputation <= vars.threshold and vars.Reputation > 0 %}\"Suspicious\"{%elif vars.Reputation == 0%}\"No Reputation Available\"{%else%}\"Good\"{%endif%}",
+                "enrichmentSummary": "{{vars.steps.Compute_Threat_Summary.data['formatted_string']}}"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "2b51705c-bf4f-453a-b1fe-1de79232e7d8"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Email Reputation from Threatq -> Compute Threat Summary",
+            "targetStep": "\/api\/3\/workflow_steps\/ec16d3e5-4e89-4f56-a437-6ddf2294e203",
+            "sourceStep": "\/api\/3\/workflow_steps\/c3417f5e-1f91-45b3-86f8-81ad260d56f7",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "046dbfc1-03da-4cfe-8d72-2d89b5dd30bb"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configurations",
+            "targetStep": "\/api\/3\/workflow_steps\/66e2fe86-3030-454f-99c6-20201d6b1b7a",
+            "sourceStep": "\/api\/3\/workflow_steps\/e3d28f19-13be-4765-a1b4-4bcd845c4937",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "13fdf5b2-2e95-4c5a-a12f-ca12e50af0a5"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compute Threat Summary -> enrichment_summary",
+            "targetStep": "\/api\/3\/workflow_steps\/2b51705c-bf4f-453a-b1fe-1de79232e7d8",
+            "sourceStep": "\/api\/3\/workflow_steps\/ec16d3e5-4e89-4f56-a437-6ddf2294e203",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "85312bce-86f6-443c-a25c-4d3395dd45da"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configurations -> Get Email Reputation from Threatq",
+            "targetStep": "\/api\/3\/workflow_steps\/c3417f5e-1f91-45b3-86f8-81ad260d56f7",
+            "sourceStep": "\/api\/3\/workflow_steps\/66e2fe86-3030-454f-99c6-20201d6b1b7a",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "10e75c2f-58ba-46b2-81c0-eb40178f9f06"
+        }
+    ],
+    "priority": null,
+    "uuid": "d761359b-26a0-4471-a858-fdfefd8d1971",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

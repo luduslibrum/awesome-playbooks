@@ -1,0 +1,123 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Incident - [07] Check for Response SLA violations",
+    "aliasName": null,
+    "tag": "#Schedule  #system",
+    "description": "Notifies users of violation of Response SLA.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/15e1e5d6-c95f-4ae7-aa81-702389ee572f",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Check and Notify SLA Violation",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.steps.Retrieve_all_Acknowledged_incidents | length !=0}}",
+                "for_each": {
+                    "item": "{{vars.steps.Retrieve_all_Acknowledged_incidents}}",
+                    "parallel": false,
+                    "condition": ""
+                },
+                "arguments": {
+                    "severity": "{{vars.item.severity.itemValue}}",
+                    "incident_IRI": "{{vars.item['@id']}}",
+                    "incident_AckDate": "{{vars.item.ackDate}}"
+                },
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/77ec3e8f-2b3a-48b9-a9cc-ac22cec3fd7c"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "94c31636-f2c3-430f-8b31-b001e2a38306"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Retrieve all Acknowledged incidents",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "datetime",
+                            "field": "ackDate",
+                            "value": "false",
+                            "operator": "isnull"
+                        },
+                        {
+                            "type": "object",
+                            "field": "resSla",
+                            "value": "\/api\/3\/picklists\/090115d7-90fc-4dc6-97ca-27950fc30c1c",
+                            "_value": {
+                                "display": "Met",
+                                "itemValue": "Met"
+                            },
+                            "operator": "eq"
+                        }
+                    ]
+                },
+                "module": "incidents?$limit=30",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "51bb51f0-058b-41e1-a92e-5d323a8035dd"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": [],
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "15e1e5d6-c95f-4ae7-aa81-702389ee572f"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Retrieve all Acknowledged incidents",
+            "targetStep": "\/api\/3\/workflow_steps\/51bb51f0-058b-41e1-a92e-5d323a8035dd",
+            "sourceStep": "\/api\/3\/workflow_steps\/15e1e5d6-c95f-4ae7-aa81-702389ee572f",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b3c3035c-bb45-43ab-a044-1a767fa41e79"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Retrieve all Acknowledged incidents -> Check and Notify SLA Violation",
+            "targetStep": "\/api\/3\/workflow_steps\/94c31636-f2c3-430f-8b31-b001e2a38306",
+            "sourceStep": "\/api\/3\/workflow_steps\/51bb51f0-058b-41e1-a92e-5d323a8035dd",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f4ab4a1d-5ab7-4553-b03d-9b926cfa16be"
+        }
+    ],
+    "priority": null,
+    "uuid": "e0af41c5-134c-48e4-b58e-805a3f6d9a21",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "SLA",
+        "Subroutine",
+        "Extended"
+    ]
+}

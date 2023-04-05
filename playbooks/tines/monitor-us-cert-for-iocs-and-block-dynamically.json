@@ -1,0 +1,483 @@
+{
+  "schema_version": 4,
+  "name": "Monitor US-CERT for IOCs and block dynamically",
+  "description": "This Story monitors the US-CERT RSS feed for any indicators of compromise (IOCs), analyzing every domain and IP with VirusTotal. Then, it alerts and allows users to block IOCs to help stay on top of perimeter security.\n\ntags: US-CERT, VirusTotal, IOCs, Analyze, Block, Intermediate, Orchestrate, Detect, RSS\nicons: 🦠, virustotal, 🧱\nvisibility: public",
+  "guid": "5b45334f81e11a5e6d5996357ac9dcab",
+  "slug": "monitor_us_cert_for_iocs_and_block_dynamically",
+  "exported_at": "2022-07-11T17:28:56Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get US Cert RSS Feed",
+      "disabled": false,
+      "guid": "ca5207a27751cb6548ae9b2d3c2afc45",
+      "options": {
+        "url": "https://us-cert.cisa.gov/ncas/alerts.xml",
+        "content_type": "xml",
+        "method": "get"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Feed Items",
+      "disabled": false,
+      "guid": "599bae6c509fdf41c21d31b070e78814",
+      "options": {
+        "mode": "explode",
+        "path": "=get_us_cert_rss_feed.body.rss.channel.item",
+        "to": "individual_record"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract PDF",
+      "disabled": false,
+      "guid": "a9964defc02a3aeaab95b1020b0cb709",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=explode_feed_items.individual_record.description",
+            "regexp": "(?<=https:\\/\\/us-cert.cisa.gov\\/sites\\/default\\/files\\/publications\\/)(.*)(?=\\.pdf)",
+            "to": "urls"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Parse IOCs at a URL",
+      "disabled": false,
+      "guid": "63d4421bcb36d7657498982dc065457e",
+      "options": {
+        "url": "https://api.iocparser.com/url",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "url": "https://us-cert.cisa.gov/sites/default/files/publications/<<extract_pdf.urls.first.first>>.pdf"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode IPs",
+      "disabled": true,
+      "guid": "8dae407c98e3cb8d25bb70bec8b37f7b",
+      "options": {
+        "mode": "explode",
+        "path": "=parse_iocs_at_a_url.body.data.IPv4",
+        "to": "individual_record"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search for IP Address in VirusTotal",
+      "disabled": true,
+      "guid": "492e81fd3884dcf7febc5bc70dde8e69",
+      "options": {
+        "url": "https://www.virustotal.com/api/v3/ip_addresses/<<explode_ips.individual_record>>",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-apikey": "<<CREDENTIAL.virustotal>>"
+        },
+        "retry_on_status": [
+          "204",
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Domains",
+      "disabled": true,
+      "guid": "d2ba80df27676e96efc63f3073eecc73",
+      "options": {
+        "mode": "explode",
+        "path": "=parse_iocs_at_a_url.body.data.DOMAIN",
+        "to": "individual_record"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Retrieve Domain Report in VirusTotal",
+      "disabled": true,
+      "guid": "60d46693af64ebeb7f8283f71ff1b094",
+      "options": {
+        "url": "https://www.virustotal.com/vtapi/v2/domain/report",
+        "method": "get",
+        "payload": {
+          "apikey": "<<CREDENTIAL.virustotal>>",
+          "domain": "<<explode_domains.individual_record>>"
+        },
+        "retry_on_status": [
+          "429",
+          "204"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode Domains",
+      "disabled": true,
+      "guid": "64866c1bf2e7f8a13d8d57cce2b11518",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=explode_domains.guid",
+        "size_path": "=LIQUID_SIZE(explode_domains, \"dot_notation\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode IPs",
+      "disabled": true,
+      "guid": "f26f8fcf305ed3d000bc038f50e37dd0",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=explode_ips.guid",
+        "size_path": "=LIQUID_SIZE(explode_ips, \"dot_notation\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Action",
+      "disabled": true,
+      "guid": "251d37042c489864d5af01d8a3c2a11d",
+      "options": {
+        "recipients": [
+          "<<EMAIL>>"
+        ],
+        "subject": "IOCs Report from <<META.tenant.domain>>",
+        "body": "<%for item in implode_domains%>\nDomain: <<item.explode_domains.individual_record>> <br>\nWhoIs: <<DEFAULT(item.retrieve_domain_report_in_virustotal.body.whois, \"Not Available\")>><br>\nBlock Domain: <a href=\"https://<<META.tenant.domain>>/forms/7dc912d62639c9f0bad1262b93cbe29b?ioc=<<item.explode_domains.individual_record>>&ioc_type=Domain&source=us-cert\">Click Here</a>\n<br><br>\n\n<%endfor%>\n\n<br><br><br>\n\n<%for item in implode_ips%>\nIP: <<item.explode_ips.individual_record>> <br>\nVirusTotal Malicious Score: <<item.search_for_ip_address_in_virustotal.body.data.attributes.last_analysis_stats.malicious>><br>\nBlock IP: <a href=\"https://demo.tines.com/forms/7dc912d62639c9f0bad1262b93cbe29b?ioc=<<item.explode_ips.individual_record>>&ioc_type=IP&source=us-cert\">Click Here</a>\n<br><br>\n<%endfor%>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Data from Form",
+      "disabled": false,
+      "guid": "9d7f9529e1b70ff8e91fe1f9eda9f36b",
+      "options": {
+        "secret": "b44e4413357584088a4dbdaac24a8c53",
+        "path": "bf7c788324839f2b09f2a12f36d7147b"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Feed",
+      "disabled": false,
+      "guid": "3a05998b615497eec97fdcb428048101",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "100",
+        "path": "<<explode_feed_items.individual_record.title>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Event Transform Action",
+      "disabled": false,
+      "guid": "0c87c9cc8ce0748f7d603342da2eefc0",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "This is an automatically generated message from Tines"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Change Webhook URL & Recipient\n\nNote, for this to work you'll have to change the webhook URL in this email action along with the recipient email address",
+      "position": [
+        -15.0,
+        1080.0
+      ],
+      "guid": "fd600330e297cc917c84b06374a4f1f2",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/cisa_gov.png\n\nThis story is a basic example story to demonstrate retrieving & analyzing indicators from a feed and then dynamically blocking after approval\n\nIt retrieves the latest entry to the US Cert RSS Feed, extracts some details and then extracts all IOCs in that entry.\n\nIt then analyzes every domain and every IP, and sends a simple email to a user asking them if they want to block that indicator using a Tines Form",
+      "position": [
+        -15.0,
+        -15.0
+      ],
+      "guid": "bbd505c616843e6b85740ab457dc848c",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 12
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 13
+    },
+    {
+      "source": 3,
+      "receiver": 6
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 9
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 4
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 12,
+      "receiver": 2
+    }
+  ],
+  "diagram_layout": "{\"ca5207a27751cb6548ae9b2d3c2afc45\":[-255,-15],\"599bae6c509fdf41c21d31b070e78814\":[-255,90],\"a9964defc02a3aeaab95b1020b0cb709\":[-255,300],\"63d4421bcb36d7657498982dc065457e\":[-255,405],\"8dae407c98e3cb8d25bb70bec8b37f7b\":[-255,825],\"492e81fd3884dcf7febc5bc70dde8e69\":[-255,930],\"d2ba80df27676e96efc63f3073eecc73\":[-255,510],\"60d46693af64ebeb7f8283f71ff1b094\":[-255,615],\"64866c1bf2e7f8a13d8d57cce2b11518\":[-255,720],\"f26f8fcf305ed3d000bc038f50e37dd0\":[-255,1035],\"251d37042c489864d5af01d8a3c2a11d\":[-255,1140],\"9d7f9529e1b70ff8e91fe1f9eda9f36b\":[-555,0],\"3a05998b615497eec97fdcb428048101\":[-255,195],\"0c87c9cc8ce0748f7d603342da2eefc0\":[-45,480]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Block IOC",
+    "description": "Use this form to submit an IOC to be blocked",
+    "fields": [
+      {
+        "name": "Ticket ID",
+        "description": "optionally, provide a ticket id which will be updated with details of the block",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "IOC",
+        "description": "The IOC you want to block e.g. badsite.com or 127.0.0.1",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "IOC Type",
+        "description": "",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Domain",
+          "IP"
+        ],
+        "ranking": 402653184,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Reason",
+        "description": "optionally, provide a reason for blocking the domain",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1879048192,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Source",
+        "description": "optionally, provide the source of the domain",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 805306368,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "9d7f9529e1b70ff8e91fe1f9eda9f36b",
+    "success_message": "Thank you for your submission"
+  }
+}

@@ -1,0 +1,753 @@
+{
+  "definitionVersion" : "1.0.0",
+  "name" : "RSA Archer | Import Archer Record",
+  "type" : "Standard",
+  "panX" : 20.0,
+  "panY" : 20.0,
+  "logLevel" : "WARN",
+  "description" : "This playbook starts with an HTTP Trigger which is intended to be triggered by an Archer advanced workflow.  Once triggered, the playbook will download and parse the Archer record based with the ID that was passed to it.  From there it will create a ThreatConnect Incident and save appropriate the  parsed fields in the Incident.  Additionally, it will parse the Actor saved on the Archer record and either save or associated it to the Incident in ThreatConnect.  ",
+  "jobList" : [ {
+    "id" : 21273,
+    "appCatalogItem" : {
+      "programName" : "TCPB - ArcherGetRecord v1.0",
+      "displayName" : "Get RSA Archer Record",
+      "programVersion" : "1.0.1"
+    },
+    "name" : "Get RSA Archer Record 2",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_recordid"
+      },
+      "value" : "#App:21274:trg.http.queryparam.archer_id!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_username"
+      },
+      "value" : "${ORGANIZATION:TEXT:RSA Archer Username}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_instancename"
+      },
+      "value" : "${ORGANIZATION:TEXT:RSA Archer Instance Name}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_userdomain"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_password"
+      },
+      "value" : "${ORGANIZATION:KEYCHAIN:RSA Archer Password}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_url"
+      },
+      "value" : "${ORGANIZATION:TEXT:RSA Archer Base URL}"
+    } ],
+    "locationLeft" : 460.0,
+    "locationTop" : 290.0,
+    "outputVariables" : "[{\"name\":\"archer.result.date.create\",\"type\":\"String\"},{\"name\":\"archer.result.json\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21274,
+    "appCatalogItem" : {
+      "programName" : "TCPB - ValueLookup v1.0",
+      "displayName" : "Value Lookup",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Value Lookup",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_array"
+      },
+      "value" : "#Trigger:2272:trg.http.queryparam!KeyValueArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"trg.http.queryparam.archer_id\",\"value\":\"id\"}]"
+    } ],
+    "locationLeft" : 240.0,
+    "locationTop" : 290.0,
+    "outputVariables" : "[{\"name\":\"trg.http.queryparam.archer_id\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21275,
+    "appCatalogItem" : {
+      "programName" : "TCPB - IncidentCreate v1.0",
+      "displayName" : "Create ThreatConnect Incident",
+      "programVersion" : "1.0.22"
+    },
+    "name" : "Create ThreatConnect Incident 1",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Additional Analysis and Context\",\"value\":\"#App:21278:v.attribute.aac!String\"},{\"key\":\"Description\",\"value\":\"#App:21280:archer.json.summary!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "incident_event_date"
+      },
+      "value" : "#App:21276:datetime.format.date!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "[INC-#App:21274:trg.http.queryparam.archer_id!String] #App:21280:archer.json.title!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Incident"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "#App:21280:archer.json.threat_categories!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Sterling Cooper"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "status"
+      },
+      "value" : "New"
+    } ],
+    "locationLeft" : 700.0,
+    "locationTop" : 730.0,
+    "outputVariables" : "[{\"name\":\"tc.incident\",\"type\":\"TCEntity\"},{\"name\":\"tc.incident.json\",\"type\":\"String\"},{\"name\":\"tc.incident.web_link\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21276,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Datetime Format v2.0",
+      "displayName" : "Datetime Formatter",
+      "programVersion" : "2.0.0"
+    },
+    "name" : "Datetime Formatter 1",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "date_format"
+      },
+      "value" : "%Y-%m-%d"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "date_input"
+      },
+      "value" : "#App:21273:archer.result.date.create!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "date_offset"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "date_timezone"
+      },
+      "value" : "UTC"
+    } ],
+    "locationLeft" : 700.0,
+    "locationTop" : 630.0,
+    "outputVariables" : "[{\"name\":\"datetime.format.date\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21277,
+    "appCatalogItem" : {
+      "programName" : "TCPB - ArcherUpdateRecord v1.0",
+      "displayName" : "Update RSA Archer Record",
+      "programVersion" : "1.0.1"
+    },
+    "name" : "Update RSA Archer Record 1",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fieldsToUpdate"
+      },
+      "value" : "[{\"key\":\"ThreatConnect URL\",\"value\":\"#App:21275:tc.incident.web_link!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_no_results"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_username"
+      },
+      "value" : "${ORGANIZATION:TEXT:RSA Archer Username}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_userdomain"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_recordid"
+      },
+      "value" : "#App:21274:trg.http.queryparam.archer_id!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attachment_archer_field"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attachment_name"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_url"
+      },
+      "value" : "${ORGANIZATION:TEXT:RSA Archer Base URL}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_password"
+      },
+      "value" : "${ORGANIZATION:KEYCHAIN:RSA Archer Password}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "api_instancename"
+      },
+      "value" : "${ORGANIZATION:TEXT:RSA Archer Instance Name}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attachment"
+      }
+    } ],
+    "locationLeft" : 2120.0,
+    "locationTop" : 280.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21278,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Set Attribute Values",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"v.attribute.aac\",\"value\":\"**Threat Categories:** #App:21279:j.archer.json.threat_categories!String \\n\\n**Threat Vectors:** #App:21279:j.archer.json.threat_vectors!String \\n\\n**Threat Asset Types:** #App:21279:j.archer.json.target_asset_types!String \\n\\n**Threat Valid:** #App:21279:j.archer.json.threat_valid!String \\n\\n**Threat Actor:** #App:21279:j.archer.json.threat_actor!String\"}]"
+    } ],
+    "locationLeft" : 700.0,
+    "locationTop" : 530.0,
+    "outputVariables" : "[{\"name\":\"v.attribute.aac\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21279,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Join Array 1",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"j.archer.json.threat_categories\",\"value\":\"#App:21280:archer.json.threat_categories!StringArray\"},{\"key\":\"j.archer.json.threat_vectors\",\"value\":\"#App:21280:archer.json.threat_vector!StringArray\"},{\"key\":\"j.archer.json.target_asset_types\",\"value\":\"#App:21280:archer.json.target_asset_type!StringArray\"},{\"key\":\"j.archer.json.threat_actor\",\"value\":\"#App:21280:archer.json.threat_actor!StringArray\"},{\"key\":\"j.archer.json.threat_valid\",\"value\":\"#App:21280:archer.json.threat_valid!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ", "
+    } ],
+    "locationLeft" : 700.0,
+    "locationTop" : 430.0,
+    "outputVariables" : "[{\"name\":\"j.archer.json.threat_actor\",\"type\":\"String\"},{\"name\":\"j.archer.json.threat_vectors\",\"type\":\"String\"},{\"name\":\"j.archer.json.target_asset_types\",\"type\":\"String\"},{\"name\":\"j.archer.json.threat_valid\",\"type\":\"String\"},{\"name\":\"j.archer.json.threat_categories\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21280,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v2.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "2.0.1"
+    },
+    "name" : "JMESPath 1",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"archer.json.title\",\"value\":\"RequestedObject.FieldContents.Title.Value\"},{\"key\":\"archer.json.summary\",\"value\":\"RequestedObject.FieldContents.\\\"Incident Summary\\\".Value\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[{\"key\":\"archer.json.threat_categories\",\"value\":\"RequestedObject.FieldContents.\\\"Threat Category\\\".Value.ValuesListIds\"},{\"key\":\"archer.json.threat_vector\",\"value\":\"RequestedObject.FieldContents.\\\"Threat Vector\\\".Value.ValuesListIds\"},{\"key\":\"archer.json.target_asset_type\",\"value\":\"RequestedObject.FieldContents.\\\"Target Asset Type\\\".Value.ValuesListIds\"},{\"key\":\"archer.json.threat_actor\",\"value\":\"RequestedObject.FieldContents.\\\"Threat Actor\\\".Value.ValuesListIds\"},{\"key\":\"archer.json.threat_valid\",\"value\":\"RequestedObject.FieldContents.\\\"Threat Valid\\\".Value.ValuesListIds\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:21273:archer.result.json!String"
+    } ],
+    "locationLeft" : 700.0,
+    "locationTop" : 230.0,
+    "outputVariables" : "[{\"name\":\"archer.json.threat_vector\",\"type\":\"StringArray\"},{\"name\":\"archer.json.title\",\"type\":\"String\"},{\"name\":\"archer.json.threat_categories\",\"type\":\"StringArray\"},{\"name\":\"archer.json.summary\",\"type\":\"String\"},{\"name\":\"archer.json.threat_actor\",\"type\":\"StringArray\"},{\"name\":\"archer.json.threat_valid\",\"type\":\"StringArray\"},{\"name\":\"archer.json.target_asset_type\",\"type\":\"StringArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21281,
+    "appCatalogItem" : {
+      "programName" : "TCPB - GetArrayLength v1.0",
+      "displayName" : "Get Array Length",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Get Actor Array Length",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input"
+      },
+      "value" : "#App:21280:archer.json.threat_actor!StringArray"
+    } ],
+    "locationLeft" : 700.0,
+    "locationTop" : 330.0,
+    "outputVariables" : "[{\"name\":\"array.length\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21282,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "If Count = 0",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "0"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:21281:array.length!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    } ],
+    "locationLeft" : 1020.0,
+    "locationTop" : 470.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21283,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AdversaryRetrieveByName v1.0",
+      "displayName" : "Get ThreatConnect Adversary by Name",
+      "programVersion" : "1.0.22"
+    },
+    "name" : "Get ThreatConnect Adversary by Name",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Sterling Cooper"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Adversary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "names"
+      },
+      "value" : "#App:21279:j.archer.json.threat_actor!String"
+    } ],
+    "locationLeft" : 1170.0,
+    "locationTop" : 590.0,
+    "outputVariables" : "[{\"name\":\"tc.adversary.count\",\"type\":\"String\"},{\"name\":\"tc.adversary\",\"type\":\"TCEntity\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21284,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "If NOT Exist",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:21283:tc.adversary.count!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "0"
+    } ],
+    "locationLeft" : 1400.0,
+    "locationTop" : 590.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21285,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AdversaryCreate v1.0",
+      "displayName" : "Create ThreatConnect Adversary",
+      "programVersion" : "1.0.22"
+    },
+    "name" : "Create ThreatConnect Adversary 1",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Sterling Cooper"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Adversary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:21279:j.archer.json.threat_actor!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : "#App:21275:tc.incident!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      }
+    } ],
+    "locationLeft" : 1540.0,
+    "locationTop" : 570.0,
+    "outputVariables" : "[{\"name\":\"tc.adversary.name\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21286,
+    "appCatalogItem" : {
+      "programName" : "TCPB - AssociationCreate v1.0",
+      "displayName" : "Create Association",
+      "programVersion" : "1.0.9"
+    },
+    "name" : "Create Association 1",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "association_entities"
+      },
+      "value" : "#App:21283:tc.adversary!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "source_entities"
+      },
+      "value" : "#App:21275:tc.incident!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "one_to_one"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1540.0,
+    "locationTop" : 670.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21287,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Actor Results",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"m.actor\",\"value\":\"#App:21290:actor.associated!String\"},{\"key\":\"m.actor\",\"value\":\"#App:21288:actor.doesnt_exist!String\"},{\"key\":\"m.actor\",\"value\":\"#App:21289:actor.new!String\"}]"
+    } ],
+    "locationLeft" : 1970.0,
+    "locationTop" : 280.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21288,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Set No Actor",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"actor.doesnt_exist\",\"value\":\"No Actor in Archer Record\"}]"
+    } ],
+    "locationLeft" : 1540.0,
+    "locationTop" : 460.0,
+    "outputVariables" : "[{\"name\":\"actor.doesnt_exist\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21289,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Set New Actor",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"actor.new\",\"value\":\"Actor #App:21285:tc.adversary.name!String was created in TheatConnect and associated with Incident\"}]"
+    } ],
+    "locationLeft" : 1740.0,
+    "locationTop" : 570.0,
+    "outputVariables" : "[{\"name\":\"actor.new\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 21290,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Set Associate Actor",
+    "enableNotifications" : false,
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"actor.associated\",\"value\":\"Actor #App:21279:j.archer.json.threat_actor!String already exists in ThreatConnect and has been associated to the Incident\"}]"
+    } ],
+    "locationLeft" : 1740.0,
+    "locationTop" : 670.0,
+    "outputVariables" : "[{\"name\":\"actor.associated\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 21274,
+    "sourceTriggerId" : 2272
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21274,
+    "targetJobId" : 21273
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21279,
+    "targetJobId" : 21278
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21281,
+    "targetJobId" : 21279
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21283,
+    "targetJobId" : 21284
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21284,
+    "targetJobId" : 21285
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21276,
+    "targetJobId" : 21275
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21284,
+    "targetJobId" : 21286
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21282,
+    "targetJobId" : 21283
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21282,
+    "targetJobId" : 21288
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21285,
+    "targetJobId" : 21289
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21286,
+    "targetJobId" : 21290
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21288,
+    "targetJobId" : 21287
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21289,
+    "targetJobId" : 21287
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21290,
+    "targetJobId" : 21287
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21273,
+    "targetJobId" : 21280
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21287,
+    "targetJobId" : 21277
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 21277,
+    "targetTriggerId" : 2272
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21280,
+    "targetJobId" : 21281
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21278,
+    "targetJobId" : 21276
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 21275,
+    "targetJobId" : 21282
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 2272,
+    "name" : "HttpLink Trigger 1",
+    "type" : "HttpLink",
+    "eventType" : "External",
+    "locationLeft" : 40.0,
+    "locationTop" : 50.0,
+    "httpBasicAuthEnable" : false,
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "#App:21275:tc.incident.json!String",
+    "anyOrg" : true,
+    "orFilters" : false,
+    "fireOnDuplicate" : false,
+    "renderBodyAsTip" : false,
+    "outputVariables" : "[{\"name\":\"trg.http.queryparam\",\"type\":\"KeyValueArray\"}]"
+  } ],
+  "exportablePipes" : [ ],
+  "dateExported" : "9/19/18 3:41 PM"
+}

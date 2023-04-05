@@ -1,0 +1,815 @@
+{
+  "schema_version": 4,
+  "name": "Look for & remediate new breaches using Recorded Future",
+  "description": "Look for new breaches using Recorded Future's credential monitoring. Create a Jira ticket with next steps to email affected users, route to a workflow to suspend the user's credentials, or notify an On-Call via PagerDuty.\n\ntags: Recorded Future, Intermediate, Jira, PagerDuty, Notify, \nicons: recorded future, 🔐, jira\nvisibility: public",
+  "guid": "60f2573a75cec3fc190de6ec53c7161a",
+  "slug": "look_for_remediate_new_breaches_using_recorded_future",
+  "exported_at": "2022-07-11T17:29:36Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Breached Credentials in Recorded Future",
+      "disabled": false,
+      "guid": "a0c82e3f6ab94b01d6d742f1d2cfb4ae",
+      "options": {
+        "url": "https://api.recordedfuture.com/identity/credentials/search",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "domains": [
+            "norsegods.online"
+          ]
+        },
+        "headers": {
+          "X-RFToken": "<<CREDENTIAL.recordedfuture>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Normalize Data",
+      "disabled": false,
+      "guid": "0577308ade45e18f05f258f2e27de4d5",
+      "options": {
+        "mode": "message_only",
+        "loop": "=get_breached_credentials_in_recorded_future.body.identities",
+        "payload": {
+          "type": "<%if LOOP.value.login%>login<%else%>email_address<%endif%>",
+          "credential": "<%if LOOP.value.login%><<LOOP.value.login>><%else%><<LOOP.value>><%endif%>",
+          "domain": "<%if LOOP.value.login%><<LOOP.value.domain>><%else%><<LAST(SPLIT(LOOP.value, \"@\"))>><%endif%>",
+          "raw_credential": "=LOOP.value"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Email Addresses",
+      "disabled": false,
+      "guid": "8e452f56efd12ee0da367b9cf102e133",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "=WHERE(normalize_data, \"type\", \"email_address\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Logins",
+      "disabled": false,
+      "guid": "a41735181c315080453736a8b06da635",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "=WHERE(normalize_data, \"type\", \"login\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Look for Credentials by Email Addresses in Recorded Future",
+      "disabled": false,
+      "guid": "c7fbbbc56b68fb563affbd09a0c432d6",
+      "options": {
+        "url": "https://api.recordedfuture.com/identity/credentials/lookup",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "subjects": "=MAP(get_email_addresses, \"raw_credential\")"
+        },
+        "headers": {
+          "X-RFToken": "<<CREDENTIAL.recordedfuture>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Look for Credentials by Login in Recorded Future",
+      "disabled": false,
+      "guid": "31fa964763228131596f06ec28ae1a2d",
+      "options": {
+        "url": "https://api.recordedfuture.com/identity/credentials/lookup",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "subjects_login": "=MAP(get_logins, \"raw_credential\")"
+        },
+        "headers": {
+          "X-RFToken": "<<CREDENTIAL.recordedfuture>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Split into Individual Breaches",
+      "disabled": false,
+      "guid": "4f64a77052ec938ff377dc2a9d186262",
+      "options": {
+        "mode": "explode",
+        "path": "=JSONPATH(look_for_credentials_by_email_addresses_in_recorded_future.body.identities, \"*.dumps.*.name\") |> UNIQ(%)",
+        "to": "individual_breach"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Split into Individual Breaches",
+      "disabled": false,
+      "guid": "4026d017871a8adfca088433af9a8fca",
+      "options": {
+        "mode": "explode",
+        "path": "=JSONPATH(look_for_credentials_by_login_in_recorded_future.body.identities, \"*.dumps.*.name\") |> UNIQ(%)",
+        "to": "individual_breach"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Prompt Email Users",
+      "disabled": false,
+      "guid": "2ba7d03fc62558eda9ce8d8b367be125",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "email_users",
+            "path": "<<update_ticket_in_jira.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Prompt Suspend Credentials",
+      "disabled": false,
+      "guid": "329a6d003bc01c6c3f2ca8b0e8d7d41c",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "suspend_user_creds",
+            "path": "<<update_ticket_in_jira.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Example Suspend Credentials",
+      "disabled": false,
+      "guid": "250071147f27eb0548fe49269697919a",
+      "options": {
+        "story": "<<STORY.YourSuspendCredsStory>>",
+        "payload": {
+          "users": "<<matched_users>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger to Alert On-Call",
+      "disabled": false,
+      "guid": "eaf8246da6922c4c53ea4fad4d00352d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "alert_on-call",
+            "path": "<<update_ticket_in_jira.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "37fa97635fef1ba6b873d80811c7a7ca",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "incident": {
+            "type": "incident",
+            "title": "There's been a large breach of credentials",
+            "service": {
+              "id": "1234",
+              "type": "service_reference"
+            },
+            "urgency": "high",
+            "body": {
+              "type": "serious incident",
+              "details": "https://<<RESOURCE.jira_domain>>/browse/<<create_ticket_in_jira.body.key>>"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "User@Example.com"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Ticket in Jira",
+      "disabled": false,
+      "guid": "2317bef927812b8fa8faf0282209f295",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Employee"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "summary": "Recorded Future - Breach: <<split_into_individual_breaches.individual_breach>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Ticket in Jira",
+      "disabled": false,
+      "guid": "82eafbbf978dae6af2fbaf76e720f82f",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Employee"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "summary": "Recorded Future - Breach: <<split_into_individual_breaches.individual_breach>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Check if User Found in Dump",
+      "disabled": false,
+      "guid": "b6b59ef8550b4cf82269808ccf72d218",
+      "options": {
+        "mode": "message_only",
+        "loop": "=look_for_credentials_by_email_addresses_in_recorded_future.body.identities",
+        "payload": {
+          "check_if_found": "<%for result in LOOP.value.credentials%><%for dump in result.dumps%><%if dump.name = split_into_individual_breaches.individual_breach%>found<%endif%><%endfor%><%endfor%>",
+          "email": "<<LOOP.value.identity.subjects.first>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Matched Users",
+      "disabled": false,
+      "guid": "720de8d29da386d63f745296c94f5424",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "=WHERE(check_if_user_found_in_dump, \"check_if_found\", \"found\") |> MAP(%, \"email\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Ticket in Jira",
+      "disabled": false,
+      "guid": "88533ef46175b13d26802dd309baef26",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_ticket_in_jira.body.id>>",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "description": "Users found in Breach:\n\n||*User*||\n|<%for address in matched_users%>\n|<<address>><%endfor%>\n\n[Click Here to Email Affected Users|<<PROMPT(\"email_users\")>>] - [Click here to Alert On-Call|<<PROMPT(\"alert_on-call\")>>] - [Click here to Suspend User Credentials|<<PROMPT(\"suspend_user_creds\")>>]"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Check if User Found in Dump",
+      "disabled": false,
+      "guid": "27afb6dd9e8e35afbd80e0cd8f8efda7",
+      "options": {
+        "mode": "message_only",
+        "loop": "=look_for_credentials_by_login_in_recorded_future.body.identities",
+        "payload": {
+          "check_if_found": "<%for result in LOOP.value.credentials%><%for dump in result.dumps%><%if dump.name = split_into_individual_breaches.individual_breach%>found<%endif%><%endfor%><%endfor%>",
+          "email": "<<LOOP.value.identity.subjects.first>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Matched Users",
+      "disabled": false,
+      "guid": "4aa4e327ba4efb0c7487b21dd90535a1",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": "=WHERE(check_if_user_found_in_dump, \"check_if_found\", \"found\") |> MAP(%, \"email\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Ticket in Jira",
+      "disabled": false,
+      "guid": "752565d2cea6bf28625e245f7264f0bb",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_ticket_in_jira.body.id>>",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "description": "Users found in Breach:\n\n||*User*||\n|<%for address in matched_users%>\n|<<address>><%endfor%>\n\n[Click here to Suspend User Credentials|<<PROMPT(\"suspend_user_creds\")>>] - [Click here to Alert On-Call|<<PROMPT(\"alert_on-call\")>>]"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Individual Breaches",
+      "disabled": false,
+      "guid": "2f012a1afcd1b6719c99ceece7464ed7",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<split_into_individual_breaches.individual_breach>>",
+        "lookback": "100"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Email to Affected Users",
+      "disabled": false,
+      "guid": "cfb22b727a8315dce2bcc5aa857a41e3",
+      "options": {
+        "recipients": "<<matched_users>>",
+        "subject": "Update Password - ACTION REQUIRED",
+        "body": "Your email credentials were recently found to have been breached. Please update your password as soon as possible."
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Individual Breaches",
+      "disabled": false,
+      "guid": "57b20cb8120d1d6746e8807524f2badb",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<split_into_individual_breaches.individual_breach>>",
+        "lookback": "100"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "![](https://image-uploads.tines.com/recorded_future.png)\n\n\n# Story Overview\nThis story will look for new breaches using Recorded Future's Credential Monitoring API. It will split them into either login credentials (e.g. `user123`) or email addresses (e.g. `alice@yourdomain.com`) and then enrich them using Recorded Future to find the unique breaches involved.\n\nIf the breach is found to be new, Tines will extract all the associated credentials and then create a Jira issue. Depending on the severity of the breach, Tines can send an email to each of the individual users, suspend the accounts, or alert on-call via PagerDuty in the event of a P1. \n\nThe story is also very extensible to take any other actions you want e.g. investigate recent logins, check if the credentials match your company's password policy etc...",
+      "position": [
+        -75.0,
+        105.0
+      ],
+      "guid": "6da3b2673651637d981e7809fbe66b6c",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\n\n# External Keys/Access\n\n- [ ] Recorded Future API Key\n- [ ] PagerDuty API Key\n- [ ] Jira User & Pass or Key\n\n# Tines\n\n# Credentials\n- [ ] `.CREDENTIAL.recordedfuture`\n- [ ] `.CREDENTIAL.jira`\n- [ ] `.CREDENTIAL.pagerduty`\n\n# Resources\n- [ ] `.RESOURCE.jira_domain`\n- [ ] `.RESOURCE.jira_username`",
+      "position": [
+        -75.0,
+        690.0
+      ],
+      "guid": "bcba3752b90efcc565a80d5e6f6b100b",
+      "width": null
+    },
+    {
+      "content": "\n- [ ] Update the 'domains' value in payload",
+      "position": [
+        750.0,
+        165.0
+      ],
+      "guid": "131c0d9f8dfc696d43d92d4d403df520",
+      "width": null
+    },
+    {
+      "content": "\n- [ ] Update the 'key' value in payload",
+      "position": [
+        825.0,
+        930.0
+      ],
+      "guid": "5f4792e348822b912953366a59de989e",
+      "width": null
+    },
+    {
+      "content": "\n- [ ] Update the 'id' value in payload",
+      "position": [
+        765.0,
+        1395.0
+      ],
+      "guid": "d53fa18202f00b402b41eeaeeeadfa5a",
+      "width": null
+    },
+    {
+      "content": "Create or connect a separate Suspend Credentials Story/Workflow here ",
+      "position": [
+        450.0,
+        1391.0
+      ],
+      "guid": "b0c3e29d6ca2ad2a62d984079aab2612",
+      "width": null
+    },
+    {
+      "content": "The Jira ticket will include links to either Email Users, Suspend Credentials, or Alert an On-Call. Based on the clicked action the story will continue down the respective path\n\nFor more information on Prompts see the following [article](https://hub.tines.com/docs/actions/widgets#prompt-widget)",
+      "position": [
+        825.0,
+        990.0
+      ],
+      "guid": "6df3c4a9a913d692fedf140a7a1d8fa8",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 4,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 6,
+      "receiver": 23
+    },
+    {
+      "source": 7,
+      "receiver": 21
+    },
+    {
+      "source": 8,
+      "receiver": 22
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 13,
+      "receiver": 20
+    },
+    {
+      "source": 14,
+      "receiver": 17
+    },
+    {
+      "source": 15,
+      "receiver": 16
+    },
+    {
+      "source": 16,
+      "receiver": 14
+    },
+    {
+      "source": 17,
+      "receiver": 11
+    },
+    {
+      "source": 17,
+      "receiver": 9
+    },
+    {
+      "source": 17,
+      "receiver": 8
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 19,
+      "receiver": 13
+    },
+    {
+      "source": 20,
+      "receiver": 9
+    },
+    {
+      "source": 20,
+      "receiver": 11
+    },
+    {
+      "source": 21,
+      "receiver": 18
+    },
+    {
+      "source": 23,
+      "receiver": 15
+    }
+  ],
+  "diagram_layout": "{\"a0c82e3f6ab94b01d6d742f1d2cfb4ae\":[465,165],\"0577308ade45e18f05f258f2e27de4d5\":[465,270],\"8e452f56efd12ee0da367b9cf102e133\":[315,360],\"a41735181c315080453736a8b06da635\":[600,360],\"c7fbbbc56b68fb563affbd09a0c432d6\":[315,450],\"31fa964763228131596f06ec28ae1a2d\":[600,450],\"4f64a77052ec938ff377dc2a9d186262\":[315,570],\"4026d017871a8adfca088433af9a8fca\":[600,555],\"2ba7d03fc62558eda9ce8d8b367be125\":[180,1185],\"329a6d003bc01c6c3f2ca8b0e8d7d41c\":[465,1185],\"250071147f27eb0548fe49269697919a\":[465,1290],\"eaf8246da6922c4c53ea4fad4d00352d\":[750,1185],\"37fa97635fef1ba6b873d80811c7a7ca\":[750,1290],\"2317bef927812b8fa8faf0282209f295\":[600,945],\"82eafbbf978dae6af2fbaf76e720f82f\":[315,945],\"b6b59ef8550b4cf82269808ccf72d218\":[315,765],\"720de8d29da386d63f745296c94f5424\":[315,870],\"88533ef46175b13d26802dd309baef26\":[315,1050],\"27afb6dd9e8e35afbd80e0cd8f8efda7\":[600,780],\"4aa4e327ba4efb0c7487b21dd90535a1\":[600,870],\"752565d2cea6bf28625e245f7264f0bb\":[600,1050],\"2f012a1afcd1b6719c99ceece7464ed7\":[600,675],\"cfb22b727a8315dce2bcc5aa857a41e3\":[180,1290],\"57b20cb8120d1d6746e8807524f2badb\":[315,660]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Look for & remediate new breaches using Recorded Future Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

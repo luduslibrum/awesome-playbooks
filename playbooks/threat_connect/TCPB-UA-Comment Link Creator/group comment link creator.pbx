@@ -1,0 +1,157 @@
+{
+  "definitionVersion" : "1.0.0",
+  "name" : "Group Comment Link Creator",
+  "panX" : 370.0,
+  "panY" : 188.0,
+  "logLevel" : "TRACE",
+  "description" : "This playbook creates links for a group which can be used in share comments.",
+  "jobList" : [ {
+    "id" : 11435,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Set Variable 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"errorMessagePrefix\",\"value\":\"[Group Comment Link Creator PB]:\"},{\"key\":\"shareCommentLink\",\"value\":\"[[#Trigger:1067:trg.action.type!String:#App:11439:groupName!String]]\"}]"
+    } ],
+    "locationLeft" : 150.0,
+    "locationTop" : 130.0,
+    "outputVariables" : "[{\"name\":\"shareCommentLink\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 11436,
+    "appCatalogItem" : {
+      "programName" : "TCPB - GroupRetrieve v1.0",
+      "displayName" : "Get ThreatConnect Group",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "Get ThreatConnect Group 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Group"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "name"
+      },
+      "value" : "#Trigger:1067:trg.action.entity!TCEntity"
+    } ],
+    "locationLeft" : 10.0,
+    "locationTop" : 10.0,
+    "outputVariables" : "[{\"name\":\"tc.bulk.json\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 11438,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.1"
+    },
+    "name" : "Json Path 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:11436:tc.bulk.json!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"groupName\",\"value\":\"[0].name\"}]"
+    } ],
+    "locationLeft" : 290.0,
+    "locationTop" : 10.0,
+    "outputVariables" : "[{\"name\":\"groupName\",\"type\":\"StringArray\"}]",
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 11439,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Join Array 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"groupName\",\"value\":\"#App:11438:groupName!StringArray\"}]"
+    } ],
+    "locationLeft" : 520.0,
+    "locationTop" : 10.0,
+    "outputVariables" : "[{\"name\":\"groupName\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 11435,
+    "targetTriggerId" : 1067
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 11436,
+    "sourceTriggerId" : 1067
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11436,
+    "targetJobId" : 11438
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11438,
+    "targetJobId" : 11439
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 11439,
+    "targetJobId" : 11435
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 1067,
+    "name" : "Create Share Comment Link",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : -230.0,
+    "locationTop" : 10.0,
+    "httpBasicAuthEnable" : false,
+    "httpBasicAuthUsername" : "BWGKX7YCZLB0LLR8GUS6",
+    "httpBasicAuthPassword" : "YIZOFH7AXCWCWBKB44RW",
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://cdnjs.cloudflare.com/ajax/libs/jquery-jgrowl/1.4.1/jquery.jgrowl.min.css\" />\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery-jgrowl/1.4.1/jquery.jgrowl.min.js\"></script>\n\n<style>\n.success-growl {\n    background-color: #66bb6a;\n    font-size: 1.5em;\n}\n\n.failure-growl {\n    background-color: #bc3435;\n    font-size: 1.5em;\n}\n</style>\n\n<script type=\"text/javascript\">\n    function copyLink() {\n        var commentLink = document.getElementById('share-comment-link');\n\n        commentLink.select();\n        var copied = document.execCommand('copy');\n\n        if (copied) {\n            commentLink.blur();\n            $.jGrowl('Share comment link copied', {group: 'success-growl'});\n        } else {\n            var message = 'Unable to copy the share comment draft to the clipboard. You may be using an older browser that does not support this functionality.';\n            $.jGrowl(message, {group: 'failure-growl', life: 10000});\n            console.error(message);\n        }\n    }\n</script>\n\n<input id=\"share-comment-link\" type=\"text\" name=\"share-comment-link\" value=\"#App:11435:shareCommentLink!String\">\n\n<br><br>\n\n<button class=\"button\" onclick=\"copyLink()\">Copy Link</button>",
+    "anyOrg" : true,
+    "orFilters" : false,
+    "fireOnDuplicate" : false,
+    "userActionTypes" : "Adversary,Campaign,Document,Email,Incident,Signature,Threat",
+    "renderBodyAsTip" : true,
+    "outputVariables" : "[{\"name\":\"trg.action.entity\",\"type\":\"TCEntity\"},{\"name\":\"trg.action.type\",\"type\":\"String\"}]"
+  } ],
+  "dateExported" : "1/23/18 2:48 PM"
+}

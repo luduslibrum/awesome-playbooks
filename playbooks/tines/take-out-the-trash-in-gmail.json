@@ -1,0 +1,823 @@
+{
+  "schema_version": 4,
+  "name": "Take out the trash in Gmail",
+  "description": "Permanently delete or move a message to the trash in Gmail by submitting a username, external Message-ID, and removal action type. \n\ntags: Google, Intermediate, Email\nicons: google, ✉️, 🗑\nvisibility: public",
+  "guid": "cf0f7e3d8c8b8dee11eaf903472b36fb",
+  "slug": "take_out_the_trash_in_gmail",
+  "exported_at": "2022-07-11T17:25:26Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "User-Message Details Input",
+      "disabled": false,
+      "guid": "bba0db48c9ca2d87f9ecfd503a73da8d",
+      "options": {
+        "path": "a8ae0e1e69153e428ab4cb7c33df7e7b",
+        "secret": "e63978411e9f2fea3afdb05a0be12889",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search for Messages by External Message-ID",
+      "disabled": false,
+      "guid": "1e00568b9b03ff83f9f7254d7b35e11b",
+      "options": {
+        "url": "https://www.googleapis.com/gmail/v1/users/<<user_message_details_input.body.user_email>>/messages",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "q": "rfc822msgid:\"<<user_message_details_input.body.message_id>>\"",
+          "includeSpamTrash": "TRUE"
+        },
+        "headers": {
+          "Authorization": "Bearer <<get_gsuite_dwd_token.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Bulk Delete messages",
+      "disabled": false,
+      "guid": "c56b08a683540e81ec9a1aaa0339c0d1",
+      "options": {
+        "url": "https://www.googleapis.com/gmail/v1/users/<<user_message_details_input.body.user_email>>/messages/batchDelete",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "ids": "=format_internal_ids_list.message"
+        },
+        "headers": {
+          "Authorization": "Bearer <<get_gsuite_dwd_token.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Format Internal IDs List",
+      "disabled": false,
+      "guid": "431d5b40a1d0d1d47a22dd4d4de5e686",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "message": "=MAP(search_for_messages_by_external_message_id.body.messages, \"id\")"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Purge",
+      "disabled": false,
+      "guid": "f9b0575e47c074ed8b603072aec16701",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Delete Permanently",
+            "path": "<<user_message_details_input.body.removal_type.first>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Send to Trash",
+      "disabled": false,
+      "guid": "f5be0e141433b2ba4fc6883807445f54",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Send To Trash",
+            "path": "<<user_message_details_input.body.removal_type.first>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Results Present",
+      "disabled": false,
+      "guid": "3d86e6643522248eb322eb9a48487e94",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "1",
+            "path": "<<search_for_messages_by_external_message_id.body.resultSizeEstimate>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Bulk Move to Trash",
+      "disabled": false,
+      "guid": "4308a31b4b382a7e24e52a85ae3cc8e4",
+      "options": {
+        "url": "https://gmail.googleapis.com/gmail/v1/users/<<user_message_details_input.body.user_email>>/messages/batchModify",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "ids": "=format_internal_ids_list.message",
+          "removeLabelIds": "INBOX",
+          "addLabelIds": "TRASH"
+        },
+        "headers": {
+          "Authorization": "Bearer <<get_gsuite_dwd_token.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Get GSuite DWD Token",
+      "disabled": false,
+      "guid": "284b9237bd6d7bee2437dcf9f1a27371",
+      "options": {
+        "payload": {
+          "user_message_details_input": "=user_message_details_input"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "29c90b0e92e10b0c05f778af56f8068a",
+        "slug": null,
+        "exported_at": "2022-07-11T17:25:26Z",
+        "agents": [
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Service Account Details",
+            "disabled": false,
+            "guid": "afd264ca3864d3c1cfc5ec12c9ce8615",
+            "options": {
+              "mode": "message_only",
+              "loop": false,
+              "payload": {
+                "userid": "<<input.payload.user_message_details_input.body.user_email>>",
+                "service_account_email": "<<RESOURCE.gsuite_service_account>>",
+                "scope": "https://mail.google.com"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Request access token",
+            "disabled": false,
+            "guid": "0ce13b5c7450b3c5d2690152e3541961",
+            "options": {
+              "url": "https://www.googleapis.com/oauth2/v4/token",
+              "content_type": "form",
+              "method": "post",
+              "payload": {
+                "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                "assertion": "<<sign_jwt.bearer>>"
+              },
+              "log_error_on_status": []
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Create claimset",
+            "disabled": false,
+            "guid": "26658b92ac21051c5f8a22546dd976ea",
+            "options": {
+              "mode": "message_only",
+              "payload": {
+                "jwt_claim": "<<LOCAL.claim>>"
+              },
+              "local": {
+                "iss": "=service_account_details.service_account_email",
+                "sub": "=service_account_details.userid",
+                "scope": "=service_account_details.scope",
+                "aud": "=\"https://www.googleapis.com/oauth2/v4/token\"",
+                "exp": "<<PLUS(DATE(\"now\", \"%s\"), 3600)>>",
+                "iat": "<<DATE(\"now\", \"%s\")>>",
+                "claim": "{\"iss\":\"<<LOCAL.iss>>\",\"sub\":\"<<LOCAL.sub>>\",\"aud\":\"<<LOCAL.aud>>\",\"scope\":\"<<LOCAL.scope>>\",\"exp\":<<LOCAL.exp>>,\"iat\":<<LOCAL.iat>>}"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Sign JWT",
+            "disabled": false,
+            "guid": "e7594e25130b1837ff26266cef2f301b",
+            "options": {
+              "mode": "message_only",
+              "payload": {
+                "bearer": "<<JWT_SIGN(create_claimset.jwt_claim, LOCAL.secret)>>"
+              },
+              "local": {
+                "secret": "<<CREDENTIAL.gsuite_dwd_key>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "53bb143889d494963dfb9d8f254ef073",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "32e3c52da033f62f278c1f3ab3a6ee84",
+            "options": {
+              "payload": {
+                "access_token": "<<request_access_token.body.access_token>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 2
+          },
+          {
+            "source": 1,
+            "receiver": 5
+          },
+          {
+            "source": 2,
+            "receiver": 3
+          },
+          {
+            "source": 3,
+            "receiver": 1
+          },
+          {
+            "source": 4,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"afd264ca3864d3c1cfc5ec12c9ce8615\":[300,210],\"0ce13b5c7450b3c5d2690152e3541961\":[300,480],\"26658b92ac21051c5f8a22546dd976ea\":[300,300],\"e7594e25130b1837ff26266cef2f301b\":[300,390],\"53bb143889d494963dfb9d8f254ef073\":[300,60],\"32e3c52da033f62f278c1f3ab3a6ee84\":[300,585]}"
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Send to Story Action",
+      "disabled": false,
+      "guid": "d744d9bcd142a5b10a1646642fb381f7",
+      "options": {
+        "story": "<<STORY.take_out_the_trash_in_gmail>>",
+        "payload": {
+          "user_email": "User@Example.com",
+          "message_id": "<some-msg-id@exampledotcom>",
+          "removal_type": "\"Send To Trash\"\" or \"Delete Permanently\" (Remove Quotes)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Results",
+      "disabled": false,
+      "guid": "f2a13a52eb612b761ed6a21642140db2",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "success": "true",
+          "message": "The message matching the provided Message-ID was moved to Trash in the user's account."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Results",
+      "disabled": false,
+      "guid": "59f872701f92d23241a0f27b9ecbcd8d",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "success": "true",
+          "message": "The message matching the provided Message-ID was permanently deleted from the user's account."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Results",
+      "disabled": false,
+      "guid": "44db083a84aac4f29448847ebb2884ee",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "success": "false",
+          "message": "No messages matching the provided Message-ID exist in the user's account."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Admin Summary-Results",
+      "disabled": false,
+      "guid": "a7f67c0c9722b68719f177d7a2bc770f",
+      "options": {
+        "recipients": [
+          "Admin@Example.com"
+        ],
+        "subject": "GSuite Trash-Purge Story Results",
+        "body": "<b>Request</b><br />\nUser's Email: <<user_message_details_input.body.user_email>><br />\nMessage-ID: <<HTML_ENCODE(user_message_details_input.body.message_id)>><br />\nRemoval Type: <<user_message_details_input.body.removal_type>><br />\n<br />\n<<results.message>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No Results",
+      "disabled": false,
+      "guid": "e827a51619cf1831c5e435dcc4265c72",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<search_for_messages_by_external_message_id.body.resultSizeEstimate>>"
+          },
+          {
+            "type": "field==value",
+            "value": "401",
+            "path": "<<search_for_messages_by_external_message_id.status>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# GSuite - [Relevant Blog](https://www.tines.com/blog/interacting-with-gmail-mailboxes)\n\n\n- [ ] Create a new Project in the [Google Cloud Console](https://console.cloud.google.com/)\n- [ ] Enable the Gmail API under the hamburger menu -> APIs & Services -> Library\n- [ ] Create a new Service Account under the hamburger menu -> APIs & Services -> Credentials\n- [ ] Create a new `Key` within this Service Account, and download the JSON file containing important information.\n- [ ] Make note of the ID of this Service Account. This will be a long numeric value viewable within the Service Account under `Credentials`.\n- [ ] Log into the [GSuite Admin Portal](https://admin.google.com/)\n- [ ] Navigate to Security -> API Controls -> Manage Domain-Wide Delagation, and hit `Add New`.\n- [ ] Enter in the Service Account ID, and the scope `https://mail.google.com`",
+      "position": [
+        855.0,
+        -60.0
+      ],
+      "guid": "7528b62fe79833e0199a365a708a9dde",
+      "width": null
+    },
+    {
+      "content": "# Other\n- [ ] Update  Recipients field in 'Email Admin Results' Action.",
+      "position": [
+        855.0,
+        690.0
+      ],
+      "guid": "a15b2f1e3e91fe224e9e5abb5a73af89",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements",
+      "position": [
+        855.0,
+        -120.0
+      ],
+      "guid": "63b5eed2bacb9064d1aade277f220a50",
+      "width": null
+    },
+    {
+      "content": "# Tines\n\n# Credentials\n- [ ] .CREDENTIAL.gsuite_dwd_key - Use the Private Key found in the above downloaded JSON file. (Credential to be used in \"Get GSuite DWD Token\" > \"Sign JWT\" action) \n\n# Resources\n- [ ] RESOURCE.gsuite_service_account - Use the Client Email found in the JSON file above. (Resource to be used in \"Get GSuite DWD Token\" > \"Service Account Details\" action) ",
+      "position": [
+        855.0,
+        390.0
+      ],
+      "guid": "a550dc20f28744a7e0647d46fab9e32f",
+      "width": null
+    },
+    {
+      "content": "Intakes User, Message ID, and Removal Action from another story using 'Send to Story\" Action or via form submission.",
+      "position": [
+        -30.0,
+        -120.0
+      ],
+      "guid": "0789026d3f2e3e7f4b96d62d22471772",
+      "width": null
+    },
+    {
+      "content": "Obtains a JWT token from GSuite and Impersonates User using Domain Wide Delegation.",
+      "position": [
+        -30.0,
+        -15.0
+      ],
+      "guid": "67d07a71ed67a817b5b8a6af085900a1",
+      "width": null
+    },
+    {
+      "content": "Checks for and returns the Internal Message ID tied to the provided External Message ID.",
+      "position": [
+        -30.0,
+        105.0
+      ],
+      "guid": "cc4cd5899c36d07b3569783b2807f16d",
+      "width": null
+    },
+    {
+      "content": "Takes two different paths based on if results are present in previous search.",
+      "position": [
+        -30.0,
+        210.0
+      ],
+      "guid": "6a4750b4ff40d36127ce3135315704c4",
+      "width": null
+    },
+    {
+      "content": "Takes results of the previous search and formats list to be used in next Action.",
+      "position": [
+        -60.0,
+        300.0
+      ],
+      "guid": "9ef779450607bda4888fab364bc44123",
+      "width": null
+    },
+    {
+      "content": "Takes two different paths based on Removal Action submitted in 'Send to Story' Action or Form.",
+      "position": [
+        -210.0,
+        405.0
+      ],
+      "guid": "857e822b27e1348c42467dd2d2c9ecea",
+      "width": null
+    },
+    {
+      "content": "Based on above path will either Move the message to Trash or permanently delete the message. ",
+      "position": [
+        -210.0,
+        510.0
+      ],
+      "guid": "28b6cba5ae33143d625ad115ffae9c6a",
+      "width": null
+    },
+    {
+      "content": "Result text based off path to be used in next Action.",
+      "position": [
+        -210.0,
+        630.0
+      ],
+      "guid": "b58e4e185f18935bba5b560615bbe4cd",
+      "width": null
+    },
+    {
+      "content": "Sends summary of submission request and results to admin",
+      "position": [
+        60.0,
+        795.0
+      ],
+      "guid": "c1da3a5c83fccbbc676e041b3bc1aabc",
+      "width": null
+    },
+    {
+      "content": "[](https://image-uploads.tines.com/gmail-logo.jpg)\n# Story Overview\n\nThis Story will trash a message or permanently delete  an email in Google Workspace's Gmail by submission of a username, external Message-ID, and removal action type. Requests can be submitted via a 'Send to Story' action or Form.\n\nAfter the message as been moved to Trash or deleted the admin will be notified via email with the request details and results summary.",
+      "position": [
+        -360.0,
+        -150.0
+      ],
+      "guid": "c0e7ea91f7c2a948d2d6ecc382b368d4",
+      "width": null
+    },
+    {
+      "content": "# Use this Action in another story to submit request via 'Send to Story'",
+      "position": [
+        -360.0,
+        195.0
+      ],
+      "guid": "a20084365d441806dc2ecd2dd98d1b7e",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 8
+    },
+    {
+      "source": 1,
+      "receiver": 6
+    },
+    {
+      "source": 1,
+      "receiver": 14
+    },
+    {
+      "source": 2,
+      "receiver": 11
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 2
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 6,
+      "receiver": 3
+    },
+    {
+      "source": 7,
+      "receiver": 10
+    },
+    {
+      "source": 8,
+      "receiver": 1
+    },
+    {
+      "source": 10,
+      "receiver": 13
+    },
+    {
+      "source": 11,
+      "receiver": 13
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 14,
+      "receiver": 12
+    }
+  ],
+  "diagram_layout": "{\"bba0db48c9ca2d87f9ecfd503a73da8d\":[300,-105],\"1e00568b9b03ff83f9f7254d7b35e11b\":[300,105],\"c56b08a683540e81ec9a1aaa0339c0d1\":[390,525],\"431d5b40a1d0d1d47a22dd4d4de5e686\":[300,315],\"f9b0575e47c074ed8b603072aec16701\":[390,420],\"f5be0e141433b2ba4fc6883807445f54\":[120,420],\"3d86e6643522248eb322eb9a48487e94\":[300,225],\"4308a31b4b382a7e24e52a85ae3cc8e4\":[120,525],\"284b9237bd6d7bee2437dcf9f1a27371\":[300,0],\"d744d9bcd142a5b10a1646642fb381f7\":[-330,270],\"f2a13a52eb612b761ed6a21642140db2\":[120,645],\"59f872701f92d23241a0f27b9ecbcd8d\":[390,645],\"44db083a84aac4f29448847ebb2884ee\":[630,645],\"a7f67c0c9722b68719f177d7a2bc770f\":[390,795],\"e827a51619cf1831c5e435dcc4265c72\":[630,225]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "bba0db48c9ca2d87f9ecfd503a73da8d",
+  "exit_agent_guids": [
+    "f2a13a52eb612b761ed6a21642140db2",
+    "59f872701f92d23241a0f27b9ecbcd8d",
+    "44db083a84aac4f29448847ebb2884ee"
+  ],
+  "exit_agent_guid": "f2a13a52eb612b761ed6a21642140db2",
+  "send_to_stories": [],
+  "form": {
+    "name": "Take out the trash in Gmail Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Message-ID",
+        "description": "External Message ID including '<' and '>' e.g.\n<some-msg-id@exampledotcom>",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 939524096,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Removal Type",
+        "description": "",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Send To Trash",
+          "Delete Permanently"
+        ],
+        "ranking": 2013265920,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "User Email",
+        "description": "",
+        "required": true,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "bba0db48c9ca2d87f9ecfd503a73da8d",
+    "success_message": "Thanks for your submission, your results will be sent to the admin's email."
+  }
+}

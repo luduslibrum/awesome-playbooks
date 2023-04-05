@@ -1,0 +1,2 @@
+# Enable and disable specific users at the beginning and end of the working day
+This custom workflow contains custom activities (AzureADEnableUser, AzureADDisableUser, and OfficeSendMail) and thus the custom activities should be imported before you can import the workflow itself

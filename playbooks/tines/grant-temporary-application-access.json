@@ -1,0 +1,851 @@
+{
+  "schema_version": 4,
+  "name": "Grant temporary application access",
+  "description": "Receive Slack requests to grant a user access to a specific application for a specified period of time and de-activate the user's account immediately afterward. \n\ntags: Jira, Slack, Access, Salesforce, Notify, Verify, Okta, UserAccess, Intermediate,\nicons: Slack,🧩, ⏰\nvisibility: public",
+  "guid": "7069638c3bcb23774a712e5f968554cb",
+  "slug": "grant_temporary_application_access",
+  "exported_at": "2022-07-11T17:34:58Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Action",
+      "disabled": false,
+      "guid": "4094271e2ea42ae5b777750f7dcf10d2",
+      "options": {
+        "path": "dadbd8bf4ed34b28b99b830fca5536a4",
+        "secret": "1338b9f114624f09556b6cc13b2ad954",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Create Tines User",
+      "disabled": false,
+      "guid": "722bf43837356aa8052eb21d4cb2e718",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "foo",
+            "path": "<<webhook_action.body.application_request>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Create Salesforce user",
+      "disabled": false,
+      "guid": "da006c2f23004f87ea50ca97405630cb",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "foo",
+            "path": "<<webhook_action.body.application_request>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Tines Users",
+      "disabled": false,
+      "guid": "99b1de3774e372d1afdf047e0768f8a9",
+      "options": {
+        "url": "https://demo.tines.com/api/v1/admin/users",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "email": "<<webhook_action.body.username>>",
+          "first_name": "<<webhook_action.body.first_name>>",
+          "last_name": "<<webhook_action.body.last_name>>",
+          "admin": "true"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait Application Approval Period",
+      "disabled": false,
+      "guid": "d73956822617f022961f13d40d711f57",
+      "options": {
+        "mode": "delay",
+        "seconds": "<<webhook_action.body.application_access_duration_in_hours>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete Tines User",
+      "disabled": false,
+      "guid": "ec91d8128e0f5848422a4b5d4608edbd",
+      "options": {
+        "url": "https://demo.tines.com/api/v1/admin/users/<<create_tines_users.body.id>>",
+        "method": "delete",
+        "headers": {
+          "content-type": "application/json",
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Access Authorization Checklist in Jira",
+      "disabled": false,
+      "guid": "06983754830db7741f3ded0685fbebe6",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "EnterName"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "|| Account || Status ||\n| <<webhook_action.body.application_request>> | Creating |",
+            "summary": "Application Request  for: <<webhook_action.body.first_name>> <<webhook_action.body.last_name>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create User in Salesforce",
+      "disabled": false,
+      "guid": "a74ad5a383c2b6d6eff6d2a70cb43663",
+      "options": {
+        "url": "https://<<RESOURCE.salesforce>>/services/data/v50.0/sobjects/User",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "FirstName": "<<webhook_action.body.first_name>>",
+          "LastName": "<<webhook_action.body.last_name>>",
+          "Email": "\"<<webhook_action.body.username>>@tines.io\"",
+          "Username": "<<webhook_action.body.username>>",
+          "Alias": "<<webhook_action.body.first_name>><<webhook_action.body.last_name>>",
+          "TimeZoneSidKey": "America/Los_Angeles",
+          "LocaleSidKey": "en_US",
+          "EmailEncodingKey": "ISO-8859-1",
+          "ProfileId": "00e6g000001R4JWAA0",
+          "LanguageLocaleKey": "en_US"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.salesforce>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel using a Rich Notification",
+      "disabled": false,
+      "guid": "b5ad295060f0857055b7573cf51df285",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<RESOURCE.slack_channel>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "A user is requesting temporary access to an application:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*User:*\n\n<<webhook_action.body.username>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Application:*\n\n<<webhook_action.body.application_request>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Duration:*\n\n<<webhook_action.body.application_access_duration_in_hours>>"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Approve"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"yes\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Deny"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"no\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Catch Prompt",
+      "disabled": false,
+      "guid": "0a1d007a10611f8f193fb091a30805ef",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "yes",
+            "path": "<<post_message_to_a_slack_channel_using_a_rich_notification.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait Application Approval Period",
+      "disabled": false,
+      "guid": "9277bd660c649fa00c83d7e99de18979",
+      "options": {
+        "mode": "delay",
+        "seconds": "<<webhook_action.body.application_access_duration_in_hours>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete User in Salesforce",
+      "disabled": false,
+      "guid": "e2922fc7dfe672683b3bc98908207044",
+      "options": {
+        "url": "https://na174.my.salesforce.com/services/data/v50.0/sobjects/User",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "FirstName": "<<generate_user_info.firstname>>",
+          "LastName": "<<generate_user_info.lastname>>",
+          "Email": "<<generate_user_info.email>>",
+          "Username": "<<generate_user_info.email>>",
+          "Alias": "<<DOWNCASE(candidate_hired.body.payload.application.candidate.first_name) |> SLICE(%, 0)>><<DOWNCASE(candidate_hired.body.payload.application.candidate.last_name)>>",
+          "TimeZoneSidKey": "America/Los_Angeles",
+          "LocaleSidKey": "en_US",
+          "EmailEncodingKey": "ISO-8859-1",
+          "ProfileId": "00e6g000001R4JWAA0",
+          "LanguageLocaleKey": "en_US"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.salesforce>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Create Okta user",
+      "disabled": false,
+      "guid": "ccc4b42b4160fb4cf03b05d865ed74fd",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Okta",
+            "path": "<<webhook_action.body.application_request>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Suspend in Okta",
+      "disabled": false,
+      "guid": "4feba494b39e5e304348e8016b0c4571",
+      "options": {
+        "url": "https://<<RESOURCE.okta>>/api/v1/users/<<webhook_action.body.username>>/lifecycle/suspend",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "profile": {}
+        },
+        "headers": {
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait Application Approval Period",
+      "disabled": false,
+      "guid": "bd929fa81b15b7cd9c40e302eace9b30",
+      "options": {
+        "mode": "delay",
+        "seconds": "<<webhook_action.body.application_access_duration_in_hours>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Access Authorization Ticket",
+      "disabled": false,
+      "guid": "8fa2f37da617b1aa2dddcb2bcd213bfa",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_access_authorization_checklist_in_jira.body.id>>",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "description": "|| Account || Status ||\n| <<webhook_action.body.application_request>> | Completed |"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Access Authorization Ticket",
+      "disabled": false,
+      "guid": "ed8a7e0bb6486bf31e3c389d200b3b51",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_access_authorization_checklist_in_jira.body.id>>",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "description": "|| Account || Status ||\n| <<webhook_action.body.application_request>> | Completed |"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Access Authorization Ticket",
+      "disabled": false,
+      "guid": "fe63aea51beda51a4392a4ed3fbe5fe8",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_access_authorization_checklist_in_jira.body.id>>",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "description": "|| Account || Status ||\n| <<webhook_action.body.application_request>> | Completed |"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Access Authorization Ticket",
+      "disabled": false,
+      "guid": "cf6a9c4264be9d80e59d549de4a46098",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_access_authorization_checklist_in_jira.body.id>>",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "description": "|| Account || Status ||\n| <<webhook_action.body.application_request>> | De-activated |"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create User in Okta",
+      "disabled": false,
+      "guid": "110f7fe01da672253336710702c245a2",
+      "options": {
+        "url": "https://<<RESOURCE.okta>>/api/v1/users?activate=false",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "profile": {
+            "firstName": "<<webhook_action.body.first_name>>",
+            "lastName": "<<webhook_action.body.last_name>>",
+            "email": "<<webhook_action.body.username>>",
+            "login": "<<webhook_action.body.username>>"
+          }
+        },
+        "headers": {
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Activate User",
+      "disabled": false,
+      "guid": "53c46cfe3d734197448b22e187e16bd4",
+      "options": {
+        "url": "https://<<RESOURCE.okta>>/api/v1/users/<<create_user_in_okta.body.id>>/lifecycle/activate",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "profile": {}
+        },
+        "headers": {
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "This Application Authorization story will take in a request to grant a user access to a specific application for a specified period of time. Once the duration of time has completed Tines will automatically de-activate the users account. \n\nWhile the automation is running Tines will create a ticket in Jira to record the creation request, creation success, and creation deletion. \n\nThis example uses Tines, Salesforce, and Okta as the applications but other applications can be added \n\n**Resources**\n`jira_domain` - FQDN for Jira instance\n`jira_user` - Username with rights to create/update issues\n`slack_channel` - Slack Channel for application approval \n`salesforce` - FQDN for Salesforce Instance\n`okta` - FQDN for Okta Instance\n`tines_api_email` - Tines User Email \n\n**Credentials & Resources**\n`jira_credentials` - Password for `jira_user`\n`okta` - API Key for Okta\n`salesforce` - API Key for Salesforce\n`tines_api_key` - Tines API Key",
+      "position": [
+        -150.0,
+        0.0
+      ],
+      "guid": "b7fdd8c9b7f180e7e2f77f33ca795a11",
+      "width": null
+    },
+    {
+      "content": "Before application approval is granted Tines will message the users manager via Slack to ask for confirmation on the application request. If the manager denies the request the automation workflow will be exited ",
+      "position": [
+        705.0,
+        105.0
+      ],
+      "guid": "60c7d099640e5e947a8a0b0f5c8a786a",
+      "width": null
+    },
+    {
+      "content": "The Tines Story will wait the specified amount of time from the Tines Form before disabling use account. \n\nOnce account is disabled Jira ticket will be updated to track deactivation",
+      "position": [
+        735.0,
+        900.0
+      ],
+      "guid": "e0fefd9d6d6ccfed7b000cbc7e4d3dd1",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 6
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 7
+    },
+    {
+      "source": 3,
+      "receiver": 15
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 18
+    },
+    {
+      "source": 6,
+      "receiver": 8
+    },
+    {
+      "source": 7,
+      "receiver": 16
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 12
+    },
+    {
+      "source": 9,
+      "receiver": 2
+    },
+    {
+      "source": 9,
+      "receiver": 1
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 11,
+      "receiver": 18
+    },
+    {
+      "source": 12,
+      "receiver": 19
+    },
+    {
+      "source": 13,
+      "receiver": 18
+    },
+    {
+      "source": 14,
+      "receiver": 13
+    },
+    {
+      "source": 15,
+      "receiver": 4
+    },
+    {
+      "source": 16,
+      "receiver": 10
+    },
+    {
+      "source": 17,
+      "receiver": 14
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 20,
+      "receiver": 17
+    }
+  ],
+  "diagram_layout": "{\"4094271e2ea42ae5b777750f7dcf10d2\":[450,0],\"722bf43837356aa8052eb21d4cb2e718\":[165,360],\"da006c2f23004f87ea50ca97405630cb\":[450,360],\"99b1de3774e372d1afdf047e0768f8a9\":[165,450],\"d73956822617f022961f13d40d711f57\":[165,630],\"ec91d8128e0f5848422a4b5d4608edbd\":[165,720],\"06983754830db7741f3ded0685fbebe6\":[450,75],\"a74ad5a383c2b6d6eff6d2a70cb43663\":[450,450],\"b5ad295060f0857055b7573cf51df285\":[450,165],\"0a1d007a10611f8f193fb091a30805ef\":[450,270],\"9277bd660c649fa00c83d7e99de18979\":[450,615],\"e2922fc7dfe672683b3bc98908207044\":[450,720],\"ccc4b42b4160fb4cf03b05d865ed74fd\":[735,360],\"4feba494b39e5e304348e8016b0c4571\":[735,795],\"bd929fa81b15b7cd9c40e302eace9b30\":[735,705],\"8fa2f37da617b1aa2dddcb2bcd213bfa\":[165,525],\"ed8a7e0bb6486bf31e3c389d200b3b51\":[450,525],\"fe63aea51beda51a4392a4ed3fbe5fe8\":[735,615],\"cf6a9c4264be9d80e59d549de4a46098\":[450,885],\"110f7fe01da672253336710702c245a2\":[735,450],\"53c46cfe3d734197448b22e187e16bd4\":[735,525]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Application Access",
+    "description": "Provide user account information and application acess request ",
+    "fields": [
+      {
+        "name": "Username",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Application Access Duration (In Hours) ",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Application Request",
+        "description": "",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Tines",
+          "Okta",
+          "Salesforce",
+          "Jira"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "First Name",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Last Name",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -536870912,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "4094271e2ea42ae5b777750f7dcf10d2",
+    "success_message": "Thank you for your submission"
+  }
+}

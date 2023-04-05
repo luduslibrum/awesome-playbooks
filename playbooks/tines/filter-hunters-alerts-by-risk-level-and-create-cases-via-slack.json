@@ -1,0 +1,412 @@
+{
+  "schema_version": 4,
+  "name": "Filter Hunters alerts by risk level and create cases via Slack",
+  "description": "Streamline your response to Hunters alerts by categorizing them as high, medium, or low risk, notifying specific users via Slack, and creating cases in Jira with this Story.\n\ntags: Slack, Jira, Hunters, Chatbots, Risk, Alerts, Beginner\nicons: ⏬,hunters,🧳\nvisibility: public",
+  "guid": "6d986f608a187d4e3d436a99e01cf4b3",
+  "slug": "filter_hunters_alerts_by_risk_level_and_create_cases_via_slack",
+  "exported_at": "2022-07-11T17:52:04Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Leads Example",
+      "disabled": false,
+      "guid": "53ce9d6c6d6dbe528cac878878786b38",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/webhook/9185ead2b968287b957795588ba3b170/9c2f95d01b4647856c39e3097bcd343a",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "code": 200,
+          "type": "OK",
+          "results": [
+            {
+              "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c9f",
+              "event_time": "2022-02-28T14:14:22Z",
+              "score": 0,
+              "related_story": "da839156-765f-46b8-af6d-a8fe99a41af7",
+              "source": "aws",
+              "description": "EC2 instance was rebooted and received a new IP address",
+              "assignee": "52cf793d-61ec-4818-938e-7a539e4f8457",
+              "status": "open",
+              "detection_time": "2022-02-27T14:15:22Z",
+              "risk": "low"
+            },
+            {
+              "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6c4t",
+              "event_time": "2022-02-28T14:15:22Z",
+              "score": 0,
+              "related_story": "da839156-765f-46b8-af6d-a8fe99a41af7",
+              "source": "aws",
+              "description": "EC2 instance without a public IP is trying to access the internet through another machine",
+              "assignee": "52cf793d-61ec-4818-938e-7a539e4f8457",
+              "status": "open",
+              "detection_time": "2022-02-27T14:15:22Z",
+              "risk": "medium"
+            },
+            {
+              "uuid": "095be615-a8ad-4c33-8e9c-c7612fbf6f5y",
+              "event_time": "2022-02-28T14:16:22Z",
+              "score": 0,
+              "related_story": "da839156-765f-46b8-af6d-a8fe99a41af7",
+              "source": "aws",
+              "description": "Elastic IP Addresses have been attached to a machine",
+              "assignee": "52cf793d-61ec-4818-938e-7a539e4f8457",
+              "status": "open",
+              "detection_time": "2022-02-27T14:15:22Z",
+              "risk": "high"
+            }
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Get Leads",
+      "disabled": false,
+      "guid": "51cec21ab0376582a83d693950abb884",
+      "options": {
+        "path": "9185ead2b968287b957795588ba3b170",
+        "secret": "d5d6edc78848ff4aa1dec12be4d7cb2b",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "High Risk",
+      "disabled": false,
+      "guid": "67bd591c0ae2327a5b3c6ea77f3866f1",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "high",
+            "path": "<<explode_leads.individual_results.risk>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Leads",
+      "disabled": false,
+      "guid": "68f0078e7301968ff4c4bd96ef09f6f4",
+      "options": {
+        "mode": "explode",
+        "path": "=get_leads.body.results",
+        "to": "individual_results"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Medium Risk",
+      "disabled": false,
+      "guid": "497e3ac40a0b11d3a623431fa9944312",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "medium",
+            "path": "<<explode_leads.individual_results.risk>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Low Risk",
+      "disabled": false,
+      "guid": "a6cb7bf2739292af8b6edd2161cc40a5",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "low",
+            "path": "<<explode_leads.individual_results.risk>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel",
+      "disabled": false,
+      "guid": "412a07ea676315a948fd3888867cfa41",
+      "options": {
+        "url": "https://<<CREDENTIAL.slack_webhook>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "text": "New Hunters alert for <<explode_leads.individual_results.source>>",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Description of Alert: <<explode_leads.individual_results.description>>"
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Status:* <<explode_leads.individual_results.status>>"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Risk:*\n<<explode_leads.individual_results.risk>>"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Event Time:*\n<<explode_leads.individual_results.event_time>>"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Related Story ID:* `<<explode_leads.individual_results.related_story>>`"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Do you want to create a Jira ticket?*"
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Create Jira"
+                  },
+                  "style": "primary",
+                  "url": "<<PROMPT(\"Yes\")>>"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Dont Create Jira"
+                  },
+                  "style": "danger",
+                  "url": "<<PROMPT(\"No\")>>"
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Jira ticket for Hunters Lead",
+      "disabled": false,
+      "guid": "da7fa43090c45da9ee2fbb94bd04152b",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Kevin Davis"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "<<explode_leads.individual_results.description>>\n\n|*Status:*|*Risk:*|*Event Time:*|*Related Story ID:*|\n|<<explode_leads.individual_results.status>>|<<explode_leads.individual_results.risk>>|<<explode_leads.individual_results.event_time>>|<<explode_leads.individual_results.related_story>>",
+            "summary": "New Hunters Lead - UUID: <<explode_leads.individual_results.uuid>> "
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Create Jira",
+      "disabled": false,
+      "guid": "e980262c70452cb7d7ee3ef83a888079",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Yes",
+            "path": "<<post_message_to_a_slack_channel.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/hunters.png\nThis story walks through getting a new lead from [Hunters.ai](https://hunters.ai/) based on 3 risk levels: low, medium, & high.  \n\nEach gives the user to ability to receive the notification via a slack channel and take the action to create a Jira ticket with the corresponding information.",
+      "position": [
+        -75.0,
+        105.0
+      ],
+      "guid": "5179c4e8284a60fac284a563b45d5ade",
+      "width": null
+    },
+    {
+      "content": "Kickoff the story below 👇",
+      "position": [
+        210.0,
+        120.0
+      ],
+      "guid": "95cb0f388127e6a724efb05767e090ef",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 6
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 4,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 7
+    }
+  ],
+  "diagram_layout": "{\"53ce9d6c6d6dbe528cac878878786b38\":[210,195],\"51cec21ab0376582a83d693950abb884\":[540,255],\"67bd591c0ae2327a5b3c6ea77f3866f1\":[315,405],\"68f0078e7301968ff4c4bd96ef09f6f4\":[540,330],\"497e3ac40a0b11d3a623431fa9944312\":[540,405],\"a6cb7bf2739292af8b6edd2161cc40a5\":[750,405],\"412a07ea676315a948fd3888867cfa41\":[540,480],\"da7fa43090c45da9ee2fbb94bd04152b\":[540,660],\"e980262c70452cb7d7ee3ef83a888079\":[540,585]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Filter Hunters alerts by risk level and create cases via Slack Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

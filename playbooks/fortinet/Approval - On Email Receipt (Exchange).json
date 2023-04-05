@@ -1,0 +1,155 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Approval - On Email Receipt (Exchange)",
+    "aliasName": null,
+    "tag": null,
+    "description": "This playbook is triggered whenever an email is received via Exchange; the playbook  and it checks determines whether the received email is an approval mail, and, if yes, along with checks its approval status.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/485f8459-d32b-4ecc-ac20-9eddd40b50f2",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Mark Approval Email as Read",
+            "description": null,
+            "arguments": {
+                "name": "Exchange",
+                "params": {
+                    "message_id": "{{ vars.item.messageID }}",
+                    "folder_name": ""
+                },
+                "version": "3.4.0",
+                "for_each": {
+                    "item": "{{vars.steps.Process_Each_Email}}",
+                    "condition": "{{{{ vars.item.isApproval }}}}"
+                },
+                "connector": "exchange",
+                "operation": "mark_as_read",
+                "operationTitle": "Mark Email as Read",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "270",
+            "left": "549",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "87e4c63e-7071-47a2-a622-f3ee710936be"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "approval_listener_exchange",
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "api_body": "{{vars.request.data}}"
+                        }
+                    }
+                },
+                "authentication_methods": [
+                    ""
+                ]
+            },
+            "status": null,
+            "top": "40",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/df26c7a2-4166-4ca5-91e5-548e24c01b5f",
+            "uuid": "485f8459-d32b-4ecc-ac20-9eddd40b50f2"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Unread Emails",
+            "description": null,
+            "arguments": {
+                "name": "Exchange",
+                "config": "1e4d9b3f-8c63-4c7e-a756-de3250f79de4",
+                "params": {
+                    "limit": "",
+                    "source": "Inbox",
+                    "mark_read": false,
+                    "pull_oldest": false,
+                    "parse_inline": "",
+                    "save_as_attachment": false,
+                    "extract_attach_data": false
+                },
+                "version": "3.4.0",
+                "connector": "exchange",
+                "operation": "get_email_new",
+                "operationTitle": "Get Unread Emails",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "120",
+            "left": "208",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "6ea3af2a-66b2-4ed6-879e-f92ed18a4e35"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Process Each Email",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.steps.Get_Unread_Emails.data}}",
+                    "__bulk": false,
+                    "parallel": false,
+                    "condition": ""
+                },
+                "arguments": {
+                    "approvalEmail": "{{ vars.item }}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/8d909e25-6142-4df1-85a5-9036e1c1b037"
+            },
+            "status": null,
+            "top": "200",
+            "left": "380",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "209db6d7-1f3e-48ed-900d-2b7d1a90b4f4"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Process Each Email -> Mark Approval Email as Read",
+            "targetStep": "\/api\/3\/workflow_steps\/87e4c63e-7071-47a2-a622-f3ee710936be",
+            "sourceStep": "\/api\/3\/workflow_steps\/209db6d7-1f3e-48ed-900d-2b7d1a90b4f4",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c010542d-1814-41e9-a106-df9edbdb0d7d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Get Unread Emails",
+            "targetStep": "\/api\/3\/workflow_steps\/6ea3af2a-66b2-4ed6-879e-f92ed18a4e35",
+            "sourceStep": "\/api\/3\/workflow_steps\/485f8459-d32b-4ecc-ac20-9eddd40b50f2",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ad134e96-81f6-4211-9e19-367c96c7f557"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Unread Emails -> Process Each Email",
+            "targetStep": "\/api\/3\/workflow_steps\/209db6d7-1f3e-48ed-900d-2b7d1a90b4f4",
+            "sourceStep": "\/api\/3\/workflow_steps\/6ea3af2a-66b2-4ed6-879e-f92ed18a4e35",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "77093d42-7f09-42dc-8096-1db7b55d45b6"
+        }
+    ],
+    "priority": null,
+    "uuid": "64127b91-0d5b-4778-89b5-d1267d8f164b",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": []
+}

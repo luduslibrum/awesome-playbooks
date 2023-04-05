@@ -1,0 +1,254 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action - IP Address - Block (Forticlient EMS)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Quarantines endpoint with the specified IP address on FortiClient EMS.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "inputIndicatorRecordIRI",
+        "inputIndicatorValue",
+        "inputActionReasons",
+        "inputAssetHostname",
+        "inputAssetDeviceUUID",
+        "inputAlertRecordIRI"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/9b29b12c-e03c-4d5f-b44e-0975dd0bcdb3",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "actionReason": "{{\nvars.input.params.inputActionReasons\nif vars.input.params.inputActionReasons\nelse vars.input.params.actionReason\n}}",
+                "indicatorIRI": "{{\nvars.input.params.inputIndicatorRecordIRI \nif vars.input.params.inputIndicatorRecordIRI \nelse  \nvars.input.records[0]['@id'] \n}}",
+                "indicatorValue": "{{\nvars.input.params.inputIndicatorValue\nif vars.input.params.inputIndicatorValue\nelse \nvars.input.records[0].value\n}}",
+                "loggedInUserName": "{{vars.loggedInUser.firstname}} {{vars.loggedInUser.lastname}}"
+            },
+            "status": null,
+            "top": "160",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "f0161478-d6c9-4175-aff7-b86568ed008f"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "60eaa9c9-ca95-4f69-837b-8b41b1930bf1",
+                "title": "Block IP Address on FortiClient EMS",
+                "resources": [
+                    "indicators"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "actionReason",
+                        "type": "string",
+                        "label": "Reason",
+                        "tooltip": "Specify Reason for the action",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "defaultValue": "Found malicious during investigation",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "actionReason": "{{vars.request.data[\"actionReason\"]}}",
+                            "inputActionReasons": "{{ vars.inputActionReasons }}",
+                            "inputAssetHostname": "{{ vars.inputAssetHostname }}",
+                            "inputAlertRecordIRI": "{{ vars.inputAlertRecordIRI }}",
+                            "inputIndicatorValue": "{{ vars.inputIndicatorValue }}",
+                            "inputAssetDeviceUUID": "{{ vars.inputAssetDeviceUUID }}",
+                            "inputIndicatorRecordIRI": "{{ vars.inputIndicatorRecordIRI }}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    },
+                    "loggedInUser": "{{vars.currentUser | fromIRI }}"
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": [
+                            {
+                                "type": "object",
+                                "field": "indicatorStatus",
+                                "value": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                                    "itemValue": "Blocked"
+                                },
+                                "operator": "neq"
+                            },
+                            {
+                                "type": "object",
+                                "field": "typeofindicator",
+                                "value": "\/api\/3\/picklists\/c0beeda4-2c7a-4214-b7e5-53ba1649539c",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/c0beeda4-2c7a-4214-b7e5-53ba1649539c",
+                                    "itemValue": "IP Address"
+                                },
+                                "operator": "eq"
+                            }
+                        ]
+                    }
+                },
+                "executeButtonText": "Block",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "30",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "9b29b12c-e03c-4d5f-b44e-0975dd0bcdb3"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add note to Indicator",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "content": "<p>{{vars.loggedInUserName}} initiated block of {{vars.indicatorValue}} with the following reasons: {{vars.actionReason}}<\/p>",
+                    "__replace": "",
+                    "indicators": "{{vars.indicatorIRI}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "35e6289e-6387-4c25-9e05-1bd054ea1354"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Qurantine Endpoint",
+            "description": null,
+            "arguments": {
+                "name": "Fortinet FortiClient EMS",
+                "config": "4aff46ad-065a-4c87-9e24-c2252139e232",
+                "params": {
+                    "ids": "10"
+                },
+                "version": "1.0.0",
+                "connector": "fortinet-forticlient-ems",
+                "operation": "quarantine_endpoints",
+                "mock_result": "{\"data\" : {\"result\":\"pass\"}}",
+                "ignore_errors": true,
+                "operationTitle": "Quarantine Endpoints",
+                "pickFromTenant": false,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "440",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "da5fc548-6295-4d31-b3e5-76d89bfdb41f"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add Note to Alert",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "type": {
+                        "id": 248,
+                        "@id": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Comment",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/0841c1eb-a0a3-4abd-b29c-9f68e4d9b14f",
+                        "itemValue": "Comment",
+                        "orderIndex": 1
+                    },
+                    "alerts": "{{vars.input.params.inputAlertRecordIRI}}",
+                    "content": "{{vars.input.params.inputIndicatorValue}} Endpoint is Qurantined on FortiClient EMS",
+                    "__replace": ""
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "589",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "c552907c-1b0f-4fbe-a5a4-3708b97faf3d"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Qurantine Endpoint -> Add Note to Alert",
+            "targetStep": "\/api\/3\/workflow_steps\/c552907c-1b0f-4fbe-a5a4-3708b97faf3d",
+            "sourceStep": "\/api\/3\/workflow_steps\/da5fc548-6295-4d31-b3e5-76d89bfdb41f",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ac80714b-6446-42fd-8484-c03dd70d5fcc"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Add note to Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/35e6289e-6387-4c25-9e05-1bd054ea1354",
+            "sourceStep": "\/api\/3\/workflow_steps\/f0161478-d6c9-4175-aff7-b86568ed008f",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e0392a1e-5d5a-4def-a6a5-048cbc0fc5c5"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Add note to Indicator -> Qurantine Endpoint",
+            "targetStep": "\/api\/3\/workflow_steps\/da5fc548-6295-4d31-b3e5-76d89bfdb41f",
+            "sourceStep": "\/api\/3\/workflow_steps\/35e6289e-6387-4c25-9e05-1bd054ea1354",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "030a32f1-1eaa-40d9-b29d-cf16ace497f9"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/f0161478-d6c9-4175-aff7-b86568ed008f",
+            "sourceStep": "\/api\/3\/workflow_steps\/9b29b12c-e03c-4d5f-b44e-0975dd0bcdb3",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "352c3c43-56d8-4990-b267-2fdb2bed871d"
+        }
+    ],
+    "priority": null,
+    "uuid": "d7917d62-1aec-4041-ac26-ed35d7b77198",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Mitigation"
+    ]
+}

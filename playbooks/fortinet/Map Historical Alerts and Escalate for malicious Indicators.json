@@ -1,0 +1,490 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Map Historical Alerts and Escalate for malicious Indicators",
+    "aliasName": null,
+    "tag": "#system",
+    "description": "Creates a mapping for historical alerts and then escalates the alerts to incidents if malicious indicators are found in the historical alerts. If the incident already exists, then the information is updated into the incident; else  new incident is created",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/4a9adb3a-1a68-4b28-8096-ea12210dfeab",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/3dd8c7cc-8e91-4d25-acb9-ffeabc8674da",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Has Linked Alerts Increased",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/a38c992c-5d5d-4bde-bc90-6a1309131b1e"
+                    },
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/1e7ff91c-cc7b-4b61-9666-5fe534b6c139",
+                        "condition": "{{ vars.currentLinkedAlertCount > 1 and (vars.currentLinkedAlertCount - vars.previousLinkedAlertCount) > 0 }}"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "190",
+            "left": "1100",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "0bd276e2-b96e-47d4-b9db-28f7ca3e53ef"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Incident Details",
+            "description": null,
+            "arguments": {
+                "trackingIncident": "{{vars.steps.Create_Incident}}"
+            },
+            "status": null,
+            "top": "190",
+            "left": "2075",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "e304fb4b-8529-4731-ab51-c2b2ac822225"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Link new Alerts",
+            "description": "",
+            "arguments": {
+                "resource": {
+                    "__link": {
+                        "alerts": "{{vars.indicatorData  | json_query( \"alerts[*].\\\"@id\\\"\" )}}"
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.trackingIncident['@id']}}",
+                "collectionType": "\/api\/3\/incidents",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "30",
+            "left": "2075",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "07df72e4-eb1d-4fdc-b28d-cf747be800e0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Existing Incident Details",
+            "description": null,
+            "arguments": {
+                "trackingIncident": "{{vars.indicatorData.incidents[0]}}"
+            },
+            "status": null,
+            "top": "30",
+            "left": "1750",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "58f41096-5529-42f3-9323-f55821be33c0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Related Records",
+            "description": null,
+            "arguments": {
+                "indicatorData": "{{ (vars.input.records[0]['@id'] + \"?$relationships=true\") | fromIRI }}"
+            },
+            "status": null,
+            "top": "190",
+            "left": "450",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "5727c873-381d-4d2e-93dd-656d14b86dea"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add note to all linked alerts",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "alerts": "{{ vars.indicatorData | json_query( \"alerts[*].\\\"@id\\\"\" )}}",
+                    "content": "<p><span class=\"fa fa-exclamation-triangle\"  style=\"font-size: 15px; color: #DE7A13;\"><\/span>&nbsp;<strong><span style=\"background-color: #ffcc00; color: #ff0000;\">Alert Escalated<\/span><\/strong><\/p>\n<p><strong>{{vars.input.records[0].typeofindicator.itemValue}}<\/strong>&nbsp;<strong>{{vars.input.records[0].value}}<\/strong>&nbsp;is observed across multiple alerts.<\/p>\n<p>Refer to <strong>Incident# {{vars.trackingIncident.id}}<\/strong> for additional details.<\/p>",
+                    "__replace": ""
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "110",
+            "left": "2400",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "1f1a3993-2b18-4c52-8b81-9978f90cb8f4"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "indicators",
+                "resources": [
+                    "indicators"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.request.data}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": []
+                }
+            },
+            "status": null,
+            "top": "190",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "3dd8c7cc-8e91-4d25-acb9-ffeabc8674da"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Alert Count has not Increased",
+            "description": "Do nothing, since the linked alert count hasn't changed",
+            "arguments": {
+                "params": [],
+                "version": "2.2.0",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "270",
+            "left": "1425",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "a38c992c-5d5d-4bde-bc90-6a1309131b1e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Mark all Alerts as Escalated",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.indicatorData | json_query( \"alerts[*].\\\"@id\\\"\" )}}",
+                    "condition": ""
+                },
+                "resource": {
+                    "escalationreason": "<p>Possible Exploitation Detected because, multiple alerts were linked to malicious indicator&nbsp;<strong>{{vars.input.records[0].typeofindicator.itemValue}} {{vars.input.records[0].value}}&nbsp;<\/strong><\/p>",
+                    "escalatedtoincident": {
+                        "id": 6807,
+                        "@id": "\/api\/3\/picklists\/fa12313b-66af-4a2e-864e-a5f19241b734",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": "#bf0a0a",
+                        "display": "Yes",
+                        "listName": "\/api\/3\/picklist_names\/e131cc54-9ae4-43c9-b830-af6e331fe024",
+                        "itemValue": "Yes",
+                        "orderIndex": 0
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.item}}",
+                "collectionType": "\/api\/3\/alerts",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "110",
+            "left": "2725",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "20bf96d5-67c4-44f7-b857-d1cbe6def764"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Incident",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "name": "Possible Exploitation using {{vars.input.records[0].typeofindicator.itemValue}} {{vars.input.records[0].value}}",
+                    "tags": null,
+                    "notes": null,
+                    "phase": {
+                        "id": 82,
+                        "@id": "\/api\/3\/picklists\/bb740542-f699-11e7-8c3f-9a214cf093ae",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Detection",
+                        "listName": "\/api\/3\/picklist_names\/b862eb1f-b385-40ca-baa7-5a1b1f91a651",
+                        "itemValue": "Detection",
+                        "orderIndex": 0
+                    },
+                    "tasks": null,
+                    "users": null,
+                    "alerts": "{{vars.indicatorData | json_query( \"alerts[*].\\\"@id\\\"\" )}}",
+                    "assets": null,
+                    "emails": null,
+                    "owners": null,
+                    "resSla": null,
+                    "source": null,
+                    "status": {
+                        "id": 224,
+                        "@id": "\/api\/3\/picklists\/bb73fe9e-f699-11e7-8c3f-9a214cf093ae",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Open",
+                        "listName": "\/api\/3\/picklist_names\/a549e41c-31ca-406d-89ae-eab3de5c06c4",
+                        "itemValue": "Open",
+                        "orderIndex": 0
+                    },
+                    "ackDate": null,
+                    "metrics": null,
+                    "persons": null,
+                    "category": {
+                        "id": 8331,
+                        "@id": "\/api\/3\/picklists\/8fea3472-6bd7-4bbf-a080-ca4e778617f8",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Other",
+                        "listName": "\/api\/3\/picklist_names\/f3938848-6220-4b27-af2d-a5329cf63656",
+                        "itemValue": "Other",
+                        "orderIndex": 18
+                    },
+                    "comments": null,
+                    "filehash": null,
+                    "severity": {
+                        "id": 79,
+                        "@id": "\/api\/3\/picklists\/40187287-89fc-4e9c-b717-e9443d57eedb",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": "#DE7A13",
+                        "display": "High",
+                        "listName": "\/api\/3\/picklist_names\/4e80cba3-032f-48b4-ac03-17e3ec247aac",
+                        "itemValue": "High",
+                        "orderIndex": 3
+                    },
+                    "slaState": null,
+                    "sourceIP": null,
+                    "sourceId": null,
+                    "__replace": "true",
+                    "campaigns": null,
+                    "companies": null,
+                    "deviceUID": null,
+                    "dwellTime": null,
+                    "evidences": null,
+                    "nextsteps": null,
+                    "ackDueDate": null,
+                    "indicators": "['{{vars.input.records[0]['@id']}}']",
+                    "resolution": null,
+                    "sourcedata": null,
+                    "attachments": null,
+                    "description": "<p>Possible Exploitation Detected because, multiple alerts were linked to malicious indicator <strong>{{vars.input.records[0].typeofindicator.itemValue}} {{vars.input.records[0].value}}&nbsp;<\/strong><\/p>\n<p>Review the linked alerts and plan next steps.<\/p>",
+                    "targetAsset": null,
+                    "assigneddate": null,
+                    "discoveredOn": "{{arrow.utcnow().shift(hours=+0).timestamp}}",
+                    "incidentLead": "\/api\/3\/people\/3451141c-bac6-467c-8d72-85e0fab569ce",
+                    "legalMatters": null,
+                    "recoveryDate": null,
+                    "recoveryTime": null,
+                    "resolveddate": null,
+                    "responseDate": null,
+                    "senderDomain": null,
+                    "aftermathDate": null,
+                    "destinationIP": null,
+                    "incidentPhase": null,
+                    "resPercentSla": null,
+                    "responseDueBy": null,
+                    "slaPercentage": null,
+                    "dateOfIncident": null,
+                    "deliveryVector": null,
+                    "gdprAttributes": null,
+                    "containmentDate": null,
+                    "containmentTime": null,
+                    "eradicationDate": null,
+                    "incidentsummary": null,
+                    "vulnerabilities": null,
+                    "confirmationDate": null,
+                    "correlationGraph": null,
+                    "impactAssessments": null,
+                    "identificationDate": null,
+                    "senderEmailAddress": null,
+                    "systemAssignedQueue": null,
+                    "receipientEmailAddress": null
+                },
+                "_showJson": false,
+                "collection": "\/api\/3\/upsert\/incidents",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "190",
+            "left": "1750",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "594f3062-4e18-4d10-815d-2144ee40bb23"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "currentLinkedAlertCount": "{{ vars.indicatorData.alerts | length }}",
+                "previousLinkedAlertCount": "{{vars.previous.data.alerts | length}}"
+            },
+            "status": null,
+            "top": "190",
+            "left": "775",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "90f17b35-c93a-49bb-9733-4ae0ec06baa0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Does Incident Exist",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/594f3062-4e18-4d10-815d-2144ee40bb23"
+                    },
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/58f41096-5529-42f3-9323-f55821be33c0",
+                        "condition": "{{ vars.indicatorData.incidents | length > 0 }}"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "110",
+            "left": "1425",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "1e7ff91c-cc7b-4b61-9666-5fe534b6c139"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Link new Alerts -> Add note to all linked alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/1f1a3993-2b18-4c52-8b81-9978f90cb8f4",
+            "sourceStep": "\/api\/3\/workflow_steps\/07df72e4-eb1d-4fdc-b28d-cf747be800e0",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "413d5744-b4f2-4373-a7e7-20f78244bc62"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Does Incident Exists -> Create Incident",
+            "targetStep": "\/api\/3\/workflow_steps\/594f3062-4e18-4d10-815d-2144ee40bb23",
+            "sourceStep": "\/api\/3\/workflow_steps\/1e7ff91c-cc7b-4b61-9666-5fe534b6c139",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "4a2d7035-ebcb-4eaf-b07b-e52cde386f94"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create Incident -> Incident Details",
+            "targetStep": "\/api\/3\/workflow_steps\/e304fb4b-8529-4731-ab51-c2b2ac822225",
+            "sourceStep": "\/api\/3\/workflow_steps\/594f3062-4e18-4d10-815d-2144ee40bb23",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "0019a5c4-a38d-4649-ad26-b9f0f8fd6b1d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Has Linked Alerts Increased -> Does Incident Exists",
+            "targetStep": "\/api\/3\/workflow_steps\/1e7ff91c-cc7b-4b61-9666-5fe534b6c139",
+            "sourceStep": "\/api\/3\/workflow_steps\/0bd276e2-b96e-47d4-b9db-28f7ca3e53ef",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "bdc29258-facd-4a03-87cb-1fa427369df8"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Has Linked Alerts Increased",
+            "targetStep": "\/api\/3\/workflow_steps\/0bd276e2-b96e-47d4-b9db-28f7ca3e53ef",
+            "sourceStep": "\/api\/3\/workflow_steps\/90f17b35-c93a-49bb-9733-4ae0ec06baa0",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a09eacb3-6433-40dd-b0ba-bfce1a6c4a43"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Get Related Records",
+            "targetStep": "\/api\/3\/workflow_steps\/5727c873-381d-4d2e-93dd-656d14b86dea",
+            "sourceStep": "\/api\/3\/workflow_steps\/3dd8c7cc-8e91-4d25-acb9-ffeabc8674da",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "89c6a3ea-5167-48d6-b143-d66985d11d2b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Add note to all linked alerts -> Mark all Alerts as Escalated",
+            "targetStep": "\/api\/3\/workflow_steps\/20bf96d5-67c4-44f7-b857-d1cbe6def764",
+            "sourceStep": "\/api\/3\/workflow_steps\/1f1a3993-2b18-4c52-8b81-9978f90cb8f4",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "86b763ec-e726-4991-9962-c9cf2309e3e4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Existing Incident Details -> Link new Alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/07df72e4-eb1d-4fdc-b28d-cf747be800e0",
+            "sourceStep": "\/api\/3\/workflow_steps\/58f41096-5529-42f3-9323-f55821be33c0",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "728a5fbb-58c0-41c9-8aa4-656137b6d296"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Incident Details -> Add note to all linked alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/1f1a3993-2b18-4c52-8b81-9978f90cb8f4",
+            "sourceStep": "\/api\/3\/workflow_steps\/e304fb4b-8529-4731-ab51-c2b2ac822225",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f612e1c2-8a85-4839-a60c-d83ccea6d455"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Does Incident Exist -> Copy  of Incident Details",
+            "targetStep": "\/api\/3\/workflow_steps\/58f41096-5529-42f3-9323-f55821be33c0",
+            "sourceStep": "\/api\/3\/workflow_steps\/1e7ff91c-cc7b-4b61-9666-5fe534b6c139",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "2964f4d4-6411-445b-91f2-319815722c13"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Related Records -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/90f17b35-c93a-49bb-9733-4ae0ec06baa0",
+            "sourceStep": "\/api\/3\/workflow_steps\/5727c873-381d-4d2e-93dd-656d14b86dea",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "7cfb72bf-0b42-46c4-8dab-015e002fb0b6"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Has Linked Alerts Increased -> Do Nothing",
+            "targetStep": "\/api\/3\/workflow_steps\/a38c992c-5d5d-4bde-bc90-6a1309131b1e",
+            "sourceStep": "\/api\/3\/workflow_steps\/0bd276e2-b96e-47d4-b9db-28f7ca3e53ef",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "b8da2061-1709-4f22-8bbb-7f428132e486"
+        }
+    ],
+    "priority": null,
+    "uuid": "8f2bfe95-5ada-497b-a304-529c3bed587a",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "PostUpdate"
+    ]
+}

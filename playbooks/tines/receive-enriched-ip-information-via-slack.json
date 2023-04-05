@@ -1,0 +1,427 @@
+{
+  "schema_version": 4,
+  "name": "Receive enriched IP information via Slack",
+  "description": "Leverage a Slack bot to receive enriched information about an IP address from VirusTotal, GreyNoise, and AbuseIPDB.\n\ntags: Enrich, Slack, VirusTotal, GreyNoise, AbuseIPDB, Abuse, Intermediate, SlashCommand\nicons: 🌐, 🧐, slack\nvisibility: public",
+  "guid": "f61f3aedd112cafcb41d5f26bdb7304d",
+  "slug": "receive_enriched_ip_information_via_slack",
+  "exported_at": "2022-07-11T17:25:54Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive IP Address",
+      "disabled": false,
+      "guid": "9c4502a4a00e2b8e5ac2075d02b9b623",
+      "options": {
+        "path": "f7d3fed4b8518d64e738680062b4f1e2",
+        "secret": "66d00c8afec217c0f8bcb301d2e58c41",
+        "response": "Hi <<body.user_name>>! Thanks for submitting your <<body.command>> request to Tines, we're analyzing now."
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract IP Address Using Regex",
+      "disabled": false,
+      "guid": "91697e7513049523dd9f636532350dc8",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=receive_ip_address.body.text",
+            "regexp": "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b",
+            "to": "ip"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search for IP Address in VirusTotal",
+      "disabled": false,
+      "guid": "e0bfe2542972e88a6afd1f6e41bb594c",
+      "options": {
+        "url": "https://www.virustotal.com/api/v3/ip_addresses/<<extract_ip_address_using_regex.ip>>",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-apikey": "<<CREDENTIAL.virustotal>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel using a Rich Notification",
+      "disabled": false,
+      "guid": "1c3d1563a26ca6c9744cd51d8ba0e523",
+      "options": {
+        "url": "<<receive_ip_address.body.response_url>>",
+        "payload": {
+          "blocks": [
+            {
+              "type": "divider"
+            },
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "IP Address: <<receive_ip_address.body.text>> ",
+                "emoji": true
+              }
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "Virus Total Analysis",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Malicious Votes: <<search_for_ip_address_in_virustotal.body.data.attributes.total_votes.malicious>>",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Harmless Votes: <<search_for_ip_address_in_virustotal.body.data.attributes.total_votes.harmless>> ",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Owner: <<search_for_ip_address_in_virustotal.body.data.attributes.as_owner>>",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Country: <<search_for_ip_address_in_virustotal.body.data.attributes.country>>",
+                "emoji": true
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "View IP In VirusTotal",
+                    "emoji": true
+                  },
+                  "url": "https://www.virustotal.com/gui/ip-address/<<extract_ip_address_using_regex.ip>>"
+                }
+              ]
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "GreyNoise Community Analysis",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Name: <%if lookup_ip_in_greynoise_community.body.message = \"Success\"%><<lookup_ip_in_greynoise_community.body.name>><%else%>IP Not found in GreyNoise<%endif%>",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Classification: <%if lookup_ip_in_greynoise_community.body.message = \"Success\"%><<lookup_ip_in_greynoise_community.body.classification>><%else%>IP Not found in GreyNoise<%endif%>",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Last Seen: <%if lookup_ip_in_greynoise_community.body.message = \"Success\"%><<lookup_ip_in_greynoise_community.body.last_seen>><%else%>IP Not found in GreyNoise<%endif%>",
+                "emoji": true
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "View IP In GreyNoise",
+                    "emoji": true
+                  },
+                  "url": "https://www.greynoise.io/viz/ip/<<extract_ip_address_using_regex.ip>>"
+                }
+              ]
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "AbuseIPDB",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Abuse Confidence Score: <<search_for_ip_address_in_abuse_ipdb.body.data.abuseConfidenceScore>>",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Usage Type: <<search_for_ip_address_in_abuse_ipdb.body.data.usageType>>",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "plain_text",
+                "text": "Domain: <<search_for_ip_address_in_abuse_ipdb.body.data.domain>> ",
+                "emoji": true
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "View IP In AbuseIPDB",
+                    "emoji": true
+                  },
+                  "url": "https://www.abuseipdb.com/check/<<extract_ip_address_using_regex.ip>>"
+                }
+              ]
+            },
+            {
+              "type": "divider"
+            }
+          ]
+        },
+        "method": "post",
+        "content_type": "json"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search for IP Address in Abuse IPDB",
+      "disabled": false,
+      "guid": "3612102635b84920bf1875254fbabdce",
+      "options": {
+        "url": "https://api.abuseipdb.com/api/v2/check",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "maxAgeInDays": "90",
+          "ipAddress": "<<extract_ip_address_using_regex.ip>>",
+          "verbose": "true"
+        },
+        "headers": {
+          "key": "<<CREDENTIAL.abuseipdb>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Lookup IP in GreyNoise Community",
+      "disabled": false,
+      "guid": "a6bb55c6cb7908fb16e88fb27119b5e9",
+      "options": {
+        "url": "https://api.greynoise.io/v3/community/<<extract_ip_address_using_regex.ip>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "Enrich the IP leveraging Virus Total, GreyNoise and AbuseIPDB",
+      "position": [
+        -555.0,
+        165.0
+      ],
+      "guid": "4d7259e59c63429b56bea83b7373c0b1",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/slack_logo_purple.png\n\nIn slack, use the \"/enrichip\" command with an IP Address.  A message will be returned to the same channel that kicked off the command with the following information:\n# 1. VirusTotal Analysis:\n- Malicious Votes\n- Harmless Votes\n- Owner\n- Country\n# 2. GreyNoise Community Analysis\n- Name\n- Classification\n- Last Seen\n# 3. AbuseIPDB\n- Abuse Confidence Score\n- Usage Type\n- Domain\n\nA link is provided via a button in the Slack response to view the detection in each vendor's portal.\n\nYou can easily fine-tune the data returned from VirusTotal, GreyNoise, and AbuseIPDB to suit your needs.",
+      "position": [
+        -1170.0,
+        -120.0
+      ],
+      "guid": "4a597090cf73cd9b2df57d86ef9c1f20",
+      "width": null
+    },
+    {
+      "content": "Receive IPs from Slack using the /enrichip command followed by the IP Address",
+      "position": [
+        -555.0,
+        -105.0
+      ],
+      "guid": "45170095af214cf51e8f7d708676d63c",
+      "width": null
+    },
+    {
+      "content": "Extract out IP Address using Regex to ensure proper formatting",
+      "position": [
+        -555.0,
+        0.0
+      ],
+      "guid": "3141378e25ef8e4c6866b8a1dfa9293e",
+      "width": null
+    },
+    {
+      "content": "Format message and respond to user in Slack",
+      "position": [
+        -555.0,
+        390.0
+      ],
+      "guid": "8455e09e3bb599f5f1b8aa1c2402424f",
+      "width": null
+    },
+    {
+      "content": "# Requirements\n- [ ] Slack API Key\n- [ ] VirusTotal API Key\n- [ ] AbuseIPDB API Key\n\nNote: The Greynoise API used is the community API so no API key is needed",
+      "position": [
+        -1170.0,
+        585.0
+      ],
+      "guid": "b62399cab5c6427002e0aacd37cf7444",
+      "width": null
+    },
+    {
+      "content": "To learn how to setup a Slash Command in Slack you can follow this [blog](https://www.tines.com/blog/chatbots-for-security-and-it-teams-part-3-creating-a-slack-chatbot). Be sure to name your Slash Command \"/enrichip\" for consistency.",
+      "position": [
+        -1170.0,
+        465.0
+      ],
+      "guid": "e060b3a2b57a1f73b9246b198180e60d",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 4,
+      "receiver": 3
+    },
+    {
+      "source": 5,
+      "receiver": 4
+    }
+  ],
+  "diagram_layout": "{\"9c4502a4a00e2b8e5ac2075d02b9b623\":[-825,-135],\"91697e7513049523dd9f636532350dc8\":[-825,-60],\"e0bfe2542972e88a6afd1f6e41bb594c\":[-825,45],\"1c3d1563a26ca6c9744cd51d8ba0e523\":[-825,390],\"3612102635b84920bf1875254fbabdce\":[-825,285],\"a6bb55c6cb7908fb16e88fb27119b5e9\":[-825,165]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Receive enriched IP information via Slack Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

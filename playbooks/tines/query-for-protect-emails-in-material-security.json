@@ -1,0 +1,833 @@
+{
+  "schema_version": 4,
+  "name": "Query for & protect emails in Material Security",
+  "description": "Query emails through the Material Security API to get a list of messages that match conditions and apply red flags in the form of speedbumps or suspicious labels.\n\ntags: Protect, MaterialSecurity, Phishing, Email, Intermediate, \nicons: materialsecurity,🔍,🛡\nvisibility: public",
+  "guid": "45b63d568cd864e7621ab6ea79c1db91",
+  "slug": "query_for_protect_emails_in_material_security",
+  "exported_at": "2022-07-11T17:33:34Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive STS",
+      "disabled": false,
+      "guid": "8d7ae0bd9e31020823d514a827af570e",
+      "options": {
+        "path": "c8f2ec2b1f73a3d3e15c72eea064033f",
+        "secret": "a02b41b9926fb1d42d0720e36977957f",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "cd5883214f347687196fb8804105c583",
+      "options": {
+        "mode": "delay",
+        "seconds": 20
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List Messages in Material Security",
+      "disabled": false,
+      "guid": "62636467be0ef48f1f51298223fdf293",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/luna/message/list/<<search_messages_in_material_security.body.groupListId>>",
+        "method": "get",
+        "payload": {
+          "limit": "1000",
+          "offset": "0"
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Messages in Material Security",
+      "disabled": false,
+      "guid": "ce7d8fdc4999c49470a18fe686c145ce",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/jobby/job/SearchGroups",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "jobConfig": {
+            "type": "SearchGroups",
+            "searchQuery": "<<receive_sts.body.query>>"
+          }
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Speedbump on Message in Material Security",
+      "disabled": false,
+      "guid": "6b09136521e63bbb006f7f432aaff049",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/luna/message/override",
+        "method": "put",
+        "content_type": "json",
+        "payload": {
+          "overrides": [
+            {
+              "hId": "<<explode_messages.message.hid>>",
+              "acctEmail": "<<explode_messages.message.to>>",
+              "params": {
+                "remedy": {
+                  "vaxAllow": {
+                    "selected": true,
+                    "copyOverride": {
+                      "title": "Add Speedbump",
+                      "explanation": "Message looks suspicious"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Messages",
+      "disabled": false,
+      "guid": "d6cbd49a76165940ebb722185683b0ff",
+      "options": {
+        "mode": "explode",
+        "path": "=list_messages_in_material_security.body.groups",
+        "to": "message"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Query and Apply Speedbump",
+      "disabled": false,
+      "guid": "05bc66f0071773422572f1862132887d",
+      "options": {
+        "story": "<<STORY.query_for_protect_emails_in_material_security>>",
+        "payload": {
+          "query": "hasAttachment:true",
+          "action": "speedbump",
+          "emails": [
+            "<<email>>"
+          ],
+          "all_users": "false"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete Speedbump from Message in Material Security",
+      "disabled": false,
+      "guid": "9a8b3bfe6af00ec487f8c643a5269b30",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/luna/message/override",
+        "method": "put",
+        "content_type": "json",
+        "payload": {
+          "overrides": [
+            {
+              "hId": "<<explode_messages.message.hid>>",
+              "acctEmail": "<<explode_messages.message.to>>",
+              "params": null
+            }
+          ]
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Apply Speedbump",
+      "disabled": false,
+      "guid": "79c3cab730b67b46610ae72c5947ad3b",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "speedbump",
+            "path": "<<receive_sts.body.action>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Remove Speedbump",
+      "disabled": false,
+      "guid": "a510ba8fab243a9df0964a36d284353b",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "remove_speedbump",
+            "path": "<<receive_sts.body.action>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Matched User",
+      "disabled": false,
+      "guid": "117e96d5a4da65ea106596d54464a622",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "<<explode_messages.message.to>>",
+            "path": "=receive_sts.body.emails"
+          },
+          {
+            "type": "regex",
+            "value": "true",
+            "path": "<<receive_sts.body.all_users>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Unmatched User",
+      "disabled": false,
+      "guid": "11e709ebe207799e25782b632a6fca0a",
+      "options": {
+        "rules": [
+          {
+            "type": "not in",
+            "value": "<<explode_messages.message.to>>",
+            "path": "=receive_sts.body.emails"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Return Data",
+      "disabled": false,
+      "guid": "cc3d19e47cbdd325b8cef547e367fbd9",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "results": "=MAP(implode_an_array, \"build_results\")"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode an Array",
+      "disabled": false,
+      "guid": "3046c372f276f96a34e6ac962549d7b2",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=explode_messages.guid",
+        "size_path": "=LIQUID_SIZE(explode_messages, \"dot_notation\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "11db9061139fa434ba2e32ec9b2e8329",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "user": "<<explode_messages.message.to>>",
+          "message_id": "<<explode_messages.message.hId>>",
+          "result": "<<create_speedbump_on_message_in_material_security.body.first.status>>",
+          "action": "<<receive_sts.body.action>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "44282cf35b640afae656d17dbc7e8ee6",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "user": "<<explode_messages.message.to>>",
+          "message_id": "<<explode_messages.message.hId>>",
+          "result": "<<delete_speedbump_from_message_in_material_security.body.first.status>>",
+          "action": "<<receive_sts.body.action>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "0450155d7d79bd655b31d29f2825bea3",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "user": "<<explode_messages.message.to>>",
+          "message_id": "<<explode_messages.message.hId>>",
+          "result": "unmatched",
+          "action": "<<receive_sts.body.action>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Remove Suspicious",
+      "disabled": false,
+      "guid": "d10b06110923c439fa527198d1fdff30",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "remove_suspicious",
+            "path": "<<receive_sts.body.action>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Apply Suspicious",
+      "disabled": false,
+      "guid": "4b8b6f32534b3c1d85cde1f28e059d4d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "suspicious",
+            "path": "<<receive_sts.body.action>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Message as Suspicious in Material Security",
+      "disabled": false,
+      "guid": "33a58be09e503f70d129d57d57e32bf0",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/jobby/job/MarkMsgsSusp",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "jobConfig": {
+            "type": "MarkMsgsSusp",
+            "skipCache": true,
+            "marks": [
+              {
+                "messages": [
+                  {
+                    "datedHid": {
+                      "hId": "<<explode_messages.message.hid>>",
+                      "date": "<<explode_messages.message.date>>"
+                    }
+                  }
+                ],
+                "hints": [
+                  {
+                    "remedy": {
+                      "vaxDeny": {
+                        "selected": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "0fabe089048e53ad026f773b3fd91ee7",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "user": "<<explode_messages.message.to>>",
+          "message_id": "<<explode_messages.message.hId>>",
+          "result": "<<update_message_as_suspicious_in_material_security.body.first.status>>",
+          "action": "<<receive_sts.body.action>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "47a73c080e403b051d8101449562b2ae",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "user": "<<explode_messages.message.to>>",
+          "message_id": "<<explode_messages.message.hId>>",
+          "result": "<<update_message_as_not_suspicious_in_material_security.body.first.status>>",
+          "action": "<<receive_sts.body.action>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Message as Not Suspicious in Material Security",
+      "disabled": false,
+      "guid": "62a581684cabba8d81c486f956833c37",
+      "options": {
+        "url": "https://<<RESOURCE.material_domain>>/api/beta/jobby/job/MarkMsgsSusp",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "jobConfig": {
+            "type": "MarkMsgsSusp",
+            "skipCache": true,
+            "marks": [
+              {
+                "messages": [
+                  {
+                    "datedHid": {
+                      "hId": "<<explode_messages.message.hid>>",
+                      "date": "<<explode_messages.message.date>>"
+                    }
+                  }
+                ],
+                "hints": [
+                  {
+                    "remedy": {
+                      "vaxAllow": {
+                        "selected": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "headers": {
+          "x-material-client-secret": "<<CREDENTIAL.material_security>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Query and Protect\n\nSearch for messages in Material Security and apply/remove protections like \"Speedbumps\" to the messages found.\n\nSupply a list of users to apply the Speedbump to, or choose if the Speedbump should apply to all users.\n\nThe Story will return a list of users, the message IDs, and the result of the Speedbump application.\n\nActions to pass in include: `speedbump`, `remove_speedbump`, `suspicious`, `remove_suspicious`.",
+      "position": [
+        210.0,
+        765.0
+      ],
+      "guid": "641708e51a9d454237da24ced94376ce",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-material-security.png",
+      "position": [
+        780.0,
+        675.0
+      ],
+      "guid": "ff31a83bb9ceef5140325035399b9e8b",
+      "width": null
+    },
+    {
+      "content": "# Requirements\n\n- [ ] A Material Security API key as Credential `material_security`\n- [ ] A Resource `material_domain` for the URL of your Material Security tenant",
+      "position": [
+        780.0,
+        915.0
+      ],
+      "guid": "fb638d50b23239465139d3aa9c78482f",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 1
+    },
+    {
+      "source": 4,
+      "receiver": 14
+    },
+    {
+      "source": 5,
+      "receiver": 10
+    },
+    {
+      "source": 5,
+      "receiver": 11
+    },
+    {
+      "source": 7,
+      "receiver": 15
+    },
+    {
+      "source": 8,
+      "receiver": 4
+    },
+    {
+      "source": 9,
+      "receiver": 7
+    },
+    {
+      "source": 10,
+      "receiver": 8
+    },
+    {
+      "source": 10,
+      "receiver": 9
+    },
+    {
+      "source": 10,
+      "receiver": 17
+    },
+    {
+      "source": 10,
+      "receiver": 18
+    },
+    {
+      "source": 11,
+      "receiver": 16
+    },
+    {
+      "source": 13,
+      "receiver": 12
+    },
+    {
+      "source": 14,
+      "receiver": 13
+    },
+    {
+      "source": 15,
+      "receiver": 13
+    },
+    {
+      "source": 16,
+      "receiver": 13
+    },
+    {
+      "source": 17,
+      "receiver": 22
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 20,
+      "receiver": 13
+    },
+    {
+      "source": 21,
+      "receiver": 13
+    },
+    {
+      "source": 22,
+      "receiver": 21
+    }
+  ],
+  "diagram_layout": "{\"8d7ae0bd9e31020823d514a827af570e\":[510,660],\"cd5883214f347687196fb8804105c583\":[510,855],\"62636467be0ef48f1f51298223fdf293\":[510,945],\"ce7d8fdc4999c49470a18fe686c145ce\":[510,750],\"6b09136521e63bbb006f7f432aaff049\":[525,1260],\"d6cbd49a76165940ebb722185683b0ff\":[510,1035],\"05bc66f0071773422572f1862132887d\":[225,675],\"9a8b3bfe6af00ec487f8c643a5269b30\":[780,1260],\"79c3cab730b67b46610ae72c5947ad3b\":[525,1185],\"a510ba8fab243a9df0964a36d284353b\":[780,1185],\"117e96d5a4da65ea106596d54464a622\":[330,1110],\"11e709ebe207799e25782b632a6fca0a\":[1050,1110],\"cc3d19e47cbdd325b8cef547e367fbd9\":[525,1500],\"3046c372f276f96a34e6ac962549d7b2\":[525,1440],\"11db9061139fa434ba2e32ec9b2e8329\":[525,1365],\"44282cf35b640afae656d17dbc7e8ee6\":[780,1365],\"0450155d7d79bd655b31d29f2825bea3\":[1050,1365],\"d10b06110923c439fa527198d1fdff30\":[285,1185],\"4b8b6f32534b3c1d85cde1f28e059d4d\":[45,1185],\"33a58be09e503f70d129d57d57e32bf0\":[45,1260],\"0fabe089048e53ad026f773b3fd91ee7\":[45,1365],\"47a73c080e403b051d8101449562b2ae\":[285,1365],\"62a581684cabba8d81c486f956833c37\":[285,1260]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "8d7ae0bd9e31020823d514a827af570e",
+  "exit_agent_guids": [
+    "cc3d19e47cbdd325b8cef547e367fbd9"
+  ],
+  "exit_agent_guid": "cc3d19e47cbdd325b8cef547e367fbd9",
+  "send_to_stories": [],
+  "form": {
+    "name": "Query for & protect emails in Material Security Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Query",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Action",
+        "description": "",
+        "required": false,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Speedbump",
+          "Remove Speedbump"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

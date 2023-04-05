@@ -1,0 +1,534 @@
+{
+  "flows": [
+    {
+      "name": "yyy_a_Detection - New Unix SUDO Command By User",
+      "nodes": [
+        {
+          "id": "8e2ceee6-03d6-4ed6-b51b-5012794975c4",
+          "name": "Unix_SUDO_Commands_EventType",
+          "kind": "eventType",
+          "isLeaf": false,
+          "eventType": "eventType-32",
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 0,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "EventTypeContentKind",
+            "id": "eventType-32"
+          },
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data: Unix_SUDO_Commands_EventType",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "886ddef1-cef0-420d-863e-f4ddc7a2e76c",
+          "name": "Baseline_SUDO_Commands_By_User",
+          "kind": "baseline",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 0,
+          "vertices": [],
+          "baseline": "stream-9",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "BaselineContentKind",
+            "id": "stream-9"
+          },
+          "categoryKind": "LogicHub",
+          "linkToTrigger": true,
+          "iconTitle": "Logichub: Baseline_SUDO_Commands_By_User",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "1e4aeed8-fed2-4062-9cd8-2af52371973f",
+          "name": "Join_current_commands_to_historical_commands",
+          "kind": "augmentation",
+          "lql": "autoJoinTables([Rename_count_field,SUDO_Command_History])",
+          "operator": "autoJoinTables",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 244,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "autoJoinTables"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Auto Join Tables",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "3658da53-3c01-4f36-9352-b3fd4204bf4a",
+          "name": "Find_new_commands_by_user",
+          "kind": "augmentation",
+          "lql": "`select * from Join_current_commands_to_historical_commands where _count IS NULL`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 376,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "cb976e96-2900-4b19-af33-1d50dd7b44f6",
+          "name": "Rename_count_field",
+          "kind": "augmentation",
+          "lql": "`select sum(_count) AS currentCount from Unix_SUDO_Commands_EventType GROUP BY command,username,runas,_sourcehost`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 132,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "9aab9544-d52f-41eb-a9e3-ea79ec865bb8",
+          "name": "SUDO_Command_History",
+          "kind": "augmentation",
+          "lql": "filterBaselineTable(Baseline_SUDO_Commands_By_User, -720)",
+          "operator": "filterBaselineTable",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 132,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "BaselineContentKind",
+            "id": "filterBaselineTable"
+          },
+          "categoryKind": "LogicHub",
+          "iconTitle": "Logichub: Filter Baseline Table",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "afbe3e97-6988-4656-b3cb-83d83fbfe7b3",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "44a668a6-105c-457e-adc8-913dc9d9e4a8"
+          ],
+          "isExplainable": true,
+          "x": 150,
+          "y": 810,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "11a8bde5-9a21-4fe2-8ad7-2ff15dc719e5",
+          "name": "INDICATOR_New_SUDO_command_by_a_user",
+          "kind": "augmentation",
+          "lql": "`select \" \" AS alert_time, \n\"LH00138\" AS alert_id,\n\"New SUDO command run by user\" as alert_title,\n\"Sudo\" as technique, \t\n\"Privilege Escalation\" as tactic, \n\" \" as attack_chain,\n1.0 AS fidelity_score,\n1.0 AS risk_score, \n1.0 AS lhub_score,\nconcat('{\"command\" : \"',trim(command),'\" }') AS additional_data,\nusername AS src_user,\nrunas AS dest_user, \nCASE WHEN _sourcehost regexp '\\\\d+\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+' THEN _sourcehost\nELSE \" \"\nEND AS src_ip, \n\" \" AS dest_ip,  \nCASE WHEN _sourcehost regexp '\\\\d+\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+' THEN \" \"\nELSE _sourcehost\nEND AS src_machine_name,\n\" \" AS dest_machine_name\nFROM Find_new_commands_by_user`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 508,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "44a668a6-105c-457e-adc8-913dc9d9e4a8",
+          "name": "LogicHub_MDR_Format_Alert_for_Sumo",
+          "kind": "step",
+          "inputs": [
+            "11a8bde5-9a21-4fe2-8ad7-2ff15dc719e5"
+          ],
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Format event output to send to SumoLogic destination",
+          "isExplainable": true,
+          "x": 150,
+          "y": 640,
+          "vertices": [],
+          "title": "LogicHub MDR: Format Alert for Sumo",
+          "moduleId": "logichub.mdr.format_alert_for_sumo",
+          "moduleVersion": {
+            "majorVersion": 1,
+            "minorVersion": 31,
+            "patchVersion": 0,
+            "contentResourceVersionBranch": "Local"
+          },
+          "moduleParameters": {
+            "parent0": "INDICATOR_New_SUDO_command_by_a_user"
+          },
+          "stepParams": {
+            "kind": "module",
+            "title": "LogicHub MDR: Format Alert for Sumo"
+          },
+          "isEditable": true,
+          "isStepImplementable": false,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "id": "logichub.mdr.format_alert_for_sumo",
+            "name": "LogicHub MDR: Format Alert for Sumo",
+            "latestAvailableVersion": {
+              "majorVersion": 1,
+              "minorVersion": 31,
+              "patchVersion": 0,
+              "contentResourceVersionBranch": "Local"
+            }
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "ModuleContentKind",
+            "id": "logichub.mdr.format_alert_for_sumo"
+          },
+          "categoryKind": "Module",
+          "iconTitle": "Module: LogicHub MDR: Format Alert for Sumo",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1040",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    },
+    {
+      "name": "Baseline - Unix_SUDO_Commands",
+      "nodes": [
+        {
+          "id": "7037218e-a579-4271-b6ca-81d11c0841c7",
+          "name": "Unix_SUDO_Commands_Baseline",
+          "kind": "eventType",
+          "isLeaf": false,
+          "eventType": "eventType-31",
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 310,
+          "y": -180,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "EventTypeContentKind",
+            "id": "eventType-31"
+          },
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data: Unix_SUDO_Commands_Baseline",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "eb0ebde9-2fee-48fd-9b51-2450ac0ce736",
+          "name": "Baseline_SUDO_Commands_By_User",
+          "kind": "augmentation",
+          "lql": "`select * from Unix_SUDO_Commands_Baseline`",
+          "operator": "SELECT",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 310,
+          "y": 30,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1039",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [
+    {
+      "id": "stream-9",
+      "name": "Baseline_SUDO_Commands_By_User",
+      "flow": "flow-1039",
+      "batchIntervalMillis": 3600000,
+      "overlapIntervalMillis": 0,
+      "baselineNode": "eb0ebde9-2fee-48fd-9b51-2450ac0ce736",
+      "numHistoricalIntervalsForBaseline": 720,
+      "baselineSchema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "_count",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "lhub_ts",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "command",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "username",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "lhub_id",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "lhub_page_num",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "paused": true
+    }
+  ],
+  "eventTypes": [
+    {
+      "id": "eventType-32",
+      "data": {
+        "name": "Unix_SUDO_Commands_EventType",
+        "query": "_sourceCategory=server/nutanix/* sudo \"COMMAND=\" \"USER=\" NOT(\"/sbin/fstrim\" AND \"/home/nutanix/data/stargate-storage\") NOT (\"/usr/sbin/iotop\" AND \"PWD=/home/nutanix ; USER=root\") |parse regex field=_raw \".*\\ssudo\\[\\d+\\]:\\s+(?<username>\\w+)\\s+:.*USER=(?<runas>\\w+).*COMMAND=(?<command>[^\\s]+)\\s(?<parameters>.*)\" |max(_messagetime) AS last_seen,count by command, parameters, username, runas, _sourcehost|toLong(last_seen)",
+        "keyColumns": "command,parameters,username,runas,_sourcehost,last_seen",
+        "connection": "connection-2",
+        "connectionTypeEntities": {
+          "entities": [
+            {
+              "connectionType": {
+                "connectionType": "sumologic",
+                "value": "query"
+              },
+              "connectionTypeDetail": {
+                "query": "_sourceCategory=server/nutanix/* sudo \"COMMAND=\" \"USER=\" NOT(\"/sbin/fstrim\" AND \"/home/nutanix/data/stargate-storage\") NOT (\"/usr/sbin/iotop\" AND \"PWD=/home/nutanix ; USER=root\") |parse regex field=_raw \".*\\ssudo\\[\\d+\\]:\\s+(?<username>\\w+)\\s+:.*USER=(?<runas>\\w+).*COMMAND=(?<command>[^\\s]+)\\s(?<parameters>.*)\" |max(_messagetime) AS last_seen,count by command, parameters, username, runas, _sourcehost|toLong(last_seen)",
+                "connection": "connection-2"
+              }
+            }
+          ]
+        },
+        "defaultConnectionType": {
+          "connectionType": "sumologic",
+          "value": "query"
+        }
+      }
+    },
+    {
+      "id": "eventType-31",
+      "data": {
+        "name": "Unix_SUDO_Commands_Baseline",
+        "query": "_sourceCategory=server/nutanix/* sudo \"COMMAND=\" \"USER=\" NOT(\"/sbin/fstrim\" AND \"/home/nutanix/data/stargate-storage\") NOT (\"/usr/sbin/iotop\" AND \"PWD=/home/nutanix ; USER=root\") |parse regex field=_raw \".*\\ssudo\\[\\d+\\]:\\s+(?<username>\\w+)\\s+:.*USER=(?<runas>\\w+).*COMMAND=(?<command>[^\\s]+)\\s(?<parameters>.*)\" |count by command,username",
+        "keyColumns": "command,username",
+        "connection": "connection-2",
+        "connectionTypeEntities": {
+          "entities": [
+            {
+              "connectionType": {
+                "connectionType": "sumologic",
+                "value": "query"
+              },
+              "connectionTypeDetail": {
+                "query": "_sourceCategory=server/nutanix/* sudo \"COMMAND=\" \"USER=\" NOT(\"/sbin/fstrim\" AND \"/home/nutanix/data/stargate-storage\") NOT (\"/usr/sbin/iotop\" AND \"PWD=/home/nutanix ; USER=root\") |parse regex field=_raw \".*\\ssudo\\[\\d+\\]:\\s+(?<username>\\w+)\\s+:.*USER=(?<runas>\\w+).*COMMAND=(?<command>[^\\s]+)\\s(?<parameters>.*)\" |count by command,username",
+                "connection": "connection-2"
+              }
+            }
+          ]
+        },
+        "defaultConnectionType": {
+          "connectionType": "sumologic",
+          "value": "query"
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "connection-2",
+      "data": {
+        "connectionType": "sumologic",
+        "name": "SumoLogic",
+        "isActive": false,
+        "account": "",
+        "secret": "",
+        "url": "https://api.us2.sumologic.com/api/v1"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "logichub.mdr.format_alert_for_sumo",
+      "name": "LogicHub MDR: Format Alert for Sumo",
+      "description": "Format event output to send to a SumoLogic destination",
+      "templateNodes": [
+        {
+          "name": "alert_output_for_sumo",
+          "templateLQL": "`SELECT \n/* always include lhub_score in the final output */\nlhub_score,\n\n/* format the final JSON output */\nTO_JSON(STRUCT(\n\n/* Required/Standard fields first */\nlhub_score, alert_time,\nlh_batch_end, lh_batch_id, lh_hostname, lh_alert_id,\nalert_id, alert_type, technique, tactic, risk_score, fidelity_score,\n\n/* All other fields EXCEPT additional_data */\nattack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user,\n\n/* place additional_data last so it will be at the bottom of the JSON formatted output */\nadditional_data)) AS alert_output\nFROM validate_required_input`",
+          "isOutput": true
+        },
+        {
+          "name": "ensure_defined_fields_exist",
+          "templateLQL": "ensureTableHasColumns(comment_ensure_table_has_columns, \"lhub_score, lhub_ts, alert_title, alert_time, alert_id, alert_type, technique, tactic, risk_score, fidelity_score, additional_data, attack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user\")",
+          "isOutput": false
+        },
+        {
+          "name": "final_columns",
+          "templateLQL": "`SELECT \n/* Required/standard fields first */\nlh__new_score AS lhub_score,\nlh__new_ts AS lhub_ts,\nlh__new_ts AS alert_time,\nlh_batch_end, lh_batch_id, lh_hostname, lh_alert_id,\nalert_id,\n\n/* Legacy support for \"alert_title\" which is now called \"alert_type\" */\nCOALESCEEMPTY(alert_type, alert_title) AS alert_type,\n\ntechnique, tactic, risk_score, fidelity_score,\n\n/* All other supported fields */\nadditional_data, attack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user\n\nFROM calculate_new_score_and_time`",
+          "isOutput": false
+        },
+        {
+          "name": "add_batch_metadata",
+          "templateLQL": "addExecutionMetadata(ensure_defined_fields_exist)",
+          "isOutput": false
+        },
+        {
+          "name": "calculate_new_score_and_time",
+          "templateLQL": "`SELECT \n/* If lhub_score = 0, keep it 0, otherwise use the greater of the original value or risk times fidelity */\nCASE DOUBLE(lhub_score) WHEN 0 THEN DOUBLE(lhub_score) ELSE GREATEST(risk_score * fidelity_score, DOUBLE(lhub_score)) END AS lh__new_score,\n\n/* For timestamp, look first for alert_time, then lhub_ts, then batch end time */\nCASE\n  WHEN BIGINT(alert_time) IS NOT NULL THEN BIGINT(alert_time)\n  WHEN BIGINT(lhub_ts) IS NOT NULL THEN BIGINT(lhub_ts) ELSE BIGINT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.interval_end_millis\"))\nEND AS lh__new_ts,\n\nREGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), '://(.*?)/') AS lh_hostname,\nREGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), '(batch-\\\\d+)$') AS lh_batch_id,\nBIGINT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.interval_end_millis\")) AS lh_batch_end,\n\n/* Generate a unique (mostly) event ID from the batch number + lhub_id */\nBIGINT(PRINTF('%s%s', REGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), 'batch-(\\\\d+)$'), lhub_id)) AS lh_alert_id,\n*\nFROM add_batch_metadata`",
+          "isOutput": false
+        },
+        {
+          "name": "comment_ensure_table_has_columns",
+          "templateLQL": "`\n/* Since some columns are only conditionally required, there has to be a step to explicitly check for values in those fields anyway, so to keep it simple, all possible fields are protected in ensureTableHasColumns, and some are validated later to ensure that they have a value.\n\nFields supported but not part of the final JSON schema:\n- lhub_score - can be used to override final score\n- lhub_ts - when available, used to calculate alert_time\n- alert_title - legacy support, but since renamed to alert_type\n\nNot expected from input but allowed when available:\n- alert_time: calculated from lhub_ts or batch time, but if this is available then we'll accept it as truth\n\nAfter that, ALL SUPPORTED FIELDS from supported schema\nhttps://logichub.atlassian.net/wiki/spaces/CON/pages/797671425/Output+Schema+for+LogicHub+Content\n*/\n\nselect * from %%%parent0%%%`",
+          "isOutput": false
+        },
+        {
+          "name": "check_for_required_fields",
+          "templateLQL": "`/*\nOnce all calculations are done, verify that all the required fields have values.\nNote that some fields allow empty strings for the time being, as long as they aren't null. This is just to allow us to transition into this new alert schema while we figure it all out.\n*/\n\nSELECT *,\nCASE\n    /* array_sort will put nulls at the end, so this is a quick way to check all required inputs at once */\n    WHEN ELEMENT_AT(ARRAY_SORT(ARRAY(alert_id, alert_type, technique, tactic, risk_score, fidelity_score)), -1) IS NULL THEN 'One or more required inputs is missing or null. Required fields: alert_id, alert_type, technique, tactic, risk_score, fidelity_score'\n    WHEN TRIM(alert_id) = '' THEN 'alert_id cannot be empty'\n    WHEN TRIM(alert_type) = '' THEN 'alert_type cannot be empty'\n    WHEN risk_score NOT IN (1, 2, 3) THEN PRINTF('Invalid value for risk_score (%s). Acceptable values are from 1 (low), 2 (medium) and 3 (high).', risk_score)\n    WHEN fidelity_score NOT IN (1, 2, 3) THEN PRINTF('Invalid value for fidelity_score (%s). Acceptable values are from 1 (low), 2 (medium) and 3 (high).', fidelity_score)\n    WHEN FLOAT(lhub_score) IS NULL THEN 'Unable to calculate lhub_score from provided columns'\n    WHEN lhub_score > 10 OR lhub_score < 0 THEN PRINTF('Invalid value for lhub_score (%s). Acceptable values are from 0-10.', lhub_score)\nEND AS error\n\nFROM final_columns`",
+          "isOutput": false
+        },
+        {
+          "name": "validate_required_input",
+          "templateLQL": "forceFail(check_for_required_fields, \"error\")",
+          "isOutput": false
+        }
+      ],
+      "steps": [
+        {
+          "name": "Module Parameters",
+          "description": "",
+          "inputs": [
+            {
+              "id": "parent0",
+              "description": "Parent node",
+              "label": "Parent Node",
+              "dataType": "node",
+              "inputType": "columnSelect",
+              "dependsOn": "",
+              "columnTemplating": false
+            }
+          ],
+          "isVariadic": false
+        }
+      ],
+      "isPublished": true,
+      "author": "chad@logichub.com",
+      "categories": [],
+      "isEditable": true,
+      "integrations": [],
+      "innerModules": [],
+      "tags": [],
+      "moduleVersion": {
+        "majorVersion": 1,
+        "minorVersion": 31,
+        "patchVersion": 0,
+        "contentResourceVersionBranch": "Local"
+      },
+      "isDataSource": "No",
+      "resourceFormatVersion": 3,
+      "weight": 0
+    }
+  ],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

@@ -1,0 +1,1236 @@
+{
+  "schema_version": 4,
+  "name": "Implement data loss prevention policies",
+  "description": "Respond to DLP alerts if a user makes something on Google Drive public, accidentally or deliberately. This Story will contact the user via Slack, remove the relevant permissions from the file, and make it private again if necessary.\n\ntags: Respond, Panther, Google, Slack, Permissions, Access, Advanced\nicons: panther, 💬, 🛑\nvisibility: public",
+  "guid": "8ea5f4ed10221b69ab1ad39440725e32",
+  "slug": "implement_data_loss_prevention_policies",
+  "exported_at": "2022-07-11T17:31:43Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Kick off sample alert",
+      "disabled": false,
+      "guid": "b11df481813e6c0a04f07abe9ce6d3a0",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/webhook/84e0de4f2102ca75e9aab80cd865b0c1/585ea743b9c7877c427c7cd940d3d159",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "alertContext": {
+            "Owner": "thomas@tines.io",
+            "document_id": "2AbgKSRDC6n4PHI0E28z_vxOXGLpuMDn5mTW2C04JHPY",
+            "document_title": "dddd-test5",
+            "document_type": "document",
+            "visiblity_setting": "people_with_link"
+          }
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send message to user in Slack to confirm",
+      "disabled": false,
+      "guid": "69cd9b60487d2bcd84161c2798fec421",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Hi there,\nSIRT received an alert that you’ve made \"\\<<<get_specific_file_metadata_by_id_in_google_drive.body.webViewLink>>|<<get_specific_file_metadata_by_id_in_google_drive.body.name>>>\" externally visible which makes it publicly available for anyone on the Internet."
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Was this intentional, or would you like SIRT to remove the public permissions?\nIf you are unsure, allow SIRT to review and adjust the file permissions.\nFor additional information please visit the links to our policies. Thank you! - SIRT\n<https://tines.com | Tines>\n<https://tines.com/blog|Tines Blog>\n<https://hub.tines.com|Tines Docs>"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": "true",
+                        "text": "Remove public permissions"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"yes\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": "true",
+                        "text": "It is intentionally public"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"no\")>>"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "I would like SIRT review it",
+                        "emoji": true
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"review\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "User wants us Remove permissions",
+      "disabled": false,
+      "guid": "12d8df0454ef745c96e4b336f56d65dc",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "yes",
+            "path": "<<send_message_to_user_in_slack_to_confirm.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Catch Response",
+      "disabled": false,
+      "guid": "430c891e98e1cc9850425a4ba473cac6",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "path": "<<send_message_to_user_in_slack_to_confirm.prompt.status>>",
+            "value": "."
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedup Events",
+      "disabled": false,
+      "guid": "725f9efeebdd0cd7ca7218ec2069ef59",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "100",
+        "path": "<<STORY_RUN_GUID()>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "User confirms it is intentionally public",
+      "disabled": false,
+      "guid": "b9c685a62f8a55c367c46f687649b664",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "no",
+            "path": "<<send_message_to_user_in_slack_to_confirm.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event 10 Hours - for now",
+      "disabled": false,
+      "guid": "235ede48d86d7806c19fe930c5e57e03",
+      "options": {
+        "mode": "delay",
+        "seconds": 36000
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No Response",
+      "disabled": false,
+      "guid": "686bfc975dc13db7b4d25aeafffeff74",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": ".",
+            "path": "<<delay_event_10_hours_for_now.delay>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send simple message to user in Slack to confirm",
+      "disabled": false,
+      "guid": "7c6ed5d8d768fbc31a68fddd16c016f4",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Thank you for confirming. Permissions will be revoked."
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send simple message to user in Slack to confirm",
+      "disabled": false,
+      "guid": "ee6d5133139b8699afc28b214445c891",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Thank you for confirming."
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Get Access Token",
+      "disabled": false,
+      "guid": "403dc5011156af8531d2b2097298893f",
+      "options": {
+        "story": "<<STORY.implement_data_loss_prevention_policies>>",
+        "payload": {
+          "service_account_email": "<<RESOURCE.gcp_svc_acc_email>>",
+          "userid": "<<receive_alert_from_panther.body.alertContext.Owner>>",
+          "scope": "https://www.googleapis.com/auth/drive"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send message to user in Slack to notify of change",
+      "disabled": false,
+      "guid": "24c97e1330882154fc3675084b3f70af",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "No response received, public share permission will be revoked.\n\n"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get specific file metadata by ID in Google Drive",
+      "disabled": false,
+      "guid": "4e62a755e828a93c7e223364cfd800e3",
+      "options": {
+        "url": "https://www.googleapis.com/drive/v3/files/<<receive_alert_from_panther.body.alertContext.document_id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<get_access_token.access_token>>"
+        },
+        "payload": {
+          "fields": "id, name, mimeType, webViewLink, owners/emailAddress, permissionIds"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Public - in path",
+      "disabled": false,
+      "guid": "17ce034a28be645eee90064c38091e89",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "anyoneWithLink",
+            "path": "=get_specific_file_metadata_by_id_in_google_drive.body.permissionIds"
+          },
+          {
+            "type": "in",
+            "value": "anyoneCanFind",
+            "path": "=get_specific_file_metadata_by_id_in_google_drive.body.permissionIds"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search User by Email in Slack",
+      "disabled": false,
+      "guid": "dc1a76bf4527a7084e063f42f713452d",
+      "options": {
+        "url": "https://slack.com/api/users.lookupByEmail",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "email": "<<get_specific_file_metadata_by_id_in_google_drive.body.owners.first.emailAddress>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Set File Properties in Google Drive (Remove anyOneCanFind)",
+      "disabled": false,
+      "guid": "457a38d7f8aeff003f333124743dcff3",
+      "options": {
+        "url": "https://www.googleapis.com/drive/v3/files/<<gdrive_alert_public_or_anyone_with_link.body.document_id>>/permissions/anyoneCanFind",
+        "content_type": "json",
+        "method": "delete",
+        "headers": {
+          "Authorization": "Bearer <<get_access_token.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Set File Properties in Google Drive (Remove anyoneWithLink)",
+      "disabled": false,
+      "guid": "41c7a04cb4f75d28702318825cb097cb",
+      "options": {
+        "url": "https://www.googleapis.com/drive/v3/files/<<receive_alert_from_panther.body.alertContext.document_id>>/permissions/anyoneWithLink",
+        "content_type": "json",
+        "method": "delete",
+        "headers": {
+          "Authorization": "Bearer <<get_access_token.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if anyoneCanFind",
+      "disabled": false,
+      "guid": "acb23fa00c901488bac6f1b93329a9cc",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "anyoneCanFind",
+            "path": "=get_specific_file_metadata_by_id_in_google_drive.body.permissionIds"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if anyoneWithLink",
+      "disabled": false,
+      "guid": "81471cd0b030188f025b02263c8a62de",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "anyoneWithLink",
+            "path": "=get_specific_file_metadata_by_id_in_google_drive.body.permissionIds"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Request",
+      "disabled": false,
+      "guid": "6b5e449beff5f5e7c84124c932ad0043",
+      "options": {
+        "secret": "a98f76499edd454203da96f6ae1d98ff",
+        "verbs": "get,post",
+        "path": "f3cdcde241ec39a46f3e13d168ea3db3"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Create claimset",
+      "disabled": false,
+      "guid": "d9e737bdbb4889b695330702cbb92f4b",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "jwt_claim": "<<LOCAL.claim>>"
+        },
+        "local": {
+          "iss": "=receive_request.body.service_account_email",
+          "sub": "=receive_request.body.userid",
+          "scope": "=receive_request.body.scope",
+          "aud": "=\"https://www.googleapis.com/oauth2/v4/token\"",
+          "exp": "<<PLUS(DATE(\"now\", \"%s\"), 3600)>>",
+          "iat": "<<DATE(\"now\", \"%s\")>>",
+          "claim": "{\"iss\":\"<<LOCAL.iss>>\",\"sub\":\"<<LOCAL.sub>>\",\"aud\":\"<<LOCAL.aud>>\",\"scope\":\"<<LOCAL.scope>>\",\"exp\":<<LOCAL.exp>>,\"iat\":<<LOCAL.iat>>}"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Sign JWT",
+      "disabled": false,
+      "guid": "cf7f2e174fcc5d48968169e8e04251ec",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "bearer": "<<JWT_SIGN(create_claimset.jwt_claim, CREDENTIAL.gcp_svc_acct_jwt_sign)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Request access token",
+      "disabled": false,
+      "guid": "2a51bd312355393d4b06fedfb75cdc44",
+      "options": {
+        "url": "https://www.googleapis.com/oauth2/v4/token",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+          "assertion": "<<sign_jwt.bearer>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Return Access Token",
+      "disabled": false,
+      "guid": "5ecd11040b1026ade6e37585004a8519",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "access_token": "<<request_access_token.body.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Get Access Token",
+      "disabled": false,
+      "guid": "613b7de10885a3be6f8d52e55dae5df1",
+      "options": {
+        "story": "<<STORY.sts_google_drive_workflow>>",
+        "payload": {
+          "service_account_email": "<<RESOURCE.gcp_svc_acc_email>>",
+          "userid": "<<receive_alert_from_panther.body.alertContext.Owner>>",
+          "scope": "https://www.googleapis.com/auth/drive"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "user found",
+      "disabled": false,
+      "guid": "957e8e0ba0e58ef4cd15f86c494d67df",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "users_not_found",
+            "path": "<<search_user_by_email_in_slack.body.error>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "users not found",
+      "disabled": false,
+      "guid": "48b19610538f61886c978cca398ed77a",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "users_not_found",
+            "path": "<<search_user_by_email_in_slack.body.error>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "User wants SIRT to review it",
+      "disabled": false,
+      "guid": "b839fea2c4ce293a063a358a2637bb20",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "review",
+            "path": "<<send_message_to_user_in_slack_to_confirm.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send simple message to user in Slack to confirm",
+      "disabled": false,
+      "guid": "acc2fc9117ee92a6c025cbb2386c3e35",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Thank you, SIRT will review it shortly."
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "send message to SIRT Channel to review",
+      "disabled": false,
+      "guid": "b4e714da73e85430d1d673be14a83d7a",
+      "options": {
+        "url": "<<slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "User \"<<receive_alert_from_panther.body.alertContext.Owner>>\" made a file externally available but they are not sure about it and asked SIRT to review. File name is \"<<receive_alert_from_panther.body.alertContext.document_title>>\" and the link to the file is <<get_specific_file_metadata_by_id_in_google_drive.body.webViewLink>>. "
+              }
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send message to SIRT channel for FYI",
+      "disabled": false,
+      "guid": "fb5714c9d91d5dc6f2181348a1543312",
+      "options": {
+        "url": "<<slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "User \"<<receive_alert_from_panther.body.alertContext.Owner>>\" confirmed \"\\<<<get_specific_file_metadata_by_id_in_google_drive.body.webViewLink>>|<<receive_alert_from_panther.body.alertContext.document_title>>>\" is intentionally public. Time of acknowledment is *<<DATE(\"now\", \"%Y-%m-%d %H:%M\")>> UTC*"
+              }
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send message to SIRT channel for FYI",
+      "disabled": false,
+      "guid": "3039d041cc8e91a7e97610f3fb491251",
+      "options": {
+        "url": "<<slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "User \"<<receive_alert_from_panther.body.alertContext.Owner>>\" asked Tines to remove public permission on \"\\<<<get_specific_file_metadata_by_id_in_google_drive.body.webViewLink>>|<<receive_alert_from_panther.body.alertContext.document_title>>>\".Time of acknowledment is *<<DATE(\"now\", \"%Y-%m-%d %H:%M\")>> UTC*"
+              }
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send message to SIRT channel",
+      "disabled": false,
+      "guid": "35ae4c369d70f83dc4634a294ba61656",
+      "options": {
+        "url": "<<slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Tines has not received any response from User \"<<receive_alert_from_panther.body.alertContext.Owner>>\" in last 10 hours for the public file \"\\<<<get_specific_file_metadata_by_id_in_google_drive.body.webViewLink>>|<<receive_alert_from_panther.body.alertContext.document_title>>>\". Tines is going to remove public permission. Time of the change is *<<DATE(\"now\", \"%Y-%m-%d %H:%M\")>> UTC*"
+              }
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive alert from Panther",
+      "disabled": false,
+      "guid": "226b17f91151fcd771cd30bbe130bcd1",
+      "options": {
+        "path": "63742e8adb7008ed79fceaf0c74c0f00",
+        "secret": "553b3e080404aafd1061c5328eb7765d",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send message to SIRT Channel to review",
+      "disabled": false,
+      "guid": "dd975d29c06bd96db7b6969c7febe86d",
+      "options": {
+        "url": "https://hooks.slack.com/services/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",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "User \"<<receive_alert_from_panther.body.alertContext.Owner>>\" made a file externally available but they are not sure about it and asked SIRT to review. File name is \"<<receive_alert_from_panther.body.alertContext.document_title>>\" and the link to the file is <<get_specific_file_metadata_by_id_in_google_drive.body.webViewLink>>. "
+              }
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Use this Action to see how this Story works. \n\nIn the payload, you'll need to provide:\n\n- [x] The Google Drive document ID\n\n- [x] The email address of the document owner ",
+      "position": [
+        180.0,
+        345.0
+      ],
+      "guid": "3426fe33e5fb583e27eb9bfc5e338dda",
+      "width": null
+    },
+    {
+      "content": "# This Story utilizes the [Send to Story](https://hub.tines.com/docs/stories/send-to-story) capability to return a Google bearer token. ",
+      "position": [
+        1320.0,
+        435.0
+      ],
+      "guid": "ef9a48cf3d9021eae8dd2ad7862c8818",
+      "width": null
+    },
+    {
+      "content": "This dedup takes an Action if the user does not respond to the Slack message.\n\nIf the user has not respond in 10 hours Tines will automatically remove public access. If the user does respond then the timeout will be deduplicated by Tines and ignored.",
+      "position": [
+        -15.0,
+        1140.0
+      ],
+      "guid": "e5b7ec5309156785e49c1f879ab971f2",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/panther.jpeg\n\nThis Story is designed to process a DLP alert from Panther to a Tines Webhook where a user has made a file in Google Drive Public, either by accident or deliberately. It will contact the user on Slack, ask them if it was deliberate, and depending on their response it will remove the relevant permissions from the file and make it private again.\n",
+      "position": [
+        -135.0,
+        240.0
+      ],
+      "guid": "67a9cd70466181f58e04c8cf2c3de8d0",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/google-drive.png\n\nThis Story requires domain wide delegation set up in Google to access specific employee Google Drive files",
+      "position": [
+        855.0,
+        345.0
+      ],
+      "guid": "55b6c3c0a7e2eadacfceb0e8d29f2bca",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 1,
+      "receiver": 6
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 8
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 27
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 4,
+      "receiver": 2
+    },
+    {
+      "source": 5,
+      "receiver": 9
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 7,
+      "receiver": 11
+    },
+    {
+      "source": 8,
+      "receiver": 31
+    },
+    {
+      "source": 8,
+      "receiver": 24
+    },
+    {
+      "source": 9,
+      "receiver": 30
+    },
+    {
+      "source": 10,
+      "receiver": 12
+    },
+    {
+      "source": 11,
+      "receiver": 24
+    },
+    {
+      "source": 11,
+      "receiver": 32
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    },
+    {
+      "source": 14,
+      "receiver": 26
+    },
+    {
+      "source": 14,
+      "receiver": 25
+    },
+    {
+      "source": 17,
+      "receiver": 15
+    },
+    {
+      "source": 18,
+      "receiver": 16
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 20,
+      "receiver": 21
+    },
+    {
+      "source": 21,
+      "receiver": 22
+    },
+    {
+      "source": 22,
+      "receiver": 23
+    },
+    {
+      "source": 24,
+      "receiver": 17
+    },
+    {
+      "source": 24,
+      "receiver": 18
+    },
+    {
+      "source": 25,
+      "receiver": 1
+    },
+    {
+      "source": 26,
+      "receiver": 34
+    },
+    {
+      "source": 27,
+      "receiver": 28
+    },
+    {
+      "source": 28,
+      "receiver": 29
+    },
+    {
+      "source": 33,
+      "receiver": 10
+    }
+  ],
+  "diagram_layout": "{\"b11df481813e6c0a04f07abe9ce6d3a0\":[180,240],\"69cd9b60487d2bcd84161c2798fec421\":[450,855],\"12d8df0454ef745c96e4b336f56d65dc\":[-30,1440],\"430c891e98e1cc9850425a4ba473cac6\":[525,1020],\"725f9efeebdd0cd7ca7218ec2069ef59\":[345,1200],\"b9c685a62f8a55c367c46f687649b664\":[630,1440],\"235ede48d86d7806c19fe930c5e57e03\":[225,1020],\"686bfc975dc13db7b4d25aeafffeff74\":[330,1440],\"7c6ed5d8d768fbc31a68fddd16c016f4\":[-30,1605],\"ee6d5133139b8699afc28b214445c891\":[630,1590],\"403dc5011156af8531d2b2097298893f\":[540,345],\"24c97e1330882154fc3675084b3f70af\":[330,1590],\"4e62a755e828a93c7e223364cfd800e3\":[540,420],\"17ce034a28be645eee90064c38091e89\":[540,510],\"dc1a76bf4527a7084e063f42f713452d\":[540,600],\"457a38d7f8aeff003f333124743dcff3\":[0,2130],\"41c7a04cb4f75d28702318825cb097cb\":[285,2130],\"acb23fa00c901488bac6f1b93329a9cc\":[0,1980],\"81471cd0b030188f025b02263c8a62de\":[285,1980],\"6b5e449beff5f5e7c84124c932ad0043\":[1365,570],\"d9e737bdbb4889b695330702cbb92f4b\":[1365,660],\"cf7f2e174fcc5d48968169e8e04251ec\":[1365,735],\"2a51bd312355393d4b06fedfb75cdc44\":[1365,825],\"5ecd11040b1026ade6e37585004a8519\":[1365,930],\"613b7de10885a3be6f8d52e55dae5df1\":[75,1815],\"957e8e0ba0e58ef4cd15f86c494d67df\":[450,705],\"48b19610538f61886c978cca398ed77a\":[720,705],\"b839fea2c4ce293a063a358a2637bb20\":[885,1440],\"acc2fc9117ee92a6c025cbb2386c3e35\":[885,1590],\"b4e714da73e85430d1d673be14a83d7a\":[885,1725],\"fb5714c9d91d5dc6f2181348a1543312\":[630,1725],\"3039d041cc8e91a7e97610f3fb491251\":[-240,1800],\"35ae4c369d70f83dc4634a294ba61656\":[345,1785],\"226b17f91151fcd771cd30bbe130bcd1\":[540,240],\"dd975d29c06bd96db7b6969c7febe86d\":[720,855]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "6b5e449beff5f5e7c84124c932ad0043",
+  "exit_agent_guids": [
+    "5ecd11040b1026ade6e37585004a8519"
+  ],
+  "exit_agent_guid": "5ecd11040b1026ade6e37585004a8519",
+  "send_to_stories": [],
+  "form": {
+    "name": "Implement data loss prevention policies Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

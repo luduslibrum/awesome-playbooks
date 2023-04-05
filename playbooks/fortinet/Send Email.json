@@ -1,0 +1,145 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Send Email",
+    "aliasName": null,
+    "tag": null,
+    "description": "Send individual notifications",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "userIri",
+        "warRoom",
+        "emailBody",
+        "emailSubject",
+        "emailAttachmentIris"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/c9282ce9-1cef-4e0b-94da-3b84c32381ff",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/4f6a7162-53e8-422c-a6fa-86c78653b4a2",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Load user email settings",
+            "description": null,
+            "arguments": {
+                "userNotificationsEmail": "{{ (vars.userObject['@settings'] + '\/user\/notifications\/email') | fromIRI }}"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "4d0580ff-2b63-4c5d-872c-cb510f4a3084"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "userIri": "{{ vars.userIri }}",
+                            "warRoom": "{{ vars.warRoom }}",
+                            "emailBody": "{{ vars.emailBody }}",
+                            "emailSubject": "{{ vars.emailSubject }}",
+                            "emailAttachmentIris": "{{ vars.emailAttachmentIris }}"
+                        }
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "4f6a7162-53e8-422c-a6fa-86c78653b4a2"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send email if user wants to receive email",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.userNotificationsEmail}}",
+                "config": "8f7f5c5b-c136-4e2f-9d43-46fb9ad8b999",
+                "params": {
+                    "cc": "",
+                    "to": "{{vars.userObject.email}}",
+                    "bcc": "",
+                    "from": "",
+                    "type": "Manual Input",
+                    "content": "<p>{{vars.input.params.emailBody}}<\/p>",
+                    "subject": "{{vars.input.params.emailSubject}}",
+                    "iri_list": "{{vars.input.params.emailAttachmentIris}}",
+                    "body_type": "Rich Text",
+                    "file_name": "",
+                    "file_path": ""
+                },
+                "version": "2.4.0",
+                "from_str": "admin@example.com",
+                "connector": "smtp",
+                "operation": "send_email_new",
+                "operationTitle": "Send Email",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/4c0019b2-055c-44d0-968c-678a0c2d762e",
+            "uuid": "780875d6-71a1-4e17-9aca-9e04bda85687"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Load userObject",
+            "description": null,
+            "arguments": {
+                "warRoom": "{{vars.input.params.warRoom}}",
+                "userObject": "{{ vars.input.params.userIri | fromIRI }}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "95c2f6f7-70bd-4903-8358-b86a27d25e49"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Set uuid",
+            "targetStep": "\/api\/3\/workflow_steps\/95c2f6f7-70bd-4903-8358-b86a27d25e49",
+            "sourceStep": "\/api\/3\/workflow_steps\/4f6a7162-53e8-422c-a6fa-86c78653b4a2",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ca9edf47-b268-4957-93c4-d81286474994"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set uuid -> Load user email settings",
+            "targetStep": "\/api\/3\/workflow_steps\/4d0580ff-2b63-4c5d-872c-cb510f4a3084",
+            "sourceStep": "\/api\/3\/workflow_steps\/95c2f6f7-70bd-4903-8358-b86a27d25e49",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "4f482cdc-7001-413f-bc05-c304d390ee8f"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Load user email settings -> Send email if user wants to receive email",
+            "targetStep": "\/api\/3\/workflow_steps\/780875d6-71a1-4e17-9aca-9e04bda85687",
+            "sourceStep": "\/api\/3\/workflow_steps\/4d0580ff-2b63-4c5d-872c-cb510f4a3084",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "24177ba2-cc20-4a67-9fab-4f8e554ace04"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "e61107d7-7cab-4ad3-8a1c-976134f23ca8",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

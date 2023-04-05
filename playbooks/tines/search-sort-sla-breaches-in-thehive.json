@@ -1,0 +1,637 @@
+{
+  "schema_version": 4,
+  "name": "Search & sort SLA breaches in TheHive",
+  "description": "Search TheHive for open cases that have breached SLA. Then compile the results and sort the issues by the assignee.\n\ntags: TheHive, SLA, CaseManagement, Intermediate\nicons: 🔍,thehive, 🗂\nvisibility: public",
+  "guid": "a3e0c2088ddb00a0c2ca726c8497088f",
+  "slug": "search_sort_sla_breaches_in_thehive",
+  "exported_at": "2022-07-11T17:35:53Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Cases from TheHive",
+      "disabled": false,
+      "guid": "0192b82e9dac86c0d7011fd248d994d6",
+      "options": {
+        "url": "http://<<RESOURCE.the_hive_url>>/api/v1/query?name=cases",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "query": [
+            {
+              "_name": "listCase"
+            },
+            {
+              "_name": "filter",
+              "_and": [
+                {
+                  "_between": {
+                    "_field": "endDate",
+                    "_from": "<<DATE(\"now\", \"%s\") |> MINUS(%, 7776000) |> TIMES(%, 1000)>>",
+                    "_to": "<<DATE(\"now\", \"%s\") |> TIMES(%, 1000)>>"
+                  }
+                },
+                {
+                  "_not": {
+                    "_field": "status",
+                    "_value": "Resolved"
+                  }
+                }
+              ]
+            },
+            {
+              "_name": "page",
+              "from": 0,
+              "to": 15
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.thehive_api_key>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No Overdue Issues",
+      "disabled": false,
+      "guid": "c6c90d1395a2254bf35f45d6ec6e4e72",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(get_cases_from_thehive.body, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if There Are Overdue Issues",
+      "disabled": false,
+      "guid": "14f433e739673fb260f61fdffc2bbd4a",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(get_cases_from_thehive.body)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Iterate Counters",
+      "disabled": false,
+      "guid": "ea286b73f15c2175600754b7a0fff769",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "startAt": "<<PLUS(iterate_counters.startAt, 15)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Compile Issues",
+      "disabled": false,
+      "guid": "5dadb864739b1b9017848a14058a3e9a",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "array": "=get_cases_from_thehive.body"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Compile Issues",
+      "disabled": false,
+      "guid": "d48976eaa6495c412856fe4d8e8dd115",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "array": "=CONCAT(compile_issues.array, get_cases_from_thehive.body)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Pagination Has Completed",
+      "disabled": false,
+      "guid": "73de24cf3e2170b93d2953ec7a4ea979",
+      "options": {
+        "rules": [
+          {
+            "type": "field<value",
+            "value": "15",
+            "path": "<<LIQUID_SIZE(get_cases_from_thehive.body)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger for Pagination",
+      "disabled": false,
+      "guid": "72eb099aad7dd914016dc5a1ce3b57e0",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "15",
+            "path": "<<LIQUID_SIZE(get_cases_from_thehive.body)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Cases from TheHive",
+      "disabled": false,
+      "guid": "fda74ec82f6fb75216b9e4f1d191aac2",
+      "options": {
+        "url": "http://<<RESOURCE.the_hive_url>>/api/v1/query?name=cases",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "query": [
+            {
+              "_name": "listCase"
+            },
+            {
+              "_name": "filter",
+              "_and": [
+                {
+                  "_between": {
+                    "_field": "endDate",
+                    "_from": "<<DATE(\"now\", \"%s\") |> MINUS(%, 7776000) |> TIMES(%, 1000)>>",
+                    "_to": "<<DATE(\"now\", \"%s\") |> TIMES(%, 1000)>>"
+                  }
+                },
+                {
+                  "_not": {
+                    "_field": "status",
+                    "_value": "Resolved"
+                  }
+                }
+              ]
+            },
+            {
+              "_name": "page",
+              "from": "<<iterate_counters.startAt>>",
+              "to": "<<PLUS(iterate_counters.startAt, 15)>>"
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.thehive_api_key>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Manager CSV of all SLA breaches",
+      "disabled": false,
+      "guid": "6a3fa13e5b798c505b666f18fdf284e1",
+      "options": {
+        "recipients": [
+          "<<destination_email_address>>"
+        ],
+        "subject": "TheHive SLA Report - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "See attached CSV with report on the number of Unassigned cases outside of SLA for <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "attachments": [
+          {
+            "filename": "unassigned_tickets.csv",
+            "base64encodedcontents": "<<BASE64_ENCODE(create_csv_with_results.csv)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Assignees",
+      "disabled": false,
+      "guid": "6408491d92d7734b418cdf0129411992",
+      "options": {
+        "mode": "explode",
+        "path": "=MAP(loop_for_assignee_and_id, \"assignee\") |> UNIQ(%)",
+        "to": "assignee"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Issues by Assignee",
+      "disabled": false,
+      "guid": "389661c145a4de26b5b3fecf936a72b4",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "issue_by_assignee": "=WHERE(loop_for_assignee_and_id, \"assignee\", explode_assignees.assignee)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Create CSV with Results",
+      "disabled": false,
+      "guid": "b13defefb202c75d7d4bb5324d8b424e",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "csv": "Assignee: <<get_issues_by_assignee.issue_by_assignee[0].assignee>>,\n<%for issue in get_issues_by_assignee.issue_by_assignee%><<issue.case_link>>, <<issue.title>>, <<issue.description>>, Created At: <<issue.createdDate>>, Due Date: <<issue.duedate>>\n<%endfor%>\n"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Unassigned Tickets",
+      "disabled": false,
+      "guid": "b5657c068ab8f97dd06c73db9a0a282a",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Unassigned",
+            "path": "<<explode_assignees.assignee>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Assigned",
+      "disabled": false,
+      "guid": "18629b1d68b78c6c4fdb3fbb91b53657",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "Unassigned",
+            "path": "<<explode_assignees.assignee>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Manager CSV of all SLA breaches",
+      "disabled": false,
+      "guid": "ef27e9845b672879fe3fcf0dd15e35ee",
+      "options": {
+        "recipients": [
+          "<<destination_email_address>>"
+        ],
+        "subject": "TheHive SLA Report - <<DATE(\"now\", \"%b %d, %Y\")>>",
+        "body": "See attached CSV for tickets with breached SLA assigned to  <<get_issues_by_assignee.issue_by_assignee.first.assignee>>",
+        "attachments": [
+          {
+            "filename": "<<get_issues_by_assignee.issue_by_assignee.first.assignee>>-tickets.csv",
+            "base64encodedcontents": "<<BASE64_ENCODE(create_csv_with_results.csv)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Loop for Assignee and ID",
+      "disabled": false,
+      "guid": "df55b2e0643499d55f0e345a38d47265",
+      "options": {
+        "mode": "message_only",
+        "loop": "=compile_issues.array",
+        "payload": {
+          "assignee": "<<DEFAULT(LOOP.value.assignee, \"Unassigned\")>>",
+          "case_link": "http://<<RESOURCE.the_hive_url>>/index.html#!/case/<<LOOP.value._id>>/details",
+          "title": "<<LOOP.value.title>>",
+          "duedate": "<<DIVIDED_BY(LOOP.value.endDate, 1000) |> DATE(%, \"%a %e %b %Y %H:%M\") |> DEFAULT(%, \"Not set\")>>",
+          "description": "<<LOOP.value.description>>",
+          "severity": "<<LOOP.value.severity>>",
+          "createdDate": "<<DIVIDED_BY(LOOP.value._createdAt, 1000) |> DATE(%, \"%a %e %b %Y %H:%M\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Pagination loop\n\nIf there are more cases than one call can retrieve, we will loop through until all cases have been received and then create one array with all of the cases before continuing the story",
+      "position": [
+        386.0,
+        609.0
+      ],
+      "guid": "b689ec055dbc2d5feabc5a1426bbbba5",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-thehive.png\n\n# Description\n\nSearch TheHive for open cases that have breached SLA.  Then compile the results and sort the issues by Assignee.  Output is a CSV with the Assignee, their email address, open cases with titles, descriptions, clickable links to the cases, start dates, and desired end dates",
+      "position": [
+        60.0,
+        225.0
+      ],
+      "guid": "be5ba5d68711fceae7736310c8dc1252",
+      "width": null
+    },
+    {
+      "content": "# Requirements\nAn API key from TheHive.  \nA resource holding the TheHive URL.",
+      "position": [
+        60.0,
+        540.0
+      ],
+      "guid": "1bd9701e2c1bc32b2dc9038e6dbfa6b5",
+      "width": null
+    },
+    {
+      "content": "Using a filter in TheHive REST API to select cases that have an `endDate` within the last 90 days and have not been Resolved.",
+      "position": [
+        941.0,
+        279.0
+      ],
+      "guid": "2a257a9d8eb0fdfecc7bc04c5beeaaaa",
+      "width": null
+    },
+    {
+      "content": "# Loop and Dedupe\n\nLoop through the return, explode to create individual events, then dedupe on Assignee.  This is done to sort issues on assignee",
+      "position": [
+        341.0,
+        1029.0
+      ],
+      "guid": "a77c97cfd524514b67c3e15c1cba70fb",
+      "width": null
+    },
+    {
+      "content": "# Build CSVs\n\nA separate CSV is built for each assignee present.  The CSV includes their email address, links to each of their cases and the \"startDate\" and \"endDate\" for each of the cases",
+      "position": [
+        911.0,
+        1239.0
+      ],
+      "guid": "c168e0b4bbdb37f32a69cdff5c6d89b5",
+      "width": null
+    },
+    {
+      "content": "# Check for Unassigned\n\nIf there are cases that are unassigned, we build a separate CSV for visibility",
+      "position": [
+        206.0,
+        1434.0
+      ],
+      "guid": "fe590da7d496e840d535ff0685fc1183",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 8
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 4,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 16
+    },
+    {
+      "source": 7,
+      "receiver": 3
+    },
+    {
+      "source": 8,
+      "receiver": 5
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 12,
+      "receiver": 14
+    },
+    {
+      "source": 13,
+      "receiver": 9
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 16,
+      "receiver": 10
+    }
+  ],
+  "diagram_layout": "{\"0192b82e9dac86c0d7011fd248d994d6\":[675,240],\"c6c90d1395a2254bf35f45d6ec6e4e72\":[420,375],\"14f433e739673fb260f61fdffc2bbd4a\":[675,375],\"ea286b73f15c2175600754b7a0fff769\":[840,630],\"5dadb864739b1b9017848a14058a3e9a\":[675,465],\"d48976eaa6495c412856fe4d8e8dd115\":[840,795],\"73de24cf3e2170b93d2953ec7a4ea979\":[675,900],\"72eb099aad7dd914016dc5a1ce3b57e0\":[840,555],\"fda74ec82f6fb75216b9e4f1d191aac2\":[840,720],\"6a3fa13e5b798c505b666f18fdf284e1\":[495,1605],\"6408491d92d7734b418cdf0129411992\":[675,1140],\"389661c145a4de26b5b3fecf936a72b4\":[675,1230],\"b13defefb202c75d7d4bb5324d8b424e\":[675,1320],\"b5657c068ab8f97dd06c73db9a0a282a\":[495,1440],\"18629b1d68b78c6c4fdb3fbb91b53657\":[855,1440],\"ef27e9845b672879fe3fcf0dd15e35ee\":[855,1605],\"df55b2e0643499d55f0e345a38d47265\":[675,1020]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Search & sort SLA breaches in TheHive Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

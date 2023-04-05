@@ -1,0 +1,180 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Generate War Room Report",
+    "aliasName": null,
+    "tag": null,
+    "description": null,
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/c9282ce9-1cef-4e0b-94da-3b84c32381ff",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/30a542b6-38a9-469c-8ca3-b60c2875240a",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "4799427e-a9c3-4554-bbec-091781683603",
+                "title": "Generate Report",
+                "resources": [
+                    "warrooms"
+                ],
+                "inputVariables": [],
+                "step_variables": {
+                    "input": {
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "warrooms": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "30a542b6-38a9-469c-8ca3-b60c2875240a"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Generate Report By Manual Trigger",
+            "description": null,
+            "arguments": {
+                "name": "Report Engine",
+                "params": {
+                    "user_id": "{{vars.currentUser}}",
+                    "timezone": "{{vars.request.headers.tz}}",
+                    "report_id": "60f0c032-90e8-4026-b430-176efd5560b7",
+                    "query_params": "{\"qparam\": {\"warRoomID\": {{vars.input.records[0].id}} } }"
+                },
+                "version": "1.2.0",
+                "connector": "cyops-schedule-report",
+                "operation": "schedule_report_manual",
+                "operationTitle": "Generate Report From Report ID",
+                "step_variables": {
+                    "reportObject": "{{vars.result.data}}"
+                }
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "ade4b289-6e76-4e4e-91c8-51ee0852626d"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Insert Link for Report",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "file": "{{vars.steps.Generate_Report_By_Manual_Trigger.data.file[\"@id\"]}}",
+                    "type": {
+                        "id": 208,
+                        "@id": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Comment",
+                        "listName": "\/api\/3\/picklist_names\/0841c1eb-a0a3-4abd-b29c-9f68e4d9b14f",
+                        "itemValue": "Comment",
+                        "orderIndex": 1
+                    },
+                    "people": [],
+                    "content": "<p>War Room Summary Report available for download<\/p>",
+                    "warrooms": "{{vars.input.records[0]['@id']}}",
+                    "__replace": "",
+                    "isImportant": false,
+                    "peopleUpdated": false
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "__recommend": [],
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "bbb9e52b-185b-4d3a-8acd-439c4715a0ee"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update war room file",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "report": "{{vars.steps.Generate_Report_By_Manual_Trigger.data.file[\"@id\"]}}"
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "collectionType": "\/api\/3\/warrooms",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "3513bdb5-c27d-4053-a43e-5c81ce29563e"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Generate Report By Manual Trigger",
+            "targetStep": "\/api\/3\/workflow_steps\/ade4b289-6e76-4e4e-91c8-51ee0852626d",
+            "sourceStep": "\/api\/3\/workflow_steps\/30a542b6-38a9-469c-8ca3-b60c2875240a",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e6636984-ac21-4476-8179-c4ec5e899a42"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Generate Report By Manual Trigger -> Update war room file",
+            "targetStep": "\/api\/3\/workflow_steps\/3513bdb5-c27d-4053-a43e-5c81ce29563e",
+            "sourceStep": "\/api\/3\/workflow_steps\/ade4b289-6e76-4e4e-91c8-51ee0852626d",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "61f96d59-ffc3-4c4b-81bb-23ea97106d6f"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Update war room file -> Insert Link for Report",
+            "targetStep": "\/api\/3\/workflow_steps\/bbb9e52b-185b-4d3a-8acd-439c4715a0ee",
+            "sourceStep": "\/api\/3\/workflow_steps\/3513bdb5-c27d-4053-a43e-5c81ce29563e",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e1d5ae48-7b4b-41ac-b529-bfdb66b1f6fb"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "bcea4f5a-bcec-4961-a00e-e10ba848183e",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system"
+    ]
+}

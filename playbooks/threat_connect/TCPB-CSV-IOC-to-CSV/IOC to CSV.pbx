@@ -1,0 +1,169 @@
+{
+  "name" : "IOC to CSV",
+  "type" : "Standard",
+  "panX" : 182.0,
+  "panY" : 116.0,
+  "logLevel" : "TRACE",
+  "description" : "",
+  "priority" : 6,
+  "version" : "1.7",
+  "comment" : "Auto-Saved on Wed Jun 24 21:35:02 UTC 2020",
+  "jobList" : [ {
+    "id" : 104214,
+    "appCatalogItem" : {
+      "programName" : "TCPB - IndicatorCSV v1.1",
+      "displayName" : "Get ThreatConnect Indicator CSV",
+      "programVersion" : "1.1.24"
+    },
+    "name" : "Get ThreatConnect Indicator CSV 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "confidence"
+      },
+      "value" : "25"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attrib_multi"
+      },
+      "value" : "Use the most recent value"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "indicator_type"
+      },
+      "value" : "File"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "mappings"
+      },
+      "value" : "[{\"key\":\"Description\",\"value\":\"@tc.attribute\\u003ddescription\"},{\"key\":\"Date Added\",\"value\":\"@tc.dateAdded\"},{\"key\":\"ID\",\"value\":\"@tc.id\"},{\"key\":\"Date Last Modified\",\"value\":\"@tc.lastModified\"},{\"key\":\"Owner\",\"value\":\"@tc.ownerName\"},{\"key\":\"Tags\",\"value\":\"@tc.tags\"},{\"key\":\"ThreatAssess Rating\",\"value\":\"@tc.threatAssessRating\"},{\"key\":\"ThreatAssess Confidence\",\"value\":\"@tc.threatAssessConfidence\"},{\"key\":\"Type\",\"value\":\"@tc.type\"},{\"key\":\"Type Specific\",\"value\":\"@tc.type_specific\"},{\"key\":\"Value\",\"value\":\"@tc.value\"},{\"key\":\"Web Link\",\"value\":\"@tc.webLink\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tag"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rating"
+      },
+      "value" : "1"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "Angel Org"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "threat_assess"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 450.0,
+    "locationTop" : 220.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"csv.data\",\"type\":\"String\"}]"
+  }, {
+    "id" : 104324,
+    "appCatalogItem" : {
+      "programName" : "TCPB - CompressFile v1.0",
+      "displayName" : "Compress File",
+      "programVersion" : "1.0.9"
+    },
+    "name" : "Compress File 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "password"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "algorithm"
+      },
+      "value" : "ZIP"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "file_name"
+      },
+      "value" : "indicatoroutput.csv"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:104214:csv.data!String"
+    } ],
+    "locationLeft" : 660.0,
+    "locationTop" : 220.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"compress.data\",\"type\":\"Binary\"}]"
+  }, {
+    "id" : 104327,
+    "appCatalogItem" : {
+      "programName" : "TCPB - UncompressFile v1.0",
+      "displayName" : "Uncompress File",
+      "programVersion" : "1.0.9"
+    },
+    "name" : "Uncompress File 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "algorithm"
+      },
+      "value" : "ZIP"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "password"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:104324:compress.data!Binary"
+    } ],
+    "locationLeft" : 860.0,
+    "locationTop" : 220.0,
+    "outputVariables" : "[{\"sourceInputList\":[],\"loopVariables\":false,\"name\":\"uncompress.data\",\"type\":\"Binary\"}]"
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 104214,
+    "sourceTriggerId" : 10734
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 104214,
+    "targetJobId" : 104324
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 104324,
+    "targetJobId" : 104327
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 104327,
+    "targetTriggerId" : 10734
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 10734,
+    "name" : "HttpLink Trigger 1",
+    "type" : "HttpLink",
+    "eventType" : "External",
+    "locationLeft" : 190.0,
+    "locationTop" : 70.0,
+    "httpResponseCode" : "",
+    "httpResponseHeader" : "[{\"key\":\"Content-Type\",\"value\":\"text/csv\"},{\"key\":\"Content-Disposition\",\"value\":\"attachment; filename=\\\"indicatoroutput.csv\\\"\"}]",
+    "httpResponseBody" : "#App:104327:uncompress.data!Binary",
+    "anyOrg" : true,
+    "playbookTriggerFilterList" : [ ],
+    "cacheMinutes" : 120,
+    "cacheParams" : "{\"includeMethod\":false,\"includeBody\":false,\"queryParams\":[],\"headerNames\":[]}"
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

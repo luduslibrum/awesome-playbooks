@@ -1,0 +1,500 @@
+{
+  "schema_version": 4,
+  "name": "Analyze domains through multiple sources",
+  "description": "Investigate suspicious domains and identify false positives by leveraging threat intelligence tools, including URLhaus, VirusTotal, and URLScan, to gather more context and respond faster.\n\ntags: Investigate, VirusTotal, URLScan, URLhaus, ThreatIntelligence, Analyze, Beginner, Detect, Malware\nicons: 🕵️, urlscan, virustotal\nvisibility: public",
+  "guid": "0714d2c2765fbe2d59cfdadae45bb318",
+  "slug": "analyze_domains_through_multiple_sources",
+  "exported_at": "2022-07-11T17:50:25Z",
+  "agents": [
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Return results",
+      "disabled": false,
+      "guid": "9d5c0205e539abbafa3d751463dff337",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "domain": "<<receive_events.body.domain>>",
+          "domain_age": "<<DEFAULT(get_domain_age.body.data.domain_age_in_days, \"unknown\")>>",
+          "urlscan_verdict": "<%if search_domains_in_urlscan_io.body.total = 0%>New<%else%><<view_domain_results_in_urlscan.body.verdicts.overall.malicious>><%endif%>",
+          "apivoid": "<%if check_apivoid_for_domain.body.data.report.blacklists.detections = 0%>New<%else%>Malicious<%endif%>",
+          "alexa_top_10k": "<<check_apivoid_for_domain.body.data.report.alexa_top_10k>>",
+          "virustotal_reputation": "<<search_domain_in_virustotal.body.data.attributes.last_analysis_stats.malicious>>/<<search_domain_in_virustotal.body.data.attributes.last_analysis_stats.harmless>>",
+          "parked_score": "<<get_parked_score_for_a_domain_using_its_hexadecimal_value.body.score_text>>",
+          "gsb_flagged": "<<check_google_safe_browsing_issues_using_dnstwister.body.issue_detected>>",
+          "riskiq_compromised": "<<get_domain_compromised_status_in_riskiq_passivetotal.body.everCompromised>>",
+          "free_hosting": "<<check_apivoid_for_domain.body.data.report.category.is_free_hosting>>",
+          "anonymizer": "<<check_apivoid_for_domain.body.data.report.category.is_anonymizer>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if no urlscan results",
+      "disabled": false,
+      "guid": "bc766909afff60ad685e7228075c1fb7",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<search_domains_in_urlscan_io.body.total>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "View domain results in urlscan",
+      "disabled": false,
+      "guid": "cc2e9d0f3da0d8fe971b6ee8bf857f22",
+      "options": {
+        "url": "https://urlscan.io/api/v1/result/<<search_domains_in_urlscan_io.body.results.first._id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "API-Key": "<<CREDENTIAL.urlscan_io>>"
+        },
+        "retry_on_status": [
+          "400-499"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if urlscan results exist",
+      "disabled": false,
+      "guid": "da1ec7ab66c2323494dd37ea917604cc",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<search_domains_in_urlscan_io.body.total>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search domain in Virustotal",
+      "disabled": false,
+      "guid": "4c25ba1083e00b7f0b2192573d00f6be",
+      "options": {
+        "url": "https://www.virustotal.com/api/v3/domains/<<receive_events.body.domain>>",
+        "method": "get",
+        "headers": {
+          "x-apikey": "<<CREDENTIAL.virustotal>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check APIVoid for Domain",
+      "disabled": false,
+      "guid": "3131fe6788c932e86c6cb787bcbe1ff6",
+      "options": {
+        "url": "https://endpoint.apivoid.com/domainbl/v1/pay-as-you-go/",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "key": "<<CREDENTIAL.apivoid>>",
+          "host": "<<receive_events.body.domain>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Analyze Domain",
+      "disabled": false,
+      "guid": "f73cb1c890088c40ddd67d0641b1a8e0",
+      "options": {
+        "story": "<<STORY.analyze_domains_through_multiple_sources>>",
+        "payload": {
+          "domain": "tines.io"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search domains in urlscan.io",
+      "disabled": false,
+      "guid": "9db9d00063108187779b9c1c185d94de",
+      "options": {
+        "url": "https://urlscan.io/api/v1/search/?q=domain:<<receive_events.body.domain>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "API-Key": "<<CREDENTIAL.urlscan_io>>"
+        },
+        "retry_on_status": [
+          "400-499"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Domain Age",
+      "disabled": false,
+      "guid": "56d9dec22d1ac6c65eed4dabf0933d30",
+      "options": {
+        "url": "https://endpoint.apivoid.com/domainage/v1/pay-as-you-go/",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "key": "<<CREDENTIAL.apivoid>>",
+          "host": "<<receive_events.body.domain>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive events",
+      "disabled": false,
+      "guid": "63bb4f0d5212b436bfe41a9c02658bd6",
+      "options": {
+        "secret": "40ec25bf6ddf6eb6c911b2526c89c9cb",
+        "verbs": "get,post",
+        "include_headers": "false",
+        "path": "008e8e6914da7c924e0300a19430859b"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Domain in URLhaus",
+      "disabled": false,
+      "guid": "1070e9bc3ba99825d14632d2c86e2219",
+      "options": {
+        "url": "https://urlhaus-api.abuse.ch/v1/host/",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "host": "<<receive_events.body.domain>>"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Domain as Hexadecimal",
+      "disabled": false,
+      "guid": "cbd68f865191cb6865e26ad6ec2e2df4",
+      "options": {
+        "url": "https://dnstwister.report/api/to_hex/<<receive_events.body.domain>>",
+        "method": "get",
+        "payload": {},
+        "user_agent": "Tines Security Services Ltd"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check Google Safe Browsing Issues using dnstwister",
+      "disabled": false,
+      "guid": "0c01f46d86028ea865ded13d864d0610",
+      "options": {
+        "url": "https://dnstwister.report/api/safebrowsing/<<get_domain_as_hexadecimal.body.domain_as_hexadecimal>>",
+        "method": "get",
+        "payload": {},
+        "user_agent": "Tines Security Services Ltd"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Parked Score for a Domain using its Hexadecimal Value",
+      "disabled": false,
+      "guid": "7c292943b61fe0684fb2fcc400c1b84a",
+      "options": {
+        "url": "https://dnstwister.report/api/parked/<<get_domain_as_hexadecimal.body.domain_as_hexadecimal>>",
+        "method": "get",
+        "payload": {},
+        "user_agent": "Tines Security Services Ltd"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Investigate a Domain in host.io",
+      "disabled": false,
+      "guid": "914304627da418f2fa2d8abb4e9f666b",
+      "options": {
+        "url": "https://host.io/api/full/<<receive_events.body.domain>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.host_io>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Domain Compromised Status in RiskIQ PassiveTotal",
+      "disabled": false,
+      "guid": "9e38f9dadea6d84eda9ef7c01fc11370",
+      "options": {
+        "url": "https://api.passivetotal.org/v2/actions/ever-compromised",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "query": "<<receive_events.body.domain>>"
+        },
+        "headers": {
+          "Authorization": "Basic <<CREDENTIAL.riskiq>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/enrich-illustration.png\n\n# Analyze a Domain in Several Tools\nKick off the story by using the `Analyze Domain` Send to Story action.\n\nThis story can easily be used as part of a [Slack]\n(https://www.tines.com/blog/chatbots-for-security-and-it-teams-part-3-creating-a-slack-chatbot) or [Microsoft Teams](https://www.tines.com/blog/chatbots-for-security-and-it-teams-part-2-microsoft-teams) bot\n\n\n",
+      "position": [
+        -228.0,
+        -1096.0
+      ],
+      "guid": "19218a63a7c2e6a02679c2164fe02f6f",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/urlhaus.png\nSome tools like `urlscan`, `virustotal`, and `apivoid`, `host.io` and `riskiq` require a credential to use.\n\n",
+      "position": [
+        -225.0,
+        -690.0
+      ],
+      "guid": "79bb1ed698dfc8b26480a03860f680ba",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 1,
+      "receiver": 5
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 8
+    },
+    {
+      "source": 7,
+      "receiver": 3
+    },
+    {
+      "source": 7,
+      "receiver": 1
+    },
+    {
+      "source": 8,
+      "receiver": 11
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 4
+    },
+    {
+      "source": 11,
+      "receiver": 13
+    },
+    {
+      "source": 12,
+      "receiver": 15
+    },
+    {
+      "source": 13,
+      "receiver": 12
+    },
+    {
+      "source": 14,
+      "receiver": 0
+    },
+    {
+      "source": 15,
+      "receiver": 14
+    }
+  ],
+  "diagram_layout": "{\"9d5c0205e539abbafa3d751463dff337\":[225,300],\"bc766909afff60ad685e7228075c1fb7\":[375,-555],\"cc2e9d0f3da0d8fe971b6ee8bf857f22\":[75,-465],\"da1ec7ab66c2323494dd37ea917604cc\":[75,-555],\"4c25ba1083e00b7f0b2192573d00f6be\":[225,-885],\"3131fe6788c932e86c6cb787bcbe1ff6\":[225,-360],\"f73cb1c890088c40ddd67d0641b1a8e0\":[525,-1080],\"9db9d00063108187779b9c1c185d94de\":[225,-765],\"56d9dec22d1ac6c65eed4dabf0933d30\":[225,-270],\"63bb4f0d5212b436bfe41a9c02658bd6\":[225,-1095],\"1070e9bc3ba99825d14632d2c86e2219\":[225,-1005],\"cbd68f865191cb6865e26ad6ec2e2df4\":[225,-180],\"0c01f46d86028ea865ded13d864d0610\":[225,15],\"7c292943b61fe0684fb2fcc400c1b84a\":[225,-90],\"914304627da418f2fa2d8abb4e9f666b\":[225,225],\"9e38f9dadea6d84eda9ef7c01fc11370\":[225,120]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "63bb4f0d5212b436bfe41a9c02658bd6",
+  "exit_agent_guids": [
+    "9d5c0205e539abbafa3d751463dff337"
+  ],
+  "exit_agent_guid": "9d5c0205e539abbafa3d751463dff337",
+  "send_to_stories": [],
+  "form": {
+    "name": "Analyze domains through multiple sources Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

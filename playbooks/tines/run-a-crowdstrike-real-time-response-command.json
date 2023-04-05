@@ -1,0 +1,516 @@
+{
+  "schema_version": 4,
+  "name": "Run a CrowdStrike Real Time Response Command",
+  "description": "This Story will run a given CrowdStrike RTR command against a provided Host ID. All default RTR scripts can be used.\n\nTags: CrowdStrike, Advanced, Forensics, Respond, MemoryDump, RealTimeResponse,\nIcons: Crowdstrike,🕵️, ⏱\nvisibility: public",
+  "guid": "3dc0600eb9674e2018f40657034ad83e",
+  "slug": "run_a_crowdstrike_real_time_response_command",
+  "exported_at": "2022-07-11T17:29:02Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Command",
+      "disabled": false,
+      "guid": "7fb23f9c2ed21a4e1e586ab12c19d131",
+      "options": {
+        "secret": "e8676e402c4b78317482103fdc153656",
+        "verbs": "get,post",
+        "path": "06bd4171adbba7046a5c1d4262ff1069"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Extract Memory",
+      "disabled": false,
+      "guid": "93b88567ce305e0787bc9c15cf521eec",
+      "options": {
+        "story": "<<STORY.run_a_crowdstrike_real_time_response_command>>",
+        "payload": {
+          "command": "xmemdump Complete c:\\memory_extraction_<<DATE(\"now\", \"%s\")>>.dmp",
+          "device_id": "<<device_id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Execute RTR Command",
+      "disabled": false,
+      "guid": "a29ac43b25d0ce4c0b81f6c0cd6ff7d6",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_domain>>/real-time-response/entities/active-responder-command/v1",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "base_command": "<<LOCAL.base[0]>>",
+          "command_string": "<<receive_command.body.command>>",
+          "session_id": "<<start_an_rtr_session_in_crowdstrike_falcon.body.resources.first.session_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ],
+        "local": {
+          "base": "=SPLIT(receive_command.body.command, \" \")"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay 5 Seconds",
+      "disabled": false,
+      "guid": "db79d8267cece29a17df6239893cc45b",
+      "options": {
+        "mode": "delay",
+        "seconds": 5
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Increment Counter",
+      "disabled": false,
+      "guid": "cd49a7b6b091f97f3447a1a61cbf1c17",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "counter": "<<PLUS(increment_counter.counter, 1)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Get Chrome Extensions",
+      "disabled": false,
+      "guid": "6f902a2af9cec85c89b8f06fba859e66",
+      "options": {
+        "story": "<<STORY.run_a_crowdstrike_real_time_response_command>>",
+        "payload": {
+          "command": "runscript -CloudFile=\"tines_extract_chrome_extensions_from_endpoint\" -CommandLine=\"\"",
+          "device_id": "<<device_id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Error",
+      "disabled": false,
+      "guid": "eaf02fb5d447067f1300e376841d1b20",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "400|404|403",
+            "path": "<<execute_rtr_command.status>> <<start_an_rtr_session_in_crowdstrike_falcon.status>> <<check_status_and_retrieve_results_of_an_active_responder_rtr_command.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Query Complete",
+      "disabled": false,
+      "guid": "f509331b9a23b07ffa5fa3b8865772bb",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<check_status_and_retrieve_results_of_an_active_responder_rtr_command.body.resources.first.complete>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Query Not Complete",
+      "disabled": false,
+      "guid": "2cdc953f86fd67484e8babf419eea93d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<check_status_and_retrieve_results_of_an_active_responder_rtr_command.body.resources.first.complete>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "c3d7c3d557f3b2e26a6bf5cea52415d3",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "query_successful": "<%if trigger_if_error%>false<%else%>true<%endif%>",
+          "session_closed": "<%if delete_an_rtr_session_in_crowdstrike_falcon.status = 204%>true<%else%>false<%endif%>",
+          "result": "=DEFAULT(check_status_and_retrieve_results_of_an_active_responder_rtr_command.body.resources.first, \"Error - no results available\")",
+          "error": "<%if start_an_rtr_session_in_crowdstrike_falcon.status != 201%>Error Starting RTR Session - <<start_an_rtr_session_in_crowdstrike_falcon.body.errors.first.message>><%elseif execute_rtr_command.status != 201%>Error Executing Command on Device - <<execute_rtr_command.body.errors.first.message>><%elseif check_status_and_retrieve_results_of_an_active_responder_rtr_command.status != 200%>Error running script - <<check_status_and_retrieve_results_of_an_active_responder_rtr_command.body.errors.first.message>><%else%>No errors found when executing command <%endif%>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Parse Response",
+      "disabled": false,
+      "guid": "44a9187347a367e37c9aa7d51c45e33f",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "message": "=JSON_PARSE(get_chrome_extensions.result.stdout)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode extensions",
+      "disabled": false,
+      "guid": "2a41334c370f6282da04efba9a30cb83",
+      "options": {
+        "mode": "explode",
+        "path": "=parse_response.message",
+        "to": "extension"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check Status and Retrieve Results of an Active Responder RTR Command",
+      "disabled": false,
+      "guid": "4d10993ca2a7c63a748b13f0e222e11c",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_domain>>/real-time-response/entities/active-responder-command/v1",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "cloud_request_id": "<<execute_rtr_command.body.resources.first.cloud_request_id>>",
+          "sequence_id": "<<DEFAULT(increment_count.counter, 0)>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Delete an RTR Session in Crowdstrike Falcon",
+      "disabled": false,
+      "guid": "6b39a2e56b6a69085106375b39ad618e",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_domain>>/real-time-response/entities/sessions/v1",
+        "content_type": "json",
+        "method": "delete",
+        "payload": {
+          "session_id": "<<start_an_rtr_session_in_crowdstrike_falcon.body.resources.first.session_id>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start an RTR Session in Crowdstrike Falcon",
+      "disabled": false,
+      "guid": "c6168b82caff98fe982620906b92b57c",
+      "options": {
+        "url": "https://api.<<RESOURCE.crowdstrike_domain>>/real-time-response/entities/sessions/v1",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "device_id": "<<receive_command.body.device_id>>",
+          "origin": "string",
+          "queue_offline": true
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.crowdstrike>>"
+        },
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Receiving Commands\n\nThis Story is configured for Sent to Story, and can be initiated using the Send to Story Action.\n\nAny default Crowdstrike RTR command will be executed, and the results returned to the StS Action in the parent story.\n\nPrivileged RTR Commands like get, put and execute will require a different admin endpoint.",
+      "position": [
+        240.0,
+        -240.0
+      ],
+      "guid": "b3b11b1e86a3ba375f1347a67391a49b",
+      "width": null
+    },
+    {
+      "content": "# Running the Query\n\nUsing the device ID received from the parent story, an RTR Session will be initiated.\n\nOnce the session has been created, the provided command is sent to the device to be executed.",
+      "position": [
+        360.0,
+        120.0
+      ],
+      "guid": "85168ccc4ff6fd9c513ed250a22ee44b",
+      "width": null
+    },
+    {
+      "content": "# Getting the Results\n\nDepending on the command issued to the device, rules could be ready instantly, or may take some time to be returned.\n\nThis story will check for results as soon as the command is issued. If it has not completed, then it will wait for 5 seconds and try again. This loop is repeated until the query completes, or returns an error.",
+      "position": [
+        -210.0,
+        405.0
+      ],
+      "guid": "872218be0889438617de8af5bbeac792",
+      "width": null
+    },
+    {
+      "content": "# Completing the Query\n\nOnce the query completes or returns an error, the RTR session will be ended.\n\nThe results of the query will be returned to the parent story. In addition to this, an indicator on whether the query was successful or not, and any error messages will also be provided to the parent story.",
+      "position": [
+        780.0,
+        555.0
+      ],
+      "guid": "a8538bfe348f928cc4a01dcccbf1f2b3",
+      "width": null
+    },
+    {
+      "content": "# Sample Formatting\n\nThese Send to Story Actions show the expected format when running this Story.\n\nThe command, and the ID of the device must be provided.\n\nThe format of the command will be the same as running the command manually in the RTR console.\n\nThis story can be used to run arbitrary scripts that have been loaded into Crowdstrike Falcon using the runscript command.",
+      "position": [
+        -660.0,
+        -225.0
+      ],
+      "guid": "ccf2a56a0efe0404185b323a145c0e2f",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/CrowdStrike_logo_no_background.png\n\nThis Story will run a given CrowdStrike RTR command against a provided Host ID.\n\nAll default RTR scripts can be used, e.g.:\nls\nmemdump\nshutdown\n\nAdditionally, custom RTR scripts uploaded into the CrowdStrike tenant can be executed as:\nrunscript -CloudFile=\"scriptName\" -CommandLine=\"\"",
+      "position": [
+        -225.0,
+        -255.0
+      ],
+      "guid": "963c60790043279e1a1d1b42037c0e85",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 14
+    },
+    {
+      "source": 2,
+      "receiver": 12
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 12
+    },
+    {
+      "source": 5,
+      "receiver": 10
+    },
+    {
+      "source": 6,
+      "receiver": 13
+    },
+    {
+      "source": 7,
+      "receiver": 13
+    },
+    {
+      "source": 8,
+      "receiver": 3
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 12,
+      "receiver": 8
+    },
+    {
+      "source": 12,
+      "receiver": 7
+    },
+    {
+      "source": 12,
+      "receiver": 6
+    },
+    {
+      "source": 13,
+      "receiver": 9
+    },
+    {
+      "source": 14,
+      "receiver": 2
+    }
+  ],
+  "diagram_layout": "{\"7fb23f9c2ed21a4e1e586ab12c19d131\":[105,75],\"93b88567ce305e0787bc9c15cf521eec\":[-465,90],\"a29ac43b25d0ce4c0b81f6c0cd6ff7d6\":[105,240],\"db79d8267cece29a17df6239893cc45b\":[105,525],\"cd49a7b6b091f97f3447a1a61cbf1c17\":[105,600],\"6f902a2af9cec85c89b8f06fba859e66\":[-720,90],\"eaf02fb5d447067f1300e376841d1b20\":[600,450],\"f509331b9a23b07ffa5fa3b8865772bb\":[360,450],\"2cdc953f86fd67484e8babf419eea93d\":[105,450],\"c3d7c3d557f3b2e26a6bf5cea52415d3\":[525,630],\"44a9187347a367e37c9aa7d51c45e33f\":[-720,180],\"2a41334c370f6282da04efba9a30cb83\":[-720,255],\"4d10993ca2a7c63a748b13f0e222e11c\":[105,330],\"6b39a2e56b6a69085106375b39ad618e\":[525,525],\"c6168b82caff98fe982620906b92b57c\":[105,150]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "7fb23f9c2ed21a4e1e586ab12c19d131",
+  "exit_agent_guids": [
+    "c3d7c3d557f3b2e26a6bf5cea52415d3"
+  ],
+  "exit_agent_guid": "c3d7c3d557f3b2e26a6bf5cea52415d3",
+  "send_to_stories": [],
+  "form": {
+    "name": "Crowdstrike - Run RTR Command - Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

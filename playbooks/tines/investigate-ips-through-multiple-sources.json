@@ -1,0 +1,344 @@
+{
+  "schema_version": 4,
+  "name": "Investigate IPs through multiple sources",
+  "description": "Analyze suspicious IPs using several different tools, including GreyNoise, Cisco Talos, and VirusTotal, to gather more context and respond faster.\n\ntags: Investigate, CiscoTalos, VirusTotal, GreyNoise, ThreatIntelligence, Analyze, Beginner, Malware\nicons: 🧐, 🌐, greynoise\nvisibility: public",
+  "guid": "01471bad68e7b7d5ca38370d42bcf5cc",
+  "slug": "investigate_ips_through_multiple_sources",
+  "exported_at": "2022-07-11T17:45:23Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check IP Reputation using APIVoid",
+      "disabled": false,
+      "guid": "fdf5aff847aa2634eeda48fe1976f11c",
+      "options": {
+        "url": "https://endpoint.apivoid.com/iprep/v1/pay-as-you-go/",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "key": "<<CREDENTIAL.apivoid>>",
+          "ip": "<<webhook_action.body.ipaddress>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Tor Nodes",
+      "disabled": false,
+      "guid": "0386d6de6d94eb5bed33bba75f856d8b",
+      "options": {
+        "url": "https://check.torproject.org/cgi-bin/TorBulkExitList.py?ip=1.1.1.1",
+        "content_type": "json",
+        "method": "get"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "TEST USING ME - Analyze IP",
+      "disabled": false,
+      "guid": "9d8457cc907266ec4dad3141e78c0067",
+      "options": {
+        "story": "<<STORY.investigate_ips_through_multiple_sources>>",
+        "payload": {
+          "ipaddress": "36.138.142.116"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Action",
+      "disabled": false,
+      "guid": "b553619546d19249da75c67da1c127b1",
+      "options": {
+        "secret": "f48aa7ff977c9adc1b48979ebabffeb1",
+        "verbs": "get,post",
+        "path": "ae66e0e1052ede36b3ac79032a83af3e"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Tor Node",
+      "disabled": false,
+      "guid": "6e0054bb5b30ef3f1b3f24d19b70a230",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "path": "<<get_tor_nodes.body>>",
+            "value": "<<webhook_action.body.ipaddress>>"
+          }
+        ],
+        "emit_no_match": "true"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search for IP Address in VirusTotal",
+      "disabled": false,
+      "guid": "f37c834eeb6d1b9c796e491b6967b225",
+      "options": {
+        "url": "https://www.virustotal.com/api/v3/ip_addresses/<<webhook_action.body.ipaddress>>",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-apikey": "<<CREDENTIAL.virustotal>>"
+        },
+        "retry_on_status": [
+          "429",
+          "204"
+        ],
+        "log_error_on_status": [
+          "400-500"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search for IP Address in Abuse IPDB",
+      "disabled": false,
+      "guid": "fea1e4c174d880ff69024bc1900b7fba",
+      "options": {
+        "url": "https://api.abuseipdb.com/api/v2/check",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "maxAgeInDays": "90",
+          "ipAddress": "<<webhook_action.body.ipaddress>>",
+          "verbose": "true"
+        },
+        "headers": {
+          "key": "<<CREDENTIAL.abuseipdb>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Return Results",
+      "disabled": false,
+      "guid": "b1af7d982c62531e853f1a75e951a61e",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "ip": "<<webhook_action.body.ipaddress>>",
+          "talos_threat_level": "<<lookup_ip_in_talos.body.reputation.threat_level_mnemonic>>",
+          "apivoid_score": "<<check_ip_reputation_using_apivoid.body.data.report.blacklists.detections>>",
+          "abuse_ipdb": "<<search_for_ip_address_in_abuse_ipdb.body.data.abuseConfidenceScore>>",
+          "location": "<<check_ip_reputation_using_apivoid.body.data.report.information.city_name>>, <<check_ip_reputation_using_apivoid.body.data.report.information.region_name>>, <<check_ip_reputation_using_apivoid.body.data.report.information.country_name>>",
+          "TorNode": "<<trigger_if_tor_node.rule_matched>>",
+          "virustotal_score": "=search_for_ip_address_in_virustotal.body.data.attributes.last_analysis_stats",
+          "request": "=webhook_action",
+          "greynoise_noise": "<<lookup_ip_in_greynoise_community.body.noise>>",
+          "greynoise_riot": "<<lookup_ip_in_greynoise_community.body.riot>>",
+          "greynoise_classification": "<%if lookup_ip_in_greynoise_community.body.classification%><<lookup_ip_in_greynoise_community.body.classification>><%else%>new<%endif%>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Lookup IP in Talos",
+      "disabled": false,
+      "guid": "c303041d6c922e1b620c55c2dff746c8",
+      "options": {
+        "url": "https://talosintelligence.com/cloud_intel/ip_reputation",
+        "method": "get",
+        "payload": {
+          "ip": "<<webhook_action.body.ipaddress>>"
+        },
+        "headers": {
+          "authority": "talosintelligence.com",
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36",
+          "referer": "https://talosintelligence.com/reputation_center/lookup?search=83.1.2.3&__cf_chl_jschl_tk__=7.LriGexrwYspw1pRjlfFsX_SrahgCPd4Zsip9C.0fc-1642874040-0-gaNycGzNCNE",
+          "accept-language": "en-US,en;q=0.9",
+          "cookie": "_ga=GA1.2.302387868.1642874019; _gid=GA1.2.921006696.1642874019; _gat=1; cf_chl_rc_ni=1; cf_chl_2=e486747d073962b; cf_chl_prog=x12; cf_clearance=UNknccNyKVRGy4M1Dcpr4UhHjlUV6nDFurco0yaO7Nk-1642874042-0-150; _talos_website_session=OFBrQWZramk4R2czMnFLcEZFa0JFTWlpRG55N0pUWEJ2bGZ1c3l4c2s4ZjZVZ3ZrVzRpSk04enNvb2FaQkk4b0xFa1JKMnFJNHNLM3FYQ0lwNTduU0xPNURaVmM1RDczWjZsRXlTWm5IODdGb3YvV3hiWnVtZzFwZXFPNEJNU291K09ySlh0dUdrVVFqV1cvWENucG1uTmYxWHc3d1NBYnVvdnJncFJweTg4cVhhdE41c0lNeXlweFRRcHhpcUhhM3VJcHArcmdWWGJab0RERGlNdEV1SUFLaXFjV1M4d1VGSGhVakRKUG9pYz0tLXR6bTJnTmtkc1BqcnRMTi9yUmx1WkE9PQ%3D%3D--0f9f8e311c11254715e17a3e0456403fec41869c"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Lookup IP in GreyNoise Community",
+      "disabled": false,
+      "guid": "f70781abc08d63f7e7ea7a2a31a46678",
+      "options": {
+        "url": "https://api.greynoise.io/v3/community/<<webhook_action.body.ipaddress>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/automation-illustration.png\n\n# Analyze IPs\n\nKick off the Story using the `send to story` action to analyze an IP in several different sources.\n\nFor this story to work perfectly you'll need the following, however you can remove these actions if they are not required, or add more of your own.\n# Requirements\n- [ ] VirusTotal API Key\n- [ ] APIVoid API Key\n- [ ] Abuse IPDB Api Key\n\nThe Send to Story action can be called from any other story by copying and pasting the action and sending through an IP address or path. ",
+      "position": [
+        -210.0,
+        -1005.0
+      ],
+      "guid": "3e0fc1db894b41271aaeeb6927aea3a0",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 6
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 9
+    },
+    {
+      "source": 4,
+      "receiver": 8
+    },
+    {
+      "source": 5,
+      "receiver": 0
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 8,
+      "receiver": 5
+    },
+    {
+      "source": 9,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"fdf5aff847aa2634eeda48fe1976f11c\":[105,-510],\"0386d6de6d94eb5bed33bba75f856d8b\":[105,-840],\"9d8457cc907266ec4dad3141e78c0067\":[390,-1020],\"b553619546d19249da75c67da1c127b1\":[105,-1020],\"6e0054bb5b30ef3f1b3f24d19b70a230\":[105,-780],\"f37c834eeb6d1b9c796e491b6967b225\":[105,-600],\"fea1e4c174d880ff69024bc1900b7fba\":[105,-405],\"b1af7d982c62531e853f1a75e951a61e\":[105,-300],\"c303041d6c922e1b620c55c2dff746c8\":[105,-705],\"f70781abc08d63f7e7ea7a2a31a46678\":[105,-930]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "b553619546d19249da75c67da1c127b1",
+  "exit_agent_guids": [
+    "b1af7d982c62531e853f1a75e951a61e"
+  ],
+  "exit_agent_guid": "b1af7d982c62531e853f1a75e951a61e",
+  "send_to_stories": [],
+  "form": {
+    "name": "Investigate IP",
+    "description": "",
+    "fields": [
+      {
+        "name": "IP",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "world",
+    "agent_guid": "b553619546d19249da75c67da1c127b1",
+    "success_message": "Thank you for your submission"
+  }
+}

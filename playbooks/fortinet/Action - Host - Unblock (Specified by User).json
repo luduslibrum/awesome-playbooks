@@ -1,0 +1,209 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action - Host - Unblock (Specified by User)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Creates indicators for the host specified by the user, unblocks the host on the firewall, and also marks the indicator as Unblocked. The indicator is also linked to the record on which the playbook is triggered.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/1f8c112f-7281-496f-90a4-64a731766898",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Host Indicator _ Deduplicated",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "value": "{{vars.input.params.host}}",
+                    "__replace": "true",
+                    "typeofindicator": {
+                        "id": 72,
+                        "@id": "\/api\/3\/picklists\/3272abd8-a1ae-4663-8c47-6d1195e684d9",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Host",
+                        "listName": "\/api\/3\/picklist_names\/50ee5bfa-e18f-49ba-8af9-dcca25b0f9c0",
+                        "itemValue": "Host",
+                        "orderIndex": 2
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/upsert\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "0521eefe-026d-46e2-9234-1664a1b003c0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Link Indicator On Triggered Record",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{vars.input.records[0]['@id']}}",
+                    "body": "{\"__link\":{\"indicators\":[\"{{vars.result['@id']}}\"]}}"
+                },
+                "version": "3.0.4",
+                "connector": "cyops_utilities",
+                "operation": "update_cyops_resource",
+                "operationTitle": "CyOPs: Update Record",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "eb91941e-f426-4380-9976-23c3ff855c38"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "d4f134bf-81f7-4db9-9a12-c74b67cb7741",
+                "title": "Unblock Specified Host",
+                "resources": [
+                    "incidents"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "host",
+                        "type": "string",
+                        "label": "Host",
+                        "tooltip": "Given Host will also be created as indicator, and linked to this record",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": true,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "useRecordFieldDefault": false
+                    },
+                    {
+                        "name": "reasonsToUnblock",
+                        "type": "string",
+                        "label": "Reasons to unblock",
+                        "tooltip": "Specify reasons for unblocking the Host. The reason would be added in Indicator Record for future reference",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "defaultValue": "Asked by User:",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "host": "{{vars.request.data[\"host\"]}}",
+                            "reasonsToUnblock": "{{vars.request.data[\"reasonsToUnblock\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "assets": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "incidents": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Unblock",
+                "noRecordExecution": false,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "1f8c112f-7281-496f-90a4-64a731766898"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Unblock Host",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params.reasonsToUnblock}}",
+                    "inputIndicatorValue": "{{vars.input.params.host}}",
+                    "inputIndicatorRecordIRI": "{{vars.steps.Create_Host_Indicator___Deduplicated['@id']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/0ab5b01a-7644-4efd-babe-5afafd9c8379"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "de45b57c-69c1-49da-a4db-97dd1b4340a4"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Block IP Address -> Link Indicator On Triggered Record",
+            "targetStep": "\/api\/3\/workflow_steps\/eb91941e-f426-4380-9976-23c3ff855c38",
+            "sourceStep": "\/api\/3\/workflow_steps\/de45b57c-69c1-49da-a4db-97dd1b4340a4",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "80568603-55a3-4cd3-b212-aba4b6ceb2a8"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Create IP Indicator _ Deduplicated",
+            "targetStep": "\/api\/3\/workflow_steps\/0521eefe-026d-46e2-9234-1664a1b003c0",
+            "sourceStep": "\/api\/3\/workflow_steps\/1f8c112f-7281-496f-90a4-64a731766898",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c9bcbfe9-e974-4d4a-a5aa-5b619673dfac"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create IP Indicator _ Deduplicated -> Unblock IP Address",
+            "targetStep": "\/api\/3\/workflow_steps\/de45b57c-69c1-49da-a4db-97dd1b4340a4",
+            "sourceStep": "\/api\/3\/workflow_steps\/0521eefe-026d-46e2-9234-1664a1b003c0",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1985754e-b495-4041-940d-20339df40912"
+        }
+    ],
+    "priority": null,
+    "uuid": "db06501c-c707-4d38-b539-2abfc06d3f67",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Mitigation"
+    ]
+}

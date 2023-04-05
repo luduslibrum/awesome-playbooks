@@ -1,0 +1,106 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Indicator - Set Last Seen Date",
+    "aliasName": null,
+    "tag": null,
+    "description": "Tracks the occurrence of an indicator by updating the last seen date.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/f6aa7088-2a8e-4421-8cd3-9ec66be3df53",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "indicators",
+                "resources": [
+                    "indicators"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "OR",
+                    "filters": [
+                        {
+                            "type": "array",
+                            "field": "alerts",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "array",
+                            "field": "incidents",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "40",
+            "left": "40",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "f6aa7088-2a8e-4421-8cd3-9ec66be3df53"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set Last Seen",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "lastSeen": "{{vars.input.records[0].modifyDate}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "206",
+            "left": "220",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "ef8d8133-964e-4322-887f-cb668c8b4e13"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Set Last Seen",
+            "targetStep": "\/api\/3\/workflow_steps\/ef8d8133-964e-4322-887f-cb668c8b4e13",
+            "sourceStep": "\/api\/3\/workflow_steps\/f6aa7088-2a8e-4421-8cd3-9ec66be3df53",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "919e860c-3ccf-4dbd-952a-df9e9594d224"
+        }
+    ],
+    "priority": null,
+    "uuid": "1fa9857a-c193-4ec2-982c-076e780c806a",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "PostUpdate"
+    ]
+}

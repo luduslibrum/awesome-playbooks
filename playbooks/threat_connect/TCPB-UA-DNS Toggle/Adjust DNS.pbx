@@ -1,0 +1,98 @@
+{
+  "definitionVersion" : "1.0.0",
+  "name" : "Adjust DNS",
+  "type" : "Standard",
+  "panX" : 20.0,
+  "panY" : 20.0,
+  "logLevel" : "WARN",
+  "description" : "",
+  "jobList" : [ {
+    "id" : 14971,
+    "appCatalogItem" : {
+      "programName" : "TCPB - TC Api v1.0",
+      "displayName" : "ThreatConnect API",
+      "programVersion" : "1.0.4"
+    },
+    "name" : "ThreatConnect API 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      },
+      "value" : "{\n\"dnsActive\" : \"#App:14981:dnsStatus!String\"\n}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "method"
+      },
+      "value" : "PUT"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "query_params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "path"
+      },
+      "value" : "/v2/indicators/hosts/#Trigger:1393:trg.http.body!String/"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 530.0,
+    "locationTop" : 260.0,
+    "playbookRetryEnabled" : false
+  }, {
+    "id" : 14981,
+    "appCatalogItem" : {
+      "programName" : "TCPB - ValueLookup v1.0",
+      "displayName" : "Value Lookup",
+      "programVersion" : "1.0.5"
+    },
+    "name" : "Value Lookup 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"dnsStatus\",\"value\":\"dnsStatus\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_array"
+      },
+      "value" : "#Trigger:1393:trg.http.queryparam!KeyValueArray"
+    } ],
+    "locationLeft" : 310.0,
+    "locationTop" : 260.0,
+    "outputVariables" : "[{\"name\":\"dnsStatus\",\"type\":\"String\"}]",
+    "playbookRetryEnabled" : false
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 14981,
+    "sourceTriggerId" : 1393
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 14981,
+    "targetJobId" : 14971
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 1393,
+    "name" : "HttpLink Trigger 1",
+    "type" : "HttpLink",
+    "eventType" : "External",
+    "locationLeft" : 100.0,
+    "locationTop" : 260.0,
+    "httpBasicAuthEnable" : false,
+    "httpResponseHeader" : "[]",
+    "anyOrg" : true,
+    "orFilters" : false,
+    "fireOnDuplicate" : false,
+    "renderBodyAsTip" : false,
+    "outputVariables" : "[{\"name\":\"trg.http.body\",\"type\":\"String\"},{\"name\":\"trg.http.queryparam\",\"type\":\"KeyValueArray\"}]"
+  } ],
+  "exportablePipes" : [ ],
+  "dateExported" : "3/7/18 3:52 PM"
+}

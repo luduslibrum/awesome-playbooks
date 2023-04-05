@@ -1,0 +1,207 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Alert - Disable Specific User",
+    "aliasName": null,
+    "tag": "#ManualAction",
+    "description": "Disables the specified User Account from the Active Directory.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "inputUserName"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/6c8eb364-5777-41c4-aa6a-3b9211d2fb32",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "3397b3cb-1d9d-4f8d-af5b-9a9e9434a259",
+                "title": "Disable Specified User",
+                "resources": [
+                    "indicators"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "username",
+                        "type": "string",
+                        "label": "Username",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": true,
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "username": "{{vars.request.data[\"username\"]}}",
+                            "inputUserName": "{{ vars.inputUserName }}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": [
+                            {
+                                "type": "primitive",
+                                "field": "source",
+                                "value": "FortiDeceptor",
+                                "operator": "eq",
+                                "_operator": "eq"
+                            }
+                        ]
+                    },
+                    "incidents": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": [
+                            {
+                                "type": "object",
+                                "field": "indicatorStatus",
+                                "value": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                                    "itemValue": "Blocked"
+                                },
+                                "operator": "neq"
+                            },
+                            {
+                                "type": "object",
+                                "field": "typeofindicator",
+                                "value": "\/api\/3\/picklists\/e72907c5-2088-4e85-99d0-6c7970a5470e",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/e72907c5-2088-4e85-99d0-6c7970a5470e",
+                                    "itemValue": "User"
+                                },
+                                "operator": "eq"
+                            }
+                        ]
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": false,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "6c8eb364-5777-41c4-aa6a-3b9211d2fb32"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block a User within a Windows Active Directory",
+            "description": null,
+            "arguments": {
+                "name": "Active Directory",
+                "config": "97ea9747-1dbf-4781-9bd8-a5c651f77f0f",
+                "params": {
+                    "search_attr_name": "SamAccount Name",
+                    "search_attr_value": "{{vars.input.params.inputUserName}}"
+                },
+                "version": "2.1.1",
+                "connector": "activedirectory",
+                "operation": "disable_user_account",
+                "mock_result": "{\n  \"data\": {\n    \"dn\": \"\",\n    \"type\": \"modifyResponse\",\n    \"result\": 0,\n    \"message\": \"\",\n    \"referrals\": null,\n    \"description\": \"success\"\n  },\n  \"status\": \"Success\",\n  \"_status\": true,\n  \"message\": \"\",\n  \"operation\": null,\n  \"request_id\": null\n}",
+                "ignore_errors": true,
+                "operationTitle": "Disable User Account ",
+                "step_variables": [],
+                "operationOutput": {
+                    "result": "",
+                    "description": "Disable specified User Account"
+                }
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "5e67d4a8-33a3-441f-87cb-ec5249a09a66"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add Status Notes",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "type": {
+                        "id": 248,
+                        "@id": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Comment",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/0841c1eb-a0a3-4abd-b29c-9f68e4d9b14f",
+                        "itemValue": "Comment",
+                        "orderIndex": 1
+                    },
+                    "alerts": "{{vars.input.records[0]['@id']}}",
+                    "people": [],
+                    "content": "<p>User {{vars.input.params.inputUserName}} Successfully Disabled on AD<\/p>",
+                    "__replace": "",
+                    "isImportant": false,
+                    "peopleUpdated": false
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "__recommend": [],
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "4c99c7da-d15b-4399-a13d-d6909465e5e7"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Block a User within a Windows Active Directory -> Add notes about host block action to incident",
+            "targetStep": "\/api\/3\/workflow_steps\/4c99c7da-d15b-4399-a13d-d6909465e5e7",
+            "sourceStep": "\/api\/3\/workflow_steps\/5e67d4a8-33a3-441f-87cb-ec5249a09a66",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f292fb20-1b85-4bb0-96b4-b01082d049ec"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Block a User within a Windows Active Directory",
+            "targetStep": "\/api\/3\/workflow_steps\/5e67d4a8-33a3-441f-87cb-ec5249a09a66",
+            "sourceStep": "\/api\/3\/workflow_steps\/6c8eb364-5777-41c4-aa6a-3b9211d2fb32",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f3b3100b-1628-4eb2-b8f3-9099730a2272"
+        }
+    ],
+    "priority": null,
+    "uuid": "ed8ac592-1cc3-4eb9-846f-0dc9c5f3af92",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction"
+    ]
+}

@@ -1,0 +1,433 @@
+{
+  "schema_version": 4,
+  "name": "Query AWS CloudTrail for a user's recent API calls",
+  "description": "Receive AWS user account information and query CloudTrail to see the user's recent activity. Create a ticket in JIRA with all of the context and deactivate the user if needed. \n\ntags: AWS, Access, Threats, Intermediate,\nicons: AWS, 📈, 🙅‍♂️\nvisibility: public",
+  "guid": "4ae0389b5f922c5c35dee5357a671afd",
+  "slug": "query_aws_cloudtrail_for_a_user_s_recent_api_calls",
+  "exported_at": "2022-07-11T17:46:55Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Get AWS User Account",
+      "disabled": false,
+      "guid": "a5f76871736b92a38ac54c21b265c02e",
+      "options": {
+        "path": "e056b9af32f450f05ffc4509a1c8f7e5",
+        "secret": "f433d96c97805d5180c18420921248fa",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get AWS CloudTrail Logging Info",
+      "disabled": false,
+      "guid": "4ab429f65197454a8112cd36a0d18d21",
+      "options": {
+        "url": "https://cloudtrail.<<RESOURCE.aws_region>>.amazonaws.com",
+        "method": "post",
+        "content_type": "application/x-amz-json-1.1",
+        "payload": {
+          "LookupAttributes": [
+            {
+              "AttributeKey": "Username",
+              "AttributeValue": "<<get_aws_user_account.body.enter_aws_user_account>>",
+              "StartTime": ""
+            }
+          ],
+          "MaxResults": 2
+        },
+        "headers": {
+          "Accept": "application/json",
+          "x-amz-target": "com.amazonaws.cloudtrail.v20131101.CloudTrail_20131101.LookupEvents",
+          "Authorization": "<<CREDENTIAL.aws>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Comment in Jira",
+      "disabled": false,
+      "guid": "eac59d2ffb846db87a257b114f0d2d5f",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira_with_tables.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "AWS Account <<get_aws_cloudtrail_logging_info.body.Events[0].Username>> has been deactivated at <<DATE>> with AWS Policy <<create_aws_user_disable_policy.body.CreatePolicyResponse.CreatePolicyResult.Policy.PolicyName>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Deactivate User Account",
+      "disabled": false,
+      "guid": "7ec0b0df38406229341ec4a0a5f16974",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "deactivate",
+            "path": "<<add_prompts.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Keep Account Active",
+      "disabled": false,
+      "guid": "c2fb437aee1cbee4c4ff5afc05100bf4",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "active",
+            "path": "<<add_prompts.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "72c92bc65607c08eebb4aa0607f7c61e",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira_with_tables.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "<<get_issue_assignee_in_jira.body.fields.assignee.displayName>> has determined AWS Account <<get_aws_user_account.body.enter_aws_user_account_name>> remain active"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Issue Assignee in Jira",
+      "disabled": false,
+      "guid": "52a4d74e644b910cf4b58c0d1f8a5769",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira_with_tables.body.key>>/",
+        "content_type": "json",
+        "method": "get",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Issue Assignee in Jira",
+      "disabled": false,
+      "guid": "6380d841d8a6eeaf5f7b1b29281cd21c",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira_with_tables.body.key>>/",
+        "content_type": "json",
+        "method": "get",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Attach AWS Deny All Policy",
+      "disabled": false,
+      "guid": "ffd7bdc1cab8206ff7367fcde7b2f3ec",
+      "options": {
+        "url": "https://iam.amazonaws.com?Action=AttachUserPolicy&Version=2010-05-08&PolicyArn=arn:aws:iam::aws:policy/AWSDenyAll&UserName=<<get_aws_cloudtrail_logging_info.body.Events[0].Username>>",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Prompts",
+      "disabled": false,
+      "guid": "23d2905dba83e91cced024bf594b1e6a",
+      "options": {
+        "url": "https://<<RESOURCE.jiradomain>>/rest/api/2/issue/<<create_issue_in_jira_with_tables.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "*Prompt Actions* \n\n\n[Click here to deactivate AWS Account|<<PROMPT(\"deactivate\")>>] \n\n\n[Click here to keep AWS account active|<<PROMPT(\"active\")>>]"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira with Tables",
+      "disabled": false,
+      "guid": "d3c661a9ef311124057c0b9ae99347de",
+      "options": {
+        "url": "https://{{RESOURCE.jira_domain}}/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "assignee": {
+              "name": "Unassigned"
+            },
+            "description": "h2. Cloud Trail Event Info - Event 1\n|*AWS User Account*|{{get_aws_cloudtrail_logging_info.body.Events[0].Username}} |\n|*Event ID*|{{get_aws_cloudtrail_logging_info.body.Events[0].EventId}} |\n|*Event Name*| {{get_aws_cloudtrail_logging_info.body.Events[0].EventName}} |\n|*Event Source*| {{get_aws_cloudtrail_logging_info.body.Events[0].EventSource}} |\n|*Event Time*| <<DATE(ROUND(get_aws_cloudtrail_logging_info.body.Events[0].EventTime), \"%m-%d-%Y-T%H:%M:%S%z\")>> |\n\nh2. Cloud Trail Event Info - Event 2\n|*AWS User Account*|{{get_aws_cloudtrail_logging_info.body.Events[1].Username}} |\n|*Event ID*|{{get_aws_cloudtrail_logging_info.body.Events[1].EventId}} |\n|*Event Name*| {{get_aws_cloudtrail_logging_info.body.Events[1].EventName}} |\n|*Event Source*| {{get_aws_cloudtrail_logging_info.body.Events[1].EventSource}} |\n|*Event Time*| <<DATE(ROUND(get_aws_cloudtrail_logging_info.body.Events[1].EventTime), \"%m-%d-%Y-T%H:%M:%S%z\")>> |",
+            "summary": "AWS CloudTrail Events"
+          }
+        },
+        "basic_auth": [
+          "{{RESOURCE.jira_username}}",
+          "{{CREDENTIAL.jira}}"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/aws.png",
+      "position": [
+        120.0,
+        675.0
+      ],
+      "guid": "c848309bd401604daedcd1d650559ed1",
+      "width": null
+    },
+    {
+      "content": "AWS Cloud Trail - This story will receive a given AWS user account from a [form](./form\n) and check cloud trail to see if the user has performed any API calls within the last one hour. \n\nA Jira ticket with the appropriate event information is created, within the ticket the assignee has the option to deactivate the specified AWS user account \n\nResources: \n`jira_domain` - URL of Jira domain\n`jira_username` - Username of Jira account with permissions to create Issue in specified project\n\nCredentials: \n`aws_ec2`: user account credentials with permissions to query cloud trail and deactivate a user account (if executed) \n`credential_jira`: user account credentials with permissions to create tickets within specified Jira project",
+      "position": [
+        105.0,
+        240.0
+      ],
+      "guid": "55b60dcc414b80eb964b85735641f0f4",
+      "width": null
+    },
+    {
+      "content": "Details of the specific cloud trail event are created within a ticket in Jira. The assignee is provided the option in a prompt under the table to deactivate the AWS account from within the Jira ticket or to leave the account open. ",
+      "position": [
+        898.0,
+        299.0
+      ],
+      "guid": "60f54a0b43d8868519f27caa5fa4eb71",
+      "width": null
+    },
+    {
+      "content": "If the user select the link in the Jira ticket to deactivate the AWS account Tines will perform multiple actions. \n\n-  Disable the API key to block further programmatic access. \n- Attach a Deny All policy to the User account to disable all Amazon Console permissions\n\nThe Jira ticket will then be updated when the tasks are complete. \n\nThe account will only be disabled and keys deactivated. An AWS administrator can either delete them permanently or re-enable them if needed.",
+      "position": [
+        105.0,
+        900.0
+      ],
+      "guid": "4caf7c0bcd39da66d9072ee6fcad48db",
+      "width": null
+    },
+    {
+      "content": "# ⬅️ ⬅️. Receive the Event\n\nThe webhook action will receive the event from the form",
+      "position": [
+        900.0,
+        180.0
+      ],
+      "guid": "7cc68b7e87f1a58e105223bdbcc2a00c",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 10
+    },
+    {
+      "source": 3,
+      "receiver": 8
+    },
+    {
+      "source": 4,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 5
+    },
+    {
+      "source": 7,
+      "receiver": 2
+    },
+    {
+      "source": 8,
+      "receiver": 7
+    },
+    {
+      "source": 9,
+      "receiver": 4
+    },
+    {
+      "source": 9,
+      "receiver": 3
+    },
+    {
+      "source": 10,
+      "receiver": 9
+    }
+  ],
+  "diagram_layout": "{\"a5f76871736b92a38ac54c21b265c02e\":[555,180],\"4ab429f65197454a8112cd36a0d18d21\":[555,270],\"eac59d2ffb846db87a257b114f0d2d5f\":[405,825],\"7ec0b0df38406229341ec4a0a5f16974\":[405,570],\"c2fb437aee1cbee4c4ff5afc05100bf4\":[735,570],\"72c92bc65607c08eebb4aa0607f7c61e\":[735,735],\"52a4d74e644b910cf4b58c0d1f8a5769\":[735,660],\"6380d841d8a6eeaf5f7b1b29281cd21c\":[405,750],\"ffd7bdc1cab8206ff7367fcde7b2f3ec\":[405,660],\"23d2905dba83e91cced024bf594b1e6a\":[555,450],\"d3c661a9ef311124057c0b9ae99347de\":[555,360]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Query AWS CloudTrail for a user's recent API calls Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Enter AWS User Account ",
+        "description": "Provide user account name for AWS account",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "a5f76871736b92a38ac54c21b265c02e",
+    "success_message": "Thank you for your submission"
+  }
+}

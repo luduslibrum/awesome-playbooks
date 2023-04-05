@@ -1,0 +1,1202 @@
+{
+  "schema_version": 4,
+  "name": "Get more context via GuardDuty to remediate AWS alerts",
+  "description": "Enrich AWS alerts with more context using GuardDuty, then take action to isolate new connections, lock attackers down, review credential usage, or re-apply restrictions, all while managing a case in Jira with this Story. \n\ntags: Intermediate, AWS, GuardDuty, Jira, Remediate, Enrich, Respond, Isolate,\nicons: 🎱, AWS, 🎬\nvisibility: public",
+  "guid": "61a1328b37a38e92526012225f70bcb9",
+  "slug": "get_more_context_via_guardduty_to_remediate_aws_alerts",
+  "exported_at": "2022-07-11T17:31:37Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive SNS",
+      "disabled": false,
+      "guid": "6207e5cba8f50bbfffd311b1a8bb99da",
+      "options": {
+        "secret": "36cf06b05d2d9d9872bfce1162d7f827",
+        "verbs": "get,post",
+        "path": "f42c54a33baef0aebefb929a933d6d66"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Subscribe to SNS",
+      "disabled": false,
+      "guid": "d274dc4c865dea6c7fe5fae033eb372b",
+      "options": {
+        "url": "<<receive_sns.body.SubscribeURL>>",
+        "method": "get"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Initial SNS Subscription",
+      "disabled": false,
+      "guid": "f8c3bd5dbe486770f4331f708e0c606a",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<receive_sns.body.SubscribeURL>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for GuardDuty alert",
+      "disabled": false,
+      "guid": "cbced9f66d13a8d3c77302f7c58989df",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "aws.guardduty",
+            "path": "<<expand_event.message.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for Credential Exfiltration",
+      "disabled": false,
+      "guid": "f7cecb837a13122cccc7349c5476400f",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration",
+            "path": "<<expand_event.message.detail.type>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for S3 Public Bucket Policy",
+      "disabled": false,
+      "guid": "76445ccda8c5f50a193acc7c44e0e081",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Policy:S3/BucketBlockPublicAccessDisabled",
+            "path": "<<expand_event.message.detail.type>>"
+          },
+          {
+            "type": "not in",
+            "value": [
+              "allowed-public-buckets"
+            ],
+            "path": "=expand_event.message.detail.resource.s3BucketDetails.name"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "All GuardDuty Findings",
+      "disabled": false,
+      "guid": "1ebb4f649d490cf2860bb0f153045a90",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": ".*",
+            "path": "<<expand_event.message.detail.type>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Expand Event",
+      "disabled": false,
+      "guid": "d8492ba224d22770972273f713aff6f2",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "message": "=receive_sns.body.Message"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "6b33fac14632f3301a097bdd2f75ac5d",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "<<expand_event.message.detail.description>>",
+            "summary": "[GuardDuty Finding] <<expand_event.message.detail.title>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "99e28b2ade59e2004c3475f6aea36d72",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Applied EC2 isolation security group. Please remediate further."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check for EC2 C&C Finding",
+      "disabled": false,
+      "guid": "fb7832d2bc71be9a1dcfd360bf0a6cd2",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "C&CActivity",
+            "path": "<<expand_event.message.detail.type>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Revoke AWS IAM Role Sessions",
+      "disabled": false,
+      "guid": "b4135347c421cd38fc4b8fb51addf8b6",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_key>>"
+        },
+        "payload": {
+          "RoleName": "<<expand_event.message.detail.resource.accessKeyDetails.userName>>",
+          "PolicyName": "RevokeSessions",
+          "PolicyDocument": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\": \"Deny\",\"Action\":[\"*\"],\"Resource\":[\"*\"],\"Condition\":{\"DateLessThan\":{\"aws:TokenIssueTime\":\"<<DATE(\"now\", \"%Y-%m-%dT%H:%M:%SZ\")>>\"}}}]}",
+          "Version": "2010-05-08",
+          "Action": "PutRolePolicy"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Apply AWS S3 Bucket Block Policy",
+      "disabled": false,
+      "guid": "457d68a43f0ef23e566c14b45285ad70",
+      "options": {
+        "url": "https://<<expand_event.message.detail.resource.s3BucketDetails.first.name>>.s3.<<expand_event.message.detail.region>>.amazonaws.com/?publicAccessBlock",
+        "method": "put",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_key>>"
+        },
+        "payload": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<PublicAccessBlockConfiguration>\n<BlockPublicAcls>TRUE</BlockPublicAcls>\n      <IgnorePublicAcls>TRUE</IgnorePublicAcls>\n      <BlockPublicPolicy>TRUE</BlockPublicPolicy>\n      <RestrictPublicBuckets>TRUE</RestrictPublicBuckets>\n</PublicAccessBlockConfiguration>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Generic Alert Workflow",
+      "disabled": false,
+      "guid": "7fc780c3bcc87a93d217f8c42fe1b255",
+      "options": {
+        "story": "<<STORY.generic_alerts>>",
+        "payload": {
+          "alert": "=expand_event.message",
+          "ticket": "=create_issue_in_jira"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Set AWS EC2 Security Group",
+      "disabled": false,
+      "guid": "69513a3ffaf28b20b80b513eab30615a",
+      "options": {
+        "url": "https://ec2.<<expand_event.message.region>>.amazonaws.com/?Action=ModifyInstanceAttribute&Version=2016-11-15&InstanceId=<<expand_event.message.detail.resource.instanceDetails.instanceId>>&GroupId.1=<<ec2_security_group_id>>",
+        "method": "get",
+        "headers": {
+          "Authorization": " <<CREDENTIAL.aws_key>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "90751d4abdd2d252239f6768a50d7fdd",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Revoked IAM role sessions for <<expand_event.message.detail.resource.accessKeyDetails.userName>>. This event should be investigated further."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "7a18fc1d26e590c71f15686d2b12bfde",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Public Access Policy applied to <<expand_event.message.detail.resource.s3BucketDetails.first.name>>. Please contact the owner and provide them with the proper request process."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Bucket Anonymous Access Granted Finding",
+      "disabled": false,
+      "guid": "1a1c423381ab65ebddae0391488febc6",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/webhook/7fc6950ab8a46d88f0e93c5291975b2e/f21e13ca4b89dc7fc6da97bf0fe23945",
+        "method": "post",
+        "content_type": "form",
+        "payload": {
+          "Message": {
+            "version": "0",
+            "id": "c8230edd-c839-c741-7d68-53248d77b289",
+            "detail-type": "GuardDuty Finding",
+            "source": "aws.guardduty",
+            "account": "601435222003",
+            "time": "2021-10-12T14:40:23Z",
+            "region": "us-east-1",
+            "resources": [],
+            "detail": {
+              "schemaVersion": "2.0",
+              "accountId": "601435222003",
+              "region": "us-east-1",
+              "partition": "aws",
+              "id": "56be3a76ce301466186900d2ae287818",
+              "arn": "arn:aws:guardduty:us-east-1:601435222003:detector/44babacd66fc6ad4e8aad5689705f19c/finding/56be3a76ce301466186900d2ae287818",
+              "type": "Policy:S3/BucketAnonymousAccessGranted",
+              "resource": {
+                "resourceType": "AccessKey",
+                "accessKeyDetails": {
+                  "accessKeyId": "GeneratedFindingAccessKeyId",
+                  "principalId": "GeneratedFindingPrincipalId",
+                  "userType": "IAMUser",
+                  "userName": "GeneratedFindingUserName"
+                },
+                "s3BucketDetails": [
+                  {
+                    "arn": "arn:aws:s3:::bucketName",
+                    "name": "bucketName",
+                    "type": "Destination",
+                    "createdAt": 1513612691.551,
+                    "owner": {
+                      "id": "CanonicalId of Owner"
+                    },
+                    "tags": [
+                      {
+                        "key": "foo",
+                        "value": "bar"
+                      }
+                    ],
+                    "defaultServerSideEncryption": {
+                      "encryptionType": "SSEAlgorithm",
+                      "kmsMasterKeyArn": "arn:aws:kms:region:123456789012:key/key-id"
+                    },
+                    "publicAccess": {
+                      "permissionConfiguration": {
+                        "bucketLevelPermissions": {
+                          "accessControlList": {
+                            "allowsPublicReadAccess": false,
+                            "allowsPublicWriteAccess": false
+                          },
+                          "bucketPolicy": {
+                            "allowsPublicReadAccess": false,
+                            "allowsPublicWriteAccess": false
+                          },
+                          "blockPublicAccess": {
+                            "ignorePublicAcls": false,
+                            "restrictPublicBuckets": false,
+                            "blockPublicAcls": false,
+                            "blockPublicPolicy": false
+                          }
+                        },
+                        "accountLevelPermissions": {
+                          "blockPublicAccess": {
+                            "ignorePublicAcls": false,
+                            "restrictPublicBuckets": false,
+                            "blockPublicAcls": false,
+                            "blockPublicPolicy": false
+                          }
+                        }
+                      },
+                      "effectivePermission": "PUBLIC"
+                    }
+                  }
+                ],
+                "instanceDetails": {
+                  "instanceId": "i-99999999",
+                  "instanceType": "m3.xlarge",
+                  "outpostArn": "arn:aws:outposts:us-west-2:123456789000:outpost/op-0fbc006e9abbc73c3",
+                  "launchTime": "2016-08-02T02:05:06.000Z",
+                  "platform": null,
+                  "productCodes": [
+                    {
+                      "productCodeId": "GeneratedFindingProductCodeId",
+                      "productCodeType": "GeneratedFindingProductCodeType"
+                    }
+                  ],
+                  "iamInstanceProfile": {
+                    "arn": "arn:aws:iam::601435222003:example/instance/profile",
+                    "id": "GeneratedFindingInstanceProfileId"
+                  },
+                  "networkInterfaces": [
+                    {
+                      "ipv6Addresses": [],
+                      "networkInterfaceId": "eni-bfcffe88",
+                      "privateDnsName": "GeneratedFindingPrivateDnsName",
+                      "privateIpAddress": "10.0.0.1",
+                      "privateIpAddresses": [
+                        {
+                          "privateDnsName": "GeneratedFindingPrivateName",
+                          "privateIpAddress": "10.0.0.1"
+                        }
+                      ],
+                      "subnetId": "GeneratedFindingSubnetId",
+                      "vpcId": "GeneratedFindingVPCId",
+                      "securityGroups": [
+                        {
+                          "groupName": "GeneratedFindingSecurityGroupName",
+                          "groupId": "GeneratedFindingSecurityId"
+                        }
+                      ],
+                      "publicDnsName": "GeneratedFindingPublicDNSName",
+                      "publicIp": "198.51.100.0"
+                    }
+                  ],
+                  "tags": [
+                    {
+                      "key": "GeneratedFindingInstaceTag1",
+                      "value": "GeneratedFindingInstaceValue1"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag2",
+                      "value": "GeneratedFindingInstaceTagValue2"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag3",
+                      "value": "GeneratedFindingInstaceTagValue3"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag4",
+                      "value": "GeneratedFindingInstaceTagValue4"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag5",
+                      "value": "GeneratedFindingInstaceTagValue5"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag6",
+                      "value": "GeneratedFindingInstaceTagValue6"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag7",
+                      "value": "GeneratedFindingInstaceTagValue7"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag8",
+                      "value": "GeneratedFindingInstaceTagValue8"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag9",
+                      "value": "GeneratedFindingInstaceTagValue9"
+                    }
+                  ],
+                  "instanceState": "running",
+                  "availabilityZone": "GeneratedFindingInstaceAvailabilityZone",
+                  "imageId": "ami-99999999",
+                  "imageDescription": "GeneratedFindingInstaceImageDescription"
+                }
+              },
+              "service": {
+                "serviceName": "guardduty",
+                "detectorId": "44babacd66fc6ad4e8aad5689705f19c",
+                "action": {
+                  "actionType": "AWS_API_CALL",
+                  "awsApiCallAction": {
+                    "api": "GeneratedFindingAPIName",
+                    "serviceName": "GeneratedFindingAPIServiceName",
+                    "callerType": "Remote IP",
+                    "errorCode": "AccessDenied",
+                    "remoteIpDetails": {
+                      "ipAddressV4": "198.51.100.0",
+                      "organization": {
+                        "asn": "-1",
+                        "asnOrg": "GeneratedFindingASNOrg",
+                        "isp": "GeneratedFindingISP",
+                        "org": "GeneratedFindingORG"
+                      },
+                      "country": {
+                        "countryName": "GeneratedFindingCountryName"
+                      },
+                      "city": {
+                        "cityName": "GeneratedFindingCityName"
+                      },
+                      "geoLocation": {
+                        "lat": 0,
+                        "lon": 0
+                      }
+                    },
+                    "affectedResources": {
+                      "AWS::S3::Bucket": "GeneratedFindingS3Bucket"
+                    }
+                  }
+                },
+                "resourceRole": "TARGET",
+                "additionalInfo": {
+                  "unusual": {
+                    "hoursOfDay": [
+                      1513609200000
+                    ],
+                    "userNames": [
+                      "GeneratedFindingUserName"
+                    ]
+                  },
+                  "sample": true
+                },
+                "eventFirstSeen": "2021-10-12T14:35:01.000Z",
+                "eventLastSeen": "2021-10-12T14:35:01.000Z",
+                "archived": false,
+                "count": 1
+              },
+              "severity": 8,
+              "createdAt": "2021-10-12T14:35:01.600Z",
+              "updatedAt": "2021-10-12T14:35:01.600Z",
+              "title": "Amazon S3 Public Anonymous Access was granted for S3 bucket GeneratedFindingS3Bucket.",
+              "description": "The Amazon S3 bucket GeneratedFindingS3Bucket was granted public anonymous access by GeneratedFindingUserName calling GeneratedFindingAPIName. If this behavior is not expected, it may indicate a configuration mistake or that your credentials are compromised."
+            }
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Credential Exfiltration Finding",
+      "disabled": false,
+      "guid": "26503fb3b879ddab807508f091a18183",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/webhook/7fc6950ab8a46d88f0e93c5291975b2e/f21e13ca4b89dc7fc6da97bf0fe23945",
+        "method": "post",
+        "content_type": "form",
+        "payload": {
+          "Message": {
+            "version": "0",
+            "id": "33257378-cafc-a368-87c2-469ec2475980",
+            "detail-type": "GuardDuty Finding",
+            "source": "aws.guardduty",
+            "account": "601435222003",
+            "time": "2021-10-12T16:10:23Z",
+            "region": "us-east-1",
+            "resources": [],
+            "detail": {
+              "schemaVersion": "2.0",
+              "accountId": "601435222003",
+              "region": "us-east-1",
+              "partition": "aws",
+              "id": "16be3a76ce3119614030447c038f4598",
+              "arn": "arn:aws:guardduty:us-east-1:601435222003:detector/44babacd66fc6ad4e8aad5689705f19c/finding/16be3a76ce3119614030447c038f4598",
+              "type": "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS",
+              "resource": {
+                "resourceType": "AccessKey",
+                "accessKeyDetails": {
+                  "accessKeyId": "GeneratedFindingAccessKeyId",
+                  "principalId": "GeneratedFindingPrincipalId",
+                  "userType": "IAMUser",
+                  "userName": "GeneratedFindingUserName"
+                },
+                "instanceDetails": {
+                  "instanceId": "i-99999999",
+                  "instanceType": "m3.xlarge",
+                  "outpostArn": "arn:aws:outposts:us-west-2:123456789000:outpost/op-0fbc006e9abbc73c3",
+                  "launchTime": "2016-08-02T02:05:06.000Z",
+                  "platform": null,
+                  "productCodes": [
+                    {
+                      "productCodeId": "GeneratedFindingProductCodeId",
+                      "productCodeType": "GeneratedFindingProductCodeType"
+                    }
+                  ],
+                  "iamInstanceProfile": {
+                    "arn": "arn:aws:iam::601435222003:example/instance/profile",
+                    "id": "GeneratedFindingInstanceProfileId"
+                  },
+                  "networkInterfaces": [
+                    {
+                      "ipv6Addresses": [],
+                      "networkInterfaceId": "eni-bfcffe88",
+                      "privateDnsName": "GeneratedFindingPrivateDnsName",
+                      "privateIpAddress": "10.0.0.1",
+                      "privateIpAddresses": [
+                        {
+                          "privateDnsName": "GeneratedFindingPrivateName",
+                          "privateIpAddress": "10.0.0.1"
+                        }
+                      ],
+                      "subnetId": "GeneratedFindingSubnetId",
+                      "vpcId": "GeneratedFindingVPCId",
+                      "securityGroups": [
+                        {
+                          "groupName": "GeneratedFindingSecurityGroupName",
+                          "groupId": "GeneratedFindingSecurityId"
+                        }
+                      ],
+                      "publicDnsName": "GeneratedFindingPublicDNSName",
+                      "publicIp": "198.51.100.0"
+                    }
+                  ],
+                  "tags": [
+                    {
+                      "key": "GeneratedFindingInstaceTag1",
+                      "value": "GeneratedFindingInstaceValue1"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag2",
+                      "value": "GeneratedFindingInstaceTagValue2"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag3",
+                      "value": "GeneratedFindingInstaceTagValue3"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag4",
+                      "value": "GeneratedFindingInstaceTagValue4"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag5",
+                      "value": "GeneratedFindingInstaceTagValue5"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag6",
+                      "value": "GeneratedFindingInstaceTagValue6"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag7",
+                      "value": "GeneratedFindingInstaceTagValue7"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag8",
+                      "value": "GeneratedFindingInstaceTagValue8"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag9",
+                      "value": "GeneratedFindingInstaceTagValue9"
+                    }
+                  ],
+                  "instanceState": "running",
+                  "availabilityZone": "GeneratedFindingInstaceAvailabilityZone",
+                  "imageId": "ami-99999999",
+                  "imageDescription": "GeneratedFindingInstaceImageDescription"
+                }
+              },
+              "service": {
+                "serviceName": "guardduty",
+                "detectorId": "44babacd66fc6ad4e8aad5689705f19c",
+                "action": {
+                  "actionType": "AWS_API_CALL",
+                  "awsApiCallAction": {
+                    "api": "GeneratedFindingAPIName",
+                    "serviceName": "GeneratedFindingAPIServiceName",
+                    "callerType": "Remote IP",
+                    "errorCode": "AccessDenied",
+                    "remoteIpDetails": {
+                      "ipAddressV4": "198.51.100.0",
+                      "organization": {
+                        "asn": "-1",
+                        "asnOrg": "GeneratedFindingASNOrg",
+                        "isp": "GeneratedFindingISP",
+                        "org": "GeneratedFindingORG"
+                      },
+                      "country": {
+                        "countryName": "GeneratedFindingCountryName"
+                      },
+                      "city": {
+                        "cityName": "GeneratedFindingCityName"
+                      },
+                      "geoLocation": {
+                        "lat": 0,
+                        "lon": 0
+                      }
+                    },
+                    "affectedResources": {}
+                  }
+                },
+                "resourceRole": "TARGET",
+                "additionalInfo": {
+                  "recentCredentials": [
+                    {
+                      "accessKeyId": "GeneratedFindingAccessKeyId1",
+                      "principalId": "GeneratedFindingPrincipalId1",
+                      "ipAddressV4": "198.51.100.1"
+                    },
+                    {
+                      "accessKeyId": "GeneratedFindingAccessKeyId2",
+                      "principalId": "GeneratedFindingPrincipalId2",
+                      "ipAddressV4": "198.51.100.1"
+                    },
+                    {
+                      "accessKeyId": "GeneratedFindingAccessKeyId3",
+                      "principalId": "GeneratedFindingPrincipalId3",
+                      "ipAddressV4": "198.51.100.1"
+                    },
+                    {
+                      "accessKeyId": "GeneratedFindingAccessKeyId4",
+                      "principalId": "GeneratedFindingPrincipalId4",
+                      "ipAddressV4": "198.51.100.1"
+                    }
+                  ],
+                  "sample": true
+                },
+                "eventFirstSeen": "2021-10-12T14:35:01.000Z",
+                "eventLastSeen": "2021-10-12T16:05:57.000Z",
+                "archived": false,
+                "count": 2
+              },
+              "severity": 8,
+              "createdAt": "2021-10-12T14:35:01.602Z",
+              "updatedAt": "2021-10-12T16:05:57.111Z",
+              "title": "Credentials for instance role GeneratedFindingUserName used from external IP address.",
+              "description": "Credentials created exclusively for an EC2 instance using instance role GeneratedFindingUserName have been used from external IP address 198.51.100.0."
+            }
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send EC2 C&C Finding",
+      "disabled": false,
+      "guid": "1a2e7e32db74e9ee55d9ac0414071fdd",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/webhook/7fc6950ab8a46d88f0e93c5291975b2e/f21e13ca4b89dc7fc6da97bf0fe23945",
+        "method": "post",
+        "content_type": "form",
+        "payload": {
+          "Message": {
+            "version": "0",
+            "id": "f1a235dd-6e3d-f445-93f5-e630a91e7fff",
+            "detail-type": "GuardDuty Finding",
+            "source": "aws.guardduty",
+            "account": "601435222003",
+            "time": "2021-10-12T16:10:24Z",
+            "region": "us-east-1",
+            "resources": [],
+            "detail": {
+              "schemaVersion": "2.0",
+              "accountId": "601435222003",
+              "region": "us-east-1",
+              "partition": "aws",
+              "id": "8ebe3a76ce3291f4cf721be0cb09b89b",
+              "arn": "arn:aws:guardduty:us-east-1:601435222003:detector/44babacd66fc6ad4e8aad5689705f19c/finding/8ebe3a76ce3291f4cf721be0cb09b89b",
+              "type": "Backdoor:EC2/C&CActivity.B",
+              "resource": {
+                "resourceType": "Instance",
+                "instanceDetails": {
+                  "instanceId": "i-99999999",
+                  "instanceType": "m3.xlarge",
+                  "outpostArn": "arn:aws:outposts:us-west-2:123456789000:outpost/op-0fbc006e9abbc73c3",
+                  "launchTime": "2016-08-02T02:05:06.000Z",
+                  "platform": null,
+                  "productCodes": [
+                    {
+                      "productCodeId": "GeneratedFindingProductCodeId",
+                      "productCodeType": "GeneratedFindingProductCodeType"
+                    }
+                  ],
+                  "iamInstanceProfile": {
+                    "arn": "arn:aws:iam::601435222003:example/instance/profile",
+                    "id": "GeneratedFindingInstanceProfileId"
+                  },
+                  "networkInterfaces": [
+                    {
+                      "ipv6Addresses": [],
+                      "networkInterfaceId": "eni-bfcffe88",
+                      "privateDnsName": "GeneratedFindingPrivateDnsName",
+                      "privateIpAddress": "10.0.0.1",
+                      "privateIpAddresses": [
+                        {
+                          "privateDnsName": "GeneratedFindingPrivateName",
+                          "privateIpAddress": "10.0.0.1"
+                        }
+                      ],
+                      "subnetId": "GeneratedFindingSubnetId",
+                      "vpcId": "GeneratedFindingVPCId",
+                      "securityGroups": [
+                        {
+                          "groupName": "GeneratedFindingSecurityGroupName",
+                          "groupId": "GeneratedFindingSecurityId"
+                        }
+                      ],
+                      "publicDnsName": "GeneratedFindingPublicDNSName",
+                      "publicIp": "198.51.100.0"
+                    }
+                  ],
+                  "tags": [
+                    {
+                      "key": "GeneratedFindingInstaceTag1",
+                      "value": "GeneratedFindingInstaceValue1"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag2",
+                      "value": "GeneratedFindingInstaceTagValue2"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag3",
+                      "value": "GeneratedFindingInstaceTagValue3"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag4",
+                      "value": "GeneratedFindingInstaceTagValue4"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag5",
+                      "value": "GeneratedFindingInstaceTagValue5"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag6",
+                      "value": "GeneratedFindingInstaceTagValue6"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag7",
+                      "value": "GeneratedFindingInstaceTagValue7"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag8",
+                      "value": "GeneratedFindingInstaceTagValue8"
+                    },
+                    {
+                      "key": "GeneratedFindingInstaceTag9",
+                      "value": "GeneratedFindingInstaceTagValue9"
+                    }
+                  ],
+                  "instanceState": "running",
+                  "availabilityZone": "GeneratedFindingInstaceAvailabilityZone",
+                  "imageId": "ami-99999999",
+                  "imageDescription": "GeneratedFindingInstaceImageDescription"
+                }
+              },
+              "service": {
+                "serviceName": "guardduty",
+                "detectorId": "44babacd66fc6ad4e8aad5689705f19c",
+                "action": {
+                  "actionType": "NETWORK_CONNECTION",
+                  "networkConnectionAction": {
+                    "connectionDirection": "OUTBOUND",
+                    "localIpDetails": {
+                      "ipAddressV4": "10.0.0.23"
+                    },
+                    "remoteIpDetails": {
+                      "ipAddressV4": "198.51.100.0",
+                      "organization": {
+                        "asn": "-1",
+                        "asnOrg": "GeneratedFindingASNOrg",
+                        "isp": "GeneratedFindingISP",
+                        "org": "GeneratedFindingORG"
+                      },
+                      "country": {
+                        "countryName": "GeneratedFindingCountryName"
+                      },
+                      "city": {
+                        "cityName": "GeneratedFindingCityName"
+                      },
+                      "geoLocation": {
+                        "lat": 0,
+                        "lon": 0
+                      }
+                    },
+                    "remotePortDetails": {
+                      "port": 25,
+                      "portName": "SMTP"
+                    },
+                    "localPortDetails": {
+                      "port": 2000,
+                      "portName": "Unknown"
+                    },
+                    "protocol": "TCP",
+                    "blocked": false
+                  }
+                },
+                "resourceRole": "TARGET",
+                "additionalInfo": {
+                  "threatListName": "GeneratedFindingThreatListName",
+                  "sample": true
+                },
+                "evidence": {
+                  "threatIntelligenceDetails": [
+                    {
+                      "threatListName": "GeneratedFindingThreatListName",
+                      "threatNames": [
+                        "GeneratedFindingThreatName"
+                      ]
+                    }
+                  ]
+                },
+                "eventFirstSeen": "2021-10-12T14:35:01.000Z",
+                "eventLastSeen": "2021-10-12T16:05:57.000Z",
+                "archived": false,
+                "count": 2
+              },
+              "severity": 8,
+              "createdAt": "2021-10-12T14:35:01.605Z",
+              "updatedAt": "2021-10-12T16:05:57.113Z",
+              "title": "EC2 instance i-99999999 communicating outbound with C&C Server.",
+              "description": "EC2 instance i-99999999 is communicating outbound with a known Command & Control Server 198.51.100.0 located in GeneratedFindingCountryName."
+            }
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-aws.png\n\n# Send Example GuardDuty Findings\n\nTrigger one of these HTTP Request Actions to send an example payload of a GuardDuty finding. Alternatively, use the 'Generate sample findings' button within GuardDuty to trigger sample findings.\n\n![sample findings](https://image-uploads.tines.com/aws_sample.png)",
+      "position": [
+        -525.0,
+        180.0
+      ],
+      "guid": "51c98b66869c09d356d55e8b97406c4c",
+      "width": null
+    },
+    {
+      "content": "# Handle All Guardduty Findings\n\nFor any generic Guardduty finding, send that finding to your generic alerting workflow.",
+      "position": [
+        720.0,
+        615.0
+      ],
+      "guid": "d0cba8153ad87f4652b6145d774639a8",
+      "width": null
+    },
+    {
+      "content": "# Guardduty Response Actions\n\nGuardduty provides a lot of context within findings allowing teams to remediate alerts quickly.\n\n1. EC2 C&C: Set a new security group that will isolate new connections to and from the host, locking attackers down from moving further in an environment.\n\n2. Credential Exfiltration: When an IAM role is used by an external IP, that can indicate a session has been compromised. Revoke the IAM session immediately and review credential usage.\n\n3. S3 Public Bucket Policy: When S3 buckets are made open to the world, quickly re-apply a restricted bucket policy and follow up for more information.",
+      "position": [
+        -525.0,
+        720.0
+      ],
+      "guid": "615737cef1345b1aa5723961efee8aac",
+      "width": null
+    },
+    {
+      "content": "# Validate SNS Subscription\n\nWhen configuring SNS for the first time, a verification challenge will be sent in order to prove ownership.",
+      "position": [
+        585.0,
+        345.0
+      ],
+      "guid": "225ec440738efa00e51b93691b306eee",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 0,
+      "receiver": 7
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 3,
+      "receiver": 8
+    },
+    {
+      "source": 4,
+      "receiver": 11
+    },
+    {
+      "source": 5,
+      "receiver": 12
+    },
+    {
+      "source": 6,
+      "receiver": 13
+    },
+    {
+      "source": 7,
+      "receiver": 3
+    },
+    {
+      "source": 8,
+      "receiver": 6
+    },
+    {
+      "source": 8,
+      "receiver": 5
+    },
+    {
+      "source": 8,
+      "receiver": 4
+    },
+    {
+      "source": 8,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 14
+    },
+    {
+      "source": 11,
+      "receiver": 15
+    },
+    {
+      "source": 12,
+      "receiver": 16
+    },
+    {
+      "source": 14,
+      "receiver": 9
+    }
+  ],
+  "diagram_layout": "{\"6207e5cba8f50bbfffd311b1a8bb99da\":[255,240],\"d274dc4c865dea6c7fe5fae033eb372b\":[360,435],\"f8c3bd5dbe486770f4331f708e0c606a\":[360,345],\"cbced9f66d13a8d3c77302f7c58989df\":[105,420],\"f7cecb837a13122cccc7349c5476400f\":[30,615],\"76445ccda8c5f50a193acc7c44e0e081\":[270,615],\"1ebb4f649d490cf2860bb0f153045a90\":[510,615],\"d8492ba224d22770972273f713aff6f2\":[105,345],\"6b33fac14632f3301a097bdd2f75ac5d\":[105,510],\"99e28b2ade59e2004c3475f6aea36d72\":[-210,825],\"fb7832d2bc71be9a1dcfd360bf0a6cd2\":[-210,615],\"b4135347c421cd38fc4b8fb51addf8b6\":[30,720],\"457d68a43f0ef23e566c14b45285ad70\":[270,720],\"7fc780c3bcc87a93d217f8c42fe1b255\":[510,720],\"69513a3ffaf28b20b80b513eab30615a\":[-210,720],\"90751d4abdd2d252239f6768a50d7fdd\":[30,825],\"7a18fc1d26e590c71f15686d2b12bfde\":[270,825],\"1a1c423381ab65ebddae0391488febc6\":[-195,255],\"26503fb3b879ddab807508f091a18183\":[-195,345],\"1a2e7e32db74e9ee55d9ac0414071fdd\":[-195,435]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "New story for tuckner329@gmail.com Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

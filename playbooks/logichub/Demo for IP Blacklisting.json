@@ -1,0 +1,687 @@
+{
+  "flows": [
+    {
+      "name": "Demo for IP Blacklisting",
+      "nodes": [
+        {
+          "id": "start-node-ad76c2a9-51ca-4b8e-b44e-366b23977bb3",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 224,
+          "y": 0,
+          "vertices": [],
+          "title": "Trigger",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "8fa30223-4304-46bf-8fad-7eb461fe5d96",
+          "name": "Sample_Login_Events",
+          "kind": "createData",
+          "lql": "customData(\"TableMode\", \"[{\\\"event_time_epoch\\\":1610469824546,\\\"event_category\\\":\\\"UserLoginSuccess\\\",\\\"username\\\":\\\"John\\\",\\\"Source_IP\\\":\\\"5.2.70.223\\\"},{\\\"event_time_epoch\\\":1610469824892,\\\"event_category\\\":\\\"UserLoginFailed\\\",\\\"username\\\":\\\"Sam\\\",\\\"Source_IP\\\":\\\"3.3.3.3\\\"}]\")",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Click on this node to see the sample data of logs generated when user tries login to a system",
+          "isExplainable": true,
+          "x": 0,
+          "y": 112,
+          "vertices": [],
+          "title": "Sample Login Events",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "213b2788-39f6-450a-b0a2-441dca210728",
+          "name": "blacklisted_ips",
+          "kind": "augmentation",
+          "lql": "loadList(\"Blacklisted IP\")",
+          "operator": "loadList",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Click on this node to see the list of blacklisted ip addresses",
+          "isExplainable": true,
+          "x": 308,
+          "y": 112,
+          "vertices": [],
+          "title": "List of Blacklisted IP addresses",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "loadList"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "CustomListContentKind",
+            "id": "loadList"
+          },
+          "categoryKind": "LogicHub",
+          "linkToTrigger": true,
+          "iconTitle": "Logichub: Load List",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "bc951557-5ed9-4f66-94b0-8051da15014a",
+          "name": "bad_login_check",
+          "kind": "augmentation",
+          "lql": "lookup(Sample_Login_Events, blacklisted_ips, \"[{\\\"inputColumn\\\":\\\"Source_IP\\\",\\\"isCaseSensitive\\\":false,\\\"lookupColumn\\\":\\\"IP\\\"}]\", \"[{\\\"as\\\":\\\"IP\\\",\\\"column\\\":\\\"IP\\\"}]\")",
+          "operator": "lookup",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Click on this node to see whether each login activity was from a blacklisted IP address or not",
+          "isExplainable": true,
+          "x": 154,
+          "y": 280,
+          "vertices": [],
+          "title": "Check if login is from a blacklisted IP",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "lookup"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "lookup"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Lookup",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "dc676771-2f7a-4cf5-bb3d-b94def6273f1",
+          "name": "Filter_Login_Events_from_Blacklisted_IPs",
+          "kind": "augmentation",
+          "lql": "`select * from bad_login_check where ( IP != 'John' )`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Click on this node to see just the login activity from the blacklisted IPs",
+          "isExplainable": true,
+          "x": 154,
+          "y": 448,
+          "vertices": [],
+          "title": "Filter Login Events from Blacklisted IPs",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "formType": "ConditionNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Filter",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "a6e57b7c-5e2e-41e4-8e29-ae46a683f8d9",
+          "name": "imap",
+          "kind": "task",
+          "lql": "runAction(Filter_Login_Events_from_Blacklisted_IPs, \"logichub.smtp\", 17, \"send_email\", {\"__lh_action_timeout_sec\": \"\", \"smtp_cc_email_column_name\": \"\", \"__lh_rows_to_process\": \"\", \"smtp_email_body_type\": \"\", \"smtp_body_column_name\": \"= concat( $.username ,  \\\" tried to login from a blacklisted IP: \\\",  $.IP)\", \"smtp_attachments_column_name\": \"\", \"smtp_bcc_email_column_name\": \"\", \"smtp_email_to_column_name\": \"= \\\"demo@logichub.com\\\"\", \"time_between_consecutive_requests_milliseconds\": \"\", \"smtp_subject_column_name\": \"\\\"Logichub Demo Email\\\"\", \"smtp_attachment_extension\": \"\", \"smtp_email_from_column_name\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "Click on this node to see emails sent when login activity from blacklisted ip addresses are found",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 154,
+          "y": 616,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "send_email",
+            "integrationId": "logichub.smtp",
+            "integrationInstanceId": 17,
+            "data": {
+              "__lh_multithread_count": "",
+              "smtp_cc_email_column_name": "",
+              "smtp_bcc_email_column_name": "",
+              "smtp_body_column_name": "= concat( $.username ,  \" tried to login from a blacklisted IP: \",  $.IP)",
+              "time_between_consecutive_requests_milliseconds": "",
+              "__lh_rows_to_process": "",
+              "smtp_email_from_column_name": "",
+              "smtp_attachment_extension": "",
+              "__lh_action_timeout_sec": "",
+              "smtp_attachments_column_name": "",
+              "smtp_email_body_type": "",
+              "smtp_subject_column_name": "\"Logichub Demo Email\"",
+              "smtp_email_to_column_name": "= \"demo@logichub.com\""
+            }
+          },
+          "title": "Send mail when login is from blacklisted IP",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.smtp",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/smtp1-logo.png",
+            "name": "SMTP",
+            "actionId": "send_email",
+            "actionName": "Send Email"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.smtp/send_email"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: SMTP - Send Email",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1007",
+      "listNames": [
+        "Blacklisted IP"
+      ],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "CB Testing - Logichub Demo",
+      "descriptor": {
+        "id": "logichub.smtp",
+        "name": "SMTP",
+        "description": "Simple Mail Transfer Protocol (SMTP) is a standard communication protocol for sending email messages on business networks and the Internet.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/smtp1-logo.png",
+        "documentationSlug": "smtp",
+        "categories": [
+          "messaging"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m88.21"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "SMTP Server and Account Authentication",
+              "description": "Enter authentication information for your SMTP connection",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_server_name",
+                  "description": "Server name for your SMTP connection",
+                  "label": "SMTP Server Name",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_server_port",
+                  "description": "Server port for your SMTP connection",
+                  "label": "SMTP Server Port",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_authentication_type",
+                  "description": "Authentication type for your SMTP connection",
+                  "label": "Authentication type",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "basic",
+                      "label": "Basic"
+                    },
+                    {
+                      "value": "ntlm",
+                      "label": "NTLM"
+                    },
+                    {
+                      "value": "none",
+                      "label": "None"
+                    }
+                  ],
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_use_encryption",
+                  "description": "Whether or not to use encryption",
+                  "label": "Use encryption",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "Yes",
+                      "label": "Yes"
+                    },
+                    {
+                      "value": "No",
+                      "label": "No"
+                    }
+                  ],
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_email_address",
+                  "description": "Email Address to send from",
+                  "label": "Email Address",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false,
+                  "isCredential": true
+                },
+                {
+                  "id": "smtp_username",
+                  "description": "Username if different from Email Address",
+                  "label": "Username",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_password",
+                  "description": "Password to log in with. Leave empty if using None Authentication type.",
+                  "label": "Password",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "optional": true,
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python -m src.smtp.instantiate"
+          }
+        },
+        "actions": [
+          {
+            "id": "send_email",
+            "name": "Send Email",
+            "description": "Sends an e-mail to a recipient using SMTP",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create and Send Email",
+                  "description": "Create and send an email using column names from the parent table",
+                  "inputs": [
+                    {
+                      "id": "smtp_subject_column_name",
+                      "description": "A column containing the subject title for e-mails",
+                      "label": "Subject Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_body_column_name",
+                      "description": "A column containing the body for outbound e-mails",
+                      "label": "Body Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_to_column_name",
+                      "description": "A column containing the e-mail addresses to send an e-mail to",
+                      "label": "Column containing the e-mail address for recipients",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_from_column_name",
+                      "description": "A column containing the e-mail addresses as sender to send an e-mail to",
+                      "label": "Column containing the from e-mail address",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_body_type",
+                      "description": "Select type of email body (Default is Plain Text)",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "plaintext",
+                          "label": "Plain Text"
+                        },
+                        {
+                          "value": "htmlbody",
+                          "label": "HTML"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_cc_email_column_name",
+                      "description": "Column containing e-mail addresses to attach as cc on an outbound e-mail",
+                      "label": "CC on outbound e-mail Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_bcc_email_column_name",
+                      "description": "Column containing e-mail addresses to attach as bcc on an outbound e-mail",
+                      "label": "BCC on outbound e-mail Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_attachments_column_name",
+                      "description": "Column containing one or more file IDs to attachment. (Can be a comma separated string of lhub_file_id values or a json dict in the format of {\"<lhub_id>\":\"<file_name>\"})",
+                      "label": "File Attachment",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_attachment_extension",
+                      "description": "If no file name is provided, add this extension to attached files.",
+                      "label": "Attachment File Extension",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.smtp.action_send-email_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.smtp.action_send-email_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          },
+          {
+            "id": "send_email_empty_table",
+            "name": "Send static email, If table is empty",
+            "description": "Sends an e-mail to a recipient with static input if table is empty",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "smtp_subject",
+                      "description": "Subject title for e-mails",
+                      "label": "Subject",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_body",
+                      "description": "Body for outbound e-mails",
+                      "label": "Body",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_to",
+                      "description": "E-mail addresses to send an e-mail to",
+                      "label": "E-mail address for recipients",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_from",
+                      "description": "E-mail addresses as sender to send an e-mail to",
+                      "label": "From E-mail address",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_body_type",
+                      "description": "Select type of email body (Default is Plain Text)",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "plaintext",
+                          "label": "Plain Text"
+                        },
+                        {
+                          "value": "htmlbody",
+                          "label": "HTML"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_cc_email",
+                      "description": "E-mail addresses to attach as cc on an outbound e-mail",
+                      "label": "CC on outbound e-mail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_bcc_email",
+                      "description": "E-mail addresses to attach as bcc on an outbound e-mail",
+                      "label": "BCC on outbound e-mail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.smtp.action_send-email-empty-table_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.smtp.action_send-email-empty-table_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "send_emails"
+            ]
+          }
+        ],
+        "version": "2.1.11",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-12-16T13:39:28Z",
+        "failedAttempt": {
+          "modified": "2022-08-03T12:36:03Z",
+          "errorMessage": "Failed to update connection: CB Testing - Logichub Demo from SMTP:2.1.11 to SMTP:2.1.12 added on 2022-08-03T12:36:03ZDetails: Authentication failed: (535, '5.7.8 Username and Password not accepted. Learn more at\\n5.7.8  https://support.google.com/mail/?p=BadCredentials p4-20020a17090a284400b001fd81970d1fsm184623pjf.47 - gsmtp')"
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "false",
+        "__lh_table_key_value": "",
+        "smtp_authentication_type": "basic",
+        "__lh_ssl_verify": "True",
+        "smtp_email_address": "logichub.automation.demo@gmail.com",
+        "smtp_server_port": "587",
+        "smtp_username": "logichub.automation.demo@gmail.com",
+        "smtp_password": "****restricted****",
+        "smtp_use_encryption": "Yes",
+        "smtp_server_name": "smtp.gmail.com",
+        "__lh_label": "CB Testing - Logichub Demo"
+      },
+      "id": 17,
+      "isDefault": false
+    }
+  ],
+  "customLists": [
+    {
+      "id": "3",
+      "name": "Blacklisted IP",
+      "overflowBehavior": "DeleteOldest",
+      "deduplicate": true,
+      "table": "list_data_jUWd90lAVE",
+      "schema": {
+        "columns": [
+          {
+            "name": "IP",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          }
+        ]
+      }
+    }
+  ],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

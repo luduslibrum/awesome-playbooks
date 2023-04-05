@@ -1,0 +1,683 @@
+{
+  "schema_version": 4,
+  "name": "Unsubscribe users from an email distribution list",
+  "description": "This Story unsubscribes a user from an email distribution list in Tines. The distribution list is stored as a Tines Resource.\n\ntags: Email, Beginner,\nicons: ❌, tines, 📧\nvisibility: public",
+  "guid": "ba4e3564a03ef19b94d7155e948de9e7",
+  "slug": "unsubscribe_users_from_an_email_distribution_list",
+  "exported_at": "2022-07-11T17:45:04Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Distribution List",
+      "disabled": false,
+      "guid": "c65f5938f1b2c80c9150681b4cc16f32",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources/<<Resource_ID>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": [
+        {
+          "cron": "0 8 */1 * *",
+          "timezone": "America/New_York"
+        }
+      ]
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Email Addresses Using Regex",
+      "disabled": false,
+      "guid": "bd147f74401474e32d0f664b6b74140c",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_distribution_list.body.value",
+            "regexp": "\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}\\b",
+            "to": "emails"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Action",
+      "disabled": false,
+      "guid": "632e0c733b0f6041468c8d9fc8a56d06",
+      "options": {
+        "recipients": [
+          "<<explode_emails.individual_email>>"
+        ],
+        "subject": "Example email from Tines",
+        "body": "This email can be sent on a schedule to a distribution list.\n\nClick here to unsubscribe. https://silent-flower-1508.tines.com/forms/1adc8d175f92f7c00327580ded618a2f?email=<<explode_emails.individual_email>>&distribution_list=<<get_distribution_list.body.id>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Emails",
+      "disabled": false,
+      "guid": "130c72ec0f63fa6d29a3f144c792bdae",
+      "options": {
+        "mode": "explode",
+        "path": "=extract_email_addresses_using_regex.emails",
+        "to": "individual_email"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Unsubscribe Email",
+      "disabled": false,
+      "guid": "ce87559aff9d78597a4e2266a500cbde",
+      "options": {
+        "path": "9b23df158502b2a6db8aa810fb2fedfa",
+        "secret": "aa2d455eedcf7f320f7b84893e121109",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Distribution List",
+      "disabled": false,
+      "guid": "5e3a77b0edf69d5d8ff55cf0fd2e1acc",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources/<<receive_unsubscribe_email.body.distribution_list>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Email Addresses Using Regex",
+      "disabled": false,
+      "guid": "63b320822677cf2f13a348d875312266",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_distribution_list.body.value",
+            "regexp": "\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}\\b",
+            "to": "emails"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Emails",
+      "disabled": false,
+      "guid": "bec3752d065f227f1fbb2ea63c93a66d",
+      "options": {
+        "mode": "explode",
+        "path": "=extract_email_addresses_using_regex.emails",
+        "to": "individual_email"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger Action",
+      "disabled": false,
+      "guid": "a149367855f8f1297b4e4dc64a22a755",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "<<receive_unsubscribe_email.body.email>>",
+            "path": "<<explode_emails.individual_email>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode New Distribution List",
+      "disabled": false,
+      "guid": "f26de2f764ac42b48a29b07b6ada3357",
+      "options": {
+        "mode": "implode",
+        "item_path": "=explode_emails.individual_email;",
+        "guid_path": "=explode_emails.guid",
+        "size_path": "=LIQUID_SIZE(extract_email_addresses_using_regex.emails, \"dot_notation\") | MINUS(%, 1)"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Distribution List",
+      "disabled": false,
+      "guid": "bfa94af48cc90265aba43d929fdd42df",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources/<<receive_unsubscribe_email.body.distribution_list>>",
+        "method": "put",
+        "content_type": "json",
+        "payload": {
+          "name": "<<get_distribution_list.body.name>>",
+          "value": "<<implode_new_distribution_list>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Updated Email Addresses Using Regex",
+      "disabled": false,
+      "guid": "f09f5d6447129a84dbc580d0d1786600",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_new_distribution_list.body.value",
+            "regexp": "\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}\\b",
+            "to": "emails"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get New Distribution List",
+      "disabled": false,
+      "guid": "be3e75b25a9915252adf8b2101651a2d",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources/<<receive_unsubscribe_email.body.distribution_list>>",
+        "method": "get",
+        "headers": {
+          "content-type": "application/json",
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Action",
+      "disabled": false,
+      "guid": "6beca1a3f721c6ed44867c213680c2b7",
+      "options": {
+        "recipients": [
+          "<<Admin>>"
+        ],
+        "subject": "User unsubscribed from distribution list <<get_distribution_list.body.name>>",
+        "body": "<<receive_unsubscribe_email.body.email>> unsubscribed from distribution list \"<<get_distribution_list.body.name>>\" from IP Address <<extract_external_ip.IP>>. <br/><br/>\n\nThe distribution list \"<<get_distribution_list.body.name>>\" now has the following members:\n<<NEAT_JSON(extract_updated_email_addresses_using_regex.emails)>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract IP Addresses Using Regex",
+      "disabled": false,
+      "guid": "7f67c4202904465d13be83f10e277c69",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=receive_unsubscribe_email.headers.x_forwarded_for",
+            "regexp": "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b",
+            "to": "ips"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract External IP",
+      "disabled": false,
+      "guid": "e9a84e1baa27afd42d9ab57ef34c56b5",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "IP": "<<extract_ip_addresses_using_regex.ips[0]>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get a Global Resource in Tines",
+      "disabled": false,
+      "guid": "9285a5d21cee163688e138a694cf988a",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources/",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "Identify the Global Resource in Tines with the proper Distribution List ID.  There are 2 ways to obtain the ID of the targeted Distribution List:\n1. Use the Tines API using the \"Get a Global Resource in Tines\" action. The ID will be returned in the API Response.\n2. Use the Tines UI to click on the targeted Distribution List and obtain the ID from the last parameter in the URL.   \n\nSubstitute the obtained ID for the variable labeled \"Resource_ID\" at the end of the URL string in the action titled, \"Get Distribution List\".  This action will fetch the desired Distribution List and run on a defined schedule.  The default is once a day at 8AM.",
+      "position": [
+        -60.0,
+        -105.0
+      ],
+      "guid": "0530a097d12f53e5912c7b18c27ce0ca",
+      "width": null
+    },
+    {
+      "content": "Extract email addresses from the Distribution List",
+      "position": [
+        -60.0,
+        240.0
+      ],
+      "guid": "7c700b1e4a2b01e7eb322e0e8b491ab6",
+      "width": null
+    },
+    {
+      "content": "Explode the email addresses so an individual email gets sent for each email in the Distribution List.",
+      "position": [
+        -60.0,
+        330.0
+      ],
+      "guid": "b0a6c89ce02a8976a4bde3aeb38bd61c",
+      "width": null
+    },
+    {
+      "content": "Send an email out to each email in the Distribution List.  The email has a link to unsubscribe from the Distribution List.  The method for unsubscribing is an attached [form](https://demo.tines.com/forms/5c6a5c753e582d5a287311a17b604ef1) that will be prefilled with the email address to be removed and the ID of the Distribution List.\n\nThis form can be made private by toggling the \"Public\" Radio button on the form.\n\nWhen the user clicks the unsubscribe link from their email, the form will be pre-populated as stated above.  After submitting the form, events will be emitted into the webhook named, \"Receive Unsubscribe Email\"",
+      "position": [
+        -60.0,
+        435.0
+      ],
+      "guid": "8afea71f228750d1d4a1e60c7c5909f7",
+      "width": null
+    },
+    {
+      "content": "Receive email address and Distribution List ID from submitted [form](https://demo.tines.com/forms/5c6a5c753e582d5a287311a17b604ef1).",
+      "position": [
+        510.0,
+        -15.0
+      ],
+      "guid": "b0e383d14eaa3f8784b9f7e00abe300d",
+      "width": null
+    },
+    {
+      "content": "Extract the IP Address from the header",
+      "position": [
+        510.0,
+        75.0
+      ],
+      "guid": "3ad1a856542bd177568cb01d115f2882",
+      "width": null
+    },
+    {
+      "content": "Extract the External IP Address which is the first one in the array",
+      "position": [
+        510.0,
+        165.0
+      ],
+      "guid": "d9299c6bdabacb665431bbf0803827c2",
+      "width": null
+    },
+    {
+      "content": "Use the Tines API to get the Distribution List",
+      "position": [
+        510.0,
+        270.0
+      ],
+      "guid": "b2fb1f7be81d1a009053ae38d44c79da",
+      "width": null
+    },
+    {
+      "content": "Extract the email addresses from the Distribution List",
+      "position": [
+        510.0,
+        375.0
+      ],
+      "guid": "7511601bef181b9638c336cd77ebc460",
+      "width": null
+    },
+    {
+      "content": "Explode the returned email addresses",
+      "position": [
+        510.0,
+        495.0
+      ],
+      "guid": "3bf2de5d69dda46b2d42834ea7f3114b",
+      "width": null
+    },
+    {
+      "content": "Check to see if the exploded email address matches the email address that should be unsubscribed and only emit if it does not match",
+      "position": [
+        519.0,
+        581.0
+      ],
+      "guid": "c5f7ed6a714e50e718a67f6c4f3da637",
+      "width": null
+    },
+    {
+      "content": "Create the new Distribution List without the email to be unsubscribed. Add a semi-colon after each email address for proper formatting",
+      "position": [
+        525.0,
+        705.0
+      ],
+      "guid": "5b3cd847f2a5b0929a0c89060f2c0602",
+      "width": null
+    },
+    {
+      "content": "Update the Tines Resource with the new Distribution List",
+      "position": [
+        525.0,
+        855.0
+      ],
+      "guid": "115cc9db27fe9891ee6bd48fddb7d0f9",
+      "width": null
+    },
+    {
+      "content": "Get the updated Distribution List from Tines",
+      "position": [
+        525.0,
+        945.0
+      ],
+      "guid": "1f5fee40c799e60da780039b414095a4",
+      "width": null
+    },
+    {
+      "content": "Extract the email addresses from the Distribution List",
+      "position": [
+        525.0,
+        1050.0
+      ],
+      "guid": "ec83cc3e75be96a0f616931937013b90",
+      "width": null
+    },
+    {
+      "content": "Send an email to an admin highlighting the email address that is unsubscribed, the IP Address they unsubscribed from and the current members of the Distribution List.",
+      "position": [
+        525.0,
+        1155.0
+      ],
+      "guid": "eec1b40d052a8b7a56bfc62867118089",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-tines.png\n\nA Story to leverage Tines to unsubscribe users from an email based Distribution List.  The Distribution List is stored as a Tines Resource.  You will need to identify the Tines Resource with the targeted Distribution List.  An automated email is sent every day at 8:00 AM to the members of the Distribution List.  The email links to a [form](https://demo.tines.com/forms/5c6a5c753e582d5a287311a17b604ef1) that users can click on to unsubscribe from the Distribution List.  The form will be pre-populated with the Distribution List ID and user email allowing the user to simply submit.  Once the form is submitted, the email address will be removed from the Distribution List.  A new email will be sent to an admin specifying the user that unsubscribed and the IP Address that they unsubscribed from.\n\nCreating a Distribution List and adding members(emails) to a Distribution List within Tines can be automated using a [story titled, \"Email Distribution List\"](https://demo.tines.com/stories/46287/diagram) \n\n\nTools:\nTines\n\nCredentials:\nInformation on how to create API credentials for Tines can be found [here](https://hub.tines.com/api/authentication).",
+      "position": [
+        -375.0,
+        -180.0
+      ],
+      "guid": "233e79a7a90eac62bcce5fc8949a155e",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    },
+    {
+      "source": 4,
+      "receiver": 14
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 12
+    },
+    {
+      "source": 11,
+      "receiver": 13
+    },
+    {
+      "source": 12,
+      "receiver": 11
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 15,
+      "receiver": 5
+    }
+  ],
+  "diagram_layout": "{\"c65f5938f1b2c80c9150681b4cc16f32\":[225,60],\"bd147f74401474e32d0f664b6b74140c\":[225,240],\"632e0c733b0f6041468c8d9fc8a56d06\":[225,525],\"130c72ec0f63fa6d29a3f144c792bdae\":[225,345],\"ce87559aff9d78597a4e2266a500cbde\":[825,-15],\"5e3a77b0edf69d5d8ff55cf0fd2e1acc\":[825,270],\"63b320822677cf2f13a348d875312266\":[825,375],\"bec3752d065f227f1fbb2ea63c93a66d\":[825,495],\"a149367855f8f1297b4e4dc64a22a755\":[825,600],\"f26de2f764ac42b48a29b07b6ada3357\":[825,720],\"bfa94af48cc90265aba43d929fdd42df\":[825,870],\"f09f5d6447129a84dbc580d0d1786600\":[825,1050],\"be3e75b25a9915252adf8b2101651a2d\":[825,945],\"6beca1a3f721c6ed44867c213680c2b7\":[825,1170],\"7f67c4202904465d13be83f10e277c69\":[825,75],\"e9a84e1baa27afd42d9ab57ef34c56b5\":[825,180],\"9285a5d21cee163688e138a694cf988a\":[225,-30]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Unsubscribe users from an email distribution list Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Email",
+        "description": "",
+        "required": true,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Distribution List",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "world",
+    "agent_guid": "ce87559aff9d78597a4e2266a500cbde",
+    "success_message": "Thank you for your submission"
+  }
+}

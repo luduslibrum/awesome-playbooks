@@ -1,0 +1,249 @@
+{
+  "name" : "Query Exabeam Data Lake",
+  "type" : "Standard",
+  "panX" : 20.0,
+  "panY" : 273.0,
+  "logLevel" : "WARN",
+  "description" : "# Query Exabeam Data Lake\n## Summary\nThis Playbook is designed to allow the user to click on a UserAction Trigger button on the details page of an Address or Host IOC and query Exabeam's Data Lake for matched events.\n\n*NOTE*: To use this Playbook, you must have the *Search Exabeam Data Lake* app already installed. Please visit this page to download it:\n[https://github.com/ThreatConnect-Inc/threatconnect-playbooks/tree/master/apps/TCPB_-_Search_Exabeam_Data_Lake](https://github.com/ThreatConnect-Inc/threatconnect-playbooks/tree/master/apps/TCPB_-_Search_Exabeam_Data_Lake) ",
+  "version" : "1.34",
+  "comment" : "Auto-Saved on Fri May 10 16:43:04 UTC 2019",
+  "jobList" : [ {
+    "id" : 33027,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "At Least 1 Hit?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:33030:total!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "greater than or equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "1"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 970.0,
+    "locationTop" : 10.0
+  }, {
+    "id" : 33028,
+    "appCatalogItem" : {
+      "programName" : "Add Attribute",
+      "displayName" : "Create ThreatConnect Attribute",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Store No Results Found",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "indicator_name"
+      },
+      "value" : "#Trigger:3581:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_type"
+      },
+      "value" : "Additional Analysis and Context"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_content"
+      },
+      "value" : "No results found in Exabeam"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "update"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1130.0,
+    "locationTop" : 90.0
+  }, {
+    "id" : 33029,
+    "appCatalogItem" : {
+      "programName" : "Add Attribute",
+      "displayName" : "Create ThreatConnect Attribute",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Store Results",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "indicator_name"
+      },
+      "value" : "#Trigger:3581:trg.action.entity!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "update"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_content"
+      },
+      "value" : "Total number of results found #App:33030:total!String  \n\nRaw events:\n\n#App:33030:json-out!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attribute_type"
+      },
+      "value" : "Additional Analysis and Context"
+    } ],
+    "locationLeft" : 1130.0,
+    "locationTop" : -30.0
+  }, {
+    "id" : 33030,
+    "appCatalogItem" : {
+      "programName" : "TCAB - 09810652-488b-4d3a-a621-4c6e46f41c6d v1",
+      "displayName" : "Search Exabeam Data Lake",
+      "programVersion" : "1.0.1"
+    },
+    "name" : "Exabeam Search",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "query"
+      },
+      "value" : "{\"_source\": [\"Network\", \"src_ip\"],\"size\": 300,\"query\" : {\"bool\": {\"must\": [{\"match\": { \"exa_category\": \"Network\"}},{\"match\": { \"src_ip\": \"#Trigger:3581:trg.action.item!String\"}}]}}}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "password"
+      },
+      "value" : "#{ORGANIZATION:368}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "hostname"
+      },
+      "value" : "exabeam"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "port"
+      },
+      "value" : "8484"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "username"
+      },
+      "value" : "${ORGANIZATION:TEXT:Exabeam Data Lake Username}"
+    } ],
+    "locationLeft" : 710.0,
+    "locationTop" : 10.0
+  }, {
+    "id" : 33031,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Results",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"result\",\"value\":\"#App:33032:noResult!String #App:33030:total!String\"}]"
+    } ],
+    "locationLeft" : 1580.0,
+    "locationTop" : -30.0
+  }, {
+    "id" : 33032,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set Result Count",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"noResult\",\"value\":\"0\"}]"
+    } ],
+    "locationLeft" : 1340.0,
+    "locationTop" : 90.0
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 33027,
+    "targetJobId" : 33028
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 33027,
+    "targetJobId" : 33029
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 33030,
+    "sourceTriggerId" : 3581
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 33030,
+    "targetJobId" : 33027
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 33029,
+    "targetJobId" : 33031
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 33031,
+    "targetTriggerId" : 3581
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 33028,
+    "targetJobId" : 33032
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 33032,
+    "targetJobId" : 33031
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 3581,
+    "name" : "Query Exabeam Data Lake",
+    "type" : "UserAction",
+    "eventType" : "External",
+    "locationLeft" : 480.0,
+    "locationTop" : -170.0,
+    "httpResponseHeader" : "[]",
+    "httpResponseBody" : "<div style=\"margin: 5px; color: #546e7a !important;\"><h4>Exabeam Results</h4><hr/><br/>\n<table>\n<tr><td><b>#App:33031:result!String</b>  events have been found in the last 7 days contain this indicator.</td></tr><tr>\n</table>\n</div>",
+    "anyOrg" : true,
+    "userActionTypes" : "Address,Host",
+    "renderBodyAsTip" : true,
+    "playbookTriggerFilterList" : [ ],
+    "outputVariables" : "[{\"name\":\"trg.action.item\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"trg.action.entity\",\"type\":\"TCEntity\",\"loopVariables\":false}]",
+    "cacheMinutes" : 120,
+    "cacheParams" : "{\"includeMethod\":false,\"includeBody\":false,\"queryParams\":[],\"headerNames\":[]}"
+  } ],
+  "playbookLabels" : [ {
+    "playbookLabelType" : {
+      "label" : "Exabeam"
+    }
+  }, {
+    "playbookLabelType" : {
+      "label" : "Data Lake"
+    }
+  }, {
+    "playbookLabelType" : {
+      "label" : "SIEM"
+    }
+  } ],
+  "exportablePipes" : [ ]
+}

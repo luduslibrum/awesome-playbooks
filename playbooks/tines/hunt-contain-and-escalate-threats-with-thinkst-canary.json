@@ -1,0 +1,1038 @@
+{
+  "schema_version": 4,
+  "name": "Hunt, contain, and escalate threats with Thinkst Canary",
+  "description": "Use this Story to interrogate alerts, communicate with your team, and take whatever action is needed, whether it means digging a little deeper or initiating containment or escalation.\n\ntags: Respond, ThinkstCanary, Threats, Contain, Escalate, Hunt, Advanced,\nicons: thinkst-canary, 🧐, 📈\nvisibility: public",
+  "guid": "687e74efcb30549fe650c95304d978ae",
+  "slug": "hunt_contain_and_escalate_threats_with_thinkst_canary",
+  "exported_at": "2022-07-11T17:30:30Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Acknowledge Incident in Canary Tools",
+      "disabled": false,
+      "guid": "c058f928e899b1dc86af5799ee11c824",
+      "options": {
+        "url": "https://<<RESOURCE.canary_tools_tenant_id>>.canary.tools/api/v1/incident/acknowledge",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "auth_token": "<<CREDENTIAL.canary_tools_api_key>>",
+          "incident": "<<get_canary_incident.body.incident.incident_key>>"
+        },
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Jira Issue Created",
+      "disabled": false,
+      "guid": "21804d577f2b6feadfea84add7bbe74a",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "201",
+            "path": "<<create_x_priority_secops_issue_in_jira_service_desk.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger on Highest Priority",
+      "disabled": false,
+      "guid": "dcb449ce2a41bb64fc0d0073f4093118",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Highest",
+            "path": "<<set_priority.priority>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Details",
+      "disabled": false,
+      "guid": "deeb2a8a3ebf33ca0fa775b37c6a9910",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "sensor_type": "<<get_canarybird_details.body.device.sensor>>",
+          "name": "<<get_canarybird_details.body.device.name>>",
+          "note": "<<get_canarybird_details.body.device.note>>",
+          "id": "<<get_canarybird_details.body.device.device_id>>",
+          "description": "<<get_canarybird_details.body.device.description>>",
+          "flock": "<<get_canarybird_details.body.device.flock_id>>",
+          "device_ip": "<<get_canarybird_details.body.device.device_ip>>",
+          "public_ip": "<<get_canarybird_details.body.device.public_ip>>",
+          "vpc_id": "<<get_canarybird_details.body.device.vpc_id>>",
+          "location": "<<get_canarybird_details.body.device.location>>",
+          "url_mgmt": "https://<<RESOURCE.canary_tools_tenant_id>>.canary.tools"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Priority",
+      "disabled": false,
+      "guid": "0eb3f7d29508f301798bf7d8cfcb8d9b",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "priority": "Medium"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Priority",
+      "disabled": false,
+      "guid": "83b3985294026005385f3048ed1b09cf",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "priority": "Highest"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Priority",
+      "disabled": false,
+      "guid": "c714123da41761da8c7a553762d72461",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "priority": "Low"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "STS Initiate Escalation",
+      "disabled": false,
+      "guid": "b3042f0b5c888ce41413a79dadbce75c",
+      "options": {
+        "story": "<<STORY.sts_initiate_escalation>>",
+        "payload": {
+          "key": "value",
+          "something": "the event contained <<somekey>>"
+        },
+        "send_payload_as_body": "false"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send SecOps an Interactive Slack Message",
+      "disabled": false,
+      "guid": "2e61c073677c71e74bf05e357740b56d",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<channel_id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Canary Alert Detected*\n <<get_canary_incident.body.incident.description>> from type: <%if get_canary_incident.body.incident.sensor = \"thinkstcanary\"%>_Canary Physical/Virtual_<%else%>_Canary Token_<%endif%>\n\n"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "<%if extract_details.sensor_type = \"dns\"%>\n*Details*\n Target record: <<get_canary_incident.body.incident.dst_host>> from DNS server ( <<search_src_ip_in_auth0_signals_api.body.fullip.geo.country>>, <<search_src_ip_in_auth0_signals_api.body.fullip.geo.country_names.en>>: <<get_canary_incident.body.incident.src_host>>, <<get_canary_incident.body.incident.src_host_reverse>> )\n\n<%else%> \n*Details*\n Targeting: <<get_canary_incident.body.incident.dst_host>> from source ( <<search_src_ip_in_auth0_signals_api.body.fullip.geo.country>>, <<search_src_ip_in_auth0_signals_api.body.fullip.geo.country_names.en>>: <<get_canary_incident.body.incident.src_host>>, <<get_canary_incident.body.incident.src_host_reverse>> )\n\n<%endif%>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Initiate Action*\n Please take action to initiate automated procedures.\n"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Jira <<create_x_priority_secops_issue_in_jira_service_desk.body.key>>"
+                      },
+                      "url": "https://<<RESOURCE.jirahost>>/browse/<<create_x_priority_secops_issue_in_jira_service_desk.body.key>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Threat Hunt 🔬"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"hunt\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Escalate ⇧"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"escalate\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Contain 🚧"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"contain\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "text": "High fidelity breach detection has observed highly suspicious behaviour (i.e. an IoC/IoA) that requires a response."
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger For Escalate",
+      "disabled": false,
+      "guid": "073a4593cf39f3738b2401bd800a5372",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "escalate",
+            "path": "<<send_secops_an_interactive_slack_message.prompt>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger For Contain",
+      "disabled": false,
+      "guid": "6e1fe6305a160d47f88a7e8b240e6004",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "contain",
+            "path": "<<send_secops_an_interactive_slack_message.prompt>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger For Hunt",
+      "disabled": false,
+      "guid": "ac6fe74fae13cf381d476099a722c291",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "hunt",
+            "path": "<<send_secops_an_interactive_slack_message.prompt>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "STS Initiate Threat Hunting",
+      "disabled": false,
+      "guid": "adeba75b8b290438af7f08868c981e06",
+      "options": {
+        "story": "<<STORY.sts_initiate_threat_hunting>>",
+        "payload": {
+          "key": "value",
+          "something": "the event contained <<somekey>>"
+        },
+        "send_payload_as_body": "false"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "STS Initiate Containment",
+      "disabled": false,
+      "guid": "5ada9d0188dd0d4c20f02f21a244bf6f",
+      "options": {
+        "story": "<<STORY.sts_initiate_containment>>",
+        "payload": {
+          "key": "value",
+          "something": "the event contained <<somekey>>"
+        },
+        "send_payload_as_body": "false"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger If CanaryToken",
+      "disabled": false,
+      "guid": "b05bd82b4123d6eff97f7d25c46edd1a",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "canarytoken",
+            "path": "<<get_canary_incident.body.incident.sensor>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if AWS Creds or Other HoneyToken Types",
+      "disabled": false,
+      "guid": "dc996a3e5e50de8e8a85c2d20d6fd717",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "DNS",
+            "path": "<<get_canary_incident.body.incident.name>>"
+          },
+          {
+            "type": "!regex",
+            "value": "PDF",
+            "path": "<<get_canary_incident.body.incident.name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create a PX Incident in PagerDuty",
+      "disabled": false,
+      "guid": "43f08e40197681e05fc11ce04cbaa64f",
+      "options": {
+        "url": "https://<<RESOURCE.pagerduty_api>>/incidents",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "incident": {
+            "type": "incident",
+            "title": "<<search_src_ip_in_auth0_signals_api.body.fullip.geo.country>> : <<get_canary_incident.body.incident.description>>",
+            "service": {
+              "id": "<<RESOURCE.pagerduty_serviceid>>",
+              "type": "service_reference"
+            },
+            "urgency": "high",
+            "body": {
+              "details": "*Incident*\n Description: <<get_canary_incident.body.incident.description>> \n Timestamp: <<get_canary_incident.body.incident.created_printable>> \n DST Host: <<get_canary_incident.body.incident.dst_host>>\n DST Port: <<get_canary_incident.body.incident.dst_port>>\n SRC Host: <<get_canary_incident.body.incident.src_host>>\n SRC Port: <<get_canary_incident.body.incident.src_port>>\n SRC Country: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.country>>\n SRC Timezone: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.time_zone>>\n SRC ASN: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.as.asn>>\n SRC AS Registry: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.as.asn_registry>>\n SRC AS Name: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.as.name>>\n\n*Canary Device*\n Sensor Type: <<extract_details.sensor_type>> \n Name: <<extract_details.name>>\n Note: <<extract_details.note>>\n ID: <<extract_details.id>>\n Description : <<extract_details.description>>\n Flock : <<extract_details.flock>>\n \u0010Device IP: <<extract_details.device_ip>>\n Public IP: <<extract_details.public_ip>>\n VPC ID: <<extract_details.vpc_id>>\n Location: <<extract_details.location>>\n URL/Mgt : <<extract_details.url_mgmt>>\n\n",
+              "type": "incident_body"
+            },
+            "priority": {
+              "id": "<%if set_priority.priority = \"Highest\"%>P3L30UX<%elseif set_priority.priority = \"Medium\"%>P0OEMF7<%elseif set_priority.priority = \"Low\"%>PJ8102R<%else%>PFYCMQ1<%endif%>",
+              "type": "priority_reference"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<RESOURCE.pagerdutyemail>>",
+          "Accept": "application/vnd.pagerduty+json;version=2"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create X Priority SecOps Issue in Jira Service Desk",
+      "disabled": false,
+      "guid": "8b579ae204b0b88ac2b887391a39e073",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "EN"
+            },
+            "issuetype": {
+              "name": "Incident"
+            },
+            "priority": {
+              "name": "<<set_priority.priority>>"
+            },
+            "summary": "CanaryTools : <<search_src_ip_in_auth0_signals_api.body.fullip.geo.country>> : <<get_canary_incident.body.incident.description>>",
+            "description": "*Incident*\n Description: <<get_canary_incident.body.incident.description>> \n Timestamp: <<get_canary_incident.body.incident.created_printable>> \n DST Host: <<get_canary_incident.body.incident.dst_host>>\n DST Port: <<get_canary_incident.body.incident.dst_port>>\n SRC Host: <<get_canary_incident.body.incident.src_host>>\n SRC Port: <<get_canary_incident.body.incident.src_port>>\n SRC Country: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.country>>\n SRC Timezone: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.time_zone>>\n SRC ASN: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.as.asn>>\n SRC AS Registry: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.as.asn_registry>>\n SRC AS Name: <<search_src_ip_in_auth0_signals_api.body.fullip.geo.as.name>>\n\n*Canary Device*\n Sensor Type: <<extract_details.sensor_type>> \n Name: <<extract_details.name>>\n Note: <<extract_details.note>>\n ID: <<extract_details.id>>\n Description : <<extract_details.description>>\n Flock : <<extract_details.flock>>\n \u0010Device IP: <<extract_details.device_ip>>\n Public IP: <<extract_details.public_ip>>\n VPC ID: <<extract_details.vpc_id>>\n Location: <<extract_details.location>>\n URL/Mgt : <<extract_details.url_mgmt>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedup on SRC / DST HOST PORT",
+      "disabled": false,
+      "guid": "3450d9ab407858cb394144f35d040a71",
+      "options": {
+        "mode": "deduplicate",
+        "period": "86400",
+        "path": "<<get_canary_incident.body.incident.dst_host>><<get_canary_incident.body.incident.dst_port>><<get_canary_incident.body.incident.src_host>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Details",
+      "disabled": false,
+      "guid": "244f1edc0f9cd47d9c9426d2c8ebdf6e",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "sensor_type": "<<get_canarytoken_details.body.canarytokens.first.kind>>",
+          "name": "<<get_canarytoken_details.body.canarytokens.first.canarytoken>>",
+          "note": "<<get_canarytoken_details.body.canarytokens.first.memo>>",
+          "id": "<<get_canarytoken_details.body.canarytokens.first.node_id>>",
+          "description": "<<get_canarytoken_details.body.canarytokens.first.hostname>>",
+          "flock": "<<get_canarytoken_details.body.canarytokens.first.flock_id>>",
+          "device_ip": "Not applicable.",
+          "public_ip": "Not applicable",
+          "vpc_id": "Not applicable.",
+          "location": "See Note (memo).",
+          "url_mgmt": "<<REPLACE(get_canarytoken_details.body.canarytokens.first.url, \"http\", \"hxxp\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get CanaryToken Details",
+      "disabled": false,
+      "guid": "a4438c6d484ea79d86238c4bbf805862",
+      "options": {
+        "url": "https://<<RESOURCE.canary_tools_tenant_id>>.canary.tools/api/v1/canarytokens/search",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "auth_token": "<<CREDENTIAL.canary_tools_api_key>>",
+          "search_string": "<<get_canary_incident.body.incident.node_id>>"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedup on SRC HOST",
+      "disabled": false,
+      "guid": "5a6a2c46bc4cd404ac335113d7f68b73",
+      "options": {
+        "mode": "deduplicate",
+        "period": "300",
+        "path": "<<get_canary_incident.body.incident.src_host>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger on Internal Trusted Zone (inc. Reconnaissance)",
+      "disabled": false,
+      "guid": "262180af854e27ea4fd899561b7a99b5",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "trusted_zone",
+            "path": "<<extract_details.note>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger on Any Lateral Movement in a Highly Restricted Zone",
+      "disabled": false,
+      "guid": "3c9b2ceaa8ef266ead3803e4c23b64c6",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "restricted_zone",
+            "path": "<<extract_details.note>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedup on SRC / DST HOST, DESCRIPTION",
+      "disabled": false,
+      "guid": "f6849f623633a367e6ccf10428323d24",
+      "options": {
+        "mode": "deduplicate",
+        "period": "300",
+        "path": "<<get_canary_incident.body.incident.dst_host>><<get_canary_incident.body.incident.src_host>><<get_canary_incident.body.incident.description>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger If CanaryBird",
+      "disabled": false,
+      "guid": "e9fb514f4d9265a7172a61df9f95caf9",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "thinkstcanary",
+            "path": "<<get_canary_incident.body.incident.sensor>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger If DNS or PDF HoneyToken",
+      "disabled": false,
+      "guid": "f5e5b3c9b720e09cfbc5a653f15d2212",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "DNS",
+            "path": "<<get_canary_incident.body.incident.name>>"
+          },
+          {
+            "type": "regex",
+            "value": "PDF",
+            "path": "<<get_canary_incident.body.incident.name>>"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get CanaryBird Details",
+      "disabled": false,
+      "guid": "86efc67af8f78a6fc36f7354ecb17786",
+      "options": {
+        "url": "https://<<RESOURCE.canary_tools_tenant_id>>.canary.tools/api/v1/device/info",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "auth_token": "<<CREDENTIAL.canary_tools_api_key>>",
+          "node_id": "<<get_canary_incident.body.incident.node_id>>"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Canary Incident",
+      "disabled": false,
+      "guid": "5f12c5a314961dbd5aa245ac56a101cd",
+      "options": {
+        "url": "https://<<RESOURCE.canary_tools_tenant_id>>.canary.tools/api/v1/incident/fetch",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "auth_token": "<<CREDENTIAL.canary_tools_api_key>>",
+          "hash_id": "<<receive_canary_tools_webhook.IncidentHash>>",
+          "extended_details": "true"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Canary Tools Webhook",
+      "disabled": false,
+      "guid": "27f1b8e844309a5610dcf097c9872e84",
+      "options": {
+        "secret": "273202c26debb86bda9c9f59925a1618",
+        "verbs": "get,post",
+        "include_headers": "false",
+        "path": "b9c26ccfa25419c0c55582ac25998871"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Lookup IP in GreyNoise Community",
+      "disabled": false,
+      "guid": "f16b4f4889b2b036c937a900038c3f45",
+      "options": {
+        "url": "https://api.greynoise.io/v3/community/<<get_canary_incident.body.incident.src_host>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://canary.tools/static/img/canary_logo@2x.png\n\nWhen a Canary webhook triggers this Story will deduplicate and fetch details about it and create a case in Jira Service Desk\n\nFollow this [link](https://www.tines.com/blog/deception-tech-and-automated-incident-response) to the canary tools Tines blog ",
+      "position": [
+        720.0,
+        -1485.0
+      ],
+      "guid": "e038a68877f67555410ef59aa5a5ab1a",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 1,
+      "receiver": 0
+    },
+    {
+      "source": 2,
+      "receiver": 16
+    },
+    {
+      "source": 3,
+      "receiver": 23
+    },
+    {
+      "source": 3,
+      "receiver": 22
+    },
+    {
+      "source": 4,
+      "receiver": 17
+    },
+    {
+      "source": 5,
+      "receiver": 17
+    },
+    {
+      "source": 6,
+      "receiver": 17
+    },
+    {
+      "source": 8,
+      "receiver": 11
+    },
+    {
+      "source": 8,
+      "receiver": 10
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 7
+    },
+    {
+      "source": 10,
+      "receiver": 13
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 14,
+      "receiver": 26
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 15,
+      "receiver": 18
+    },
+    {
+      "source": 17,
+      "receiver": 8
+    },
+    {
+      "source": 17,
+      "receiver": 2
+    },
+    {
+      "source": 17,
+      "receiver": 1
+    },
+    {
+      "source": 18,
+      "receiver": 20
+    },
+    {
+      "source": 19,
+      "receiver": 6
+    },
+    {
+      "source": 20,
+      "receiver": 19
+    },
+    {
+      "source": 21,
+      "receiver": 20
+    },
+    {
+      "source": 22,
+      "receiver": 4
+    },
+    {
+      "source": 23,
+      "receiver": 5
+    },
+    {
+      "source": 24,
+      "receiver": 27
+    },
+    {
+      "source": 25,
+      "receiver": 24
+    },
+    {
+      "source": 26,
+      "receiver": 21
+    },
+    {
+      "source": 27,
+      "receiver": 3
+    },
+    {
+      "source": 28,
+      "receiver": 30
+    },
+    {
+      "source": 29,
+      "receiver": 28
+    },
+    {
+      "source": 30,
+      "receiver": 25
+    },
+    {
+      "source": 30,
+      "receiver": 14
+    }
+  ],
+  "diagram_layout": "{\"c058f928e899b1dc86af5799ee11c824\":[105,-150],\"21804d577f2b6feadfea84add7bbe74a\":[105,-270],\"dcb449ce2a41bb64fc0d0073f4093118\":[345,-270],\"deeb2a8a3ebf33ca0fa775b37c6a9910\":[600,-780],\"0eb3f7d29508f301798bf7d8cfcb8d9b\":[600,-510],\"83b3985294026005385f3048ed1b09cf\":[345,-510],\"c714123da41761da8c7a553762d72461\":[105,-510],\"b3042f0b5c888ce41413a79dadbce75c\":[1080,-30],\"2e61c073677c71e74bf05e357740b56d\":[720,-270],\"073a4593cf39f3738b2401bd800a5372\":[1080,-150],\"6e1fe6305a160d47f88a7e8b240e6004\":[840,-150],\"ac6fe74fae13cf381d476099a722c291\":[600,-150],\"adeba75b8b290438af7f08868c981e06\":[600,-30],\"5ada9d0188dd0d4c20f02f21a244bf6f\":[840,-30],\"b05bd82b4123d6eff97f7d25c46edd1a\":[345,-1155],\"dc996a3e5e50de8e8a85c2d20d6fd717\":[345,-1035],\"43f08e40197681e05fc11ce04cbaa64f\":[345,-150],\"8b579ae204b0b88ac2b887391a39e073\":[345,-405],\"3450d9ab407858cb394144f35d040a71\":[345,-915],\"244f1edc0f9cd47d9c9426d2c8ebdf6e\":[105,-630],\"a4438c6d484ea79d86238c4bbf805862\":[105,-780],\"5a6a2c46bc4cd404ac335113d7f68b73\":[105,-915],\"262180af854e27ea4fd899561b7a99b5\":[600,-630],\"3c9b2ceaa8ef266ead3803e4c23b64c6\":[345,-630],\"f6849f623633a367e6ccf10428323d24\":[600,-1035],\"e9fb514f4d9265a7172a61df9f95caf9\":[600,-1155],\"f5e5b3c9b720e09cfbc5a653f15d2212\":[105,-1035],\"86efc67af8f78a6fc36f7354ecb17786\":[600,-915],\"5f12c5a314961dbd5aa245ac56a101cd\":[465,-1380],\"27f1b8e844309a5610dcf097c9872e84\":[465,-1485],\"f16b4f4889b2b036c937a900038c3f45\":[465,-1290]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Hunt, contain, and escalate threats with Thinkst Canary Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

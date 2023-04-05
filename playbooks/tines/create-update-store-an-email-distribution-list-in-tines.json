@@ -1,0 +1,744 @@
+{
+  "schema_version": 4,
+  "name": "Create, update & store an email distribution list in Tines",
+  "description": "This Story uses a form to create and manage an email distribution list in Tines. The distribution list is stored as a Tines Resource.\n\ntags: Email, Intermediate,\nicons:📧, tines, 🏪\nvisibility: public",
+  "guid": "8ad202ad665ebd7bfc23626a5f5fa9e8",
+  "slug": "create_update_store_an_email_distribution_list_in_tines",
+  "exported_at": "2022-07-11T17:33:39Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create an Array Global Resource in Tines",
+      "disabled": false,
+      "guid": "be6161c3edc2607516e12d4141c39183",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "name": "<%if receive_data_from_form.body.distribution_list_name = NULL%>EmailDistribution-<<DATE(\"now\", \"%s\")>><%else%><<receive_data_from_form.body.distribution_list_name>><%endif%>",
+          "value": "<%for email in extract_email_addresses_using_regex.emails%><<email>>;<%endfor%>",
+          "team_id": "<<META.team.id>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update a Global Resource in Tines",
+      "disabled": false,
+      "guid": "24dd4f067920c2233965fe1ff7379219",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources/<<saveid.ID>>",
+        "content_type": "json",
+        "method": "put",
+        "payload": {
+          "name": "<<receive_data_from_form.body.distribution_list_name>>",
+          "value": "<<get_a_global_resource.body.value>>;<%for email in extract_email_addresses_using_regex.emails%><<email>>;<%endfor%>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if new Resource needs to be created",
+      "disabled": false,
+      "guid": "c90bc7529efb1b10f98760f5d2e3a58d",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<saveid.ID>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Global Resources",
+      "disabled": false,
+      "guid": "2c5d90a2aa61d229a9b793ee9c9ace1d",
+      "options": {
+        "mode": "explode",
+        "path": "=obtain_tines_resources.resource",
+        "to": "individual_item"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode",
+      "disabled": false,
+      "guid": "1a87a22606a748530a02d843e860a69c",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=STORY_RUN_GUID()",
+        "size_path": "=LIQUID_SIZE(obtain_tines_resources, \"dot_notation\")",
+        "item_path": "=obtainid.id"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "NameMatch",
+      "disabled": false,
+      "guid": "c34eafba3f54f44cc833f11a51fd5b6d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "<<explode_global_resources.individual_item.name>>",
+            "path": "<<receive_data_from_form.body.distribution_list_name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "obtainID",
+      "disabled": false,
+      "guid": "98e5cfdedd6be593a9028498e614d833",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "id": "<<explode_global_resources.individual_item.id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Resource already exists",
+      "disabled": false,
+      "guid": "dd9abe81ae6e0e7b807025bc6f3a1729",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<saveid.ID>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get a Global Resource",
+      "disabled": false,
+      "guid": "d279b57cfa08a78b705b4198de91870a",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources/<<saveid.ID>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "SaveID",
+      "disabled": false,
+      "guid": "2ecbad55fded9a93a49e5e041d240426",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "ID": "<<COMPACT(implode)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive data from form",
+      "disabled": false,
+      "guid": "ee67a06689bdf2b15446b96244f55ebf",
+      "options": {
+        "path": "a60ccb1eec8883dff4c02d0fd54ff950",
+        "secret": "d21598535b6a07eb11ed97788797d75b",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Email Addresses Using Regex",
+      "disabled": false,
+      "guid": "2ba38049125f6e953eddbfe4569d2d0b",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=receive_data_from_form.body.multiple_emails",
+            "regexp": "\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}\\b",
+            "to": "emails"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Obtain Tines Resources",
+      "disabled": false,
+      "guid": "6d5cd0c2141f8cdb3dd0dce9a9849649",
+      "options": {
+        "payload": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "f4eba80c6a664040b57320d577cf4052",
+        "slug": null,
+        "exported_at": "2022-07-11T17:33:39Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Get Global Resources",
+            "disabled": false,
+            "guid": "111eab6aa7a0cd552529edf35df5137e",
+            "options": {
+              "url": "<<pagination_url.url>>",
+              "content_type": "json",
+              "method": "get",
+              "payload": {},
+              "headers": {
+                "x-user-email": "<<RESOURCE.tines_api_email>>",
+                "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Has more pages",
+            "disabled": false,
+            "guid": "b95716ab699e5468c4ae07640b0e2e32",
+            "options": {
+              "rules": [
+                {
+                  "type": "!regex",
+                  "value": "^$",
+                  "path": "<<get_global_resources.body.meta.next_page>>"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Pagination URL",
+            "disabled": false,
+            "guid": "64aef2a815420ff6d307e03feb849a39",
+            "options": {
+              "mode": "message_only",
+              "loop": false,
+              "payload": {
+                "url": "https://<<META.tenant.domain>>/api/v1/global_resources"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Pagination URL",
+            "disabled": false,
+            "guid": "3293ad007d389285b09554a77887fd57",
+            "options": {
+              "mode": "message_only",
+              "loop": false,
+              "payload": {
+                "url": "<<get_global_resources.body.meta.next_page>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "6946eead19077de3d4a71ec749ccb5e1",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "a14687ea3b0f7211f115b5695d229fb6",
+            "options": {
+              "payload": {
+                "resource": "=get_global_resources.body.global_resources",
+                "size": "<<get_global_resources.body.meta.count>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 0,
+            "receiver": 5
+          },
+          {
+            "source": 1,
+            "receiver": 3
+          },
+          {
+            "source": 2,
+            "receiver": 0
+          },
+          {
+            "source": 3,
+            "receiver": 0
+          },
+          {
+            "source": 4,
+            "receiver": 2
+          }
+        ],
+        "diagram_layout": "{\"111eab6aa7a0cd552529edf35df5137e\":[525,210],\"b95716ab699e5468c4ae07640b0e2e32\":[525,315],\"64aef2a815420ff6d307e03feb849a39\":[525,120],\"3293ad007d389285b09554a77887fd57\":[525,405],\"6946eead19077de3d4a71ec749ccb5e1\":[525,-30],\"a14687ea3b0f7211f115b5695d229fb6\":[750,285]}"
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "NameNotMatch",
+      "disabled": false,
+      "guid": "fd6c6daff414e27ecbe1f8849c616055",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "<<explode_global_resources.individual_item.name>>",
+            "path": "<<receive_data_from_form.body.distribution_list_name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "Receive emails and distribution list name (if applicable) from form",
+      "position": [
+        780.0,
+        -120.0
+      ],
+      "guid": "cf27cfff9ab0d432fb7b62bdb63652de",
+      "width": null
+    },
+    {
+      "content": "Extract emails using regex to obtain a clean array of emails to use downstream",
+      "position": [
+        780.0,
+        0.0
+      ],
+      "guid": "2b366f1d85e0d82fe240a322e592c9d8",
+      "width": null
+    },
+    {
+      "content": "A Group to obtain Resources in Tines via the Tines API and paginate through the returned pages accordingly.  The Distribution Lists are stored within Tines Resources.",
+      "position": [
+        780.0,
+        75.0
+      ],
+      "guid": "9c9d0470f41361e5e507c387329c39ca",
+      "width": null
+    },
+    {
+      "content": "Explode the Resources returned to analyze each one individually.",
+      "position": [
+        777.0,
+        214.0
+      ],
+      "guid": "21d551c26a49ba1247fd689dc39ebf2e",
+      "width": null
+    },
+    {
+      "content": "Check each returned Resource to see if the name of the targeted distribution list (from the form) matches the name of a Resource.  If one matches, assume that is the Resource of the Distribution List we are looking to modify and obtain the ID of that Resource.",
+      "position": [
+        930.0,
+        315.0
+      ],
+      "guid": "3d61c8edff0773e6439b6fa0f591775c",
+      "width": null
+    },
+    {
+      "content": "Consolidate to one event to be transmitted.  If a Distribution List was found, the ID will exist in the array and all other elements of the array will be empty. ",
+      "position": [
+        840.0,
+        510.0
+      ],
+      "guid": "849d855783230d425dcd074c107976b6",
+      "width": null
+    },
+    {
+      "content": "Remove all null values from the array and save the one ID of the Resource that matched the Distribution List name for downstream reference.",
+      "position": [
+        840.0,
+        615.0
+      ],
+      "guid": "aba79ee158bb247b4c9ef11d3b2d1c8a",
+      "width": null
+    },
+    {
+      "content": "If an ID exists then a matching Tines Resource was found and an existing Distribution List can be modified",
+      "position": [
+        135.0,
+        750.0
+      ],
+      "guid": "068d25e76418bc06f9a56fb43bf971ac",
+      "width": null
+    },
+    {
+      "content": "Leverage the obtained Resource ID to obtain the targeted Distribution List",
+      "position": [
+        135.0,
+        855.0
+      ],
+      "guid": "bbfa8d4acb93d4d2064a2d71bac48e0e",
+      "width": null
+    },
+    {
+      "content": "Update the Tines Resource with the form-inputed emails to update the Distribution List",
+      "position": [
+        135.0,
+        975.0
+      ],
+      "guid": "209ab235eac95400c63694bcde4dfd4f",
+      "width": null
+    },
+    {
+      "content": "If no ID was found then no matching Tines Resource exists and a new Distribution List needs to be created.",
+      "position": [
+        1050.0,
+        735.0
+      ],
+      "guid": "f86af51e52637869bef5ebdee0691fa5",
+      "width": null
+    },
+    {
+      "content": "Create a Distribution List as a Tines Resource with the Email Addresses uploaded into the form.  If the form does not contain a name for the new Distribution List the default name assigned will be: \"EmailDistribution-(timestamp)\" where the timestamp is an integer represented in seconds during the time when this action is executed.",
+      "position": [
+        1050.0,
+        825.0
+      ],
+      "guid": "ce95252fc52361ca5b2095f4dcbdba29",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-tines.png\n\nA Story to leverage Tines to help manage a email based Distribution List.  Users can use a [form](https://silent-flower-1508.tines.com/forms/e70c713abe3695990b90d9b817643a4e) to input emails and a Distribution List Name.  If a Distribution List with the same name already exists it will be updated with the necessary emails.  If a Distribution List with the name does not exists a new Distribution List with the given name will be created.  If the Distribution List name field in the form is left empty a new Distribution List will be created with a generic name called, \"EmailDistribution-(TimeStamp)\" when TimeStamp is an integer of seconds on when the Distribution List was created.  The Distribution Lists are stored as Resources within Tines.\n\nUnsubscribing users from a Distribution List can be automated using [this story titled, \"Unsubscribe from email distribution list\"](https://demo.tines.com/stories/46703/diagram).\n\nTools:\nTines\n\nCredentials:\nInformation on how to create API credentials for Tines can be found [here](https://hub.tines.com/api/authentication).",
+      "position": [
+        105.0,
+        -285.0
+      ],
+      "guid": "cfb25191edc8e909a7cbd9a7e6675026",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 2,
+      "receiver": 0
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 13
+    },
+    {
+      "source": 4,
+      "receiver": 9
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 1
+    },
+    {
+      "source": 9,
+      "receiver": 7
+    },
+    {
+      "source": 9,
+      "receiver": 2
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 12,
+      "receiver": 3
+    },
+    {
+      "source": 13,
+      "receiver": 4
+    }
+  ],
+  "diagram_layout": "{\"be6161c3edc2607516e12d4141c39183\":[795,855],\"24dd4f067920c2233965fe1ff7379219\":[420,975],\"c90bc7529efb1b10f98760f5d2e3a58d\":[795,750],\"2c5d90a2aa61d229a9b793ee9c9ace1d\":[525,225],\"1a87a22606a748530a02d843e860a69c\":[645,540],\"c34eafba3f54f44cc833f11a51fd5b6d\":[525,330],\"98e5cfdedd6be593a9028498e614d833\":[525,420],\"dd9abe81ae6e0e7b807025bc6f3a1729\":[420,750],\"d279b57cfa08a78b705b4198de91870a\":[420,870],\"2ecbad55fded9a93a49e5e041d240426\":[645,645],\"ee67a06689bdf2b15446b96244f55ebf\":[525,-105],\"2ba38049125f6e953eddbfe4569d2d0b\":[525,0],\"6d5cd0c2141f8cdb3dd0dce9a9849649\":[525,120],\"fd6c6daff414e27ecbe1f8849c616055\":[750,315]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Create, update & store an email distribution list in Tines Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Multiple Emails",
+        "description": "Multple email addresses to add separated by comma or semi-colon (eg: email1@domain.com, email2@domain.com)",
+        "required": false,
+        "type": "LONG_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Distribution List Name",
+        "description": "If no match, a new list will be created with suggested name. If blank, an arbitrary name will be used.",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "New Distribution List",
+          "Existing Distribution List"
+        ],
+        "ranking": 1879048192,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "ee67a06689bdf2b15446b96244f55ebf",
+    "success_message": "Thank you for your submission"
+  }
+}

@@ -1,0 +1,215 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Prompt when Indicator  linked is to Campaign",
+    "aliasName": null,
+    "tag": null,
+    "description": "Notifies an analyst via manual input when an indicator is linked to a campaign.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/602e6779-ef95-4d5f-8176-ca3820e1ddc3",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "indicators",
+                "resources": [
+                    "indicators"
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": [],
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "array",
+                            "field": "campaigns",
+                            "value": null,
+                            "_value": null,
+                            "operator": "changed"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "602e6779-ef95-4d5f-8176-ca3820e1ddc3"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Indicator Data",
+            "description": null,
+            "arguments": {
+                "indicatorData": "{{ (vars.input.records[0]['@id'] + \"?$relationships=true\") | fromIRI }}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "fc60a7b5-463e-4107-b10d-e25126ef447c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Indicator Data",
+            "description": null,
+            "arguments": {
+                "camp_iri": "{{vars.indicatorData.campaigns | json_query('[][\"@id\"][]') }}",
+                "camp_data": "{{vars.indicatorData.campaigns | json_query('[].name') }}",
+                "alert_data": "{{vars.indicatorData.alerts | json_query('[][\"@id\"][]') }}",
+                "curr_camp_data": "{{vars.indicatorData.campaigns | length }}",
+                "prev_camp_data": "{{vars.previous.data.campaigns | length}}"
+            },
+            "status": null,
+            "top": "300",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "8c3b33e8-31d6-4b45-aa79-eae7e428669c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "If New Campaign Linked",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/30543e3b-9b96-401a-a548-cd0c1aefa082",
+                        "condition": "{{ vars.curr_camp_data > vars.prev_camp_data }}",
+                        "step_name": "Prompt"
+                    },
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/e7c4de54-5cac-433f-8dbb-dd89ea6c51f3",
+                        "step_name": "No OP"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "435",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "46abdd3e-09d4-4a09-91e8-1b4fb6dc352e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "No OP",
+            "description": null,
+            "arguments": {
+                "params": [],
+                "version": "3.1.1",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "e7c4de54-5cac-433f-8dbb-dd89ea6c51f3"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Prompt",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.alert_data}}",
+                    "__bulk": false,
+                    "parallel": true,
+                    "condition": ""
+                },
+                "arguments": {
+                    "camp_iri": "{{vars.camp_iri}}",
+                    "camp_data": "{{vars.camp_data}}",
+                    "alert_iri_list": "{{vars.item}}",
+                    "indicator_type": "{{vars.input.records[0].typeofindicator.itemValue}}",
+                    "indicator_value": "{{vars.input.records[0].value}}"
+                },
+                "apply_async": true,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/b808f4be-88fa-4b72-a5d7-8edf45407309"
+            },
+            "status": null,
+            "top": "560",
+            "left": "480",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "30543e3b-9b96-401a-a548-cd0c1aefa082"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Indicator_Data -> If New Campaign Linked",
+            "targetStep": "\/api\/3\/workflow_steps\/46abdd3e-09d4-4a09-91e8-1b4fb6dc352e",
+            "sourceStep": "\/api\/3\/workflow_steps\/8c3b33e8-31d6-4b45-aa79-eae7e428669c",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "552a26f5-27ab-4aba-8537-5c6455f6c1ac"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "If New Campaign Linked -> No OP",
+            "targetStep": "\/api\/3\/workflow_steps\/e7c4de54-5cac-433f-8dbb-dd89ea6c51f3",
+            "sourceStep": "\/api\/3\/workflow_steps\/46abdd3e-09d4-4a09-91e8-1b4fb6dc352e",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "77438c24-cef7-42d2-b2c9-e75c80b71f50"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "If New Campaign Linked -> Prompt",
+            "targetStep": "\/api\/3\/workflow_steps\/30543e3b-9b96-401a-a548-cd0c1aefa082",
+            "sourceStep": "\/api\/3\/workflow_steps\/46abdd3e-09d4-4a09-91e8-1b4fb6dc352e",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "57c2a3f6-2888-40d1-b119-5e3e3bff7207"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Get Indicator Data",
+            "targetStep": "\/api\/3\/workflow_steps\/fc60a7b5-463e-4107-b10d-e25126ef447c",
+            "sourceStep": "\/api\/3\/workflow_steps\/602e6779-ef95-4d5f-8176-ca3820e1ddc3",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "503751ca-8533-4e19-b1fb-383e8e86e252"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Indicator Data -> Indicator_Data",
+            "targetStep": "\/api\/3\/workflow_steps\/8c3b33e8-31d6-4b45-aa79-eae7e428669c",
+            "sourceStep": "\/api\/3\/workflow_steps\/fc60a7b5-463e-4107-b10d-e25126ef447c",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "29ddb9a1-ac5c-4550-9206-786f2e521084"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "2003bb9e-1899-49a2-807a-bcf6b078b505",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "PostUpdate"
+    ]
+}

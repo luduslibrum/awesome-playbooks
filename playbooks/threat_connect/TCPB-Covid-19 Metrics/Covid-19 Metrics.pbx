@@ -1,0 +1,270 @@
+{
+  "name" : "Covid-19 Metrics",
+  "type" : "Standard",
+  "panX" : 140.0,
+  "panY" : -125.0,
+  "logLevel" : "TRACE",
+  "description" : "",
+  "priority" : 6,
+  "version" : "1.3",
+  "comment" : "Auto-Saved on Thu Mar 19 15:05:51 UTC 2020",
+  "jobList" : [ {
+    "id" : 60227,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.20"
+    },
+    "name" : "GET Covid-19 Stats",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://coronavirus-19-api.herokuapp.com/all"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 330.0,
+    "locationTop" : 420.0,
+    "outputVariables" : "[{\"name\":\"http.content\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 60228,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v2.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "2.0.5"
+    },
+    "name" : "Extract Stats",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[{\"key\":\"cases\",\"value\":\"cases\"},{\"key\":\"deaths\",\"value\":\"deaths\"},{\"key\":\"recovered\",\"value\":\"recovered\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:60227:http.content!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 540.0,
+    "locationTop" : 420.0,
+    "outputVariables" : "[{\"name\":\"deaths\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"recovered\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"cases\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 60229,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Metric v1.0",
+      "displayName" : "Add ThreatConnect Custom Metric",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Case Metrics",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_value"
+      },
+      "value" : "#App:60228:cases!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "return_value"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_weight"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_name"
+      },
+      "value" : "covid 19 cases"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_date"
+      }
+    } ],
+    "locationLeft" : 760.0,
+    "locationTop" : 380.0
+  }, {
+    "id" : 60230,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Metric v1.0",
+      "displayName" : "Add ThreatConnect Custom Metric",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Death Metrics",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_name"
+      },
+      "value" : "covid 19 deaths"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_value"
+      },
+      "value" : "#App:60228:deaths!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_weight"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "return_value"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_date"
+      }
+    } ],
+    "locationLeft" : 760.0,
+    "locationTop" : 470.0
+  }, {
+    "id" : 60231,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Metric v1.0",
+      "displayName" : "Add ThreatConnect Custom Metric",
+      "programVersion" : "1.0.11"
+    },
+    "name" : "Recovered Metrics",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_date"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_name"
+      },
+      "value" : "covid 19 recovered"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_weight"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "return_value"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "metric_value"
+      },
+      "value" : "#App:60228:recovered!String"
+    } ],
+    "locationLeft" : 760.0,
+    "locationTop" : 560.0
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60227,
+    "targetJobId" : 60228
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60228,
+    "targetJobId" : 60229
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60228,
+    "targetJobId" : 60230
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 60228,
+    "targetJobId" : 60231
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 60227,
+    "sourceTriggerId" : 6660
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 6660,
+    "name" : "Timer Trigger",
+    "type" : "Timer",
+    "eventType" : "External",
+    "locationLeft" : 110.0,
+    "locationTop" : 420.0,
+    "scheduleType" : "Daily",
+    "scheduleCronFormat" : "00 00 11 * * ? *",
+    "anyOrg" : true,
+    "playbookTriggerFilterList" : [ ]
+  } ],
+  "playbookLabels" : [ {
+    "playbookLabelType" : {
+      "label" : "Metric"
+    }
+  }, {
+    "playbookLabelType" : {
+      "label" : "Covid-19"
+    }
+  } ],
+  "exportablePipes" : [ ]
+}

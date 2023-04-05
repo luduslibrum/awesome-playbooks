@@ -1,0 +1,142 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Alert - Set Resolved Date",
+    "aliasName": null,
+    "tag": "#system",
+    "description": "Update Resolved Date when State is marked \"Closed\"",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/4f6e8305-1aa5-40b2-9cd9-f53a0bd03a62",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "alerts",
+                "step_variables": [],
+                "fieldbasedtrigger": {
+                    "limit": 30,
+                    "logic": "OR",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "status",
+                            "value": null,
+                            "_value": {
+                                "display": "",
+                                "itemValue": ""
+                            },
+                            "operator": "changed"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "12",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "4f6e8305-1aa5-40b2-9cd9-f53a0bd03a62"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Resolved Date",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "resolveddate": "{{arrow.utcnow().timestamp}}"
+                },
+                "_showJson": false,
+                "collection": "{{vars.input.records[0][\"@id\"]}}",
+                "collectionType": "\/api\/3\/alerts",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "320",
+            "left": "606",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "1378c25d-e129-425f-9519-9d76c65462ef"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "No Operations",
+            "description": null,
+            "arguments": {
+                "script": "\/wf\/workflow\/tasks\/no_op",
+                "arguments": [],
+                "step_variables": []
+            },
+            "status": null,
+            "top": "320",
+            "left": "9",
+            "stepType": "\/api\/3\/workflow_step_types\/ee73e569-2188-43fe-a7f0-1964ba82a4de",
+            "uuid": "4026119a-205b-471c-8191-250117fccf85"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Check Status is Closed",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "step_iri": "\/api\/3\/workflow_steps\/1378c25d-e129-425f-9519-9d76c65462ef",
+                        "condition": "{{ vars.input.records[0].status[\"@id\"] == \"\/api\/3\/picklists\/fac53e73-8d16-4189-98d5-95fbd1555232\" }}"
+                    },
+                    {
+                        "step_iri": "\/api\/3\/workflow_steps\/4026119a-205b-471c-8191-250117fccf85",
+                        "condition": "{{ vars.input.records[0].status[\"@id\"] != \"\/api\/3\/picklists\/fac53e73-8d16-4189-98d5-95fbd1555232\" }}"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "180",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "b63b6f4a-5596-453c-974c-d7314da4e741"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Check Status is Closed",
+            "targetStep": "\/api\/3\/workflow_steps\/b63b6f4a-5596-453c-974c-d7314da4e741",
+            "sourceStep": "\/api\/3\/workflow_steps\/4f6e8305-1aa5-40b2-9cd9-f53a0bd03a62",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "95ffe12d-19b6-400c-acb7-19ca74337a47"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Status is Closed -> Update Resolved Date",
+            "targetStep": "\/api\/3\/workflow_steps\/1378c25d-e129-425f-9519-9d76c65462ef",
+            "sourceStep": "\/api\/3\/workflow_steps\/b63b6f4a-5596-453c-974c-d7314da4e741",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b75f0ff7-39fe-4c65-bf4e-a7d41f6d1437"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Status is Closed -> No Operations",
+            "targetStep": "\/api\/3\/workflow_steps\/4026119a-205b-471c-8191-250117fccf85",
+            "sourceStep": "\/api\/3\/workflow_steps\/b63b6f4a-5596-453c-974c-d7314da4e741",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "0106c63f-9807-4e31-ac51-ca7e6d67b91d"
+        }
+    ],
+    "priority": null,
+    "uuid": "7fb4d1a9-4d2b-4f73-a36e-61c81c4a1eb5",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system"
+    ]
+}

@@ -1,0 +1,274 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Cisco Threat Grid - File Reputation",
+    "aliasName": null,
+    "tag": null,
+    "description": "Submits a file to Cisco Threat Grid and then retrieves its reputation.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_file_IRI",
+        "indicator_file_name"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/b135c052-e170-4cff-8cc7-9a4bfe607ccb",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/d08c72f7-4e33-48bf-a6c5-2fc2fa18db29",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Download Report",
+            "description": "",
+            "arguments": {
+                "name": "Cisco Threat Grid",
+                "when": "{{vars.threatGridStatus == \"Finished\"}}",
+                "config": "cfbc1e19-b1da-4ab5-a513-5a5e4fb7b043",
+                "params": {
+                    "download": "Report HTML",
+                    "sample_id": "{{vars.steps.Submit_sample_to_Threat_Grid.data.data.id}}"
+                },
+                "version": "1.2.0",
+                "connector": "cisco-threatgrid",
+                "operation": "download_report",
+                "ignore_errors": true,
+                "operationTitle": "Download Report",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "705",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "8f9f6aa0-836b-4757-8c71-1707da31b433"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Summary of Submitted sample",
+            "description": null,
+            "arguments": {
+                "name": "Cisco Threat Grid",
+                "config": "46769e52-1503-46cd-af5c-36a78f402e2d",
+                "params": {
+                    "sample_id": "{{vars.steps.Submit_sample_to_Threat_Grid.data.data.id}}"
+                },
+                "version": "1.2.0",
+                "connector": "cisco-threatgrid",
+                "operation": "get_summary",
+                "operationTitle": "Get Summary",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "5b050e34-2620-443b-948b-6f803babbb5d"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Submit sample to Threat Grid",
+            "description": null,
+            "arguments": {
+                "name": "Cisco Threat Grid",
+                "config": "cfbc1e19-b1da-4ab5-a513-5a5e4fb7b043",
+                "params": {
+                    "vm": "Windows 7 64-bit",
+                    "tags": "",
+                    "file_id": "{{vars.indicator_file_IRI}}",
+                    "private": true,
+                    "file_name": "{{vars.indicator_file_name}}",
+                    "location_name": "",
+                    "playbook_name": ""
+                },
+                "version": "1.2.0",
+                "connector": "cisco-threatgrid",
+                "operation": "submit_sample",
+                "ignore_errors": true,
+                "operationTitle": "Submit Sample",
+                "step_variables": {
+                    "isFileSubmitted": "{% if vars.steps.Submit_sample_to_Threat_Grid.data %}true{% else %}false{% endif %}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "6f1f2083-1270-4061-9568-b166275f27d9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "enrichment_summary",
+            "description": null,
+            "arguments": {
+                "tags": "None",
+                "source": "Cisco Threat Grid",
+                "reputation": "{% if vars.Reputation >= vars.threshold %}\"Malicious\"{% elif vars.Reputation <= vars.threshold and vars.Reputation > 0 %}\"Suspicious\"{%elif vars.Reputation == 0%}\"No Reputation Available\"{%else%}\"Good\"{%endif%}",
+                "enrichmentSummary": "{{vars.steps.Compute_Threat_Grid_Summary.data['formatted_string']}}"
+            },
+            "status": null,
+            "top": "980",
+            "left": "120",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "28441343-bc87-4fb9-bcc7-ab37b0fa6e8a"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configurations",
+            "description": null,
+            "arguments": {
+                "threshold": "5",
+                "indicator_file_IRI": "{{vars.input.params['indicator_file_IRI']}}",
+                "indicator_file_name": "{{vars.input.params['indicator_file_name']}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "370b4d2d-c6d2-4630-a941-9da510e02cd1"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Compute Threat Grid Summary",
+            "description": null,
+            "arguments": {
+                "name": "Utilities",
+                "params": {
+                    "value": "<p>{% if  vars.threatGridStatus%}<\/p>\n\n<div class=\"card-container-body\" style=\"width: 200px;\">\n<div class=\"card-number\"><span class=\"card-count\">{{vars.steps.Get_Summary_of_Submitted_sample.data.data.score}}<\/span>\n\n<div class=\"font-size-12 ng-binding\"><a href=\"{{vars.steps.Download_Report.data.report_url}}\" target=\"_blank\"><font color=\"#34dbeb\"><u>Scan Report Link<\/u><\/font><\/a><\/div>\n\n<div class=\"font-size-14 ng-binding\"><strong>Cisco Threat Grid<\/strong><\/div>\n<p>{% endif %}<\/p>"
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "format_richtext",
+                "operationTitle": "Utils: Format as RichText",
+                "step_variables": {
+                    "Reputation": "{% if vars.threatGridStatus %}{{vars.steps.Get_Summary_of_Submitted_sample.data.data.score}}{%else%} 0\n{%endif%}"
+                }
+            },
+            "status": null,
+            "top": "840",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "fdefdd1b-14c0-4638-8640-348042f34bfa"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "d08c72f7-4e33-48bf-a6c5-2fc2fa18db29"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get status of submitted sample",
+            "description": "",
+            "arguments": {
+                "name": "Cisco Threat Grid",
+                "config": "cfbc1e19-b1da-4ab5-a513-5a5e4fb7b043",
+                "params": {
+                    "sample_id": "{{vars.steps.Submit_sample_to_Threat_Grid.data.data.id}}"
+                },
+                "version": "1.2.0",
+                "do_until": {
+                    "delay": "60",
+                    "retries": "7",
+                    "condition": "{{vars.result.data.state == \"succ\"}}"
+                },
+                "connector": "cisco-threatgrid",
+                "operation": "get_status",
+                "ignore_errors": true,
+                "operationTitle": "Get Status",
+                "step_variables": {
+                    "threatGridStatus": "{{ vars.result.data | ternary(\"Finished\",\"Not Finished\")}}"
+                }
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "a2816928-c205-4788-bda7-12a2c29a458b"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Download Report -> enrichment_summary",
+            "targetStep": "\/api\/3\/workflow_steps\/fdefdd1b-14c0-4638-8640-348042f34bfa",
+            "sourceStep": "\/api\/3\/workflow_steps\/8f9f6aa0-836b-4757-8c71-1707da31b433",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f174feee-df11-4144-a740-0b940cfca930"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compute Threat Grid Summary -> enrichment_summary",
+            "targetStep": "\/api\/3\/workflow_steps\/28441343-bc87-4fb9-bcc7-ab37b0fa6e8a",
+            "sourceStep": "\/api\/3\/workflow_steps\/fdefdd1b-14c0-4638-8640-348042f34bfa",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ec67cc82-7eb4-47d3-b0e6-4e9fe4e3eb78"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configurations -> Submit sample to Threat Grid",
+            "targetStep": "\/api\/3\/workflow_steps\/6f1f2083-1270-4061-9568-b166275f27d9",
+            "sourceStep": "\/api\/3\/workflow_steps\/370b4d2d-c6d2-4630-a941-9da510e02cd1",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1e911f2a-b9be-4efb-b4d5-b5116dbed2b9"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configurations",
+            "targetStep": "\/api\/3\/workflow_steps\/370b4d2d-c6d2-4630-a941-9da510e02cd1",
+            "sourceStep": "\/api\/3\/workflow_steps\/d08c72f7-4e33-48bf-a6c5-2fc2fa18db29",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "88a1b225-a5b4-4c97-9994-216ff753ef44"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Summary of Submitted sample -> Download Report",
+            "targetStep": "\/api\/3\/workflow_steps\/8f9f6aa0-836b-4757-8c71-1707da31b433",
+            "sourceStep": "\/api\/3\/workflow_steps\/5b050e34-2620-443b-948b-6f803babbb5d",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f26e1b32-fc30-410e-b064-2655e0db7cc0"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get status of submitted sample -> Get Summary of Submitted sample",
+            "targetStep": "\/api\/3\/workflow_steps\/5b050e34-2620-443b-948b-6f803babbb5d",
+            "sourceStep": "\/api\/3\/workflow_steps\/a2816928-c205-4788-bda7-12a2c29a458b",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d1e96cee-8bd2-4f29-a7a8-4f1fee93ce00"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Submit sample to Threat Grid -> Get status of submitted sample",
+            "targetStep": "\/api\/3\/workflow_steps\/a2816928-c205-4788-bda7-12a2c29a458b",
+            "sourceStep": "\/api\/3\/workflow_steps\/6f1f2083-1270-4061-9568-b166275f27d9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "dd51e8d9-ce0b-4690-8e57-7e3eb33a338c"
+        }
+    ],
+    "priority": null,
+    "uuid": "76d36f96-ed76-48c5-8f2d-4094f74c9d2d",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

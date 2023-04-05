@@ -1,0 +1,2769 @@
+{
+  "kom": {
+    "komandVersion": "1.111.4-0-gb43d1",
+    "komFileVersion": "2.0.0",
+    "exportedAt": "2022-09-03T12:36:17.892608452Z",
+    "workflowVersions": [
+      {
+        "name": "Find and Delete Emails with Gmail from Slack",
+        "type": "runnable",
+        "version": "",
+        "description": "# Description\n\nOnce you’ve positively identified a phish, removing it from the user’s inbox is critical. This workflow searches for an email with specific criteria such as sender, receiver, or subject and provides the option to delete matches from Slack.\n\nSample trigger commands:\n\n`delete-email user@example.com subject:\"A suspicious email\"`\n\n`delete-email user@example.com delete=True subject:\"A suspicious email\"`\n\n`delete-email user@example.com subject:\"A suspicious email\" from:\"example.com\" body:\"free stuff\"`\n\n# Key Features\n\n* **Eliminate the Threat** - Once a phishing message is verified, the first thing you should do is remove that message from the affected user’s inbox. \n* **Work with Unparalleled Flexibility** - Take your work mobile and respond to reported threats from your phone, tablet, or PC.\n* **Reduce Portal Fatigue** - You have enough to do without logging into a different solution every 5 minutes. Control your response actions from chat instead.\n\n# Requirements\n\n* [Slack chatops connection](https://insightconnect.help.rapid7.com/docs/configure-slack-for-chatops)\n* [Gmail](https://insightconnect.help.rapid7.com/docs/gmail-api)\n\n# Documentation\n\n## Setup\n\nImport the workflow from the Rapid7 Extension Library and proceed through the Import Workflow wizard in InsightConnect. Import plugins, create or select connections, and rename the workflow as a part of the Import Workflow wizard as necessary.\n\nThe following will need to be setup for Gmail:\n* A service account with the appropriate access to the [Gmail API](https://developers.google.com/gmail/api/auth/web-server)\n* [OAuth](https://developers.google.com/gmail/api/auth/scopes) scope. note: Service account must have 'domain-wide' delegation enabled\n\n### Usage\n\n`delete-email <mailbox_user> [delete=True|False] <query>`\n\n|Parameter Name|Required|Description|\n|mailbox_user|True|The email address of the inbox to search|\n|delete|False|The option to instruct the command to delete the emails when found. Can only equal _True_ or _False_. *False* is the default|\n|query|True|Everything else will be passed _as-is_ to the Gmail plugin as the search|\n\n*This workflow will only trigger when sent directly to the slackbot in the message*\nTo run the workflow, `@` the slackbot with the command `delete-email`.\nFor example:\n`@Rapid7 InsightConnect delete-email user@example.com subject:\"A phishy email\" from:\"example.com\" body:\"free stuff\"`.\n\nIf you would like to automatically delete these emails, add `delete=True` to the command. This must be right after the account like this:\n\n`!delete-email user@example.com delete=True subject:\"A phishy email\"`\n\nSee the references section for links on search operators that can be passed to the query.\n\n## Technical Details\n\nPlugins utilized by workflow:\n\n|Plugin|Version|Count|\n|----|----|--------|\n|Python 3 Script|2.0.1|1|\n|Gmail|5.1.4|3|\n\n## Troubleshooting\n\n_There is no troubleshooting information at this time_\n\n# Version History\n\n* 1.0.0 - Initial workflow\n\n# Links\n\n## References\n\n* [Gmail](https://mail.google.com/)\n* [Google Service Account Setup](https://developers.google.com/gmail/api/auth/web-server)\n* [Delegating Domain Wide Authority to a Service Account](https://developers.google.com/identity/protocols/OAuth2ServiceAccount#delegatingauthority)\n* [Google API Scopes](https://developers.google.com/gmail/api/auth/scopes)\n* [InsightConnect Gmail Plugin Guide](https://insightconnect.help.rapid7.com/docs/gmail-api)\n* [Gmail Search Operators](https://support.google.com/mail/answer/7190)\n* [Slack](https://slack.com/)\n",
+        "graph": {
+          "edges": {
+            "02a833c6-8b0c-4fbe-b1e7-dafea5e8b0bb": {
+              "id": "02a833c6-8b0c-4fbe-b1e7-dafea5e8b0bb",
+              "name": "",
+              "description": "",
+              "parentNodeId": "c1be2795-8756-4862-ad94-1d7d2fe751ea",
+              "fromNodeId": "9ff83823-b5fd-4fc8-8531-bbd60296023b",
+              "toNodeId": ""
+            },
+            "06e81ed2-31c6-4eb7-bfa4-819452bead1a": {
+              "id": "06e81ed2-31c6-4eb7-bfa4-819452bead1a",
+              "name": "No Emails Found",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "147d178f-d0b0-4a73-b432-22e6713449e4",
+              "toNodeId": "4d198fa1-cc7d-47de-9dd9-f33a50d90fd9"
+            },
+            "0773a9ed-c52f-4bf1-b6d7-6e50818e2b8a": {
+              "id": "0773a9ed-c52f-4bf1-b6d7-6e50818e2b8a",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "546b32d7-cbbf-45af-84aa-7f8d64ec20dd",
+              "toNodeId": "8611a657-e320-4b61-8924-faceafdc49e1"
+            },
+            "08ce5f83-4332-41ab-9bf5-9a1bd8993ef4": {
+              "id": "08ce5f83-4332-41ab-9bf5-9a1bd8993ef4",
+              "name": "No",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "2e45f712-a559-4d2b-bc72-051ea2e8a0ef",
+              "toNodeId": "c5cce12b-3672-4d99-83be-9df69fd3794c"
+            },
+            "190da904-30ec-4ea6-8d94-134f56416c6a": {
+              "id": "190da904-30ec-4ea6-8d94-134f56416c6a",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "c5cce12b-3672-4d99-83be-9df69fd3794c",
+              "toNodeId": ""
+            },
+            "23f3e134-061a-4e3b-9049-43e6133a6e8c": {
+              "id": "23f3e134-061a-4e3b-9049-43e6133a6e8c",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "9dfbea14-3d78-4fbb-937b-88d4c9b277d8",
+              "toNodeId": "901c9f14-9462-41d5-9959-afe7d477493e"
+            },
+            "25891de0-4631-484f-8f70-10cfe91ca0e6": {
+              "id": "25891de0-4631-484f-8f70-10cfe91ca0e6",
+              "name": "Find Gmail Succeeded",
+              "description": "A search on the email inbox was successful",
+              "parentNodeId": "",
+              "fromNodeId": "0052c5f4-4ec5-44d9-aa85-639f9a96a918",
+              "toNodeId": "147d178f-d0b0-4a73-b432-22e6713449e4"
+            },
+            "37d47391-4a54-4ab4-aeb5-c6891490f3bf": {
+              "id": "37d47391-4a54-4ab4-aeb5-c6891490f3bf",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "4b965b0c-fd3d-4f2b-aa30-37f93f214753",
+              "toNodeId": ""
+            },
+            "43e54ec0-7366-4a10-a5e2-8097158d97cb": {
+              "id": "43e54ec0-7366-4a10-a5e2-8097158d97cb",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "cfb0da23-e667-4969-a80e-6ef5775faa87",
+              "toNodeId": ""
+            },
+            "498a0cb5-89cd-42c7-b450-72d68d86c5c2": {
+              "id": "498a0cb5-89cd-42c7-b450-72d68d86c5c2",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "fa588e39-aba7-4a3a-bcac-bcea4e80ff74",
+              "toNodeId": ""
+            },
+            "5497d824-9e2b-4467-b7f2-bfbe85313f88": {
+              "id": "5497d824-9e2b-4467-b7f2-bfbe85313f88",
+              "name": "Yes Delete",
+              "description": "delete=true was given in the command line",
+              "parentNodeId": "",
+              "fromNodeId": "5f2d1d0a-92b7-4479-b35f-c9cd841c10f4",
+              "toNodeId": "8fc20935-4fe1-465d-b962-52011ff78f82"
+            },
+            "61bef5bf-5fb7-4e4b-aa21-6057ccc70c24": {
+              "id": "61bef5bf-5fb7-4e4b-aa21-6057ccc70c24",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "75c4e364-f202-469e-bcb3-4140fe36e205",
+              "toNodeId": "9108708f-fe22-4f2a-869b-7ba004878a27"
+            },
+            "661e8be7-4c1b-422a-80a0-79be7f680abc": {
+              "id": "661e8be7-4c1b-422a-80a0-79be7f680abc",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "cfa4d7bb-cc21-49c5-b9c8-280713447b48",
+              "toNodeId": "2e45f712-a559-4d2b-bc72-051ea2e8a0ef"
+            },
+            "6c54522f-2d39-4705-a424-797087bc83bb": {
+              "id": "6c54522f-2d39-4705-a424-797087bc83bb",
+              "name": "No Do not Delete",
+              "description": "delete decision was not given",
+              "parentNodeId": "",
+              "fromNodeId": "5f2d1d0a-92b7-4479-b35f-c9cd841c10f4",
+              "toNodeId": "cfa4d7bb-cc21-49c5-b9c8-280713447b48"
+            },
+            "746d270d-c6e6-4942-9c7c-1efc823de985": {
+              "id": "746d270d-c6e6-4942-9c7c-1efc823de985",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "bc1e909d-4a55-4e24-9dd9-523b19e2c9d5",
+              "toNodeId": "4b965b0c-fd3d-4f2b-aa30-37f93f214753"
+            },
+            "780eb0c2-5918-4f5d-8bc3-ced48f90b72a": {
+              "id": "780eb0c2-5918-4f5d-8bc3-ced48f90b72a",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "4d198fa1-cc7d-47de-9dd9-f33a50d90fd9",
+              "toNodeId": ""
+            },
+            "7a9b6365-a42e-48fa-b529-14ba6b9591a3": {
+              "id": "7a9b6365-a42e-48fa-b529-14ba6b9591a3",
+              "name": "Yes",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "2e45f712-a559-4d2b-bc72-051ea2e8a0ef",
+              "toNodeId": "c1be2795-8756-4862-ad94-1d7d2fe751ea"
+            },
+            "87b4da4f-1729-4a3b-bc76-3f23a0a1d741": {
+              "id": "87b4da4f-1729-4a3b-bc76-3f23a0a1d741",
+              "name": "No Result",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "0052c5f4-4ec5-44d9-aa85-639f9a96a918",
+              "toNodeId": "fa588e39-aba7-4a3a-bcac-bcea4e80ff74"
+            },
+            "92e28643-a89f-4329-97b9-7f172d0078f5": {
+              "id": "92e28643-a89f-4329-97b9-7f172d0078f5",
+              "name": "",
+              "description": "",
+              "parentNodeId": "8fc20935-4fe1-465d-b962-52011ff78f82",
+              "fromNodeId": "8fc20935-4fe1-465d-b962-52011ff78f82",
+              "toNodeId": "c6c95860-7cd7-4633-b15e-bea9b3dd693c"
+            },
+            "941adb16-50af-4c10-9763-600d35c2d92f": {
+              "id": "941adb16-50af-4c10-9763-600d35c2d92f",
+              "name": "Yes",
+              "description": "Outputs 'email' and 'query' must be defined for this to be considered successful",
+              "parentNodeId": "",
+              "fromNodeId": "9108708f-fe22-4f2a-869b-7ba004878a27",
+              "toNodeId": "546b32d7-cbbf-45af-84aa-7f8d64ec20dd"
+            },
+            "955d8b43-22cb-403d-b6cd-97b24fbe7027": {
+              "id": "955d8b43-22cb-403d-b6cd-97b24fbe7027",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "8fc20935-4fe1-465d-b962-52011ff78f82",
+              "toNodeId": "bc1e909d-4a55-4e24-9dd9-523b19e2c9d5"
+            },
+            "b8d19158-5836-4801-bcab-68005328ece9": {
+              "id": "b8d19158-5836-4801-bcab-68005328ece9",
+              "name": "",
+              "description": "",
+              "parentNodeId": "8fc20935-4fe1-465d-b962-52011ff78f82",
+              "fromNodeId": "c6c95860-7cd7-4633-b15e-bea9b3dd693c",
+              "toNodeId": ""
+            },
+            "bf01d119-f000-498a-836c-b160d04f2b83": {
+              "id": "bf01d119-f000-498a-836c-b160d04f2b83",
+              "name": "Emails Found",
+              "description": "At least 1 email result returned",
+              "parentNodeId": "",
+              "fromNodeId": "147d178f-d0b0-4a73-b432-22e6713449e4",
+              "toNodeId": "5f2d1d0a-92b7-4479-b35f-c9cd841c10f4"
+            },
+            "c35a649f-3cb7-463b-aa43-eac62325d534": {
+              "id": "c35a649f-3cb7-463b-aa43-eac62325d534",
+              "name": "No",
+              "description": "email or query are not defined",
+              "parentNodeId": "",
+              "fromNodeId": "9108708f-fe22-4f2a-869b-7ba004878a27",
+              "toNodeId": "03b5f488-3825-46ac-afcc-ef6ad57aad0c"
+            },
+            "d09f40d2-b606-4b25-8961-f2c8fb74168d": {
+              "id": "d09f40d2-b606-4b25-8961-f2c8fb74168d",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "03b5f488-3825-46ac-afcc-ef6ad57aad0c",
+              "toNodeId": ""
+            },
+            "e5d7f808-6585-4408-bdf2-920b2d6581ac": {
+              "id": "e5d7f808-6585-4408-bdf2-920b2d6581ac",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "41d168bc-627d-4860-a196-6914a0da2f26",
+              "toNodeId": "0052c5f4-4ec5-44d9-aa85-639f9a96a918"
+            },
+            "e97b590e-08b0-4963-a930-d287dc81222a": {
+              "id": "e97b590e-08b0-4963-a930-d287dc81222a",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "8611a657-e320-4b61-8924-faceafdc49e1",
+              "toNodeId": "41d168bc-627d-4860-a196-6914a0da2f26"
+            },
+            "ec54bcef-f96f-4a6f-a1a2-ce7f6604caff": {
+              "id": "ec54bcef-f96f-4a6f-a1a2-ce7f6604caff",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "c1be2795-8756-4862-ad94-1d7d2fe751ea",
+              "toNodeId": "cfb0da23-e667-4969-a80e-6ef5775faa87"
+            },
+            "f05f0c74-43f1-4c1a-aa6c-b9cc9859d005": {
+              "id": "f05f0c74-43f1-4c1a-aa6c-b9cc9859d005",
+              "name": "",
+              "description": "",
+              "parentNodeId": "c1be2795-8756-4862-ad94-1d7d2fe751ea",
+              "fromNodeId": "c1be2795-8756-4862-ad94-1d7d2fe751ea",
+              "toNodeId": "9ff83823-b5fd-4fc8-8531-bbd60296023b"
+            },
+            "fc61a6d1-c28c-495f-8401-89e8145150bf": {
+              "id": "fc61a6d1-c28c-495f-8401-89e8145150bf",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "901c9f14-9462-41d5-9959-afe7d477493e",
+              "toNodeId": "75c4e364-f202-469e-bcb3-4140fe36e205"
+            }
+          },
+          "nodes": {
+            "0052c5f4-4ec5-44d9-aa85-639f9a96a918": {
+              "id": "0052c5f4-4ec5-44d9-aa85-639f9a96a918",
+              "parentNodeId": ""
+            },
+            "03b5f488-3825-46ac-afcc-ef6ad57aad0c": {
+              "id": "03b5f488-3825-46ac-afcc-ef6ad57aad0c",
+              "parentNodeId": ""
+            },
+            "147d178f-d0b0-4a73-b432-22e6713449e4": {
+              "id": "147d178f-d0b0-4a73-b432-22e6713449e4",
+              "parentNodeId": ""
+            },
+            "2e45f712-a559-4d2b-bc72-051ea2e8a0ef": {
+              "id": "2e45f712-a559-4d2b-bc72-051ea2e8a0ef",
+              "parentNodeId": ""
+            },
+            "41d168bc-627d-4860-a196-6914a0da2f26": {
+              "id": "41d168bc-627d-4860-a196-6914a0da2f26",
+              "parentNodeId": ""
+            },
+            "4b965b0c-fd3d-4f2b-aa30-37f93f214753": {
+              "id": "4b965b0c-fd3d-4f2b-aa30-37f93f214753",
+              "parentNodeId": ""
+            },
+            "4d198fa1-cc7d-47de-9dd9-f33a50d90fd9": {
+              "id": "4d198fa1-cc7d-47de-9dd9-f33a50d90fd9",
+              "parentNodeId": ""
+            },
+            "546b32d7-cbbf-45af-84aa-7f8d64ec20dd": {
+              "id": "546b32d7-cbbf-45af-84aa-7f8d64ec20dd",
+              "parentNodeId": ""
+            },
+            "5f2d1d0a-92b7-4479-b35f-c9cd841c10f4": {
+              "id": "5f2d1d0a-92b7-4479-b35f-c9cd841c10f4",
+              "parentNodeId": ""
+            },
+            "75c4e364-f202-469e-bcb3-4140fe36e205": {
+              "id": "75c4e364-f202-469e-bcb3-4140fe36e205",
+              "parentNodeId": ""
+            },
+            "8611a657-e320-4b61-8924-faceafdc49e1": {
+              "id": "8611a657-e320-4b61-8924-faceafdc49e1",
+              "parentNodeId": ""
+            },
+            "8fc20935-4fe1-465d-b962-52011ff78f82": {
+              "id": "8fc20935-4fe1-465d-b962-52011ff78f82",
+              "parentNodeId": ""
+            },
+            "901c9f14-9462-41d5-9959-afe7d477493e": {
+              "id": "901c9f14-9462-41d5-9959-afe7d477493e",
+              "parentNodeId": ""
+            },
+            "9108708f-fe22-4f2a-869b-7ba004878a27": {
+              "id": "9108708f-fe22-4f2a-869b-7ba004878a27",
+              "parentNodeId": ""
+            },
+            "9dfbea14-3d78-4fbb-937b-88d4c9b277d8": {
+              "id": "9dfbea14-3d78-4fbb-937b-88d4c9b277d8",
+              "parentNodeId": ""
+            },
+            "9ff83823-b5fd-4fc8-8531-bbd60296023b": {
+              "id": "9ff83823-b5fd-4fc8-8531-bbd60296023b",
+              "parentNodeId": "c1be2795-8756-4862-ad94-1d7d2fe751ea"
+            },
+            "bc1e909d-4a55-4e24-9dd9-523b19e2c9d5": {
+              "id": "bc1e909d-4a55-4e24-9dd9-523b19e2c9d5",
+              "parentNodeId": ""
+            },
+            "c1be2795-8756-4862-ad94-1d7d2fe751ea": {
+              "id": "c1be2795-8756-4862-ad94-1d7d2fe751ea",
+              "parentNodeId": ""
+            },
+            "c5cce12b-3672-4d99-83be-9df69fd3794c": {
+              "id": "c5cce12b-3672-4d99-83be-9df69fd3794c",
+              "parentNodeId": ""
+            },
+            "c6c95860-7cd7-4633-b15e-bea9b3dd693c": {
+              "id": "c6c95860-7cd7-4633-b15e-bea9b3dd693c",
+              "parentNodeId": "8fc20935-4fe1-465d-b962-52011ff78f82"
+            },
+            "cfa4d7bb-cc21-49c5-b9c8-280713447b48": {
+              "id": "cfa4d7bb-cc21-49c5-b9c8-280713447b48",
+              "parentNodeId": ""
+            },
+            "cfb0da23-e667-4969-a80e-6ef5775faa87": {
+              "id": "cfb0da23-e667-4969-a80e-6ef5775faa87",
+              "parentNodeId": ""
+            },
+            "fa588e39-aba7-4a3a-bcac-bcea4e80ff74": {
+              "id": "fa588e39-aba7-4a3a-bcac-bcea4e80ff74",
+              "parentNodeId": ""
+            }
+          }
+        },
+        "steps": {
+          "0052c5f4-4ec5-44d9-aa85-639f9a96a918": {
+            "nodeId": "0052c5f4-4ec5-44d9-aa85-639f9a96a918",
+            "name": "Did find succeed",
+            "type": "automated_decision",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "defaultEdgeId": "87b4da4f-1729-4a3b-bc76-3f23a0a1d741",
+              "stepControlParams": [
+                {
+                  "edgeId": "25891de0-4631-484f-8f70-10cfe91ca0e6",
+                  "expression": {
+                    "name": "41d168bc-627d-4860-a196-6914a0da2f26.$success",
+                    "type": "variable"
+                  },
+                  "expressionText": "{{[41d168bc-627d-4860-a196-6914a0da2f26].[$success]}}"
+                },
+                {
+                  "edgeId": "87b4da4f-1729-4a3b-bc76-3f23a0a1d741",
+                  "expression": {},
+                  "expressionText": ""
+                }
+              ]
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/automated-decision.svg",
+            "connectionType": "NONE"
+          },
+          "03b5f488-3825-46ac-afcc-ef6ad57aad0c": {
+            "nodeId": "03b5f488-3825-46ac-afcc-ef6ad57aad0c",
+            "name": "Parse Arguments Failed",
+            "type": "action_chatops",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "attachments": [],
+                "message": "📧delete-mail📧 result:\nDid not understand the command. \n{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[text]}}\nWorkflow Complete ❗",
+                "recipient": "#{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[channel]}}",
+                "thread_ts": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[ts]}}"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attachments": {
+                  "description": "JSON array of attachments - see Help for documentation",
+                  "items": {
+                    "type": "object"
+                  },
+                  "order": 4,
+                  "title": "Attachments",
+                  "type": "array"
+                },
+                "message": {
+                  "description": "Message to send",
+                  "order": 3,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "Channels begin with # (e.g. #channel) and usernames begin with @ (e.g. @username)",
+                  "order": 1,
+                  "title": "Enter #channel or @username",
+                  "type": "string"
+                },
+                "thread_ts": {
+                  "description": "Select timestamp output variable from parent message step",
+                  "order": 2,
+                  "title": "To post in a thread, select parent message timestamp",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "recipient"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "channel_id": {
+                  "description": "ChannelID of successful message",
+                  "order": 1,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "parent_message_timestamp": {
+                  "description": "The timestamp of the parent message or of the current message if there is no parent. Used to post messages to a thread.",
+                  "order": 3,
+                  "title": "Parent Message Timestamp",
+                  "type": "string"
+                },
+                "timestamp": {
+                  "description": "Timestamp of successful message",
+                  "order": 2,
+                  "title": "Timestamp",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "post_message"
+          },
+          "147d178f-d0b0-4a73-b432-22e6713449e4": {
+            "nodeId": "147d178f-d0b0-4a73-b432-22e6713449e4",
+            "name": "1 or more emails found",
+            "type": "automated_decision",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "defaultEdgeId": "06e81ed2-31c6-4eb7-bfa4-819452bead1a",
+              "stepControlParams": [
+                {
+                  "edgeId": "06e81ed2-31c6-4eb7-bfa4-819452bead1a",
+                  "expression": {},
+                  "expressionText": ""
+                },
+                {
+                  "edgeId": "bf01d119-f000-498a-836c-b160d04f2b83",
+                  "expression": {
+                    "left": {
+                      "name": "41d168bc-627d-4860-a196-6914a0da2f26.count",
+                      "type": "variable"
+                    },
+                    "op": ">",
+                    "right": {
+                      "type": "literal",
+                      "value": 0
+                    },
+                    "type": "binary"
+                  },
+                  "expressionText": "{{[41d168bc-627d-4860-a196-6914a0da2f26].[count]}} > 0"
+                }
+              ]
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/automated-decision.svg",
+            "connectionType": "NONE"
+          },
+          "2e45f712-a559-4d2b-bc72-051ea2e8a0ef": {
+            "nodeId": "2e45f712-a559-4d2b-bc72-051ea2e8a0ef",
+            "name": "Would you like to delete emails?",
+            "type": "decision_chatops",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "attachments": null,
+              "message": "{{[cfa4d7bb-cc21-49c5-b9c8-280713447b48].[content]}}",
+              "messageType": "button",
+              "options": [
+                {
+                  "answer": "Yes",
+                  "buttonStyle": "default",
+                  "confirmation": "Attempting to Delete Emails",
+                  "edgeId": "7a9b6365-a42e-48fa-b529-14ba6b9591a3",
+                  "isTimeoutOnly": false
+                },
+                {
+                  "answer": "No",
+                  "buttonStyle": "default",
+                  "confirmation": "Skipping Delete Emails",
+                  "edgeId": "08ce5f83-4332-41ab-9bf5-9a1bd8993ef4",
+                  "isTimeoutOnly": false
+                }
+              ],
+              "question": "Would you like to delete these emails? ",
+              "recipient": "#{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[channel]}}",
+              "threadTimestamp": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[timestamp]}}",
+              "timeout": 120,
+              "timeoutDisplayUnit": "seconds",
+              "timeoutEdgeId": "08ce5f83-4332-41ab-9bf5-9a1bd8993ef4"
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attachments": {
+                  "description": "JSON array of attachments - see Help for documentation",
+                  "displayType": "bytes",
+                  "format": "bytes",
+                  "order": 3,
+                  "title": "Attachments",
+                  "type": "string"
+                },
+                "message": {
+                  "description": "Message to send",
+                  "order": 1,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "A channel (e.g. #channel) or username",
+                  "order": 2,
+                  "title": "Recipient",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "recipient"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "$success": {
+                  "description": "",
+                  "order": 8,
+                  "title": "$success",
+                  "type": "boolean"
+                },
+                "channel_id": {
+                  "description": "ChannelID of successful message",
+                  "order": 1,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "display_name": {
+                  "description": "The slack display name for the user responding to the question",
+                  "order": 9,
+                  "title": "Display Name",
+                  "type": "string"
+                },
+                "message": {
+                  "description": "The message that was sent to slack",
+                  "order": 4,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "path": {
+                  "description": "The path taken",
+                  "order": 6,
+                  "title": "Path",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "The Channel name or User Name",
+                  "order": 3,
+                  "title": "Recipient",
+                  "type": "string"
+                },
+                "responding_user": {
+                  "description": "The slack username of the user responding to the question",
+                  "order": 7,
+                  "title": "Response User",
+                  "type": "string"
+                },
+                "response_question": {
+                  "description": "The response question that was sent to slack",
+                  "order": 5,
+                  "title": "Response Question",
+                  "type": "string"
+                },
+                "timestamp": {
+                  "description": "Timestamp of successful message",
+                  "order": 2,
+                  "title": "Timestamp",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "post_interactive_message"
+          },
+          "41d168bc-627d-4860-a196-6914a0da2f26": {
+            "nodeId": "41d168bc-627d-4860-a196-6914a0da2f26",
+            "name": "Find Emails in Gmail",
+            "type": "action",
+            "plugin": {
+              "name": "Gmail",
+              "slugVendor": "rapid7",
+              "slugName": "gmail",
+              "slugVersion": "5.1.4",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/gmail/5.1.4/icon.png"
+            },
+            "identifier": "find_messages",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "email": "{{[75c4e364-f202-469e-bcb3-4140fe36e205].[email]}}",
+                "flatten_attachments": false,
+                "include_spam_trash": false,
+                "query": "{{[75c4e364-f202-469e-bcb3-4140fe36e205].[query]}}"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "email": {
+                  "description": "The user's email address",
+                  "order": 1,
+                  "title": "Email",
+                  "type": "string"
+                },
+                "flatten_attachments": {
+                  "default": false,
+                  "description": "Flattens attachments to a single list",
+                  "order": 4,
+                  "title": "Flatten Attachments",
+                  "type": "boolean"
+                },
+                "include_spam_trash": {
+                  "default": false,
+                  "description": "Include spam & trash results",
+                  "order": 2,
+                  "title": "Include Spam Trash",
+                  "type": "boolean"
+                },
+                "query": {
+                  "description": "Supports the same query format as the Gmail search box. For example, 'from:someuser@example.com rfc822msgid: is:unread'",
+                  "order": 3,
+                  "title": "Query",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "include_spam_trash",
+                "query",
+                "email"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "attachment_email": {
+                  "properties": {
+                    "attached_emails": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 4,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 5,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 6,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "sender": {
+                      "order": 2,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 3,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment Email",
+                  "type": "object"
+                },
+                "attachment_file": {
+                  "properties": {
+                    "content": {
+                      "displayType": "bytes",
+                      "format": "bytes",
+                      "order": 2,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "name": {
+                      "order": 1,
+                      "title": "Name",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment File",
+                  "type": "object"
+                },
+                "email": {
+                  "properties": {
+                    "account": {
+                      "description": "Account for which the email was found on",
+                      "order": 2,
+                      "title": "Account",
+                      "type": "string"
+                    },
+                    "attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 6,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 11,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "flattened_attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email"
+                      },
+                      "order": 9,
+                      "title": "Flattened Attached Emails",
+                      "type": "array"
+                    },
+                    "flattened_attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 10,
+                      "title": "Flattened Attached Files",
+                      "type": "array"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 12,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "is_read": {
+                      "description": "Whether or not the email has been read",
+                      "order": 3,
+                      "title": "Is Read",
+                      "type": "boolean"
+                    },
+                    "sender": {
+                      "order": 4,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 5,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Email",
+                  "type": "object"
+                },
+                "header": {
+                  "properties": {
+                    "name": {
+                      "order": 1,
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "value": {
+                      "order": 2,
+                      "title": "Value",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Header",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "count": {
+                  "description": "Estimated total count",
+                  "order": 2,
+                  "title": "Count",
+                  "type": "integer"
+                },
+                "emails": {
+                  "description": "Emails",
+                  "items": {
+                    "$ref": "#/definitions/email"
+                  },
+                  "order": 1,
+                  "title": "Emails",
+                  "type": "array"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "4b965b0c-fd3d-4f2b-aa30-37f93f214753": {
+            "nodeId": "4b965b0c-fd3d-4f2b-aa30-37f93f214753",
+            "name": "Workflow Complete 2",
+            "type": "action_chatops",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "attachments": [],
+                "message": "📧delete-email📧 result: \n{{[41d168bc-627d-4860-a196-6914a0da2f26].[count]}} email(s) were successfully deleted.\nWorkflow Completed ✅",
+                "recipient": "#{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[channel]}}",
+                "thread_ts": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[timestamp]}}"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attachments": {
+                  "description": "JSON array of attachments - see Help for documentation",
+                  "items": {
+                    "type": "object"
+                  },
+                  "order": 4,
+                  "title": "Attachments",
+                  "type": "array"
+                },
+                "message": {
+                  "description": "Message to send",
+                  "order": 3,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "Channels begin with # (e.g. #channel) and usernames begin with @ (e.g. @username)",
+                  "order": 1,
+                  "title": "Enter #channel or @username",
+                  "type": "string"
+                },
+                "thread_ts": {
+                  "description": "Select timestamp output variable from parent message step",
+                  "order": 2,
+                  "title": "To post in a thread, select parent message timestamp",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "recipient"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "channel_id": {
+                  "description": "ChannelID of successful message",
+                  "order": 1,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "parent_message_timestamp": {
+                  "description": "The timestamp of the parent message or of the current message if there is no parent. Used to post messages to a thread.",
+                  "order": 3,
+                  "title": "Parent Message Timestamp",
+                  "type": "string"
+                },
+                "timestamp": {
+                  "description": "Timestamp of successful message",
+                  "order": 2,
+                  "title": "Timestamp",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "post_message"
+          },
+          "4d198fa1-cc7d-47de-9dd9-f33a50d90fd9": {
+            "nodeId": "4d198fa1-cc7d-47de-9dd9-f33a50d90fd9",
+            "name": "Print No Emails Found",
+            "type": "action_chatops",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "attachments": [],
+                "message": "📧delete-email📧 result:\nNo emails found with the search criteria provided\nWorkflow completed❗",
+                "recipient": "#{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[channel]}}",
+                "thread_ts": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[timestamp]}}"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attachments": {
+                  "description": "JSON array of attachments - see Help for documentation",
+                  "items": {
+                    "type": "object"
+                  },
+                  "order": 4,
+                  "title": "Attachments",
+                  "type": "array"
+                },
+                "message": {
+                  "description": "Message to send",
+                  "order": 3,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "Channels begin with # (e.g. #channel) and usernames begin with @ (e.g. @username)",
+                  "order": 1,
+                  "title": "Enter #channel or @username",
+                  "type": "string"
+                },
+                "thread_ts": {
+                  "description": "Select timestamp output variable from parent message step",
+                  "order": 2,
+                  "title": "To post in a thread, select parent message timestamp",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "recipient"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "channel_id": {
+                  "description": "ChannelID of successful message",
+                  "order": 1,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "parent_message_timestamp": {
+                  "description": "The timestamp of the parent message or of the current message if there is no parent. Used to post messages to a thread.",
+                  "order": 3,
+                  "title": "Parent Message Timestamp",
+                  "type": "string"
+                },
+                "timestamp": {
+                  "description": "Timestamp of successful message",
+                  "order": 2,
+                  "title": "Timestamp",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "post_message"
+          },
+          "546b32d7-cbbf-45af-84aa-7f8d64ec20dd": {
+            "nodeId": "546b32d7-cbbf-45af-84aa-7f8d64ec20dd",
+            "name": "Delete Email Parsed Args",
+            "type": "artifact",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "content": "Target mailbox: \"{{[75c4e364-f202-469e-bcb3-4140fe36e205].[email]}}\"\n\nQuery: \"{{[75c4e364-f202-469e-bcb3-4140fe36e205].[query]}}\"\n\nDelete: \"{{[75c4e364-f202-469e-bcb3-4140fe36e205].[delete]}}\""
+              },
+              "type": "markdown"
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/artifact.svg",
+            "connectionType": "NONE"
+          },
+          "5f2d1d0a-92b7-4479-b35f-c9cd841c10f4": {
+            "nodeId": "5f2d1d0a-92b7-4479-b35f-c9cd841c10f4",
+            "name": "Automatically Delete Emails",
+            "type": "automated_decision",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "defaultEdgeId": "6c54522f-2d39-4705-a424-797087bc83bb",
+              "stepControlParams": [
+                {
+                  "edgeId": "5497d824-9e2b-4467-b7f2-bfbe85313f88",
+                  "expression": {
+                    "left": {
+                      "args": [
+                        {
+                          "name": "75c4e364-f202-469e-bcb3-4140fe36e205.delete",
+                          "type": "variable"
+                        }
+                      ],
+                      "name": "is_defined",
+                      "type": "function"
+                    },
+                    "op": "AND",
+                    "right": {
+                      "name": "75c4e364-f202-469e-bcb3-4140fe36e205.delete",
+                      "type": "variable"
+                    },
+                    "type": "binary"
+                  },
+                  "expressionText": "is_defined({{[75c4e364-f202-469e-bcb3-4140fe36e205].[delete]}}) AND {{[75c4e364-f202-469e-bcb3-4140fe36e205].[delete]}}"
+                },
+                {
+                  "edgeId": "6c54522f-2d39-4705-a424-797087bc83bb",
+                  "expression": {},
+                  "expressionText": ""
+                }
+              ]
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/automated-decision.svg",
+            "connectionType": "NONE"
+          },
+          "75c4e364-f202-469e-bcb3-4140fe36e205": {
+            "nodeId": "75c4e364-f202-469e-bcb3-4140fe36e205",
+            "name": "Parse Args",
+            "type": "action",
+            "plugin": {
+              "name": "Python 3 Script",
+              "slugVendor": "rapid7",
+              "slugName": "python_3_script",
+              "slugVersion": "2.0.1",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/python_3_script/2.0.1/icon.png"
+            },
+            "identifier": "run",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "function": "def run(params={}):\n    # Sometimes Slack will give us email in their linked form:\n    # <mailto:user@example.com>\n    # or\n    # <http://www.exmaple.com|example.com>\n    def parse_email(email):\n        if email.startswith(\"<\"):\n            # mailto link\n            if \"mailto:\" in email:\n                split_email = email.split(\":\")[1]\n                if \"|\" in split_email:\n                    return split_email.split(\"|\")[0]\n                return split_email\n\n            # http link\n            if \"http:\" in email:\n                split_email = email.split(\"|\")[1]\n                split_email = split_email.rstrip(\">\")\n                return split_email\n\n        return email\n\n    def parse_bool(input_string):\n        in_clean = input_string.strip().lower()\n        if in_clean == 't' or in_clean == 'true' or in_clean == '1':\n            return True\n        return False\n\n    import shlex\n    input = params.get(\"input\")\n\n    # Sometimes slack gives us unicode spaces\n    input = input.replace(u'\\xa0', u' ')\n\n    # split our args\n    # 0         1            2       3\n    # <@bot ID> delete-email <email> [delete=True|False] <query>\n    args = shlex.split(input)\n\n    email = None\n    if len(args) > 2:\n        # users email _has_ to be the first argument to the COMMAND, not the arguments to this script\n        email = parse_email(args[2])\n        if '@' not in email:\n            email = ''\n\n    args_for_gmail = {\n        'email': email,\n        'delete': False,\n        'query': ''\n    }\n\n    # parse args\n    if len(args) > 3 and '@' in args_for_gmail['email']:\n        for i in range(3, len(args)):\n            if '=' in args[i]:\n                split_args = args[i].split('=')\n                if split_args[0].lower() == 'delete':\n                    args_for_gmail['delete'] = parse_bool(split_args[1])\n                else:\n                    args_for_gmail['query'] += ' ' + args[i]\n            else:\n                args_for_gmail['query'] += ' ' + args[i]\n\n    return args_for_gmail",
+                "input": {
+                  "input": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[text]}}"
+                }
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "function": {
+                  "default": "def run(params={}):\\n    return {}",
+                  "description": "Function definition. Must be named `run`. Accepts the `input` object as params. Returns the dict as output",
+                  "displayType": "python",
+                  "format": "python",
+                  "order": 1,
+                  "title": "Function",
+                  "type": "string"
+                },
+                "input": {
+                  "description": "Input object to be passed as `params={}` to the `run` function",
+                  "order": 2,
+                  "title": "Input",
+                  "type": "object"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "result1": {
+                  "description": "Sample output result1 (delete or edit)",
+                  "order": 1,
+                  "title": "Result1",
+                  "type": "string"
+                },
+                "result2": {
+                  "description": "Sample output result2 (delete or edit)",
+                  "order": 2,
+                  "title": "Result2",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": {
+              "definitions": {},
+              "properties": {
+                "body": {
+                  "description": "Sample output result1 (delete or edit)",
+                  "order": 1,
+                  "title": "Result1",
+                  "type": "string"
+                },
+                "delete": {
+                  "type": "boolean"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "subject": {
+                  "description": "Sample output result2 (delete or edit)",
+                  "order": 2,
+                  "title": "Result2",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "8611a657-e320-4b61-8924-faceafdc49e1": {
+            "nodeId": "8611a657-e320-4b61-8924-faceafdc49e1",
+            "name": "Start Search Notification",
+            "type": "action_chatops",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "attachments": [],
+                "message": "delete-email starting:\n{{[546b32d7-cbbf-45af-84aa-7f8d64ec20dd].[content]}}\n\n\n",
+                "recipient": "#{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[channel]}}",
+                "thread_ts": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[timestamp]}}"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attachments": {
+                  "description": "JSON array of attachments - see Help for documentation",
+                  "items": {
+                    "type": "object"
+                  },
+                  "order": 4,
+                  "title": "Attachments",
+                  "type": "array"
+                },
+                "message": {
+                  "description": "Message to send",
+                  "order": 3,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "Channels begin with # (e.g. #channel) and usernames begin with @ (e.g. @username)",
+                  "order": 1,
+                  "title": "Enter #channel or @username",
+                  "type": "string"
+                },
+                "thread_ts": {
+                  "description": "Select timestamp output variable from parent message step",
+                  "order": 2,
+                  "title": "To post in a thread, select parent message timestamp",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "recipient"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "channel_id": {
+                  "description": "ChannelID of successful message",
+                  "order": 1,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "parent_message_timestamp": {
+                  "description": "The timestamp of the parent message or of the current message if there is no parent. Used to post messages to a thread.",
+                  "order": 3,
+                  "title": "Parent Message Timestamp",
+                  "type": "string"
+                },
+                "timestamp": {
+                  "description": "Timestamp of successful message",
+                  "order": 2,
+                  "title": "Timestamp",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "post_message"
+          },
+          "8fc20935-4fe1-465d-b962-52011ff78f82": {
+            "nodeId": "8fc20935-4fe1-465d-b962-52011ff78f82",
+            "name": "Delete Emails",
+            "type": "loop",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "customOutput": [],
+              "innerEdgeId": "92e28643-a89f-4329-97b9-7f172d0078f5",
+              "nextEdgeId": "955d8b43-22cb-403d-b6cd-97b24fbe7027",
+              "repeatVariable": "{{[41d168bc-627d-4860-a196-6914a0da2f26].[emails]}}"
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": {
+              "properties": {},
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/loop.svg",
+            "connectionType": "NONE"
+          },
+          "901c9f14-9462-41d5-9959-afe7d477493e": {
+            "nodeId": "901c9f14-9462-41d5-9959-afe7d477493e",
+            "name": "Overview",
+            "type": "artifact",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "content": "## Overview\n\n(This artifact can be deleted)\n\nThis workflow uses the Chat Ops Slack connection to listen for key messages from the InsightConnect Rapid7 connection and will search for and delete emails when triggered.\n\nTo trigger this workflow, send a direct message to Rapid7 InsightConnect from Slack like the following.\n\n`delete-email user@example.com <seach query>`\n\nThis will kick off the workflow, and prompt you back when the search is completed. If any emails are found that match the criteria, you can hit the delete button in Slack to delete them.\n\n### Other options:\n\nSearch criteria can be body, subject, or from lines in the email. For example:\n\n`delete-email user@example.com subject:\"A phishy email\" from:\"example.com\" body:\"Click here for free stuff\" `\n\nHow to use search operators in [Gmail](https://support.google.com/mail/answer/7190)\n\nIf you'd like the workflow to just delete emails without prompting, you can use 'delete=true'.  It must be after the account email. For example:\n\n`find-gmail user@example.com delete=true from:user@example.com`"
+              },
+              "type": "markdown"
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/artifact.svg",
+            "connectionType": "NONE"
+          },
+          "9108708f-fe22-4f2a-869b-7ba004878a27": {
+            "nodeId": "9108708f-fe22-4f2a-869b-7ba004878a27",
+            "name": "Was parsing successful",
+            "type": "automated_decision",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "defaultEdgeId": "c35a649f-3cb7-463b-aa43-eac62325d534",
+              "stepControlParams": [
+                {
+                  "edgeId": "941adb16-50af-4c10-9763-600d35c2d92f",
+                  "expression": {
+                    "left": {
+                      "left": {
+                        "args": [
+                          {
+                            "name": "75c4e364-f202-469e-bcb3-4140fe36e205.query",
+                            "type": "variable"
+                          }
+                        ],
+                        "name": "length",
+                        "type": "function"
+                      },
+                      "op": ">",
+                      "right": {
+                        "type": "literal",
+                        "value": 0
+                      },
+                      "type": "binary"
+                    },
+                    "op": "AND",
+                    "right": {
+                      "left": {
+                        "args": [
+                          {
+                            "name": "75c4e364-f202-469e-bcb3-4140fe36e205.email",
+                            "type": "variable"
+                          }
+                        ],
+                        "name": "length",
+                        "type": "function"
+                      },
+                      "op": ">",
+                      "right": {
+                        "type": "literal",
+                        "value": 0
+                      },
+                      "type": "binary"
+                    },
+                    "type": "binary"
+                  },
+                  "expressionText": "length({{[75c4e364-f202-469e-bcb3-4140fe36e205].[query]}}) > 0 AND length({{[75c4e364-f202-469e-bcb3-4140fe36e205].[email]}}) > 0"
+                },
+                {
+                  "edgeId": "c35a649f-3cb7-463b-aa43-eac62325d534",
+                  "expression": {},
+                  "expressionText": ""
+                }
+              ]
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/automated-decision.svg",
+            "connectionType": "NONE"
+          },
+          "9dfbea14-3d78-4fbb-937b-88d4c9b277d8": {
+            "nodeId": "9dfbea14-3d78-4fbb-937b-88d4c9b277d8",
+            "name": "delete-email Trigger",
+            "description": "User has put in a search command in slack to the slackbot",
+            "type": "trigger",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "matchChannel": "",
+                "matchText": "delete-email.*",
+                "type": "group"
+              }
+            },
+            "triggerId": "ef660f46-f60c-443c-8be8-c4a5be4fd850",
+            "defaultInputJSONSchema": {
+              "properties": {
+                "matchChannel": {
+                  "description": "Regex to match for channel name",
+                  "order": 1,
+                  "title": "Match Channel",
+                  "type": "string"
+                },
+                "matchText": {
+                  "description": "Regex to match for Slack message content",
+                  "order": 2,
+                  "title": "Match Text",
+                  "type": "string"
+                },
+                "type": {
+                  "default": "any",
+                  "description": "Desired Slack channel type: direct message to Slack app, group chats, or all channels",
+                  "enum": [
+                    "any",
+                    "direct",
+                    "group"
+                  ],
+                  "order": 3,
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "hashes": {
+                  "properties": {
+                    "md5_hashes": {
+                      "description": "MD5 hashes found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 1,
+                      "title": "MD5 Hashes",
+                      "type": "array"
+                    },
+                    "sha1_hashes": {
+                      "description": "SHA1 hashes found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 2,
+                      "title": "SHA1 Hashes",
+                      "type": "array"
+                    },
+                    "sha256_hashes": {
+                      "description": "SHA256 hashes found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 3,
+                      "title": "SHA256 Hashes",
+                      "type": "array"
+                    }
+                  },
+                  "title": "Hashes",
+                  "type": "object"
+                },
+                "indicators": {
+                  "properties": {
+                    "domains": {
+                      "description": "Domains found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 1,
+                      "title": "Domains",
+                      "type": "array"
+                    },
+                    "email_addresses": {
+                      "description": "Email addresses found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 4,
+                      "title": "Email Addresses",
+                      "type": "array"
+                    },
+                    "hashes": {
+                      "$ref": "#/definitions/hashes",
+                      "description": "Hashes found within the message",
+                      "order": 5,
+                      "title": "Hashes"
+                    },
+                    "ip_addresses": {
+                      "$ref": "#/definitions/ip_addresses",
+                      "description": "IP addresses found within the message",
+                      "order": 7,
+                      "title": "IP Addresses"
+                    },
+                    "mac_addresses": {
+                      "description": "MAC addresses found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 6,
+                      "title": "MAC Addresses",
+                      "type": "array"
+                    },
+                    "parent_domains": {
+                      "description": "Parent domains found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 2,
+                      "title": "Parent Domains",
+                      "type": "array"
+                    },
+                    "urls": {
+                      "description": "URLs found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 3,
+                      "title": "URLs",
+                      "type": "array"
+                    }
+                  },
+                  "title": "Indicators",
+                  "type": "object"
+                },
+                "ip_addresses": {
+                  "properties": {
+                    "ipv4_addresses": {
+                      "description": "IPv4 addresses found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 1,
+                      "title": "IPv4 Addresses",
+                      "type": "array"
+                    },
+                    "ipv6_addresses": {
+                      "description": "IPv6 addresses found within the message",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 2,
+                      "title": "IPv6 Addresses",
+                      "type": "array"
+                    }
+                  },
+                  "title": "IP Addresses",
+                  "type": "object"
+                },
+                "message": {
+                  "properties": {
+                    "channel": {
+                      "description": "Channel name",
+                      "order": 3,
+                      "title": "Channel",
+                      "type": "string"
+                    },
+                    "channel_id": {
+                      "description": "Slack channel ID",
+                      "order": 4,
+                      "title": "Channel ID",
+                      "type": "string"
+                    },
+                    "first_word": {
+                      "description": "First word of the message, for example a chat command (ignoring mentions)",
+                      "order": 5,
+                      "title": "First Word",
+                      "type": "string"
+                    },
+                    "indicators": {
+                      "$ref": "#/definitions/indicators",
+                      "description": "Potential threat indicators found within the message",
+                      "order": 7,
+                      "title": "Indicators"
+                    },
+                    "text": {
+                      "description": "Text",
+                      "order": 5,
+                      "title": "Text",
+                      "type": "string"
+                    },
+                    "ts": {
+                      "description": "Timestamp",
+                      "order": 6,
+                      "title": "Ts",
+                      "type": "string"
+                    },
+                    "user": {
+                      "description": "User name",
+                      "order": 1,
+                      "title": "User",
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "description": "Slack User ID",
+                      "order": 2,
+                      "title": "User ID",
+                      "type": "string"
+                    },
+                    "words": {
+                      "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 6,
+                      "title": "Words",
+                      "type": "array"
+                    }
+                  },
+                  "title": "Message",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "display_name": {
+                  "description": "User display name",
+                  "order": 4,
+                  "title": "Display Name",
+                  "type": "string"
+                },
+                "message": {
+                  "$ref": "#/definitions/message",
+                  "description": "Message",
+                  "order": 1,
+                  "title": "Message"
+                },
+                "timestamp": {
+                  "description": "Timestamp",
+                  "order": 3,
+                  "title": "Timestamp",
+                  "type": "string"
+                },
+                "type": {
+                  "description": "Message Type",
+                  "order": 2,
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/chatops.svg",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "message"
+          },
+          "9ff83823-b5fd-4fc8-8531-bbd60296023b": {
+            "nodeId": "9ff83823-b5fd-4fc8-8531-bbd60296023b",
+            "name": "Delete an Email when prompted",
+            "type": "action",
+            "plugin": {
+              "name": "Gmail",
+              "slugVendor": "rapid7",
+              "slugName": "gmail",
+              "slugVersion": "5.1.4",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/gmail/5.1.4/icon.png"
+            },
+            "identifier": "delete_message_by_id",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "deletion_method": "Delete",
+                "email": "{{[75c4e364-f202-469e-bcb3-4140fe36e205].[email]}}",
+                "email_id": "{{[c1be2795-8756-4862-ad94-1d7d2fe751ea].[$item].[id]}}",
+                "flatten_attachments": false
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "deletion_method": {
+                  "description": "Deletes an email. Emails can be deleted or moved to trash",
+                  "enum": [
+                    "Delete",
+                    "Trash"
+                  ],
+                  "order": 3,
+                  "title": "Deletion Method",
+                  "type": "string"
+                },
+                "email": {
+                  "description": "The user's email address",
+                  "order": 1,
+                  "title": "Email",
+                  "type": "string"
+                },
+                "email_id": {
+                  "description": "ID of the email to delete",
+                  "order": 2,
+                  "title": "Email ID",
+                  "type": "string"
+                },
+                "flatten_attachments": {
+                  "default": false,
+                  "description": "Flattens attachments to a single list",
+                  "order": 4,
+                  "title": "Flatten Attachments",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "email",
+                "email_id",
+                "deletion_method"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "attachment_email": {
+                  "properties": {
+                    "attached_emails": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 4,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 5,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 6,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "sender": {
+                      "order": 2,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 3,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment Email",
+                  "type": "object"
+                },
+                "attachment_file": {
+                  "properties": {
+                    "content": {
+                      "displayType": "bytes",
+                      "format": "bytes",
+                      "order": 2,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "name": {
+                      "order": 1,
+                      "title": "Name",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment File",
+                  "type": "object"
+                },
+                "email": {
+                  "properties": {
+                    "account": {
+                      "description": "Account for which the email was found on",
+                      "order": 2,
+                      "title": "Account",
+                      "type": "string"
+                    },
+                    "attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 6,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 11,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "flattened_attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email"
+                      },
+                      "order": 9,
+                      "title": "Flattened Attached Emails",
+                      "type": "array"
+                    },
+                    "flattened_attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 10,
+                      "title": "Flattened Attached Files",
+                      "type": "array"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 12,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "is_read": {
+                      "description": "Whether or not the email has been read",
+                      "order": 3,
+                      "title": "Is Read",
+                      "type": "boolean"
+                    },
+                    "sender": {
+                      "order": 4,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 5,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Email",
+                  "type": "object"
+                },
+                "header": {
+                  "properties": {
+                    "name": {
+                      "order": 1,
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "value": {
+                      "order": 2,
+                      "title": "Value",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Header",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "email": {
+                  "$ref": "#/definitions/email",
+                  "description": "Email",
+                  "order": 1,
+                  "title": "Email"
+                },
+                "success": {
+                  "description": "True if successful",
+                  "order": 2,
+                  "title": "Success",
+                  "type": "boolean"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "bc1e909d-4a55-4e24-9dd9-523b19e2c9d5": {
+            "nodeId": "bc1e909d-4a55-4e24-9dd9-523b19e2c9d5",
+            "name": "Workflow Complete",
+            "type": "artifact",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "content": "\n{{[41d168bc-627d-4860-a196-6914a0da2f26].[count]}} email(s) were successfully deleted.\nWorkflow Complete "
+              },
+              "type": "markdown"
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/artifact.svg",
+            "connectionType": "NONE"
+          },
+          "c1be2795-8756-4862-ad94-1d7d2fe751ea": {
+            "nodeId": "c1be2795-8756-4862-ad94-1d7d2fe751ea",
+            "name": "Delete Emails when prompted",
+            "type": "loop",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "customOutput": [],
+              "innerEdgeId": "f05f0c74-43f1-4c1a-aa6c-b9cc9859d005",
+              "nextEdgeId": "ec54bcef-f96f-4a6f-a1a2-ce7f6604caff",
+              "repeatVariable": "{{[41d168bc-627d-4860-a196-6914a0da2f26].[emails]}}"
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": {
+              "properties": {},
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/loop.svg",
+            "connectionType": "NONE"
+          },
+          "c5cce12b-3672-4d99-83be-9df69fd3794c": {
+            "nodeId": "c5cce12b-3672-4d99-83be-9df69fd3794c",
+            "name": "Workflow Completed without Delete",
+            "type": "action_chatops",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "attachments": [],
+                "message": "📧delete-email📧 result:\n{{[41d168bc-627d-4860-a196-6914a0da2f26].[count]}} Email(s) were not deleted\nWorkflow Completed❗",
+                "recipient": "#{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[channel]}}",
+                "thread_ts": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[timestamp]}}"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attachments": {
+                  "description": "JSON array of attachments - see Help for documentation",
+                  "items": {
+                    "type": "object"
+                  },
+                  "order": 4,
+                  "title": "Attachments",
+                  "type": "array"
+                },
+                "message": {
+                  "description": "Message to send",
+                  "order": 3,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "Channels begin with # (e.g. #channel) and usernames begin with @ (e.g. @username)",
+                  "order": 1,
+                  "title": "Enter #channel or @username",
+                  "type": "string"
+                },
+                "thread_ts": {
+                  "description": "Select timestamp output variable from parent message step",
+                  "order": 2,
+                  "title": "To post in a thread, select parent message timestamp",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "recipient"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "channel_id": {
+                  "description": "ChannelID of successful message",
+                  "order": 1,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "parent_message_timestamp": {
+                  "description": "The timestamp of the parent message or of the current message if there is no parent. Used to post messages to a thread.",
+                  "order": 3,
+                  "title": "Parent Message Timestamp",
+                  "type": "string"
+                },
+                "timestamp": {
+                  "description": "Timestamp of successful message",
+                  "order": 2,
+                  "title": "Timestamp",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "post_message"
+          },
+          "c6c95860-7cd7-4633-b15e-bea9b3dd693c": {
+            "nodeId": "c6c95860-7cd7-4633-b15e-bea9b3dd693c",
+            "name": "Delete an Email",
+            "type": "action",
+            "plugin": {
+              "name": "Gmail",
+              "slugVendor": "rapid7",
+              "slugName": "gmail",
+              "slugVersion": "5.1.4",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/gmail/5.1.4/icon.png"
+            },
+            "identifier": "delete_message_by_id",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "deletion_method": "Delete",
+                "email": "{{[75c4e364-f202-469e-bcb3-4140fe36e205].[email]}}",
+                "email_id": "{{[8fc20935-4fe1-465d-b962-52011ff78f82].[$item].[id]}}",
+                "flatten_attachments": false
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "deletion_method": {
+                  "description": "Deletes an email. Emails can be deleted or moved to trash",
+                  "enum": [
+                    "Delete",
+                    "Trash"
+                  ],
+                  "order": 3,
+                  "title": "Deletion Method",
+                  "type": "string"
+                },
+                "email": {
+                  "description": "The user's email address",
+                  "order": 1,
+                  "title": "Email",
+                  "type": "string"
+                },
+                "email_id": {
+                  "description": "ID of the email to delete",
+                  "order": 2,
+                  "title": "Email ID",
+                  "type": "string"
+                },
+                "flatten_attachments": {
+                  "default": false,
+                  "description": "Flattens attachments to a single list",
+                  "order": 4,
+                  "title": "Flatten Attachments",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "email",
+                "email_id",
+                "deletion_method"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "attachment_email": {
+                  "properties": {
+                    "attached_emails": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 4,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 5,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 6,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "sender": {
+                      "order": 2,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 3,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment Email",
+                  "type": "object"
+                },
+                "attachment_file": {
+                  "properties": {
+                    "content": {
+                      "displayType": "bytes",
+                      "format": "bytes",
+                      "order": 2,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "name": {
+                      "order": 1,
+                      "title": "Name",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment File",
+                  "type": "object"
+                },
+                "email": {
+                  "properties": {
+                    "account": {
+                      "description": "Account for which the email was found on",
+                      "order": 2,
+                      "title": "Account",
+                      "type": "string"
+                    },
+                    "attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 6,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 11,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "flattened_attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email"
+                      },
+                      "order": 9,
+                      "title": "Flattened Attached Emails",
+                      "type": "array"
+                    },
+                    "flattened_attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 10,
+                      "title": "Flattened Attached Files",
+                      "type": "array"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 12,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "is_read": {
+                      "description": "Whether or not the email has been read",
+                      "order": 3,
+                      "title": "Is Read",
+                      "type": "boolean"
+                    },
+                    "sender": {
+                      "order": 4,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 5,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Email",
+                  "type": "object"
+                },
+                "header": {
+                  "properties": {
+                    "name": {
+                      "order": 1,
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "value": {
+                      "order": 2,
+                      "title": "Value",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Header",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "email": {
+                  "$ref": "#/definitions/email",
+                  "description": "Email",
+                  "order": 1,
+                  "title": "Email"
+                },
+                "success": {
+                  "description": "True if successful",
+                  "order": 2,
+                  "title": "Success",
+                  "type": "boolean"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "cfa4d7bb-cc21-49c5-b9c8-280713447b48": {
+            "nodeId": "cfa4d7bb-cc21-49c5-b9c8-280713447b48",
+            "name": "Found Email Results",
+            "type": "artifact",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "content": "Mailbox Scanned: {{[75c4e364-f202-469e-bcb3-4140fe36e205].[email]}}\nNumber of emails found: {{[41d168bc-627d-4860-a196-6914a0da2f26].[count]}}"
+              },
+              "type": "markdown"
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/artifact.svg",
+            "connectionType": "NONE"
+          },
+          "cfb0da23-e667-4969-a80e-6ef5775faa87": {
+            "nodeId": "cfb0da23-e667-4969-a80e-6ef5775faa87",
+            "name": "Workflow Complete Manual Delete",
+            "type": "action_chatops",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "attachments": [],
+                "message": "📧delete-email📧 result:\n{{[41d168bc-627d-4860-a196-6914a0da2f26].[count]}} email(s) deleted successfully\nWorkflow Complete ✅",
+                "recipient": "#{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[channel]}}",
+                "thread_ts": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[timestamp]}}"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attachments": {
+                  "description": "JSON array of attachments - see Help for documentation",
+                  "items": {
+                    "type": "object"
+                  },
+                  "order": 4,
+                  "title": "Attachments",
+                  "type": "array"
+                },
+                "message": {
+                  "description": "Message to send",
+                  "order": 3,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "Channels begin with # (e.g. #channel) and usernames begin with @ (e.g. @username)",
+                  "order": 1,
+                  "title": "Enter #channel or @username",
+                  "type": "string"
+                },
+                "thread_ts": {
+                  "description": "Select timestamp output variable from parent message step",
+                  "order": 2,
+                  "title": "To post in a thread, select parent message timestamp",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "recipient"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "channel_id": {
+                  "description": "ChannelID of successful message",
+                  "order": 1,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "parent_message_timestamp": {
+                  "description": "The timestamp of the parent message or of the current message if there is no parent. Used to post messages to a thread.",
+                  "order": 3,
+                  "title": "Parent Message Timestamp",
+                  "type": "string"
+                },
+                "timestamp": {
+                  "description": "Timestamp of successful message",
+                  "order": 2,
+                  "title": "Timestamp",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "post_message"
+          },
+          "fa588e39-aba7-4a3a-bcac-bcea4e80ff74": {
+            "nodeId": "fa588e39-aba7-4a3a-bcac-bcea4e80ff74",
+            "name": "No Emails Found Message",
+            "type": "action_chatops",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "attachments": [],
+                "message": "📧delete-email📧 result:\nNo mails found \nWorkflow Complete ❗",
+                "recipient": "#{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[channel]}}",
+                "thread_ts": "{{[9dfbea14-3d78-4fbb-937b-88d4c9b277d8].[message].[ts]}}"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attachments": {
+                  "description": "JSON array of attachments - see Help for documentation",
+                  "items": {
+                    "type": "object"
+                  },
+                  "order": 4,
+                  "title": "Attachments",
+                  "type": "array"
+                },
+                "message": {
+                  "description": "Message to send",
+                  "order": 3,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "recipient": {
+                  "description": "Channels begin with # (e.g. #channel) and usernames begin with @ (e.g. @username)",
+                  "order": 1,
+                  "title": "Enter #channel or @username",
+                  "type": "string"
+                },
+                "thread_ts": {
+                  "description": "Select timestamp output variable from parent message step",
+                  "order": 2,
+                  "title": "To post in a thread, select parent message timestamp",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "recipient"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "channel_id": {
+                  "description": "ChannelID of successful message",
+                  "order": 1,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "parent_message_timestamp": {
+                  "description": "The timestamp of the parent message or of the current message if there is no parent. Used to post messages to a thread.",
+                  "order": 3,
+                  "title": "Parent Message Timestamp",
+                  "type": "string"
+                },
+                "timestamp": {
+                  "description": "Timestamp of successful message",
+                  "order": 2,
+                  "title": "Timestamp",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "NONE",
+            "chatOpsAppName": "slack",
+            "chatOpsIdentifier": "post_message"
+          }
+        },
+        "tags": [
+          "Google",
+          "Phishing",
+          "Slack"
+        ],
+        "humanCostSeconds": 0,
+        "humanCostDisplayUnit": "",
+        "parameters": {
+          "definitionSchema": null
+        },
+        "summary": ""
+      }
+    ],
+    "triggers": [
+      {
+        "id": "ef660f46-f60c-443c-8be8-c4a5be4fd850",
+        "name": "delete-email Trigger",
+        "description": "User has put in a search command in slack to the slackbot",
+        "input": {
+          "matchChannel": "",
+          "matchText": "delete-email.*",
+          "type": "group"
+        },
+        "inputJsonSchema": {
+          "properties": {
+            "matchChannel": {
+              "description": "Regex to match for channel name",
+              "order": 1,
+              "title": "Match Channel",
+              "type": "string"
+            },
+            "matchText": {
+              "description": "Regex to match for Slack message content",
+              "order": 2,
+              "title": "Match Text",
+              "type": "string"
+            },
+            "type": {
+              "default": "any",
+              "description": "Desired Slack channel type: direct message to Slack app, group chats, or all channels",
+              "enum": [
+                "any",
+                "direct",
+                "group"
+              ],
+              "order": 3,
+              "title": "Type",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "title": "Variables",
+          "type": "object"
+        },
+        "outputJsonSchema": {
+          "definitions": {
+            "hashes": {
+              "properties": {
+                "md5_hashes": {
+                  "description": "MD5 hashes found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 1,
+                  "title": "MD5 Hashes",
+                  "type": "array"
+                },
+                "sha1_hashes": {
+                  "description": "SHA1 hashes found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 2,
+                  "title": "SHA1 Hashes",
+                  "type": "array"
+                },
+                "sha256_hashes": {
+                  "description": "SHA256 hashes found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 3,
+                  "title": "SHA256 Hashes",
+                  "type": "array"
+                }
+              },
+              "title": "Hashes",
+              "type": "object"
+            },
+            "indicators": {
+              "properties": {
+                "domains": {
+                  "description": "Domains found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 1,
+                  "title": "Domains",
+                  "type": "array"
+                },
+                "email_addresses": {
+                  "description": "Email addresses found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 4,
+                  "title": "Email Addresses",
+                  "type": "array"
+                },
+                "hashes": {
+                  "$ref": "#/definitions/hashes",
+                  "description": "Hashes found within the message",
+                  "order": 5,
+                  "title": "Hashes"
+                },
+                "ip_addresses": {
+                  "$ref": "#/definitions/ip_addresses",
+                  "description": "IP addresses found within the message",
+                  "order": 7,
+                  "title": "IP Addresses"
+                },
+                "mac_addresses": {
+                  "description": "MAC addresses found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 6,
+                  "title": "MAC Addresses",
+                  "type": "array"
+                },
+                "parent_domains": {
+                  "description": "Parent domains found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 2,
+                  "title": "Parent Domains",
+                  "type": "array"
+                },
+                "urls": {
+                  "description": "URLs found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 3,
+                  "title": "URLs",
+                  "type": "array"
+                }
+              },
+              "title": "Indicators",
+              "type": "object"
+            },
+            "ip_addresses": {
+              "properties": {
+                "ipv4_addresses": {
+                  "description": "IPv4 addresses found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 1,
+                  "title": "IPv4 Addresses",
+                  "type": "array"
+                },
+                "ipv6_addresses": {
+                  "description": "IPv6 addresses found within the message",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 2,
+                  "title": "IPv6 Addresses",
+                  "type": "array"
+                }
+              },
+              "title": "IP Addresses",
+              "type": "object"
+            },
+            "message": {
+              "properties": {
+                "channel": {
+                  "description": "Channel name",
+                  "order": 3,
+                  "title": "Channel",
+                  "type": "string"
+                },
+                "channel_id": {
+                  "description": "Slack channel ID",
+                  "order": 4,
+                  "title": "Channel ID",
+                  "type": "string"
+                },
+                "first_word": {
+                  "description": "First word of the message, for example a chat command (ignoring mentions)",
+                  "order": 5,
+                  "title": "First Word",
+                  "type": "string"
+                },
+                "indicators": {
+                  "$ref": "#/definitions/indicators",
+                  "description": "Potential threat indicators found within the message",
+                  "order": 7,
+                  "title": "Indicators"
+                },
+                "text": {
+                  "description": "Text",
+                  "order": 5,
+                  "title": "Text",
+                  "type": "string"
+                },
+                "ts": {
+                  "description": "Timestamp",
+                  "order": 6,
+                  "title": "Ts",
+                  "type": "string"
+                },
+                "user": {
+                  "description": "User name",
+                  "order": 1,
+                  "title": "User",
+                  "type": "string"
+                },
+                "user_id": {
+                  "description": "Slack User ID",
+                  "order": 2,
+                  "title": "User ID",
+                  "type": "string"
+                },
+                "words": {
+                  "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 6,
+                  "title": "Words",
+                  "type": "array"
+                }
+              },
+              "title": "Message",
+              "type": "object"
+            }
+          },
+          "properties": {
+            "display_name": {
+              "description": "User display name",
+              "order": 4,
+              "title": "Display Name",
+              "type": "string"
+            },
+            "message": {
+              "$ref": "#/definitions/message",
+              "description": "Message",
+              "order": 1,
+              "title": "Message"
+            },
+            "timestamp": {
+              "description": "Timestamp",
+              "order": 3,
+              "title": "Timestamp",
+              "type": "string"
+            },
+            "type": {
+              "description": "Message Type",
+              "order": 2,
+              "title": "Type",
+              "type": "string"
+            }
+          },
+          "title": "Variables",
+          "type": "object"
+        },
+        "tags": [],
+        "type": "trigger_chatops",
+        "chatOpsAppName": "slack",
+        "chatOpsIdentifier": "message"
+      }
+    ]
+  }
+}

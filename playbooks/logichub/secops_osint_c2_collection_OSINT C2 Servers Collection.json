@@ -1,0 +1,1007 @@
+{
+  "flows": [
+    {
+      "name": "secops_osint_c2_collection_OSINT C2 Servers Collection",
+      "nodes": [
+        {
+          "id": "start-node-fa4f7554-9997-4d2f-94ff-f23555b8ce62",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 0,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "4ab95082-bfa8-4ad4-b664-d52925331174",
+          "name": "Get_URL",
+          "kind": "task",
+          "lql": "runAction(set_url, \"logichub.web_api\", 41, \"execute-web-api\", {\"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\", \"web_api_username\": \"\", \"web_api_time_between_consecutive_requests_milliseconds\": \"\", \"web_api_params\": \"\", \"web_api_url\": \"{{url}}\", \"web_api_request_type\": \"get\", \"web_api_headers\": \"\", \"web_api_body\": \"\", \"web_api_password\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 300,
+          "y": 194,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "execute-web-api",
+            "integrationId": "logichub.web_api",
+            "integrationInstanceId": 41,
+            "data": {
+              "web_api_body": "",
+              "web_api_url": "{{url}}",
+              "web_api_password": "",
+              "web_api_params": "",
+              "web_api_time_between_consecutive_requests_milliseconds": "",
+              "web_api_request_type": "get",
+              "web_api_username": "",
+              "web_api_headers": "",
+              "__lh_rows_to_process": "",
+              "__lh_action_timeout_sec": ""
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.web_api",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/default-integration-logo.svg",
+            "name": "Web API",
+            "actionId": "execute-web-api",
+            "actionName": "Execute Web API"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.web_api/execute-web-api"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Web API - Execute Web API",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "ab3b36ce-3b68-41d5-8655-5065e9a9afc4",
+          "name": "split_response",
+          "kind": "augmentation",
+          "lql": "`select explode(split(get_json_object(result,\"$.response\"),'\\n')) as response from Get_URL`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 298,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "f9b34be0-4c38-44e4-a8b1-d6b82502dc7d",
+          "name": "filter_data",
+          "kind": "augmentation",
+          "lql": "`select * from split_response where response not like '#%'`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 402,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "d4098c6c-ea53-4f34-b26d-3e03e92b56d6",
+          "name": "replace_c2_servers_list",
+          "kind": "augmentation",
+          "lql": "replaceList(distinct_fields, \"secops_osint_c2_collection_cc_servers\")",
+          "operator": "replaceList",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 922,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": true,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "CustomListContentKind",
+            "id": "replaceList"
+          },
+          "categoryKind": "LogicHub",
+          "iconTitle": "Logichub: Replace List",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e260f7c1-f7cd-46b0-97e0-6f0454a0f6d3",
+          "name": "distinct_fields",
+          "kind": "augmentation",
+          "lql": "`select distinct server_ip, description, updated from extract_json_fields where server_ip is not null`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 714,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "7a9249df-ccc6-447f-beee-61a344f535d2",
+          "name": "set_url",
+          "kind": "augmentation",
+          "lql": "`select \"http://osint.bambenekconsulting.com/feeds/c2-masterlist.txt\" as url from _Start_Node`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 90,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "827b0102-7b64-4f2d-9bca-cffd3db1456a",
+          "name": "extract_fields",
+          "kind": "task",
+          "lql": "runAction(filter_data, \"logichub.utils\", 42, \"apply_regex\", {\"regexes\": \"server_ip : (\\\\d{1,3}\\\\.\\\\d{1,3}\\\\.\\\\d{1,3}\\\\.\\\\d{1,3})\\ndescription : (Master .*)$\", \"input_column_name\": \"response\", \"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500000,
+          "delayBetweenRowsMillis": 0,
+          "x": 300,
+          "y": 506,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "apply_regex",
+            "integrationId": "logichub.utils",
+            "integrationInstanceId": 42,
+            "data": {
+              "regexes": "server_ip : (\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\ndescription : (Master .*)$",
+              "input_column_name": "response",
+              "__lh_action_timeout_sec": "",
+              "__lh_rows_to_process": ""
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.utils",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/default-integration-logo.svg",
+            "name": "Utilities",
+            "actionId": "apply_regex",
+            "actionName": "Extract with Regexes"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.utils/apply_regex"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Utilities - Extract with Regexes",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "ccab7d73-3237-41eb-94e7-f5b3d4219a0f",
+          "name": "extract_json_fields",
+          "kind": "augmentation",
+          "lql": "`select get_json_object(result,\"$.server_ip\") as server_ip,get_json_object(result,\"$.description\") as description, now() as updated  from extract_fields`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 610,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "f0a09d73-10c7-4baa-a265-6a2ad152dcf5",
+          "name": "ioc_count",
+          "kind": "augmentation",
+          "lql": "`select count(*) as ioc_count from distinct_fields`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 922,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": true,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "3b327306-6995-4e23-b4a9-529eb5652b7b",
+          "name": "distinct_fieldsChild1",
+          "kind": "augmentation",
+          "lql": "`select count(*) as ip_count from distinct_fields group by server_ip`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 600,
+          "y": 818,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "497ad368-2a83-40c8-b377-60699cd93db0",
+          "name": "top_10_ioc",
+          "kind": "augmentation",
+          "lql": "`select * from distinct_fieldsChild1 order by ip_count desc limit 10`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 600,
+          "y": 922,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": true,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "5377f6a8-c59b-497d-ba2b-9c6b38ca3db7",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "d4098c6c-ea53-4f34-b26d-3e03e92b56d6",
+            "497ad368-2a83-40c8-b377-60699cd93db0",
+            "f0a09d73-10c7-4baa-a265-6a2ad152dcf5"
+          ],
+          "isExplainable": true,
+          "x": 367,
+          "y": 1026,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1072",
+      "listNames": [
+        "secops_osint_c2_collection_cc_servers"
+      ],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "secops_osint_c2_collection_REST WebAPI",
+      "descriptor": {
+        "id": "logichub.web_api",
+        "name": "Web API",
+        "description": "Web API integration allows you to execute any Web API and retrieve results.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/default-integration-logo.svg",
+        "categories": [
+          "utilities"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m57.15"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "web_api Authentication Information",
+              "description": "Enter authentication information for the web_api integration",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "echo \"[result]\" {}"
+          }
+        },
+        "actions": [
+          {
+            "id": "execute-web-api",
+            "name": "Execute Web API",
+            "description": "Execute given Web API and return the response",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "web_api_request_type",
+                      "description": "Request type to get the method name",
+                      "label": "Request type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "get",
+                          "label": "GET"
+                        },
+                        {
+                          "value": "post",
+                          "label": "POST"
+                        },
+                        {
+                          "value": "put",
+                          "label": "PUT"
+                        },
+                        {
+                          "value": "delete",
+                          "label": "DELETE"
+                        },
+                        {
+                          "value": "patch",
+                          "label": "PATCH"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_url",
+                      "description": "Url Endpoint",
+                      "label": "URL",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "web_api_headers",
+                      "description": "Web api request headers",
+                      "label": "Headers",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "web_api_params",
+                      "description": "Web api request parameters",
+                      "label": "Params",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "web_api_body",
+                      "description": "Web api request body",
+                      "label": "Body",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "web_api_username",
+                      "description": "Username for request",
+                      "label": "Username",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_password",
+                      "description": "Password for request",
+                      "label": "Password",
+                      "dataType": "string",
+                      "inputType": "password",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_client_certificate",
+                      "description": "Upload a .p12 Client Certificate file",
+                      "label": "Client Certificate",
+                      "dataType": "string",
+                      "inputType": "encryptedFile",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_client_certificate_password",
+                      "description": "Enter password to read the client certificate",
+                      "label": "Client Certificate Password",
+                      "dataType": "string",
+                      "inputType": "password",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_response_format",
+                      "description": "Select how to parse the response based on its expected format. (Default is \"Raw\" and will pass the full body to the response field)",
+                      "label": "Expected Response Format",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "raw",
+                          "label": "Raw"
+                        },
+                        {
+                          "value": "csv",
+                          "label": "CSV"
+                        },
+                        {
+                          "value": "html_tables",
+                          "label": "HTML Tables"
+                        },
+                        {
+                          "value": "json",
+                          "label": "JSON"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_explode_results",
+                      "description": "If server response is parsed as a list of values instead of a single value, return as individual rows for each value (Default is False)",
+                      "label": "Explode Results",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "False",
+                          "label": "False"
+                        },
+                        {
+                          "value": "True",
+                          "label": "True"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.web_api.action_execute-web-api_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.web_api.action_execute-web-api_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "2.2.4",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2020-07-25T18:05:16Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:09:37.048Z",
+          "errorMessage": "This imported connection is using a different version of the Web API (logichub.web_api) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_label": "REST WebAPI",
+        "__lh_ssl_verify": "False",
+        "__lh_is_default_connection": ""
+      },
+      "id": 41,
+      "isDefault": true
+    },
+    {
+      "label": "secops_osint_c2_collection_RegexUtil",
+      "descriptor": {
+        "id": "logichub.utils",
+        "name": "Utilities",
+        "description": "Bucket for miscellaneous utility integrations",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/default-integration-logo.svg",
+        "categories": [
+          "utilities"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m57.15"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "Instantiation",
+              "description": "Instantiates an integration instance.",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "echo \"[result]\" {}"
+          }
+        },
+        "actions": [
+          {
+            "id": "template_jinja2",
+            "name": "Render Template",
+            "description": "Render a given Jinja2 template with the column values of the parent table. Note that the template text is output-agnostic, so it can be Markdown, HTML, or whatever format you like.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Jinja2 Template Specification",
+                  "description": "Enter details of Jinja2 template.",
+                  "inputs": [
+                    {
+                      "id": "jinja2_template",
+                      "description": "The Jinja2 template text.",
+                      "label": "Template Text",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "jinja2_autoescape",
+                      "description": "Specify whether the substituted text should be automatically HTML-escaped.",
+                      "label": "Auto-escape HTML",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "Yes",
+                          "label": "Yes"
+                        },
+                        {
+                          "value": "No",
+                          "label": "No"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.utils.action_jinja2-template_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.utils.action_jinja2-template_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "format_output"
+            ]
+          },
+          {
+            "id": "template_jinja2_at_once",
+            "name": "Render Template across entire table",
+            "description": "Render a given Jinja2 template with the rows from the parent table provided to the template under the value name \"rows\". Note that the template text is output-agnostic, so it can be Markdown, HTML, or whatever format you like.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Jinja2 Template Specification",
+                  "description": "Enter details of Jinja2 template.",
+                  "inputs": [
+                    {
+                      "id": "jinja2_template",
+                      "description": "The Jinja2 template text.",
+                      "label": "Template Text",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "jinja2_autoescape",
+                      "description": "Specify whether the substituted text should be automatically HTML-escaped.",
+                      "label": "Auto-escape HTML",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "Yes",
+                          "label": "Yes"
+                        },
+                        {
+                          "value": "No",
+                          "label": "No"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.utils.action_jinja2-template_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.utils.action_jinja2-template_at_once_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "format_output"
+            ]
+          },
+          {
+            "id": "apply_regex",
+            "name": "Extract with Regexes",
+            "description": "Searches for regexes in the input data, returns matching groups.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Extract with Regexes",
+                  "description": "Searches for regexes in the input data, returns matching groups.",
+                  "inputs": [
+                    {
+                      "id": "regexes",
+                      "description": "A yaml dictionary with the regexes to use - keys are the column names, values are the regexes to use. Regexes need to have one group.",
+                      "label": "The regexes to search",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "input_column_name",
+                      "description": "Name of the column with the data to analyze",
+                      "label": "The column with the data to analyze",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.utils.action_search_regexes_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.utils.action_search_regexes_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "string_operation"
+            ]
+          }
+        ],
+        "version": "1.0.4",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2020-07-25T18:05:16Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:09:37.099Z",
+          "errorMessage": "This imported connection is using a different version of the Utilities (logichub.utils) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_label": "RegexUtil",
+        "__lh_ssl_verify": "False",
+        "__lh_is_default_connection": ""
+      },
+      "id": 42,
+      "isDefault": true
+    }
+  ],
+  "customLists": [
+    {
+      "id": "7",
+      "name": "secops_osint_c2_collection_cc_servers",
+      "overflowBehavior": "DeleteOldest",
+      "deduplicate": true,
+      "table": "list_data_Kzg4oYtg34",
+      "schema": {
+        "columns": [
+          {
+            "name": "server_ip",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          },
+          {
+            "name": "description",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          },
+          {
+            "name": "updated",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          }
+        ]
+      }
+    }
+  ],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

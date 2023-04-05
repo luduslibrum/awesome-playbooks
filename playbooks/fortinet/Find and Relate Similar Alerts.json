@@ -1,0 +1,252 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Find and Relate Similar Alerts",
+    "aliasName": null,
+    "tag": "#PostUpdate #system",
+    "description": "Finds similar alerts based on the filter criteria you have specified and adds correlations to similar alerts.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/4a9adb3a-1a68-4b28-8096-ea12210dfeab",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/c20386e7-eb6a-419b-bcca-6fd8b3e78d5f",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Correlate Similar Alerts And Update State",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.steps.Find_Similar_Alerts | length > 0}}",
+                "resource": {
+                    "state": {
+                        "id": 10241,
+                        "@id": "\/api\/3\/picklists\/c5986cbe-3565-4eb1-8326-bed1fbaffde0",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Similar Alerts Correlated",
+                        "listName": "\/api\/3\/picklist_names\/b5e5f1ff-ac92-4b96-9ba7-ba629764c52d",
+                        "itemValue": "Similar Alerts Correlated",
+                        "orderIndex": 3
+                    },
+                    "alerts": "{{vars.steps.Find_Similar_Alerts | json_query(\"[*][\\\"@id\\\"][]\")}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "tagsOperation": "OverwriteTags",
+                "collectionType": "\/api\/3\/alerts",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "252",
+            "left": "460",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "1a1354b6-491b-407b-84cf-1f57b364ff34"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "alerts",
+                "resources": [
+                    "alerts"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "state",
+                            "value": "\/api\/3\/picklists\/5eaba143-4f1c-45ff-b42a-9df23e0f22b9",
+                            "_value": [],
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "object",
+                            "field": "state",
+                            "value": "\/api\/3\/picklists\/501d0562-89a0-4079-9a9e-cdde7d34e3ed",
+                            "_value": {
+                                "display": "Indicator Extracted",
+                                "itemValue": "Indicator Extracted"
+                            },
+                            "operator": "eq"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "c20386e7-eb6a-419b-bcca-6fd8b3e78d5f"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Similar Alerts",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "id",
+                            "value": "{{vars.input.records[0].id}}",
+                            "operator": "neq",
+                            "_operator": "neq"
+                        },
+                        {
+                            "logic": "OR",
+                            "filters": [
+                                {
+                                    "type": "primitive",
+                                    "field": "sourceIp",
+                                    "value": "{{vars.input.records[0].sourceIp}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "destinationIp",
+                                    "value": "{{vars.input.records[0].destinationIp}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "urlFull",
+                                    "value": "{{vars.input.records[0].urlFull}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "domain",
+                                    "value": "{{vars.input.records[0].domain}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "senderDomain",
+                                    "value": "{{vars.input.records[0].senderDomain}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "destinationPort",
+                                    "value": "{{vars.input.records[0].destinationPort}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "sourcePort",
+                                    "value": "{{vars.input.records[0].sourcePort}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "fileHash",
+                                    "value": "{{vars.input.records[0].fileHash}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "registryKey",
+                                    "value": "{{vars.input.records[0].registryKey}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "parentProcessName",
+                                    "value": "{{vars.input.records[0].parentProcessName}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "processName",
+                                    "value": "{{vars.input.records[0].processName}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "sourceProcess",
+                                    "value": "{{vars.input.records[0].sourceProcess}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "targetProcess",
+                                    "value": "{{vars.input.records[0].targetProcess}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "module": "alerts?$limit=30",
+                "checkboxFields": false,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "133",
+            "left": "286",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "1f3d3ebf-80bd-4d95-8bf9-a94b89171cf5"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Similar Alerts -> Correlate Similar Alerts And Update State",
+            "targetStep": "\/api\/3\/workflow_steps\/1a1354b6-491b-407b-84cf-1f57b364ff34",
+            "sourceStep": "\/api\/3\/workflow_steps\/1f3d3ebf-80bd-4d95-8bf9-a94b89171cf5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "63f00d03-4fbf-4ff6-b0fc-eadf837a67b4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Find Similar Alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/1f3d3ebf-80bd-4d95-8bf9-a94b89171cf5",
+            "sourceStep": "\/api\/3\/workflow_steps\/c20386e7-eb6a-419b-bcca-6fd8b3e78d5f",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "016611a0-5c5e-44d7-bdbb-bd7a11b81fb0"
+        }
+    ],
+    "priority": null,
+    "uuid": "12aa5812-db75-4741-b12c-092ba455f6b8",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "PostUpdate"
+    ]
+}

@@ -1,0 +1,3670 @@
+{
+  "flows": [
+    {
+      "name": "Anomali with ZScaler: Threat Intel Orchestration",
+      "nodes": [
+        {
+          "id": "start-node-6216315b-0ddf-4660-b158-e3b0c4394050",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 0,
+          "vertices": [],
+          "title": "Trigger",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "3dbbf57f-7f41-4f34-8be0-eeb6f44c2889",
+          "name": "filter_for_unknown",
+          "kind": "augmentation",
+          "lql": "`select * from expand_resultsChild1 where lower(zs_cat) like '%unknown%'`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 910,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e742993b-9218-4b22-87ef-b96c2845b19e",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "11f10175-d86d-45eb-abf0-b620fd543a5d",
+            "c94f6bd0-c1e7-4950-881a-043da2988477"
+          ],
+          "isExplainable": true,
+          "x": 150,
+          "y": 1170,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "2574e1fb-e47a-48fe-93f7-47f5a728e0ce",
+          "name": "expand_resultsChild1",
+          "kind": "augmentation",
+          "lql": "`select url, get_json_object(url_list,\"$.urlClassifications[0]\") as zs_cat from get_url_category_list`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 780,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "34526fd5-08b9-4254-b9c9-0176735557b5",
+          "name": "lookup_in_zscaler",
+          "kind": "task",
+          "lql": "runAction(key_fields, \"logichub.zscaler\", 26, \"url-lookup\", {\"zscaler_column_name\": \"url\", \"zscaler_time_between_consecutive_requests_milliseconds\": \"\", \"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 150,
+          "y": 390,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "url-lookup",
+            "integrationId": "logichub.zscaler",
+            "integrationInstanceId": 26,
+            "data": {
+              "zscaler_column_name": "url",
+              "zscaler_time_between_consecutive_requests_milliseconds": "",
+              "__lh_action_timeout_sec": "",
+              "__lh_rows_to_process": ""
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.zscaler",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/Zscaler_Logo.png",
+            "name": "Zscaler",
+            "actionId": "url-lookup",
+            "actionName": "Lookup URL/IP"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.zscaler/url-lookup"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Zscaler - Lookup URL/IP",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "11f10175-d86d-45eb-abf0-b620fd543a5d",
+          "name": "add_to_blacklist",
+          "kind": "task",
+          "lql": "runAction(filter_for_unknown, \"logichub.zscaler\", 26, \"blacklist-add\", {\"zscaler_column_name\": \"url\", \"zscaler_time_between_consecutive_requests_milliseconds\": \"\", \"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 300,
+          "y": 1040,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "blacklist-add",
+            "integrationId": "logichub.zscaler",
+            "integrationInstanceId": 26,
+            "data": {
+              "zscaler_column_name": "url",
+              "zscaler_time_between_consecutive_requests_milliseconds": "",
+              "__lh_action_timeout_sec": "",
+              "__lh_rows_to_process": ""
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.zscaler",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/Zscaler_Logo.png",
+            "name": "Zscaler",
+            "actionId": "blacklist-add",
+            "actionName": "Add URL/IP to Blacklist"
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.zscaler/blacklist-add"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Zscaler - Add URL/IP to Blacklist",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "c94f6bd0-c1e7-4950-881a-043da2988477",
+          "name": "remove_from_blacklist",
+          "kind": "task",
+          "lql": "runAction(on_the_list_already, \"logichub.zscaler\", 26, \"blacklist-remove\", {\"zscaler_column_name\": \"url\", \"zscaler_time_between_consecutive_requests_milliseconds\": \"\", \"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 1040,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "blacklist-remove",
+            "integrationId": "logichub.zscaler",
+            "integrationInstanceId": 26,
+            "data": {
+              "zscaler_column_name": "url",
+              "zscaler_time_between_consecutive_requests_milliseconds": "",
+              "__lh_action_timeout_sec": "",
+              "__lh_rows_to_process": ""
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.zscaler",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/Zscaler_Logo.png",
+            "name": "Zscaler",
+            "actionId": "blacklist-remove",
+            "actionName": "Remove URL/IP from Blacklist"
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.zscaler/blacklist-remove"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Zscaler - Remove URL/IP from Blacklist",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "f2824f3e-1950-4274-ae83-cdc652088356",
+          "name": "on_the_list_already",
+          "kind": "augmentation",
+          "lql": "`select * from expand_resultsChild1 where lower(zs_cat) not like '%unknown%'`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 910,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "d6fb0d6e-b874-485c-92f3-8a7b18b641f6",
+          "name": "get_url_category_list",
+          "kind": "augmentation",
+          "lql": "`select url, explode(from_json(result,'ARRAY<STRING>')) as url_list from get_zscaler_results`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 650,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "50b56c76-ecb4-494f-988a-b500bcb1b406",
+          "name": "get_zscaler_results",
+          "kind": "augmentation",
+          "lql": "`select url, get_json_object(result,\"$.result\") as result from lookup_in_zscaler`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 520,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "321dc864-6137-4fb7-979e-f42e868e9260",
+          "name": "key_fields",
+          "kind": "augmentation",
+          "lql": "`select get_json_object(result,\"$.value\") as url, get_json_object(result,\"$.confidence\") as confidence, get_json_object(result,\"$.meta.severity\") as severity, get_json_object(result,\"$.status\") as status from anomali_get_intelligence`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 260,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "6667db2a-1d6d-4847-981c-e0bd078fc93e",
+          "name": "anomali_get_intelligence",
+          "kind": "task",
+          "lql": "runAction(_Start_Node, \"logichub.anomali\", 27, \"get_intelligence\", {\"__lh_action_timeout_sec\": \"\", \"anomali_limit\": \"\", \"__lh_rows_to_process\": \"\", \"anomali_intelligence_filter_template\": \"q=(itype=\\\"mal_url\\\")\", \"anomali_intelligence_explode_results\": \"True\", \"anomali_time_between_consecutive_requests_millis\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 150,
+          "y": 130,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "get_intelligence",
+            "integrationId": "logichub.anomali",
+            "integrationInstanceId": 27,
+            "data": {
+              "__lh_multithread_count": "",
+              "anomali_intelligence_explode_results": "True",
+              "anomali_intelligence_filter_template": "q=(itype=\"mal_url\")",
+              "anomali_time_between_consecutive_requests_millis": "",
+              "__lh_rows_to_process": "",
+              "__lh_action_timeout_sec": "",
+              "anomali_limit": ""
+            }
+          },
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.anomali",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/anomali-logo.png",
+            "name": "Anomali",
+            "actionId": "get_intelligence",
+            "actionName": "Get Intelligence"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.anomali/get_intelligence"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Anomali - Get Intelligence",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1055",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "LogicHub_ZScaler",
+      "descriptor": {
+        "id": "logichub.zscaler",
+        "name": "Zscaler",
+        "description": "Zscaler is a global cloud-based information security company that provides Internet security, web security, firewalls, sandboxing, SSL inspection, antivirus, vulnerability management and granular control of user activity in cloud computing, mobile and Internet of things environments. Zscaler provides a cloud-based approach to security as a service.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/Zscaler_Logo.png",
+        "documentationSlug": "zscaler",
+        "categories": [
+          "investigative"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m51.15"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "Zscaler Authentication Information",
+              "description": "Enter authentication information for the Zscaler integration",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "zscaler_base_uri",
+                  "description": "The base URI for the API is ${Cloud_Name}/api/v1. Check which Zscaler cloud name was provisioned for your organization and use it to replace {Cloud_Name} in the base URI. ",
+                  "label": "Base URI",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "zscaler_username",
+                  "description": "Username for Zscaler",
+                  "label": "Username",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "zscaler_password",
+                  "description": "Password for Zscaler",
+                  "label": "Password",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "zscaler_api_key",
+                  "description": "API key for Zscaler",
+                  "label": "Api Key",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python3 -m src.zscaler.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "blacklist-add",
+            "name": "Add URL/IP to Blacklist",
+            "description": "Adds a URL/IP to the Blacklist. Maximum of 25000 unique URLs/IPs are allowed for blacklisting by Zscaler.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Add URL/IP to Blacklist",
+                  "description": "Adds a URL/IP to the Blacklist. Maximum of 25000 unique URLs/IPs are allowed for blacklisting by Zscaler.",
+                  "inputs": [
+                    {
+                      "id": "zscaler_column_name",
+                      "description": "Column name from the parent table to lookup URLs/IPs to add",
+                      "label": "URL/IP Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.zscaler.action_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_blacklist-add_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "blacklist-remove",
+            "name": "Remove URL/IP from Blacklist",
+            "description": "Removes a URL/IP from the Blacklist",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Remove URL/IP from Blacklist",
+                  "description": "Removes a URL/IP from the Blacklist",
+                  "inputs": [
+                    {
+                      "id": "zscaler_column_name",
+                      "description": "Column name from the parent table to lookup URLs/IPs to remove",
+                      "label": "URL/IP Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.zscaler.action_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_blacklist-remove_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "url-lookup",
+            "name": "Lookup URL/IP",
+            "description": "Looks up the categorization of a given URL/IP",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Lookup URL/IP",
+                  "description": "Looks up the categorization of a given URL/IP",
+                  "inputs": [
+                    {
+                      "id": "zscaler_column_name",
+                      "description": "Column name from the parent table having URLs/IPs",
+                      "label": "URL/IP Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.zscaler.action_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_url-lookup_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "whitelist-add",
+            "name": "Add URL/IP to Whitelist",
+            "description": "Adds a URL/IP to the Whitelist. Maximum of 1024 unique URLs/IPs are allowed for whitelisting by Zscaler",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Add URL/IP to Whitelist",
+                  "description": "Adds a URL/IP to the Whitelist. Maximum of 1024 unique URLs/IPs are allowed for whitelisting by Zscaler.",
+                  "inputs": [
+                    {
+                      "id": "zscaler_column_name",
+                      "description": "Column name from the parent table to lookup URLs/IPs to add",
+                      "label": "URL/IP Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.zscaler.action_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_whitelist-add_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "whitelist-remove",
+            "name": "Remove URL/IP from Whitelist",
+            "description": "Removes a URL/IP from the Whitelist",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Remove URL/IP from Whitelist",
+                  "description": "Removes a URL/IP from the Whitelist",
+                  "inputs": [
+                    {
+                      "id": "zscaler_column_name",
+                      "description": "Column name from the parent table to lookup URLs/IPs to remove",
+                      "label": "URL/IP Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.zscaler.action_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_whitelist-remove_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "sandbox-report",
+            "name": "Sandbox Report of File",
+            "description": "Gets a full(ie complete) or summary detail report for an MD5 hash of a file that was analyzed by Sandbox",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Sandbox Report of File",
+                  "description": "Gets a full(ie complete) or summary detail report for an MD5 hash of a file that was analyzed by Sandbox",
+                  "inputs": [
+                    {
+                      "id": "zscaler_column_name",
+                      "description": "Column name from the parent table to lookup file hash",
+                      "label": "File Hash Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscalar_report_type",
+                      "description": "Select report type of Report from Sandbox.",
+                      "label": "Report Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "full",
+                          "label": "Full"
+                        },
+                        {
+                          "value": "summary",
+                          "label": "Summary"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.zscaler.action_sandbox-report_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_sandbox-report_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "category-get",
+            "name": "Get URL Categories",
+            "description": "Gets information about all or custom URL categories.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get URL Categories",
+                  "description": "Gets information about all or custom URL categories.",
+                  "inputs": [
+                    {
+                      "id": "zscaler_custom_only",
+                      "description": "Select 'Yes' to get only custom URL categories (Default is Yes)",
+                      "label": "Custom Categories",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "true",
+                          "label": "Yes"
+                        },
+                        {
+                          "value": "false",
+                          "label": "No"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.common.time_between_rows_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_category-get_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "category-add-url",
+            "name": "Add URL/IP/Hostname to Category",
+            "description": "Adds a URL/IP/Hostname to the Category provided.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Add URL/IP/Hostname to Category",
+                  "description": "Adds a URL/IP/Hostname to the Category provided.",
+                  "inputs": [
+                    {
+                      "id": "zscaler_column_name",
+                      "description": "Column name from the parent table to lookup URLs/IPs/Hostname to add",
+                      "label": "URL/IP/Hostname Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_category_column_name",
+                      "description": "Column name from the parent table to lookup value for Category ID",
+                      "label": "Category ID Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.zscaler.action_category-url_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_category-add-url_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "category-remove-url",
+            "name": "Remove URL/IP/Hostname from Category",
+            "description": "Removes a URL/IP/Hostname from the Category provided.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Remove URL/IP/Hostname to Category",
+                  "description": "Removes a URL/IP/Hostname from the Category provided.",
+                  "inputs": [
+                    {
+                      "id": "zscaler_column_name",
+                      "description": "Column name from the parent table to lookup URLs/IPs/Hostname to remove",
+                      "label": "URL/IP/Hostname Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_category_column_name",
+                      "description": "Column name from the parent table to lookup value for Category ID",
+                      "label": "Category ID Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "zscaler_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.zscaler.action_category-url_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_category-remove-url_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get-whitelist",
+            "name": "Get Whitelisted URLs/IPs/Hostnames",
+            "description": "Gets a list of URL/IP/Hostname that are whitelisted.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get white-listed urls",
+                  "description": "Gets a list of white-listed URLs",
+                  "inputs": [
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.common.time_between_rows_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_get-whitelist_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get-blacklist",
+            "name": "Get Blacklisted URLs/IPs/Hostnames",
+            "description": "Gets a list of URL/IP/Hostname that are blacklisted.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get black-listed urls",
+                  "description": "Gets a list of black-listed URLs",
+                  "inputs": [
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 1,000 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.common.time_between_rows_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.zscaler.action_get-blacklist_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "2.0.4",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2020-04-14T11:30:32Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:06:05.606Z",
+          "errorMessage": "This imported connection is using a different version of the Zscaler (logichub.zscaler) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "",
+        "__lh_ssl_verify": "True",
+        "zscaler_base_uri": "admin.zscalerthree.net/api/v1",
+        "zscaler_username": "admin@logichub.com",
+        "__lh_label": "LogicHub_ZScaler"
+      },
+      "id": 26,
+      "isDefault": true
+    },
+    {
+      "label": "Anomali",
+      "descriptor": {
+        "id": "logichub.anomali",
+        "name": "Anomali",
+        "description": "Anomali is a Threat Intelligence Platform that enables businesses to integrate security products and leverage threat data to defend against cyber threats.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/anomali-logo.png",
+        "documentationSlug": "anomali",
+        "categories": [
+          "threat_intelligence"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m60.14"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "Anomali Credentials",
+              "description": "Enter credentials for Anomali",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "anomali_api_key",
+                  "description": "API key for Anomali",
+                  "label": "ApiKey",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "anomali_username",
+                  "description": "Username for Anomali",
+                  "label": "Username",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "anomali_base_url",
+                  "description": "Base URL (Default is 'https://api.threatstream.com')",
+                  "label": "Base URL",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "optional": true,
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python -m src.anomali.instance_validate"
+          }
+        },
+        "actions": [
+          {
+            "id": "url_scan",
+            "name": "URL scan (Deprecated)",
+            "description": "Submits a URL or IP address to Anomali for lookup against their threat intelligence database. Based off of the results, automate how Incident Response is handled.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create URL scan",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "anomali_column_name",
+                      "description": "Column name from parent table to lookup value for",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_limit",
+                      "description": "Result limit (Default is 10)",
+                      "label": "Result limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_reputation",
+            "name": "Get Reputation",
+            "description": "Submits a URL/ IP/ Domain/ md5 of a file/email address to Anomali for lookup against their threat intelligence database. Based off of the results, automate how Incident Response is handled.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Reputation",
+                  "description": "Submits a URL/ IP/ Domain/ md5 of a file/email address to Anomali for lookup against their threat intelligence database. Based off of the results, automate how Incident Response is handled.",
+                  "inputs": [
+                    {
+                      "id": "anomali_intelligence_observable_column_name",
+                      "description": "Column name from parent table to lookup value for",
+                      "label": "Observable Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_intelligence_observable_type",
+                      "description": "Select Observable Type to lookup value for",
+                      "label": "Select Observable Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "ip",
+                          "label": "IP"
+                        },
+                        {
+                          "value": "domain",
+                          "label": "Domain"
+                        },
+                        {
+                          "value": "url",
+                          "label": "URL"
+                        },
+                        {
+                          "value": "email",
+                          "label": "Email"
+                        },
+                        {
+                          "value": "md5",
+                          "label": "MD5"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_limit",
+                      "description": "Result limit (Default is 20)",
+                      "label": "Result limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_status_type",
+                      "description": "Filter results on the basis of status (Default is result with both status, active and inactive)",
+                      "label": "Status Type Filter",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "active",
+                          "label": "Active"
+                        },
+                        {
+                          "value": "inactive",
+                          "label": "Inactive"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_get-reputation_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_get-reputation_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_intelligence",
+            "name": "Get Intelligence",
+            "description": "Get intelligence from Threatstream. You can specify criteria by which the intelligence should be retrieved.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Intelligence",
+                  "description": "Get intelligence from Threatstream. You can specify criteria by which the intelligence should be retrieved.",
+                  "inputs": [
+                    {
+                      "id": "anomali_intelligence_filter_template",
+                      "description": "Provide Jinja Template for filter Criteria. e.g. q=(confidence>={{confidence_value}}+AND+(itype=\"apt_ip\"+OR+itype=\"bot_ ip\"+OR+itype=\"c2_ip\"))",
+                      "label": "Jinja Template For Filter Criteria",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_intelligence_explode_results",
+                      "description": "Select whether to return separate rows for each result or a single row containing all results (Default is Separate Rows)",
+                      "label": "Explode Results",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "True",
+                          "label": "Separate Rows"
+                        },
+                        {
+                          "value": "False",
+                          "label": "Single Row"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_limit",
+                      "description": "Result limit (Default is 20)",
+                      "label": "Result limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_get-intelligence_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_get-intelligence_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "submit_file_or_url",
+            "name": "Submit File or URL",
+            "description": "Submit files or URLs to the ThreatStream-hosted Sandbox.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Submit File or URL",
+                  "description": "Submit files or URLs to the ThreatStream-hosted Sandbox.",
+                  "inputs": [
+                    {
+                      "id": "anomali_sandbox_submission_column_name",
+                      "description": "Column name from parent table that contains file or url.",
+                      "label": "Submission Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_sandbox_submission_type",
+                      "description": "Select submission type that you want to detonate.",
+                      "label": "Sandbox Submission Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "File",
+                          "label": "File"
+                        },
+                        {
+                          "value": "URL",
+                          "label": "URL"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_sandbox_platform_type",
+                      "description": "Platform on which the submitted URL or file will be run.",
+                      "label": "Select Platform",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "ALL",
+                          "label": "ALL"
+                        },
+                        {
+                          "value": "WINDOWS7",
+                          "label": "WINDOWS7"
+                        },
+                        {
+                          "value": "WINDOWSXP",
+                          "label": "WINDOWSXP"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_sandbox_submission_classification_type",
+                      "description": "Classification of the Sandbox submission-public or private (Default is private)",
+                      "label": "Sandbox Submission Classification",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "private",
+                          "label": "Private"
+                        },
+                        {
+                          "value": "public",
+                          "label": "Public"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_use_premium_sandbox_type",
+                      "description": "Specify whether the premium sandbox should be used for detonation (Default is False)",
+                      "label": "Use Premium Sandbox",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "false",
+                          "label": "False"
+                        },
+                        {
+                          "value": "true",
+                          "label": "True"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_sandbox_additional_detail_template",
+                      "description": "Jinja template for a comma-separated list that provides additional details for the indicator. This information is displayed in the Tag column of the ThreatStream UI. e.g. {{tag1}},{{tag2}}",
+                      "label": "Jinja Template for Detail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_submit-file-or-url_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_submit-file-or-url_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_submission_status",
+            "name": "Get Submission Status",
+            "description": "Get status of the submitted file or url.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Submission Status",
+                  "description": "Get status of the submitted file or url.",
+                  "inputs": [
+                    {
+                      "id": "anomali_submission_id_column_name",
+                      "description": "Column name from parent table that contain submission id.",
+                      "label": "Submission Id Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_submission_should_wait",
+                      "description": "Should wait till status is done (Default is False i.e. it will return current status)",
+                      "label": "Should Wait",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "False",
+                          "label": "False"
+                        },
+                        {
+                          "value": "True",
+                          "label": "True"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_get-submission-status_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_get-submission-status_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_submission_report",
+            "name": "Get Submission Report",
+            "description": "Get submission report of the submitted file or url.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Submission Report",
+                  "description": "Get submission report of the submitted file or url.",
+                  "inputs": [
+                    {
+                      "id": "anomali_submission_id_column_name",
+                      "description": "Column name from parent table that contain submission id.",
+                      "label": "Submission Id Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_submission_should_wait",
+                      "description": "Should wait till report is generated (Default is False)",
+                      "label": "Should Wait",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "False",
+                          "label": "False"
+                        },
+                        {
+                          "value": "True",
+                          "label": "True"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_get-submission-report_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_get-submission-report_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "create_model",
+            "name": "Create Threat Model Entity",
+            "description": "Create threat model entities i.e. actors, campaigns, incidents, signatures, TTPs, and vulnerabilities.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create Threat Model Entity",
+                  "description": "Create threat model entities i.e. actors, campaigns, incidents, signatures, TTPs, and vulnerabilities.",
+                  "inputs": [
+                    {
+                      "id": "anomali_model_entity_name_column_name",
+                      "description": "Column name from parent table that contain entity name. Name should be unique for an entity.",
+                      "label": "Entity Name Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_type",
+                      "description": "Select model entity type",
+                      "label": "Model Entity Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tipreport"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP (Tactics, Techniques, and Procedures)"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_is_public",
+                      "description": "Whether the entity is public or private (Default is False0",
+                      "label": "Is Public",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "False",
+                          "label": "False"
+                        },
+                        {
+                          "value": "True",
+                          "label": "True"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_tlp_column_name",
+                      "description": "Column name from parent table that contain tlp. TLP (Traffic Light Protocol) designation for the entity -red, amber, green, white.",
+                      "label": "TLP Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_description_template",
+                      "description": "Jinja template for description. e.g. This is sample {{desc}}",
+                      "label": "Jinja Template For Description",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_model_entity_tags_template",
+                      "description": "Jinja template for comma separated list of tags. e.g. {{tag1}},{{tag2}}",
+                      "label": "Jinja Template For Tags",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_model_entity_additional_param_template",
+                      "description": "Jinja template for additional parameters in json format. e.g. {\"intelligence\": [{{intelligence_id_list}}] } ",
+                      "label": "Jinja Template For Additional Param in Json Format",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_create-model_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_create-model_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "update_model",
+            "name": "Update Threat Model Entity",
+            "description": "Update threat model entities i.e. actors, campaigns, incidents, signatures, TTPs, and vulnerabilities.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Update Threat Model Entity",
+                  "description": "Update threat model entities i.e. actors, campaigns, incidents, signatures, TTPs, and vulnerabilities.",
+                  "inputs": [
+                    {
+                      "id": "anomali_model_entity_id_column_name",
+                      "description": "Column name from parent table that contain entity id.",
+                      "label": "Entity Id Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_type",
+                      "description": "Select a model entity type",
+                      "label": "Model Entity Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tipreport"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP (Tactics, Techniques, and Procedures)"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_name_column_name",
+                      "description": "Column name from parent table that contains entity name. Name should be unique for an entity.",
+                      "label": "Entity Name Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_tlp_column_name",
+                      "description": "Column name from parent table that contains tlp. TLP (Traffic Light Protocol) designation for the entity -red, amber, green, white.",
+                      "label": "TLP Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_description_template",
+                      "description": "Jinja template for description. e.g. This is sample {{desc}}",
+                      "label": "Jinja Template For Description",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_model_entity_tags_template",
+                      "description": "Jinja template for comma separated list of tags. e.g. {{tag1}},{{tag2}}",
+                      "label": "Jinja Template For Tags",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_model_entity_additional_param_template",
+                      "description": "Jinja template for additional parameters in json format. e.g. {\"intelligence\": [{{intelligence_id_list}}] } ",
+                      "label": "Jinja Template For Additional Param in Json Format)",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_patch-model_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_patch-model_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_models",
+            "name": "Get List of Models",
+            "description": "Get list of threat model entities i.e. actors, campaigns, incidents, signatures, TTPs, and vulnerabilities.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get List of Models",
+                  "description": "Get list of threat model entities i.e. actors, campaigns, incidents, signatures, TTPs, and vulnerabilities.",
+                  "inputs": [
+                    {
+                      "id": "anomali_model_entity_type",
+                      "description": "Select a model entity type",
+                      "label": "Model Entity Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tipreport"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP (Tactics, Techniques, and Procedures)"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_additional_param__filter_template",
+                      "description": "Provide jinja template for filters in JSON format. e.g. {\"tlp\":\"{{tlp}}\"}",
+                      "label": "Jinja template for filters in JSON Format",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_intelligence_explode_results",
+                      "description": "Select whether to return separate rows for each result or a single row containing all results (Default is Separate Rows)",
+                      "label": "Explode Results",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "True",
+                          "label": "Separate Rows"
+                        },
+                        {
+                          "value": "False",
+                          "label": "Single Row"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_limit",
+                      "description": "Result limit (Default is 20)",
+                      "label": "Result limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_list-models_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_list-models_exec"
+            },
+            "isDataSource": "Optional",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_model_description",
+            "name": "Get Model Description",
+            "description": "Get details of model entities i.e. actors, campaigns, incidents, signatures, TTPs, and vulnerabilities.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Get Model Description",
+                  "description": "Get details of model entities i.e. actors, campaigns, incidents, signatures, TTPs, and vulnerabilities.",
+                  "inputs": [
+                    {
+                      "id": "anomali_model_entity_id_column_name",
+                      "description": "Column name from parent table that contain entity id.",
+                      "label": "Entity Id Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_model_entity_type",
+                      "description": "Select a model entity type",
+                      "label": "Model Entity Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tipreport"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP (Tactics, Techniques, and Procedures)"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_time_between_consecutive_requests_millis",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_get-model-description_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_get-model-description_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "import_with_manual_approval",
+            "name": "Import With Manual Approval",
+            "description": "Import threat data(observables) into ThreatStream and require approval of the imported data through the ThreatStream UI.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "anomali_threatstream_file_id",
+                      "description": "Column name from parent table that contains file id.",
+                      "label": "File Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_classification",
+                      "description": "Select a classification of the observable (Default is Private)",
+                      "label": "Classification",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "public",
+                          "label": "Public"
+                        },
+                        {
+                          "value": "private",
+                          "label": "Private"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_severity",
+                      "description": "Select severity of the observable (Default is Low)",
+                      "label": "Severity",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "low",
+                          "label": "Low"
+                        },
+                        {
+                          "value": "medium",
+                          "label": "Medium"
+                        },
+                        {
+                          "value": "high",
+                          "label": "High"
+                        },
+                        {
+                          "value": "very-high",
+                          "label": "Very-High"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_source_confidence_weight",
+                      "description": "The ratio between the amount of the source confidence of each observable and the ThreatStream confidence (Default is 100)",
+                      "label": "Source Confidence Weight",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_confidence",
+                      "description": "Level of certainty that an observable is of the reported indicator type (Default is 100)",
+                      "label": "Confidence",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_ip_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_ip)",
+                      "label": "IP Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_domain_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_domain)",
+                      "label": "Domain Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_url_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_url)",
+                      "label": "URL Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_email_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_email)",
+                      "label": "Email Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_md5_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_md5)",
+                      "label": "MD5 Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_trusted_circles",
+                      "description": "Comma-separated ID's of the trusted circle to which this threat data should be imported (Default is no association)",
+                      "label": "Trusted Circles",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_import_csv_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_import_with_manual_approval_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "import_without_manual_approval",
+            "name": "Import Without Manual Approval",
+            "description": "Import threat data(observables) into ThreatStream without approval of the imported data through the ThreatStream UI.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "anomali_threatstream_file_id",
+                      "description": "Column name from parent table that contains file id.",
+                      "label": "File Id",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_classification",
+                      "description": "Select a classification of the observable (Default is Private)",
+                      "label": "Classification",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "public",
+                          "label": "Public"
+                        },
+                        {
+                          "value": "private",
+                          "label": "Private"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_severity",
+                      "description": "Select severity of the observable (Default is Low)",
+                      "label": "Severity",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "low",
+                          "label": "Low"
+                        },
+                        {
+                          "value": "medium",
+                          "label": "Medium"
+                        },
+                        {
+                          "value": "high",
+                          "label": "High"
+                        },
+                        {
+                          "value": "very-high",
+                          "label": "Very-High"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_source_confidence_weight",
+                      "description": "The ratio between the amount of the source confidence of each observable and the ThreatStream confidence (Default is 100)",
+                      "label": "Source Confidence Weight",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_confidence",
+                      "description": "Level of certainty that an observable is of the reported indicator type (Default is 100)",
+                      "label": "Confidence",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_ip_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_ip)",
+                      "label": "IP Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_domain_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_domain)",
+                      "label": "Domain Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_url_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_url)",
+                      "label": "URL Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_email_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_email)",
+                      "label": "Email Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_md5_mapping",
+                      "description": "Indicator type to assign if a specific type is not associated with an observable (Default is mal_md5)",
+                      "label": "MD5 Mapping",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threatstream_trusted_circles",
+                      "description": "Comma-separated ID's of the trusted circle to which this threat data should be imported (Default is no association)",
+                      "label": "Trusted Circles",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_import_csv_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_import_without_manual_approval_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "search_threat_models",
+            "name": "Search Threat Models",
+            "description": "Retrieve threat model from ThreatStream.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "anomali_search_string",
+                      "description": "Jinja-templated search string. Eg. {{financial_column_name}} {{services_column_name}}",
+                      "label": "Search String",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "anomali_threat_model_type",
+                      "description": "Select type of threat model (Default is All types)",
+                      "label": "Threat Model Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "attackpattern",
+                          "label": "Attack Pattern"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "courseofaction",
+                          "label": "Course of Action"
+                        },
+                        {
+                          "value": "identity",
+                          "label": "Identity"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "infrastructure",
+                          "label": "Infrastructure"
+                        },
+                        {
+                          "value": "intelligence",
+                          "label": "Intelligence"
+                        },
+                        {
+                          "value": "intrusionset",
+                          "label": "Intrusion set"
+                        },
+                        {
+                          "value": "investigation",
+                          "label": "Investigation"
+                        },
+                        {
+                          "value": "malware",
+                          "label": "Malware"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tip Report(Threat Bulletin)"
+                        },
+                        {
+                          "value": "tool",
+                          "label": "Tool"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_limit",
+                      "description": "Result limit (Default is 1000 results)",
+                      "label": "Result Limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_offset",
+                      "description": "Result offset (Default is 0)",
+                      "label": "Result Offset",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_search_threat_models_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_search_threat_models_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_threat_model_by_indicator_ids",
+            "name": "Get Threat Model By Indicator IDs",
+            "description": "Get threat model details by indicator ids from ThreatStream.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "anomali_indicator_ids",
+                      "description": "Column name from parent table that contain comma separated indicator ids",
+                      "label": "Indicator IDs",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threat_model_type",
+                      "description": "Select type of threat model",
+                      "label": "Threat Model Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "attackpattern",
+                          "label": "Attack Pattern"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "courseofaction",
+                          "label": "Course of Action"
+                        },
+                        {
+                          "value": "identity",
+                          "label": "Identity"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "infrastructure",
+                          "label": "Infrastructure"
+                        },
+                        {
+                          "value": "intelligence",
+                          "label": "Intelligence"
+                        },
+                        {
+                          "value": "intrusionset",
+                          "label": "Intrusion Set"
+                        },
+                        {
+                          "value": "investigation",
+                          "label": "Investigation"
+                        },
+                        {
+                          "value": "malware",
+                          "label": "Malware"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tip Report(Threat Bulletin)"
+                        },
+                        {
+                          "value": "tool",
+                          "label": "Tool"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_limit",
+                      "description": "Result limit (Default is 1000 results)",
+                      "label": "Result Limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_offset",
+                      "description": "Result offset (Default is 0)",
+                      "label": "Result Offset",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_get_threat_model_by_indicator_ids_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_get_threat_model_by_indicator_ids_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "get_associations_for_threat_model",
+            "name": "Get Associations For Threat Model",
+            "description": "Get associations details for threat model from ThreatStream.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "anomali_threat_model_id",
+                      "description": "Column name from parent table that contain the id of threat model",
+                      "label": "Threat Model ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threat_model_type",
+                      "description": "Select type of threat model",
+                      "label": "Threat Model Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "attackpattern",
+                          "label": "Attack Pattern"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "courseofaction",
+                          "label": "Course of Action"
+                        },
+                        {
+                          "value": "identity",
+                          "label": "Identity"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "infrastructure",
+                          "label": "Infrastructure"
+                        },
+                        {
+                          "value": "intelligence",
+                          "label": "Intelligence"
+                        },
+                        {
+                          "value": "intrusionset",
+                          "label": "Intrusion Set"
+                        },
+                        {
+                          "value": "investigation",
+                          "label": "Investigation"
+                        },
+                        {
+                          "value": "malware",
+                          "label": "Malware"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tip Report(Threat Bulletin)"
+                        },
+                        {
+                          "value": "tool",
+                          "label": "Tool"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threat_model_association_type",
+                      "description": "Select association type of threat model",
+                      "label": "Threat Model Association Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "attackpattern",
+                          "label": "Attack Pattern"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "courseofaction",
+                          "label": "Course of Action"
+                        },
+                        {
+                          "value": "identity",
+                          "label": "Identity"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "infrastructure",
+                          "label": "Infrastructure"
+                        },
+                        {
+                          "value": "intelligence",
+                          "label": "Intelligence"
+                        },
+                        {
+                          "value": "intrusionset",
+                          "label": "Intrusion Set"
+                        },
+                        {
+                          "value": "investigation",
+                          "label": "Investigation"
+                        },
+                        {
+                          "value": "malware",
+                          "label": "Malware"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tip Report(Threat Bulletin)"
+                        },
+                        {
+                          "value": "tool",
+                          "label": "Tool"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_limit",
+                      "description": "Result limit (Default is 1000 results)",
+                      "label": "Result Limit",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_offset",
+                      "description": "Result offset (Default is 0)",
+                      "label": "Result Offset",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_get_associations_for_threat_model_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_get_associations_for_threat_model_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "associate_iocs_to_threat_model",
+            "name": "Associate IOCs To Threat Model",
+            "description": "Associate IOCs To Threat Model from ThreatStream.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "anomali_threat_model_id",
+                      "description": "Column name from parent table that contain the id of threat model",
+                      "label": "Threat Model ID",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_threat_model_type",
+                      "description": "Select type of threat model",
+                      "label": "Threat Model Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "actor",
+                          "label": "Actor"
+                        },
+                        {
+                          "value": "attackpattern",
+                          "label": "Attack Pattern"
+                        },
+                        {
+                          "value": "campaign",
+                          "label": "Campaign"
+                        },
+                        {
+                          "value": "courseofaction",
+                          "label": "Course of Action"
+                        },
+                        {
+                          "value": "identity",
+                          "label": "Identity"
+                        },
+                        {
+                          "value": "incident",
+                          "label": "Incident"
+                        },
+                        {
+                          "value": "infrastructure",
+                          "label": "Infrastructure"
+                        },
+                        {
+                          "value": "intelligence",
+                          "label": "Intelligence"
+                        },
+                        {
+                          "value": "intrusionset",
+                          "label": "Intrusion Set"
+                        },
+                        {
+                          "value": "investigation",
+                          "label": "Investigation"
+                        },
+                        {
+                          "value": "malware",
+                          "label": "Malware"
+                        },
+                        {
+                          "value": "signature",
+                          "label": "Signature"
+                        },
+                        {
+                          "value": "tipreport",
+                          "label": "Tip Report(Threat Bulletin)"
+                        },
+                        {
+                          "value": "tool",
+                          "label": "Tool"
+                        },
+                        {
+                          "value": "ttp",
+                          "label": "TTP"
+                        },
+                        {
+                          "value": "vulnerability",
+                          "label": "Vulnerability"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "anomali_indicator_ids",
+                      "description": "Column name from parent table that contain the ioc ids",
+                      "label": "IOC IDS",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 milliseconds)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 120 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.anomali.action_associate_iocs_to_threat_model_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.anomali.action_associate_iocs_to_threat_model_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "2.3.2",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2020-08-29T11:29:56Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:06:05.684Z",
+          "errorMessage": "This imported connection is using a different version of the Anomali (logichub.anomali) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "",
+        "__lh_ssl_verify": "False",
+        "anomali_username": "nariman@logichub.com",
+        "anomali_base_url": "https://svlpartner-optic-api.threatstream.com",
+        "__lh_label": "Anomali"
+      },
+      "id": 27,
+      "isDefault": true
+    }
+  ],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

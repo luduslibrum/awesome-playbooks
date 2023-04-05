@@ -1,0 +1,309 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Hunt Indicators",
+    "aliasName": null,
+    "tag": "#ManualAction #Draft",
+    "description": "Searches for the specified indicators in your environment using EDR tools, and create alerts for ones that are found.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/d18c85d8-4365-43a7-b1ff-48e65418aa6b",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/f9a998a6-eb22-4126-93ff-9209bd1c4093",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "useMockOutput": "{{globalVars.Demo_mode}}",
+                "IndicatorsList": "[]"
+            },
+            "status": null,
+            "top": "165",
+            "left": "475",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "d5c05a70-09df-49ec-bfef-57986cc28e39"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Hunt Files",
+            "description": null,
+            "arguments": {
+                "name": "CarbonBlack Protection Bit9",
+                "config": "927e907d-3ce7-48e9-9e39-84b6746ae269",
+                "params": {
+                    "file_hash": "{{vars.item}}"
+                },
+                "version": "1.0.2",
+                "for_each": {
+                    "item": "{{vars.steps.Extract_Indicators_from_Input.data.SHA256}}",
+                    "condition": ""
+                },
+                "connector": "carbonblack-protect-bit9",
+                "operation": "hunt_file",
+                "ignore_errors": true,
+                "operationTitle": "Hunt File",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "37206059-39ef-4374-9106-5ea99a081128"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Extract Indicators from Input",
+            "description": null,
+            "arguments": {
+                "name": "CyOps Utilities",
+                "params": {
+                    "data": "{{vars.input.params.indicators}}",
+                    "whitelist": "",
+                    "case_sensitive": "",
+                    "override_regex": "",
+                    "private_whitelist": ""
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "extract_artifacts",
+                "operationTitle": "CyOPs: Extract Artifacts from string",
+                "step_variables": {
+                    "addIpIndicator": "{% for dict in vars.result.data.IP %}{{vars.IndicatorsList.append({\"value\":dict,\"type\":\"IndicatorType\" | picklist(\"IP Address\",\"@id\")})}}{% endfor %}",
+                    "addMD5Indicator": "{% for dict in vars.result.data.MD5 %}{{vars.IndicatorsList.append({\"value\":dict,\"type\":\"IndicatorType\" | picklist(\"FileHash-MD5\",\"@id\")})}}{% endfor %}",
+                    "addURLIndicator": "{% for dict in vars.result.data.URL %}{{vars.IndicatorsList.append({\"value\":dict,\"type\":\"IndicatorType\" | picklist(\"URL\",\"@id\")})}}{% endfor %}",
+                    "addSHA1Indicator": "{% for dict in vars.result.data.SHA1 %}{{vars.IndicatorsList.append({\"value\":dict,\"type\":\"IndicatorType\" | picklist(\"FileHash-SHA1\",\"@id\")})}}{% endfor %}",
+                    "addEmailIndicator": "{% for dict in vars.result.data.Email %}{{vars.IndicatorsList.append({\"value\":dict,\"type\":\"IndicatorType\" | picklist(\"Email Address\",\"@id\")})}}{% endfor %}",
+                    "addDomainIndicator": "{% for dict in vars.result.data.Host %}{{vars.IndicatorsList.append({\"value\":dict,\"type\":\"IndicatorType\" | picklist(\"Domain\",\"@id\")})}}{% endfor %}",
+                    "addSHA256Indicator": "{% for dict in vars.result.data.SHA256 %}{{vars.IndicatorsList.append({\"value\":dict,\"type\":\"IndicatorType\" | picklist(\"FileHash-SHA256\",\"@id\")})}}{% endfor %}"
+                },
+                "operationOutput": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "475",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "140dbace-d425-4f88-a845-dadaef9dc9f5"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Hunt IP address",
+            "description": null,
+            "arguments": {
+                "name": "ElasticSearch",
+                "config": "d5f437b6-6d8e-4b29-a759-71e69e3c1e77",
+                "params": {
+                    "type": "",
+                    "index": "",
+                    "query": "{{vars.item}}",
+                    "routing": "",
+                    "doc_type": "",
+                    "run_as_user": ""
+                },
+                "version": "2.2.1",
+                "for_each": {
+                    "item": "{{vars.steps.Extract_Indicators_from_Input.data.IP}}",
+                    "condition": ""
+                },
+                "connector": "elasticsearch",
+                "operation": "execute_query",
+                "mock_result": "{\n  \"data\": {\n    \"hits\": {\n      \"hits\": [\n        {\n          \"_id\": \"1r9wuGsBt8nuALoCthN7\",\n          \"_type\": \"doc\",\n          \"_index\": \"logstash-beats\",\n          \"_score\": 4.575364,\n          \"_source\": {\n            \"beat\": {\n              \"name\": \"admin-PC2\",\n              \"version\": \"6.5.3\",\n              \"hostname\": \"admin-PC2\"\n            },\n            \"tags\": [\n              \"beat\",\n              \"beats_input_codec_plain_applied\"\n            ],\n            \"task\": \"Outbound Connection (rule: OutboundConnectionCreate)\",\n            \"user\": {\n              \"name\": \"SYSTEM\",\n              \"type\": \"User\",\n              \"domain\": \"NT AUTHORITY\",\n              \"identifier\": \"S-1-5-18\"\n            },\n            \"level\": \"Information\",\n            \"opcode\": \"Info\",\n            \"message\": \"Process Create:\\nRuleName: \\nUtcTime: 2019-07-03 15:25:20.938\\nProcessGuid: {BAECEEB0-C8E0-5D1C-0000-0010A803D004}\\nProcessId: 3808\\nImage: C:\\\\Windows\\\\System32\\\\calc.exe\\nFileVersion: 6.1.7600.16385 (win7_rtm.090713-1255)\\nDescription: Windows Calculator\\nProduct: Microsoft\u00ae Windows\u00ae Operating System\\nCompany: Microsoft Corporation\\nCommandLine: \\\"C:\\\\Windows\\\\System32\\\\calc.exe\\\" \\nCurrentDirectory: C:\\\\Users\\\\superman\\\\Desktop\\\\Release\\\\\\nUser: CYBERCOM\\\\superman\\nLogonGuid: {BAECEEB0-784A-5D1A-0000-0020BA5C0D00}\\nLogonId: 0xd5cba\\nTerminalSessionId: 1\\nIntegrityLevel: High\\nHashes: MD5=10E4A1D2132CCB5C6759F038CDB6F3C9,SHA256=C6A91CBA00BF87CDB064C49ADAAC82255CBEC6FDD48FD21F9B3B96ABF019916B\\nParentProcessGuid: {BAECEEB0-C8E0-5D1C-0000-0010EDE9CF04}\\nParentProcessId: 3400\\nParentImage: C:\\\\Windows\\\\Microsoft.NET\\\\Framework64\\\\v4.0.30319\\\\RegAsm.exe\\nParentCommandLine: C:\\\\Windows\\\\Microsoft.NET\\\\Framework64\\\\v4.0.30319\\\\RegAsm.exe  C:\\\\Users\\\\superman\\\\Desktop\\\\Release\\\\AllTheThings.dll\\nConnection open to 43.225.46.25\\nConnection open to 162.241.216.113\\nport 8080\\\\NAT IP Address 162.241.216.113\",\n            \"version\": 5,\n            \"@version\": \"1\",\n            \"event_id\": 1,\n            \"log_name\": \"Microsoft-Windows-Sysmon\/Operational\",\n            \"username\": \"CYBERCOM\\\\superman\",\n            \"beat_host\": {\n              \"id\": \"baeceeb0-040c-498f-84c9-610d57bc902d\",\n              \"os\": {\n                \"build\": \"7601.0\",\n                \"family\": \"windows\",\n                \"version\": \"6.1\",\n                \"platform\": \"windows\"\n              },\n              \"name\": \"admin-PC2\",\n              \"architecture\": \"x86_64\"\n            },\n            \"thread_id\": 1816,\n            \"@timestamp\": \"2019-07-03T15:25:21.192Z\",\n            \"event_data\": {\n              \"Hashes\": \"MD5=10E4A1D2132CCB5C6759F038CDB6F3C9,SHA256=C6A91CBA00BF87CDB064C49ADAAC82255CBEC6FDD48FD21F9B3B96ABF019916B\",\n              \"Company\": \"Microsoft Corporation\",\n              \"LogonId\": \"0xd5cba\",\n              \"Product\": \"Microsoft\u00ae Windows\u00ae Operating System\",\n              \"UtcTime\": \"2019-07-03 15:25:20.938\",\n              \"LogonGuid\": \"{BAECEEB0-784A-5D1A-0000-0020BA5C0D00}\",\n              \"ProcessId\": \"3808\",\n              \"CommandLine\": \"\\\"C:\\\\Windows\\\\System32\\\\calc.exe\\\" \",\n              \"Description\": \"Windows Calculator\",\n              \"FileVersion\": \"6.1.7600.16385 (win7_rtm.090713-1255)\",\n              \"ProcessGuid\": \"{BAECEEB0-C8E0-5D1C-0000-0010A803D004}\",\n              \"IntegrityLevel\": \"High\",\n              \"ParentProcessId\": \"3400\",\n              \"CurrentDirectory\": \"C:\\\\Users\\\\superman\\\\Desktop\\\\Release\\\\\",\n              \"ParentCommandLine\": \"C:\\\\Windows\\\\Microsoft.NET\\\\Framework64\\\\v4.0.30319\\\\RegAsm.exe  C:\\\\Users\\\\superman\\\\Desktop\\\\Release\\\\AllTheThings.dll\",\n              \"ParentProcessGuid\": \"{BAECEEB0-C8E0-5D1C-0000-0010EDE9CF04}\",\n              \"TerminalSessionId\": \"1\"\n            },\n            \"event_type\": \"sysmon\",\n            \"image_path\": \"C:\\\\Windows\\\\System32\\\\calc.exe\",\n            \"process_id\": 1460,\n            \"source_name\": \"Microsoft-Windows-Sysmon\",\n            \"computer_name\": \"admin-PC2.cybercom.local\",\n            \"logstash_time\": 0.009769916534423828,\n            \"provider_guid\": \"{5770385F-C22A-43E0-BF4C-06F5698FFBD9}\",\n            \"record_number\": \"189777\",\n            \"parent_image_path\": \"C:\\\\Windows\\\\Microsoft.NET\\\\Framework64\\\\v4.0.30319\\\\RegAsm.exe\"\n          }\n        }\n      ],\n      \"total\": {\n        \"value\": 1,\n        \"relation\": \"eq\"\n      },\n      \"max_score\": 4.575364\n    },\n    \"took\": 724,\n    \"_shards\": {\n      \"total\": 95,\n      \"failed\": 0,\n      \"skipped\": 0,\n      \"successful\": 95\n    },\n    \"timed_out\": false\n  }\n}",
+                "ignore_errors": true,
+                "operationTitle": "Execute Query",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "825",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "1126dcbd-81ad-4655-b914-6ce340a107e8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Hunt Domains",
+            "description": null,
+            "arguments": {
+                "name": "Phishme Intelligence",
+                "config": "338031d8-4dd9-4473-aa65-38732d64d341",
+                "params": {
+                    "domain": "{{vars.item}}",
+                    "max_threats": ""
+                },
+                "version": "1.0.0",
+                "for_each": {
+                    "item": "{{vars.steps.Extract_Indicators_from_Input.data.Host}}",
+                    "condition": ""
+                },
+                "connector": "phishme-intelligence",
+                "operation": "hunt_domain",
+                "annotation": {
+                    "id": 142,
+                    "name": "hunt_domain",
+                    "system": false,
+                    "category": "investigation",
+                    "connectors": [
+                        31,
+                        102
+                    ],
+                    "displayName": "Hunt Domain",
+                    "connectorsData": [
+                        {
+                            "id": 31,
+                            "name": "crowd-strike-falcon",
+                            "label": "CrowdStrike Falcon",
+                            "version": "1.0.0",
+                            "icon_small": "data:image\/jpeg;base64,\/9j\/4AAQSkZJRgABAQAAAQABAAD\/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD\/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD\/wAARCACWAJYDAREAAhEBAxEB\/8QAHQABAAEEAwEAAAAAAAAAAAAAAAYEBQcIAQIDCf\/EADwQAAEDBAEDAQYDBAgHAAAAAAECAwQABQYRBxIhMRMIFCJBUWEVMnEzUoGRFhcjQmJyobQ3RWWFkrGy\/8QAHAEBAAEFAQEAAAAAAAAAAAAAAAQCAwUGBwEI\/8QAQhEAAQMCBAMEBgYIBQUAAAAAAQACAwQRBRIhMQZBURNhcYEUIjKRscEHFUJSodEkMzRicoKy4RYjQ1ODJjU2s\/D\/2gAMAwEAAhEDEQA\/APqnREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiKiu9zas9tlXWSFlmGyt9zoT1K6EjZ0Pn2Bql7gxpceSuQxOnlbE3dxAHiV3g3GLcoTFxgyW340ltLzLratpWhQ2FA\/MEGgeHAObsvJI3wvMcgs4aEdFUNrS4kLQoKB7gjwa9BuqDou1eolESiJREoiURKIlESiJREoiURKIlESiJRF0cbQ4hSHEhSVAgg+CPpXhF9EBINwte8Wyx3gTkU8SZc6W8Pvzy5GJ3J0\/BFUtW1QlqPgBR+HfgEDwe2AhqDhlT6LN7DtWHp+75cl0mvw1vGGFfXVCL1MQtOwbuAGkgHePa79VMcezN3BuRZHFuVO+nDvC1z8WnOdkPIUduwyrx6jaiSkfNBH0qZHU+jVHosuztWnr1HiPgsFVYWMUwtuLUQu6OzZmjcHk+33XDfoR3rKoOxusotTXNESiJREoiURKIlESiJREoiURKIlESiJRFwfFEWvHMlrsa7rI495VSr+huXvB6x3o+bLdCO7KlH8qVn4kE9viWk9tVr+ItjL\/R6v9W\/2Xfdd07r7j3LpPC09THE3E8G\/aoBaSP8A3I+tuZGzh4ELG0u8TMebR7PvtMLd9wKwvFs0ZJ2ypP7Jz1PIKe3fex4VsaVWNLzF+gYlt9l\/w1W3x0kdcTxPwlbP\/rU55g+0LcwenmNdFOMX9oa\/cRX1njP2glbR0g2vK2EFUedH8Jcd14Pjah4PnXkzocVfQSClxDyeNiO9a9XcFQcS0zsX4Y\/nhPtMdzDeo6D3LYy13e2XqC1c7RcY82I+kKbfYcC0LB+YI7GthZI2QBzDcLls9PLSyGKdpa4bgixCrAd1WrS5oiURKIlESiJREoiURKIlESiJREoiURWTMMPx\/Ocem4vk1tbnW+e36brS\/wDRST5Cge4I8GrFRTx1MZilFwVNw7EanCallXRuyvabg\/n3dQtX8ztN14otKuO+bbRJzbiqQsIt1+QgrnWX5IDpHxaT8lD5fX8tazURPoW+jVoMkB2dzb4\/muuYVUw8RTjFOHpBTYiPaj2ZL1y8tebVbH+PkScWi8WZBkTWSYPfj1YJlqSFrtc0gluK+R4Sv8o+R8duwFo0gfEKWR2eN3sP+6eh8VLZjhirnY1SxGGrj\/aYNg9nN7R1G56brXTHM75P4VyCZbsfyCbZpkCStiXC6uuOpxCtKCmlfCe48gA\/etZhrKvDJCxjiCDa3JdersEwXi+lZPUxB7XgFrtnWOo1GvxWyHHPt8Hqagco4uEDslVxtQKh+qmVHf8A4k\/pWzUfFQJDattu8fkuTY79DD23lwaa\/wC4\/Q+Thp77LajDc9xLkC0IvmH3+JdIa+xUwvZQf3Vp8pP2IBraqeqiqmdpC64XFsTwmtwac09fGWO7xv4HmPBSGpCx6URKIlESiJREoiURKIlESiJREoiU3RU8yJEmx3IU2O2+w8gocacSFJWk+QQexFUuAcLEKpkj4nh7CQRsRyWDsh4UYwEXG44FEdfxO6HqvuLJJUhI3v3uD82nkEBXQOyunto6rDvw8Ul3Qewd2\/NvQrfabih2MtZFiRtUM\/Vzc\/4JPvNO1zqL66LXL2yuPDYcutfIVvc95t+UxG\/VkJTpKpbaACo\/QrR0q\/UKrV+JaPspW1Ldnj8f7rr30TY6K2hkwqXR8LjYfuk\/BpuPMLXetaXW1KeNuRcn4vyqLk+LTnGXW1pD7AUfTlNb7tuJ8KBHg+Qe4qXRVstDKJIj4jqsDxFgNHxFRPpKxtxbQ82nqDy+a+rsCUZsNiWWyj12kOdB8p6gDo\/zrrTXZgCviiVnZyOZe9iQqiqlQlESiJREoiURKIlESiJREoiURKIrJldput1t27Bcxb7pHPqxH1J62+sf3HEbHUhXgjz8xogVZmY57fUNiNv7qXRTxQyj0huZh0I526g8iOSwRnPtWTeOum3Zphk60ZDDWA7b3Gy5Dube9FcSUnsDruAsD6K15rB1WOCjOWZhD+nI+B\/NdFwf6Ohjx7TD52yQu+1ez2Ho9m\/u8Qr3k0jjT2neGnbdj90YY95Wn3MvJCF2+4JG0NuJ\/uE7KfooKOt9quTGmxuiLYja+3ce9QKFuL\/R7j7ZKphOX2rah7DuR169xGq+fmTY1fMOv0vGckt7sG5QnC28w4O\/2Un95J8gjsRXO54JKaQxSixC+qcNxKmxelbWUbszHbEfA9D3Lwss2Nbb1b7jNi+8x4ktl95jYHqoQsKUjv8AUAj+NeQPEcrXOFwCCrlbC+pppIYzlc5pAPQkEA+S+lnF3tIcV8prbt1hvYhXVad\/hk5Pov8A6I38Lmv8JNdOosYpa71Y3Wd0O6+QeIeBca4bvJVR5o\/vt1b59PNZTSdjdZVaeu1ESiJREoiURKIlESiJREoiURKIuNbpZFaMmxDGMyti7PlVihXWG55ZlNBad\/Ub8H7irM1PFUNyStBHeplDiNXhkono5Cxw5g2WHR7K+N4neXr5xlOkWyPOR7vc7HKdU7AnRz5R3+NpY8oUCelQHbzWJGCxU7y+m0B3byP5Hot2k+kGrxOnFNi7RIW6skAAe0\/BwP2gdwtdue7xyHxnkKsMza32DM7OUFVluF8tqZMgMb\/ZqeSUqUpGwCD57H51reLTVNFJ2Mwa9v2S4XNul+5dV4KosK4ipfTsPfJTzD9Y2N5a2\/UNNwA7ce5YOkZXKkkhNhxuM2fDUa0NoQB9O+z\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\/wDTXyJi6JP7JEa4OMAjt7wEtAH\/ADBtTmvsVVFkAM7L99vFZSmJGH1Bbvdl\/C5+dvwUs2AalLFLFF5yfKsdfzJ+1Y7GkQ\/xJtC57szoEcrjsIK1NBJKko2FHR8A1jJZZIjIWt0vvfuGvktrpqKkq20wllIdlPqgb2c42Bva5tYK93C0s2aTx7YHnlPRYUhTQWoaS483Ec9Mn5eQoj7gVddGGGJh2HxAUKKc1DKydos5wvboC8X+QKunJ6IisBvhk6HpxVONH5h5JBbI+\/WE6++qu1YHYuuomClwr4g3rr4HQ\/hdWvNbkrGbvbMoeTpSrVPiOn5dYbS+gfzaWB+tWp39i5sh6Efhf5KVh0IrIZKZv32EeF8p+IUTRbF2CE5x+o6VehZVEfvFZCJPn\/Cwon9ajBnZj0f72X+\/wWV7X0p4xAf6fa\/hqz+pZCuIA5FsYA\/5XP8A\/uPU9369vgfkteh\/YJf4m\/By8bqEN8lY+uOB6rltuCH9DuWgpkp39gs9v1NUvH6Q229j8lchucNmDtg5lvH1vksXOP5h7Ol6lSHosa9cb3u9KkuPIPRNsr8t34ioeHWS4rz2I3WLJlwh5Ns0LnX725j+IutyDaHjWBrQ4x10cYAB1ZKIxy5tdlHgVKvaTO+LVH\/rNp\/3rNSMY\/Zf5m\/1BYjgb\/u3\/HL\/AOtyqfaV2ODMx6Rs\/h+wPr\/aJqrGT+gS26K3wMP+oqT+L5FQTDrxl\/IXN1hazbGI+KvYVZXZ8aF74JLs4Skhn1AtICQhISdjzsiokEktXWtbM3Lkbe2976XWfxKlocF4fmdh8xnFTIGl2XKGZPWtY63N9DtZS3jv\/jny1\/2X\/aGpVKf06o\/l+BWHxn\/x3C\/+b+sLC3DCr2rJOOW82TEGLfiF8OOlgq2q5h5zXvG+3V0+t6ev\/dYTD85fB249S78tvvXO\/ley3zikUwpq84ff0jLD2t\/9vKPYtyvlzXWS+X5OcRudMFc49t1pm3YWO7ANXN9bTHp9bHUepAJ341WTr+2bXQmAAuyu325LVOGWYdJw9WjE3ObH2kWrACb2fbQrM2NOX56yQncpjQ493UyDMahuKWyhz5hClAEj9azMReWAyDXnZaLWtp21DxSEmO\/qlwsbd\/erpVxRkoisWVY0jJIbSGpr0GbDfTKhTGQCuO8ARvR7KBBKVJPYgkVZmi7UaGxGoKmUNYaN5JaHNcLOB2I+R5g8irfZbHmpujVwynK2JLUUKDcS3wzGacURrqdKlLUogeACBvvVLI5c2Z7tuQFvers9TR9kY6aIgnm43I7hYADxVejGIq2r9Gmq94j311S3mynQCFMoaKfv2Tv+NVdkLOB2d+VlZNY9rons0MY095PzVJJw38Qw+HjNzush2TCba9G4tgIfQ81r03k+QFDQ38j3B7HVeGDNEI3Hbn4K83ETFVuqomAB17t5WO4PcqCPh2VXaXFGa5PFuFvgupfbixIPu4kOIO0KfJWrq6SArpTobA341VsQSPI7V1wO61\/FXjX0sDXehxFrnC1yb2B3DdBvtc3Nlcs8wyPm9ri2t+UuOI85iZ1pQFFSUK+Nsg\/JaCpJ+yqrqIPSGhpNtQf\/ALxVjDMQOGyula292ke8aHyNiPBcXbDmLrmFjytUtbarM3IR6AQCl71EgJJPy6fiI\/zV4+HPK2W+3zSDEHQUctIG3z216W39\/PwXTKMdyC43e33vHL3FgSYTD7ChJhl9C0OFBPYLTogtj+dVSxvc8PYbW06pSVUEUT4Z2FwcQdDYi1+49V6Y3icm1zpV+vl4cu13ltpZL6mg02yyDsNNNjfSnZ2SSSTrZ7CvIoSxxe83cV5V1rZ42wQMyRjW17knqTzPTkFja4+z\/lN5vSod45evM\/DHbmLo7Y5Edtbilhz1Qz7x+b0uvR6deBqsc\/C5JXZXykx3vbzva\/RbXT8X0lLBngoWNqcmQSAkaEWLsu2a3PzWROSsHRyBixxtVwVCSZkSX6qWws\/2DyHenRI89Gv41PrKYVUXZE21B9xutbwXFXYNV+lNbm9VzbfxNLfwvdenJOHDkHB7vhq56oQurHol9LfWW\/iB30nW\/FKunFXA6Em11TguJnBq+KuDcxYb266WVvvPHSbhmeK5vCui4c3HWXob4DQUJsV1ABaV37aUlKwe+iKokpA+aOcGxbceIPL3q\/TY06CgqMPezMyUhw\/dc07jyJBVTj2CosOb5XmQuKnlZP7n1MFsAMeg0Wxo7773v7VXHTCOd8wPt28rK3V4s6rw+moHNsIc9j1zm\/4KJK4Ijf1WQ+Pm8hdbmWu5m7W+6pYHXHk+8qeSoI34+IoPfuCaiDDWilFOHag3B6G91mP8WyfW78TMYyvZkcy+jm5A21\/K\/iqvkjirJ8vyWw5fjHIDmNXSyw5EP1m7e3IDqXigq+FZ0O7Yq5VUUk8rJo35XNBG191YwTiClwyknoaumE0cjmusXFtst7beKlmCWPKMfsvuGXZcvJJ\/qrX78uIiOeg60joR27d+\/wB6lU8ckbLSuzHqsRilTSVdR2lHD2TLD1bl2vM3OuqklX1jkoi41RE0KInSK8siaHivUQACiIRuiJ0ilkTpG90SyaoiaFEQjdETQoidIoiaFNkTpFETpFEsgAFEXNESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURKIlESiJREoiURf\/\/Z",
+                            "operations": [
+                                {
+                                    "title": "Hunt Domain",
+                                    "operation": "hunt_domain",
+                                    "description": "Get list of device IDs on which the domain was observed"
+                                }
+                            ]
+                        },
+                        {
+                            "id": 102,
+                            "name": "phishme-intelligence",
+                            "label": "Phishme Intelligence",
+                            "version": "1.0.0",
+                            "icon_small": "data:image\/jpeg;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA3NpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw\/eHBhY2tldCBiZWdpbj0i77u\/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTQwIDc5LjE2MDQ1MSwgMjAxNy8wNS8wNi0wMTowODoyMSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1MDNhYTZiMy0zYzEzLTQ5YzEtODNiZi00MThjZWIxM2VhNTIiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6MUY5MDRFOUYxRjc4MTFFOEI1ODlDNEVBOUI1N0JBOTMiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MUY5MDRFOUUxRjc4MTFFOEI1ODlDNEVBOUI1N0JBOTMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIChNYWNpbnRvc2gpIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6ZTQ4NWEwZmYtNjEyZS00MDZmLWExOWQtOWEzNmYwNzIyMTYzIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjUwM2FhNmIzLTNjMTMtNDljMS04M2JmLTQxOGNlYjEzZWE1MiIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI\/Pqcrr7UAAALPSURBVHjaYvz\/\/z8DLQETA43BqAWjFoxaMBwsYAHiB4+ffvn6TUdDlSSdL9+8Y2Vi4rx1m0lIkF1N5fuFy0xcnKzSUkzcXMjKmBsaGk6eu5RW1njhyg0FWSlRYcGPn76ws7MxMjICpYFF4Z+\/f5mZmG7euX\/01HkWZuaT5y+t2LDN1twkvqDm1+fPko1t74+e4PfxuOng+fvpi+8XLz1raPv9+BmrqAiLqAjUBywsLGysrK\/evi9u6MlNjpy2YOXKmT07DxwFGiolKXbz9gNLE\/2+mYuYmZm8XeyAlp25dJ2JifHHj19A65n5+T5dv\/Gya+Kf1y+YODn+fvz06\/79j9t2fr92XWnFAmgc\/Pv3j4ebq7ks+9uP75eu3fr05eusxas2bN\/74PGzV6\/fPnv56tT5K99\/\/HCyNvN3d+Lh5n7+4lVKUd3L12\/Y2FgZmJj+fvjwet58RkZmBiZGBiAlKMRjZc7v5MAArghAPgA6DRgs6WWNUhLi5kZ6m3cfvH3\/8bsPnxTleJmYmBj+M0QHe7OwMO0\/dub+o2e6Wqq\/f\/+59+jJ7z9\/IMHIoa7+5\/VrZkmp\/7\/\/MLKz\/\/v29deTZxzKSgxgWSZIQAO9nBodPKurXkpC7Ov3722V+f7ujkD9wNBjZGLatHP\/jbsPuLk43374+PnzF2V52Y0LJktLiv\/6\/fv\/z5\/8rs6CwQFcxob\/fv5k+PeXiZeHmYf72+WrDP9gPvj1+8\/\/f\/8jArw4OTiYmJkWTGjh5eWOCfH98+cv0Pav375zcXLuPHDk2q27\/h5O12\/de\/L8FS8P95\/ff379\/P3n7VsOcVGh2IjHuSX\/vn1j5uX5\/fT5bwkp4aQYUIgxMDACnQ9MP3cfPPL3dAYmEoKp8++\/fz9+\/OTi5Dhx7rIQD5f4oaNshnpcJoYft2wHxgenuhowlFhlpODqGUfr5FELRi0YtWAQWAAQYAB0JDxLzqI7BgAAAABJRU5ErkJggg==",
+                            "operations": [
+                                {
+                                    "title": "Hunt Domain",
+                                    "operation": "hunt_domain",
+                                    "description": "Hunt action for a provided domain"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "ignore_errors": true,
+                "operationTitle": "Hunt Domain",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "475",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "506a2701-f72f-48b6-8b87-cfbfa0fab821"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "6a625d53-5a76-4a43-ae89-b2c726416b17",
+                "title": "Hunt Indicators",
+                "resources": [
+                    "indicators"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "indicators",
+                        "type": "string",
+                        "label": "Indicators",
+                        "title": "Text Area",
+                        "usable": true,
+                        "tooltip": "Specify Indicators such as IP, Domain, URL and Filehash. You can specify them in freetext",
+                        "dataType": "text",
+                        "formType": "textarea",
+                        "required": true,
+                        "_expanded": true,
+                        "collection": false,
+                        "searchable": true,
+                        "templateUrl": "app\/components\/form\/fields\/textarea.html",
+                        "defaultValue": "gumblar.cn 43.225.46.25 162.241.216.113 db349b97c37d22f5ea1d1841e3c89eb4",
+                        "allowedGridColumn": true,
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "indicators": "{{vars.request.data[\"indicators\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Hunt",
+                "noRecordExecution": true,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "475",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "f9a998a6-eb22-4126-93ff-9209bd1c4093"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Extract Indicators from Input -> Hunt IP address",
+            "targetStep": "\/api\/3\/workflow_steps\/1126dcbd-81ad-4655-b914-6ce340a107e8",
+            "sourceStep": "\/api\/3\/workflow_steps\/140dbace-d425-4f88-a845-dadaef9dc9f5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9f4ce5c0-115a-4e94-9d5f-69e47e815e43"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Extract Indicators from Input -> Hunt Domains",
+            "targetStep": "\/api\/3\/workflow_steps\/506a2701-f72f-48b6-8b87-cfbfa0fab821",
+            "sourceStep": "\/api\/3\/workflow_steps\/140dbace-d425-4f88-a845-dadaef9dc9f5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "5f6a8eb8-f5fe-4e35-86b2-ed1b3a0d0108"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Extract Indicators from Header",
+            "targetStep": "\/api\/3\/workflow_steps\/140dbace-d425-4f88-a845-dadaef9dc9f5",
+            "sourceStep": "\/api\/3\/workflow_steps\/d5c05a70-09df-49ec-bfef-57986cc28e39",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c71a1d25-39d6-4345-b22c-d39f0db04b05"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Extract Indicators from Input -> Hunt Files",
+            "targetStep": "\/api\/3\/workflow_steps\/37206059-39ef-4374-9106-5ea99a081128",
+            "sourceStep": "\/api\/3\/workflow_steps\/140dbace-d425-4f88-a845-dadaef9dc9f5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "37239652-5894-464c-86f8-6e1abf0973f7"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/d5c05a70-09df-49ec-bfef-57986cc28e39",
+            "sourceStep": "\/api\/3\/workflow_steps\/f9a998a6-eb22-4126-93ff-9209bd1c4093",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "87469b50-4071-4993-8a10-ad161a5aadb4"
+        }
+    ],
+    "priority": null,
+    "uuid": "0d0a1c8b-2c22-48f6-9bde-0333fa212138",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Hunt"
+    ]
+}

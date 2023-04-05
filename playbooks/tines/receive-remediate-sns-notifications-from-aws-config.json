@@ -1,0 +1,1373 @@
+{
+  "schema_version": 4,
+  "name": "Receive & remediate SNS notifications from AWS Config",
+  "description": "Receive SNS notifications from AWS Config, and report notifications in Jira. Remediate AWS infrastructure based on the notification.\n\ntags: AWS, Remediate, Jira, Notify, Intermediate,\nicons: aws, 🔎,⚠️\nvisibility: public",
+  "guid": "fb57d6282835f8f68d403ec6732d662d",
+  "slug": "receive_remediate_sns_notifications_from_aws_config",
+  "exported_at": "2022-07-11T17:33:51Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive SNS",
+      "disabled": false,
+      "guid": "b1165239bb53947b4fa98fe6c87851a5",
+      "options": {
+        "path": "7f124ab738bfb4b7435057ab93c02078",
+        "secret": "7d8ab88aa831c1079a4de38c1216ace7",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Subscribe to SNS",
+      "disabled": false,
+      "guid": "0c7d55b1003e2f14924acb802f8c7401",
+      "options": {
+        "url": "<<receive_sns.body.SubscribeURL>>",
+        "method": "get"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Initial SNS Subscription",
+      "disabled": false,
+      "guid": "567186c3db818f679f9eea258098560d",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<receive_sns.body.SubscribeURL>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Data",
+      "disabled": false,
+      "guid": "f9536d672f1155f4a1801cdf3116918a",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "<<receive_sns.body.Message>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Convert to json",
+      "disabled": false,
+      "guid": "de28a84a7c508b77bc735287d2ba2edf",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "<<JSON_PARSE(data.message)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "c54eb6cd96783831522c549ee68e57bf",
+      "options": {
+        "url": "https://<<RESOURCE.jiradomain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "h2. AWS Config Notification:\n\n||*Message ID*|<<receive_sns.body.MessageId>>|\n||*Topic ARN*|<<receive_sns.body.TopicArn>>|\n||*Timestamp*|<<receive_sns.body.Timestamp>>|\n||*Subject*| <<receive_sns.body.Subject>>|\n||*AWS Account ID*|<<convert_to_json.message.configurationItem.awsAccountId>>|\n||*AWS Region*|<<convert_to_json.message.configurationItem.awsRegion>>|\n||*AWS Availability Zone*|<<convert_to_json.message.configurationItem.availabilityZone>>|\n||*Resource Type*|<<convert_to_json.message.configurationItem.resourceType>>|\n||*Resource ID*|<<convert_to_json.message.configurationItem.resourceId>>|\n||*Resource ARN*|<<convert_to_json.message.configurationItem.ARN>>|\n||*Config Rule*| <<convert_to_json.message.configurationItem.configuration.configRuleList[0].configRuleName>>| \n||*Compliance*|<<convert_to_json.message.configurationItem.configuration.configRuleList[0].complianceType>> | \n\n[Click Here to remediate this configuration alert |<<PROMPT(\"remediate\")>>]\n",
+            "summary": "New AWS Config Notification "
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "retry_on_status": [
+          "429"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Non Compliant SSH",
+      "disabled": false,
+      "guid": "bca4cceb411c3b69d29a07c5869b391d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "restricted-ssh",
+            "path": "<<convert_to_json.message.configurationItem.configuration.configRuleList[0].configRuleName>>"
+          },
+          {
+            "type": "field==value",
+            "value": "NON_COMPLIANT",
+            "path": "<<convert_to_json.message.configurationItem.configuration.configRuleList[0].complianceType>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Security Group",
+      "disabled": false,
+      "guid": "dc2062113f44ada9cb8eca6dec41dad9",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "<<convert_to_json.message.resourceId>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Modify AWS EC2 Security Group Rules",
+      "disabled": false,
+      "guid": "77911e162a80bf839cb3175d682f6f81",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com/?Action=ModifySecurityGroupRules&Version=2016-11-15&GroupId=<<get_security_group.message>>&SecurityGroupRule.0.SecurityGroupRule.IpProtocol=tcp&SecurityGroupRule.0.SecurityGroupRuleId=<<get_security_group_rule_id.rules>>&SecurityGroupRule.0.SecurityGroupRule.FromPort=22&SecurityGroupRule.0.SecurityGroupRule.ToPort=22&SecurityGroupRule.0.SecurityGroupRule.CidrIpv4<<new_ip_address>>",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<get_security_group_rule_id.rules>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Describe Security Group Rules",
+      "disabled": false,
+      "guid": "3b47b9facb4b1d7b5d5aabf2b0a13cfa",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com/?Action=DescribeSecurityGroupRules&Version=2016-11-15",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Security Group Rule ID",
+      "disabled": false,
+      "guid": "1b1c3880e38735e35bb2463651a8d18b",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "rules": "=WHERE(describe_security_group_rules.body.DescribeSecurityGroupRulesResponse.securityGroupRuleSet.item, \"groupId\", \"sg-0ff6d057022a70ade\") |> GET(%, \"securityGroupRuleId\")"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Resource Deleted",
+      "disabled": false,
+      "guid": "8a0026c4fc93ac9ad207d834ce26c7e4",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "DELETE",
+            "path": "<<convert_to_json.message.configurationItemDiff.changeType>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel using a Channel ID",
+      "disabled": false,
+      "guid": "88bfd1e562faee90991dd9ec97f99a98",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "{{slack_channel}}",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "text": "A Jira ticket was created for an AWS Config Resource Deletion Notification https://tinesio.atlassian.net/browse/<<create_issue_in_jira.body.key>>. Was this deletion expected?",
+                "type": "mrkdwn"
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Yes"
+                  },
+                  "style": "primary",
+                  "url": "{%prompt Yes%}"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Contain Device"
+                  },
+                  "style": "primary",
+                  "url": "{%prompt No%}"
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer {{CREDENTIAL.slack}}"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Expected",
+      "disabled": false,
+      "guid": "05b429137436448e3cba76b77df92d28",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Yes",
+            "path": "<<post_message_to_a_slack_channel_using_a_channel_id.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Ticket",
+      "disabled": false,
+      "guid": "fcad46298d72785a3be885fa968175d4",
+      "options": {
+        "url": "https://tinesio.atlassian.net/rest/api/2/issue/<<create_issue_in_jira.body.key>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Not Expected",
+      "disabled": false,
+      "guid": "808154fb7ebb6f250b50560b23c7738f",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "No",
+            "path": "<<post_message_to_a_slack_channel_using_a_channel_id.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "EC2 Instance Started",
+      "disabled": false,
+      "guid": "55dbe3847e29fd8317281251b9fd5521",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "foo",
+            "path": "<<somekey.subkey.subkey.goal>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel using a Channel ID",
+      "disabled": false,
+      "guid": "2c24738fd2f424f4a486bcbc5a8535a9",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "{{slack_channel}}",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "text": "A Jira ticket was created for an AWS Config Resource New EC2 Instance Creation Notification https://tinesio.atlassian.net/browse/<<create_issue_in_jira.body.key>>. Was this expected?",
+                "type": "mrkdwn"
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Yes"
+                  },
+                  "style": "primary",
+                  "url": "{%prompt Yes%}"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Contain Device"
+                  },
+                  "style": "primary",
+                  "url": "{%prompt No%}"
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer {{CREDENTIAL.slack}}"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Expected",
+      "disabled": false,
+      "guid": "730347e905d23a752d5486639052ddfb",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Yes",
+            "path": "<<post_message_to_a_slack_channel_using_a_channel_id.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Ticket",
+      "disabled": false,
+      "guid": "bbe63ae5be45d4a42ca87310eb08263b",
+      "options": {
+        "url": "https://tinesio.atlassian.net/rest/api/2/issue/<<create_issue_in_jira.body.key>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Not Expected",
+      "disabled": false,
+      "guid": "203e3c3eb88b649f1a787a548880fc65",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "No",
+            "path": "<<post_message_to_a_slack_channel_using_a_channel_id.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Stop AWS EC2 Instance",
+      "disabled": false,
+      "guid": "925f399b7a2b08765cfbfe7732f6a861",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=StopInstances&InstanceId=<<convert_to_json.message.configurationItem.resourceId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "EBS Volume Created - Unencrypted",
+      "disabled": false,
+      "guid": "5098e486523c809c75de393d15bfdcca",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "encrypted-volumes",
+            "path": "<<convert_to_json.message.configRuleName>>"
+          },
+          {
+            "type": "field==value",
+            "value": "NON_COMPLIANT",
+            "path": "<<convert_to_json.message.newEvaluationResult.complianceType>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Stop AWS EC2 Instance",
+      "disabled": false,
+      "guid": "258788299f505ba141dc6214bf576bac",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=StopInstances&InstanceId=<<describe_ebs_volume.body.DescribeVolumesResponse.volumeSet.item.attachmentSet.item.instanceId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start AWS EC2 Instance",
+      "disabled": false,
+      "guid": "4dcabbd4dcce48a930312e0e525b9bcf",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=StartInstances&InstanceId=<<describe_ebs_volume.body.DescribeVolumesResponse.volumeSet.item.attachmentSet.item.instanceId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Instance Powered Off",
+      "disabled": false,
+      "guid": "4a8cae14daa307170f0f59dc67c2b9a3",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "UPDATE",
+            "path": "<<convert_to_json.message.configurationItemDiff.changeType>>"
+          },
+          {
+            "type": "field==value",
+            "value": "AWS::EC2::Instance",
+            "path": "<<convert_to_json.message.configurationItem.resourceType>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start AWS EC2 Instance",
+      "disabled": false,
+      "guid": "430e94740cec19af94144e105ee4a78a",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=StartInstances&InstanceId=<<convert_to_json.message.configurationItem.resourceId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "7481450451bf18af277a300452632302",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Instance <<convert_to_json.message.configurationItem.resourceId>> powered back on at <<DATE(\"now\", \"%Y-%m-%d-%H-%M-%S\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "65ca6c20452ff9f7433eb5af5ca73903",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Security Group Rule <<get_security_group_rule_id.rules>> updated to block public SSH at <<convert_to_json.message.configurationItem.resourceId>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "471956385fdc328b91367cd724ad91e8",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Instance <<convert_to_json.message.configurationItem.resourceId>> stopped at <<DATE(\"now\", \"%Y-%m-%d-%H-%M-%S\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Describe EBS Volume",
+      "disabled": false,
+      "guid": "0cb21e547cf805757429691aae88fa9b",
+      "options": {
+        "url": "https://ec2.\\<<<RESOURCE.aws_region>>.amazonaws.com?Action=DescribeVolumes&VolumeId.1=<<convert_to_json.message.resourceId>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create AWS EC2 EBS Snapshot",
+      "disabled": false,
+      "guid": "76c92cc16dd186d4c10727bf302eb208",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=CreateSnapshot&Version=2016-11-15&VolumeId=<<describe_ebs_volume.body.DescribeVolumesResponse.volumeSet.item.volumeId>>",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Encrypted Volume from Snapshot",
+      "disabled": false,
+      "guid": "d86cd7b1d116e0fb7dca45497f2b0768",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=CreateVolume&AvailabilityZone=<<describe_ebs_volume.body.DescribeVolumesResponse.volumeSet.item.availabilityZone>>&SnapshotId<<create_aws_ec2_ebs_snapshot.body.CreateSnapshotResponse.snapshotId>>&Version=2016-11-15&Encrypted=true",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Detach EBS Root Volume",
+      "disabled": false,
+      "guid": "4ee3d17181c6d2a00a7f9f25663763e4",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=DetachVolume&VolumeId=<<describe_ebs_volume.body.DescribeVolumesResponse.volumeSet.item.volumeId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Attach New EBS Root Volume",
+      "disabled": false,
+      "guid": "e12c72effb83fcceb3e8111e7cb7e8b2",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=AttachVolume&InstanceId=<<describe_ebs_volume.body.DescribeVolumesResponse.volumeSet.item.attachmentSet.item.instanceId>>&VolumeId=<<create_encrypted_volume_from_snapshot.body.CreateVolumeResponse.volumeId>>&Device=<<describe_ebs_volume.body.DescribeVolumesResponse.volumeSet.item.attachmentSet.item.device>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "bf6eccd324b665c76df372bc77888141",
+      "options": {
+        "mode": "delay",
+        "seconds": "10"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is Volume Attaching",
+      "disabled": false,
+      "guid": "43f3f48be3d6cfdda881b1d0d75c2a8a",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "attaching",
+            "path": "<<attach_new_ebs_root_volume.body.AttachVolumeResponse.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "9ffe19275c03aac6b8f715a1e00eb8d1",
+      "options": {
+        "mode": "delay",
+        "seconds": 10
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is Volume Attached",
+      "disabled": false,
+      "guid": "001b7ada746c75f185f5b96def8e27dd",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "attached",
+            "path": "<<attach_new_ebs_root_volume.body.AttachVolumeResponse.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "22b8fbad9d544852e24b130558e40dc4",
+      "options": {
+        "mode": "delay",
+        "seconds": "30"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "b0bdcee860815ad5f897b6c1d1a434bd",
+      "options": {
+        "mode": "delay",
+        "seconds": "10"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Issue Comment in Jira",
+      "disabled": false,
+      "guid": "e25a8ff5aa0af060572445018a025358",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "Instance <<describe_ebs_volume.body.DescribeVolumesResponse.volumeSet.item.attachmentSet.item.instanceId>> had encrypted volume <<create_encrypted_volume_from_snapshot.body.CreateVolumeResponse.volumeId>> attached at <<DATE(\"now\", \"%Y-%m-%d-%H-%M-%S\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "All Other Config Findings",
+      "disabled": false,
+      "guid": "ff03f9900e6703c75934bace806a9701",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": ".*",
+            "path": "<<expand_event.message.detail.type>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Validate SNS Subscription\n\nWhen configuring SNS for the first time, a verification challenge will be sent in order to prove ownership.",
+      "position": [
+        803.0,
+        335.0
+      ],
+      "guid": "aa0f566255fb357df84448c11e0f3135",
+      "width": null
+    },
+    {
+      "content": "# Handle All Config Findings\n\nFor any generic Config finding, send that finding to your generic alerting workflow.",
+      "position": [
+        1875.0,
+        555.0
+      ],
+      "guid": "54fcfee46445e6b35a3ae65576ea58ae",
+      "width": null
+    },
+    {
+      "content": "[](https://image-uploads.tines.com/framed-logo-aws.png)\n\n# AWS Config\nThis Story will receive SNS notifications from AWS Config via a Tines Webhook. Depending on the type of notification received from SNS a different set of steps to remediate the configuration can be taken. \n\nFor each set of steps the initial Jira that that was created is updated, and a user can be notified to confirm proceeding with the actions. \n\n**Resources Needed:**\njira_domain - URL of Jira \njira_username - User name of Jira account with permissions to create issue in specified project \n\n**Credential Needed:**\naws_ec2: role based access with permission to perform required operations in AWS \ncredential_jira: user account credentials with permissions to create, update, and close tickets within specified Jira project\n\n",
+      "position": [
+        -97.0,
+        -55.0
+      ],
+      "guid": "2731ed427eeb26a881342047af3e2dc4",
+      "width": null
+    },
+    {
+      "content": "# Config Remediation Steps \n\n1. Instance Powered Off - Power specified Instance Back On if Power off not approved\n2. Non Compliant SSH - Modify Security Group Rule to change Port 22 rule from Source of 0.0.0.0/0 to a specific IP\n3. Resource Deleted - Post a Slack message confirming resource deletion\n4. EC2 Instance Started - Stop specified EC2 instance if start not approved\n5. EBS Volume Created - Unencrypted - Stop Instance, Create Snapshot of unencrypted EBS volume and create new encrypted Volume from Snapshot. Attach volume to Instance, and restart Instance",
+      "position": [
+        -417.0,
+        556.0
+      ],
+      "guid": "b898bdf3db5174ad2cc20c66e586bd8e",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 5,
+      "receiver": 11
+    },
+    {
+      "source": 5,
+      "receiver": 16
+    },
+    {
+      "source": 5,
+      "receiver": 22
+    },
+    {
+      "source": 5,
+      "receiver": 25
+    },
+    {
+      "source": 5,
+      "receiver": 42
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 9
+    },
+    {
+      "source": 8,
+      "receiver": 28
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 8
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 12,
+      "receiver": 15
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 17,
+      "receiver": 18
+    },
+    {
+      "source": 17,
+      "receiver": 20
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 20,
+      "receiver": 21
+    },
+    {
+      "source": 21,
+      "receiver": 29
+    },
+    {
+      "source": 22,
+      "receiver": 30
+    },
+    {
+      "source": 23,
+      "receiver": 31
+    },
+    {
+      "source": 24,
+      "receiver": 41
+    },
+    {
+      "source": 25,
+      "receiver": 26
+    },
+    {
+      "source": 26,
+      "receiver": 27
+    },
+    {
+      "source": 30,
+      "receiver": 23
+    },
+    {
+      "source": 31,
+      "receiver": 39
+    },
+    {
+      "source": 32,
+      "receiver": 40
+    },
+    {
+      "source": 33,
+      "receiver": 35
+    },
+    {
+      "source": 34,
+      "receiver": 38
+    },
+    {
+      "source": 34,
+      "receiver": 36
+    },
+    {
+      "source": 35,
+      "receiver": 34
+    },
+    {
+      "source": 36,
+      "receiver": 37
+    },
+    {
+      "source": 37,
+      "receiver": 24
+    },
+    {
+      "source": 38,
+      "receiver": 24
+    },
+    {
+      "source": 39,
+      "receiver": 32
+    },
+    {
+      "source": 40,
+      "receiver": 33
+    }
+  ],
+  "diagram_layout": "{\"b1165239bb53947b4fa98fe6c87851a5\":[465,225],\"0c7d55b1003e2f14924acb802f8c7401\":[585,405],\"567186c3db818f679f9eea258098560d\":[585,330],\"f9536d672f1155f4a1801cdf3116918a\":[360,330],\"de28a84a7c508b77bc735287d2ba2edf\":[360,405],\"c54eb6cd96783831522c549ee68e57bf\":[360,480],\"bca4cceb411c3b69d29a07c5869b391d\":[165,555],\"dc2062113f44ada9cb8eca6dec41dad9\":[165,630],\"77911e162a80bf839cb3175d682f6f81\":[165,885],\"3b47b9facb4b1d7b5d5aabf2b0a13cfa\":[165,705],\"1b1c3880e38735e35bb2463651a8d18b\":[165,795],\"8a0026c4fc93ac9ad207d834ce26c7e4\":[495,555],\"88bfd1e562faee90991dd9ec97f99a98\":[495,630],\"05b429137436448e3cba76b77df92d28\":[465,720],\"fcad46298d72785a3be885fa968175d4\":[465,795],\"808154fb7ebb6f250b50560b23c7738f\":[645,720],\"55dbe3847e29fd8317281251b9fd5521\":[840,555],\"2c24738fd2f424f4a486bcbc5a8535a9\":[840,630],\"730347e905d23a752d5486639052ddfb\":[840,720],\"bbe63ae5be45d4a42ca87310eb08263b\":[840,795],\"203e3c3eb88b649f1a787a548880fc65\":[1005,720],\"925f399b7a2b08765cfbfe7732f6a861\":[1005,795],\"5098e486523c809c75de393d15bfdcca\":[1320,555],\"258788299f505ba141dc6214bf576bac\":[1320,720],\"4dcabbd4dcce48a930312e0e525b9bcf\":[1320,1515],\"4a8cae14daa307170f0f59dc67c2b9a3\":[-90,555],\"430e94740cec19af94144e105ee4a78a\":[-90,630],\"7481450451bf18af277a300452632302\":[-90,705],\"65ca6c20452ff9f7433eb5af5ca73903\":[165,975],\"471956385fdc328b91367cd724ad91e8\":[1005,870],\"0cb21e547cf805757429691aae88fa9b\":[1320,645],\"76c92cc16dd186d4c10727bf302eb208\":[1320,795],\"d86cd7b1d116e0fb7dca45497f2b0768\":[1320,960],\"4ee3d17181c6d2a00a7f9f25663763e4\":[1320,1125],\"e12c72effb83fcceb3e8111e7cb7e8b2\":[1320,1275],\"bf6eccd324b665c76df372bc77888141\":[1320,1200],\"43f3f48be3d6cfdda881b1d0d75c2a8a\":[1575,1365],\"9ffe19275c03aac6b8f715a1e00eb8d1\":[1575,1440],\"001b7ada746c75f185f5b96def8e27dd\":[1320,1365],\"22b8fbad9d544852e24b130558e40dc4\":[1320,885],\"b0bdcee860815ad5f897b6c1d1a434bd\":[1320,1050],\"e25a8ff5aa0af060572445018a025358\":[1320,1590],\"ff03f9900e6703c75934bace806a9701\":[1620,555]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Receive & remediate SNS notifications from AWS Config Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

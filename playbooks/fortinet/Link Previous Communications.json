@@ -1,0 +1,160 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Link Previous Communications",
+    "aliasName": null,
+    "tag": null,
+    "description": "Links existing communications records to create a conversation thread.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/d98add27-83c9-4f73-a370-16454398e317",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/5b91d400-d53a-4802-97c3-fa80d60aaa42",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "communication",
+                "resources": [
+                    "communication"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": []
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/ea155646-3821-4542-9702-b246da430a8d",
+            "uuid": "5b91d400-d53a-4802-97c3-fa80d60aaa42"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Email Thread",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "id",
+                            "value": "{{vars.input.records[0].id}}",
+                            "operator": "neq",
+                            "_operator": "neq"
+                        },
+                        {
+                            "logic": "OR",
+                            "filters": [
+                                {
+                                    "type": "primitive",
+                                    "field": "subject",
+                                    "value": "%{{vars.input.records[0].subject}}%",
+                                    "operator": "like",
+                                    "_operator": "like"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "subject",
+                                    "value": "%{{vars.input.records[0].subject  | regex_replace('(?:\\\\[?(?:[Ff][Ww][Dd]?|[Rr][Ee])(?:\\\\s*[:;-]+\\\\s*\\\\]?))+','')}}%",
+                                    "operator": "like",
+                                    "_operator": "like"
+                                },
+                                {
+                                    "type": "primitive",
+                                    "field": "emailRefId",
+                                    "value": "{{vars.input.records[0].replyEmailRefID}}",
+                                    "operator": "eq",
+                                    "_operator": "eq"
+                                }
+                            ]
+                        }
+                    ],
+                    "__selectFields": [
+                        "id"
+                    ]
+                },
+                "module": "communication?$limit=30",
+                "checkboxFields": true,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "e8d909d0-41f4-47ed-8679-a16e366d56f1"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Email Thread",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "__link": {
+                        "communications": "{{vars.steps.Find_Email_Thread | json_query('[*][\"@id\"][]')}}"
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "collectionType": "\/api\/3\/communication",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "437bae52-0736-4beb-9e96-e92b3d1725d3"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Find Email Thread",
+            "targetStep": "\/api\/3\/workflow_steps\/e8d909d0-41f4-47ed-8679-a16e366d56f1",
+            "sourceStep": "\/api\/3\/workflow_steps\/5b91d400-d53a-4802-97c3-fa80d60aaa42",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "2768b790-d9bc-449a-a069-86f576bb2740"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Email Thread -> Create Email Thread",
+            "targetStep": "\/api\/3\/workflow_steps\/437bae52-0736-4beb-9e96-e92b3d1725d3",
+            "sourceStep": "\/api\/3\/workflow_steps\/e8d909d0-41f4-47ed-8679-a16e366d56f1",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f987e8e5-a582-4980-aab0-e8d9a511c6ec"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "ec0b59fe-ad2d-4b85-966c-598d48464bed",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "PostCreate"
+    ]
+}

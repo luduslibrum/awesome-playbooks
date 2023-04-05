@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_0aqlpmx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.7.2">
+  <bpmn:process id="RviewSubmttdIDSRuls" name="Review Submitted IDS Rules" isExecutable="true" camunda:versionTag="Shareable_Workflow">
+    <bpmn:startEvent id="StartEvent_1" name="Threat Intel Receipt">
+      <bpmn:outgoing>Flow_17f67ig</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0u5j3c6" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_17f67ig" sourceRef="StartEvent_1" targetRef="Activity_1pzkso8" />
+    <bpmn:serviceTask id="Activity_1pzkso8" name="SOAR Extracts IDS Rule from Case">
+      <bpmn:incoming>Flow_17f67ig</bpmn:incoming>
+      <bpmn:outgoing>Flow_1xmouus</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1xmouus" sourceRef="Activity_1pzkso8" targetRef="Activity_1guzyk6" />
+    <bpmn:serviceTask id="Activity_1guzyk6" name="SOAR Creates Ticket for IDS Rule Review">
+      <bpmn:incoming>Flow_1xmouus</bpmn:incoming>
+      <bpmn:outgoing>Flow_042idd3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_042idd3" sourceRef="Activity_1guzyk6" targetRef="Activity_0xij9ny" />
+    <bpmn:sendTask id="Activity_0xij9ny" name="SOAR Notifies SOC of Rule Review">
+      <bpmn:incoming>Flow_042idd3</bpmn:incoming>
+      <bpmn:outgoing>Flow_0pr1pt4</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="Flow_0pr1pt4" sourceRef="Activity_0xij9ny" targetRef="Activity_1kqj1sz" />
+    <bpmn:userTask id="Activity_1kqj1sz" name="SOC Analyst Reviews Ticket">
+      <bpmn:incoming>Flow_0pr1pt4</bpmn:incoming>
+      <bpmn:outgoing>Flow_1knmvoa</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_0478o5q" name="IDS rule approved?">
+      <bpmn:incoming>Flow_1knmvoa</bpmn:incoming>
+      <bpmn:outgoing>Flow_1758zul</bpmn:outgoing>
+      <bpmn:outgoing>Flow_08d5rpk</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1knmvoa" sourceRef="Activity_1kqj1sz" targetRef="Gateway_0478o5q" />
+    <bpmn:sequenceFlow id="Flow_1758zul" name="Yes" sourceRef="Gateway_0478o5q" targetRef="Activity_1a7cqpa" />
+    <bpmn:serviceTask id="Activity_1a7cqpa" name="SOAR Uploads New Rule to IDS">
+      <bpmn:incoming>Flow_1758zul</bpmn:incoming>
+      <bpmn:outgoing>Flow_0awq1ry</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0awq1ry" sourceRef="Activity_1a7cqpa" targetRef="Activity_0mfloy6" />
+    <bpmn:endEvent id="Event_1mop0p1" name="End">
+      <bpmn:incoming>Flow_17tiry4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_17tiry4" sourceRef="Activity_0mfloy6" targetRef="Event_1mop0p1" />
+    <bpmn:sequenceFlow id="Flow_08d5rpk" name="No" sourceRef="Gateway_0478o5q" targetRef="Activity_0mfloy6" />
+    <bpmn:serviceTask id="Activity_0mfloy6" name="SOAR Closes Ticket">
+      <bpmn:incoming>Flow_0awq1ry</bpmn:incoming>
+      <bpmn:incoming>Flow_08d5rpk</bpmn:incoming>
+      <bpmn:outgoing>Flow_17tiry4</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="RviewSubmttdIDSRuls">
+      <bpmndi:BPMNEdge id="Flow_08d5rpk_di" bpmnElement="Flow_08d5rpk">
+        <di:waypoint x="910" y="202" />
+        <di:waypoint x="910" y="250" />
+        <di:waypoint x="1220" y="250" />
+        <di:waypoint x="1220" y="217" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="922" y="209" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17tiry4_di" bpmnElement="Flow_17tiry4">
+        <di:waypoint x="1270" y="177" />
+        <di:waypoint x="1342" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0awq1ry_di" bpmnElement="Flow_0awq1ry">
+        <di:waypoint x="1100" y="177" />
+        <di:waypoint x="1170" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1758zul_di" bpmnElement="Flow_1758zul">
+        <di:waypoint x="935" y="177" />
+        <di:waypoint x="1000" y="177" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="941" y="159" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1knmvoa_di" bpmnElement="Flow_1knmvoa">
+        <di:waypoint x="820" y="177" />
+        <di:waypoint x="885" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0pr1pt4_di" bpmnElement="Flow_0pr1pt4">
+        <di:waypoint x="660" y="177" />
+        <di:waypoint x="720" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_042idd3_di" bpmnElement="Flow_042idd3">
+        <di:waypoint x="500" y="177" />
+        <di:waypoint x="560" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xmouus_di" bpmnElement="Flow_1xmouus">
+        <di:waypoint x="340" y="177" />
+        <di:waypoint x="400" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17f67ig_di" bpmnElement="Flow_17f67ig">
+        <di:waypoint x="188" y="177" />
+        <di:waypoint x="240" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0yjvgao_di" bpmnElement="StartEvent_1" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="152" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="142" y="202" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1sv4ogz_di" bpmnElement="Activity_1pzkso8">
+        <dc:Bounds x="240" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_03jvo4h_di" bpmnElement="Activity_1guzyk6">
+        <dc:Bounds x="400" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0e0grrw_di" bpmnElement="Activity_0xij9ny">
+        <dc:Bounds x="560" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_02onhlp_di" bpmnElement="Activity_1kqj1sz">
+        <dc:Bounds x="720" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0478o5q_di" bpmnElement="Gateway_0478o5q" isMarkerVisible="true">
+        <dc:Bounds x="885" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="884" y="106" width="52" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ffch57_di" bpmnElement="Activity_1a7cqpa">
+        <dc:Bounds x="1000" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1mop0p1_di" bpmnElement="Event_1mop0p1" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="1342" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1351" y="202" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ui1q17_di" bpmnElement="Activity_0mfloy6">
+        <dc:Bounds x="1170" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

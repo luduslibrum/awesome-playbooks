@@ -1,0 +1,162 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "URLVoid - URL Reputation",
+    "aliasName": null,
+    "tag": null,
+    "description": "Retrieves the reputation of indicators of type 'URL' using URLVoid.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_value"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/b135c052-e170-4cff-8cc7-9a4bfe607ccb",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/c8b437ac-af78-4944-970b-e327e5454f6b",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configurations",
+            "description": null,
+            "arguments": {
+                "threshold": "5",
+                "indicator_value": "{{vars.input.params['indicator_value']}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "a025116b-384b-4f7a-90c3-76e6e646ddd0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Reputation from URLVoid",
+            "description": null,
+            "arguments": {
+                "name": "URLVoid",
+                "config": "80158417-6916-4f4f-b979-fc84ea02e2be",
+                "params": {
+                    "domain": "{{vars.indicator_value}}",
+                    "rescan": true
+                },
+                "version": "1.1.0",
+                "connector": "urlvoid",
+                "operation": "domain_reputation",
+                "ignore_errors": true,
+                "operationTitle": "Get Website Reputation ",
+                "step_variables": {
+                    "foundURLvoidReputation": "{{ ( vars.result.data and vars.result.data | length > 0 ) | ternary(true,false) }}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "d089e1da-03e9-4e03-9ad2-3e9dbabd32a0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "enrichment_summary",
+            "description": null,
+            "arguments": {
+                "tags": "None",
+                "source": "URLVoid",
+                "reputation": "{% if vars.Reputation >= vars.threshold %}\"Malicious\"{% elif vars.Reputation <= vars.threshold and vars.Reputation > 0 %}\"Suspicious\"{%elif vars.Reputation == 0%}\"No Reputation Available\"{%else%}\"Good\"{%endif%}",
+                "enrichmentSummary": "{{vars.steps.Compute_URLVoid_Summary.data['formatted_string']}}"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "e1618218-42b3-45c9-853d-dcde67423228"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Compute URLVoid Summary",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "value": "<p>{% if vars.foundURLvoidReputation %}<\/p>\n<div class=\"card-container-body\" style=\"width: 200px;\">\n<div class=\"card-number\"><a href=\"https:\/\/www.urlvoid.com\/scan\/{{vars.indicator_value.split('\/')[-1]}}\" target=\"&quot;_blank&quot;&quot;\"> <span class=\"card-count\">{%if 'detections' in vars.steps.Get_Reputation_from_URLVoid.data %} {{vars.steps.Get_Reputation_from_URLVoid.data.detections.count}}{%else%} 0 {%endif%}<\/span> <\/a>\n<div class=\"font-size-12 ng-binding\">IP Address: {{vars.steps.Get_Reputation_from_URLVoid.data.details.ip.addr}}<\/div>\n<div class=\"font-size-14 ng-binding\"><strong>URLVoid<\/strong><\/div>\n<\/div>\n<\/div>\n<p>{% endif %}<\/p>"
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "format_richtext",
+                "operationTitle": "Utils: Format as RichText",
+                "step_variables": {
+                    "Reputation": "{% if vars.foundURLvoidReputation %}{{vars.steps.Get_Reputation_from_URLVoid.data.detections.count}} {%else%} 0\n{%endif%}"
+                }
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "e96ad9bd-7b43-4ff2-89ef-10155598b612"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "c8b437ac-af78-4944-970b-e327e5454f6b"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configurations -> Get Reputation from URLVoid",
+            "targetStep": "\/api\/3\/workflow_steps\/d089e1da-03e9-4e03-9ad2-3e9dbabd32a0",
+            "sourceStep": "\/api\/3\/workflow_steps\/a025116b-384b-4f7a-90c3-76e6e646ddd0",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d3839719-e053-4971-8156-f525f916fb40"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Reputation from URLVoid -> Compute URLVoid Summary",
+            "targetStep": "\/api\/3\/workflow_steps\/e96ad9bd-7b43-4ff2-89ef-10155598b612",
+            "sourceStep": "\/api\/3\/workflow_steps\/d089e1da-03e9-4e03-9ad2-3e9dbabd32a0",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "c5eebd80-08f6-47f6-915a-e96e26807de2"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compute URLVoid Summary -> enrichment_summary",
+            "targetStep": "\/api\/3\/workflow_steps\/e1618218-42b3-45c9-853d-dcde67423228",
+            "sourceStep": "\/api\/3\/workflow_steps\/e96ad9bd-7b43-4ff2-89ef-10155598b612",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9937d161-a810-4978-b20f-c1bf848d706b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configurations",
+            "targetStep": "\/api\/3\/workflow_steps\/a025116b-384b-4f7a-90c3-76e6e646ddd0",
+            "sourceStep": "\/api\/3\/workflow_steps\/c8b437ac-af78-4944-970b-e327e5454f6b",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a59d4fee-8795-4c7b-89fc-503306895f8d"
+        }
+    ],
+    "priority": null,
+    "uuid": "74969766-3e18-470b-8c23-2016fa1fbde3",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

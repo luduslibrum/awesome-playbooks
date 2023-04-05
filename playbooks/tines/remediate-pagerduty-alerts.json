@@ -1,0 +1,837 @@
+{
+  "schema_version": 4,
+  "name": "Remediate PagerDuty alerts",
+  "description": "This Story receives a PagerDuty v3 webhook when an incident is triggered, annotated, and acknowledged. Depending on the incident type, Tines will take a different action to remediate.\n\ntags: PagerDuty, Alerts, Remediate, Intermediate\nicons: 🚨, pagerduty, 🧰\nvisibility: public",
+  "guid": "8c4f1b5be5258fdfaa28aa6de8eab270",
+  "slug": "remediate_pagerduty_alerts",
+  "exported_at": "2022-07-11T17:27:28Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Incoming PD v3 Webhook",
+      "disabled": false,
+      "guid": "c3712a4ad37be29df362c28e9a5c2eb3",
+      "options": {
+        "path": "97439ede10392c1dd6f3c394ff75983e",
+        "secret": "0877f4c231945b2dd24ef2d95708cb75",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "PD Incident Triggered",
+      "disabled": false,
+      "guid": "cee1d46b15fe230aefab61ea0b5a812c",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "incident.triggered",
+            "path": "<<incoming_pd_v3_webhook.body.event.event_type>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "PD Incident Annotated",
+      "disabled": false,
+      "guid": "159cbd5cf2c32fa36dc08e0463f9c4e7",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "incident.annotated",
+            "path": "<<incoming_pd_v3_webhook.body.event.event_type>>"
+          },
+          {
+            "type": "in",
+            "value": "<<DOWNCASE(RESOURCE.pd_update_text)>>",
+            "path": "=DOWNCASE(incoming_pd_v3_webhook.body.event.data.content)"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "PD Incident Acknowledged",
+      "disabled": false,
+      "guid": "c6c620c25340ef76f4bb259bcd416a77",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "incident.acknowledged",
+            "path": "<<incoming_pd_v3_webhook.body.event.event_type>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create a Status Update for an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "7363d196a07326f911623f1c324f75fa",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents/<<incoming_pd_v3_webhook.body.event.data.id>>/status_updates",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "message": "The <<incoming_pd_v3_webhook.body.event.data.priority.summary>> incident has been acknowledged by <<incoming_pd_v3_webhook.body.event.agent.summary>>.  Updates will occur as the investigation proceeds."
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<get_a_user_in_pagerduty.body.user.email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create a Note for an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "b88917312190602eda5699fbb5409551",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents/<<incoming_pd_v3_webhook.body.event.data.id>>/notes",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "note": {
+            "content": "The <<incoming_pd_v3_webhook.body.event.data.priority.summary>> incident has been acknowledged by <<incoming_pd_v3_webhook.body.event.agent.summary>>.  "
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<get_a_user_in_pagerduty.body.user.email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract IP Addresses in Description Using Regex",
+      "disabled": false,
+      "guid": "edf0dd13f4be51dbe0eff9ae4d85b19f",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_an_incident_in_pagerduty.body.incident.description",
+            "regexp": "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b",
+            "to": "ips"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "35ca2c501b4d58e5bb3a9faa1a83a047",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents/<<incoming_pd_v3_webhook.body.event.data.incident.id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "ba148a31e74090ac749da0c854226710",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents/<<incoming_pd_v3_webhook.body.event.data.id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get a user in PagerDuty",
+      "disabled": false,
+      "guid": "c924e601b64c3605af78c91770450aad",
+      "options": {
+        "url": "https://api.pagerduty.com/users/<<incoming_pd_v3_webhook.body.event.agent.id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check IP in blocklist.de for the last 24 hours",
+      "disabled": false,
+      "guid": "fc7c321e1f0cd640dc44e8927d96c70d",
+      "options": {
+        "url": "http://api.blocklist.de/api.php",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "apikey": "<<CREDENTIAL.blocklist_de>>",
+          "ip": "<<explode_ip_addresses.ip>>",
+          "format": "json",
+          "start": "<<DATE(\"now\", \"%s\") |> MINUS(%, 86400)>>"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Geo Lookup an IP Address",
+      "disabled": false,
+      "guid": "148d4036049e080fb5fd465c5159b292",
+      "options": {
+        "url": "https://reallyfreegeoip.org/json/<<explode_ip_addresses.ip>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get a user in PagerDuty",
+      "disabled": false,
+      "guid": "ef7c28e2f0642b43a53b70524831d1f7",
+      "options": {
+        "url": "https://api.pagerduty.com/users/<<get_an_incident_in_pagerduty.body.incident.assignments.first.assignee.id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode IP addresses",
+      "disabled": false,
+      "guid": "ed20a2fad21e2bffdca4e38be406b9d5",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=explode_ip_addresses.guid",
+        "size_path": "=LIQUID_SIZE(explode_ip_addresses, \"dot_notation\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "84d92a442801d3de579726e7c90fc4a0",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "incident": {
+            "type": "incident",
+            "title": "<<form_create_pagerduty_incident.body.title>>",
+            "service": {
+              "id": "<<CREDENTIAL.pagerduty_service_id>>",
+              "type": "service_reference"
+            },
+            "urgency": "<<DOWNCASE(form_create_pagerduty_incident.body.urgency.first)>>",
+            "body": {
+              "type": "incident_body",
+              "details": "<<form_create_pagerduty_incident.body.description>>"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<RESOURCE.pd_user_email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List notes for Incident in PagerDuty",
+      "disabled": false,
+      "guid": "e3a66a678def7b1a88ada81fa6e4ff4e",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents/<<get_an_incident_in_pagerduty.body.incident.id>>/notes",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Map notes content",
+      "disabled": false,
+      "guid": "5bbfb9239fd714371573393fb9952aea",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "content": "<<MAP(list_notes_for_incident_in_pagerduty.body.notes, \"content\") |> APPEND(%, br)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract IP Addresses in Description Using Regex",
+      "disabled": false,
+      "guid": "4a54829ea6bcbdf93e8491f19bf599e7",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=map_notes_content.content",
+            "regexp": "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b",
+            "to": "ips"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "explode ip addresses",
+      "disabled": false,
+      "guid": "82f614c92946e9aaf67171513c91e3f3",
+      "options": {
+        "mode": "explode",
+        "path": "=get_unique_ips.ips",
+        "to": "ip"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Unique IPs",
+      "disabled": false,
+      "guid": "ae4fab0cd5f6fbf7567ff84a489d299b",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "ips": "=UNIQ(extract_ip_addresses_in_description_using_regex.ips)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Form Create PagerDuty Incident",
+      "disabled": false,
+      "guid": "1d167e16b8221813b8f1354f903c3fcf",
+      "options": {
+        "path": "f23ba60b0603bef06bd1335270c3dd79",
+        "secret": "45beea0dbfe48ea8bf1446d614e15f31",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Lookup IP in GreyNoise",
+      "disabled": false,
+      "guid": "15cc24ff52fcd82c3058c9ca797af474",
+      "options": {
+        "url": "https://api.greynoise.io/v3/community/<<explode_ip_addresses.ip>>",
+        "method": "get",
+        "headers": {
+          "Accept": "application/json",
+          "key": "<<CREDENTIAL.greynoise>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create a Note for an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "f35bc28a9ec5ab4ad4577d7023bc32cc",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents/<<get_an_incident_in_pagerduty.body.incident.id>>/notes",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "note": {
+            "content": "Tines found <<LIQUID_SIZE(implode_ip_addresses)>> IP addresses in the notes of this  incident:\n<%for item in implode_ip_addresses%>IP address: <<item.explode_ip_addresses.ip>>\nGeo Lookup of address: <<item.geo_lookup_an_ip_address.body.city>> <<item.geo_lookup_an_ip_address.body.region_name>> <<item.geo_lookup_an_ip_address.body.country_code>>\nGreyNoise reports IP Address seen as <<item.lookup_ip_in_greynoise.body.classification>>\nblocklist.de reports <<item.check_ip_in_blocklist_de_for_the_last_24_hours.body.attacks>> attacks and <<item.check_ip_in_blocklist_de_for_the_last_24_hours.body.reports>> reports for this IP\n<%endfor%>"
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<RESOURCE.pd_user_email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Required Resources/Credentials:\n```\n.RESOURCE.pd_user_email\n.RESOURCE.pd_update_text\n.CREDENTIAL.pagerduty\n.CREDENTIAL.pagerduty_service_id\n```\nObtain an PagerDuty API Access Key from [your-sub-domain].pagerduty.com/api_keys\n\n",
+      "position": [
+        705.0,
+        -195.0
+      ],
+      "guid": "f2d2d9221e7aadbb18a5f22d5a7740d6",
+      "width": null
+    },
+    {
+      "content": "⬅️ .  Getting the user that acknowledged the incident's information so that we can use their email address for the next steps.  This makes the note/update look like it comes from them.  A service account in PagerDuty could also be used for Tines activities if desired.",
+      "position": [
+        1260.0,
+        495.0
+      ],
+      "guid": "c419b42cc84eef0ca90c8af278ff36bc",
+      "width": null
+    },
+    {
+      "content": "➡️➡️➡️➡️➡️\nIn PagerDuty's v3 webhooks, the incident title and descriptions don't follow the same structure in incident.triggered and incident.annotated event types, so we get the incident information so we can hand off the same information to the next step.",
+      "position": [
+        105.0,
+        495.0
+      ],
+      "guid": "2e32ae589541fa5993ceb2972ddf953c",
+      "width": null
+    },
+    {
+      "content": "![](https://image-uploads.tines.com/1920px-PagerDuty-GreenRGB.svg.png)\n\n# Story Example\nPagerDuty is commonly used to aggregate alerts from multiple sources into an incident and notify the person or team who are on-call for that incident's service.\n\n# Where Tines Comes In\nRather than the on-call SME having to read through an incident, perform lookups regarding a reported threat, and add these results back to the incident, Tines can automate the lookups when a threat is reported, or update the incident record when new information is gathered.\n\n# Why This is Important\nWhen the on-call SME is notified of an incident, Tines can pre-populate the record with the information that they need to make an immediate assessment of the situation without the toil of performing these actions themselves.  Automating best practices ensures that actions are consistent and auditable.",
+      "position": [
+        105.0,
+        -195.0
+      ],
+      "guid": "7322230cdb405b36e94c30a03c127b46",
+      "width": null
+    },
+    {
+      "content": "➡️➡️➡️➡️➡️\nThree incident types are demonstrated here, but others can used to trigger automations.  \n\nSee also: https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTkw-v3-overview#event-types",
+      "position": [
+        105.0,
+        345.0
+      ],
+      "guid": "616c64c59e45b58cbb348e7628c0add2",
+      "width": null
+    },
+    {
+      "content": "# Create a new incident with the form in this story\n---\n",
+      "position": [
+        1245.0,
+        -195.0
+      ],
+      "guid": "928bcfb55c3cae7055af0689dadbe3ed",
+      "width": null
+    },
+    {
+      "content": "# What is happening in this example?\nTines is receiving a PagerDuty v3 Webhook from its security service when an incident is triggered, annotated (a note added), and when the incident is acknowledged.  Depending on the incident event type, Tines will take a different action:\n# Triggered\nTines will search the incident description for IP addresses, look up those IPs for known threats, then add a note with looked up threat information.\n# Annotated\nTines will check new notes for a 'slash command' or keyword (stored as `.RESOURCE.pd_update_text`).  When found, Tines will search all notes for IPs, lookup threats on those IPs, and add a note with this information in the incident.\n# Acknowledged\nWhen an incident is acknowledged, Tines will add a note with the acknowledging person, as well as create a status update so non-technical stakeholders are aware that the incident is acknowledged.",
+      "position": [
+        405.0,
+        -195.0
+      ],
+      "guid": "fc69312d70cda1abaa48766cf434c429",
+      "width": null
+    },
+    {
+      "content": "⬆️⬆️⬆️**Note:** This action will return an error for PagerDuty accounts that do not have stakeholder notifications enabled.",
+      "position": [
+        1005.0,
+        840.0
+      ],
+      "guid": "7645a11ac06e038787e7d9d7232223bf",
+      "width": null
+    },
+    {
+      "content": "Demo/review:  Incidents will be created in the `Security Alerts` Service [here](https://setines.pagerduty.com/service-directory/P7I3DQI)",
+      "position": [
+        1245.0,
+        75.0
+      ],
+      "guid": "b553e6cb710fbf92e7879d7ec54ce188",
+      "width": null
+    },
+    {
+      "content": "➡️➡️➡️➡️➡️\nIf an IP address appears in the incident multiple times, we only want to get additional information about it once.  This step removes duplicates.",
+      "position": [
+        300.0,
+        855.0
+      ],
+      "guid": "cace0884acfc70b9c22b68e64a231c1a",
+      "width": null
+    },
+    {
+      "content": "➡️➡️➡️➡️➡️\nImploding the IP addresses and additional data produces one PD note with all of the analyses, rather than one note for each.",
+      "position": [
+        300.0,
+        1275.0
+      ],
+      "guid": "ca706cac8b102e277265dfbe3018c026",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 8
+    },
+    {
+      "source": 2,
+      "receiver": 7
+    },
+    {
+      "source": 3,
+      "receiver": 9
+    },
+    {
+      "source": 6,
+      "receiver": 19
+    },
+    {
+      "source": 7,
+      "receiver": 15
+    },
+    {
+      "source": 8,
+      "receiver": 6
+    },
+    {
+      "source": 9,
+      "receiver": 4
+    },
+    {
+      "source": 9,
+      "receiver": 5
+    },
+    {
+      "source": 10,
+      "receiver": 21
+    },
+    {
+      "source": 11,
+      "receiver": 10
+    },
+    {
+      "source": 12,
+      "receiver": 22
+    },
+    {
+      "source": 13,
+      "receiver": 12
+    },
+    {
+      "source": 15,
+      "receiver": 16
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 17,
+      "receiver": 19
+    },
+    {
+      "source": 18,
+      "receiver": 11
+    },
+    {
+      "source": 19,
+      "receiver": 18
+    },
+    {
+      "source": 20,
+      "receiver": 14
+    },
+    {
+      "source": 21,
+      "receiver": 13
+    }
+  ],
+  "diagram_layout": "{\"c3712a4ad37be29df362c28e9a5c2eb3\":[705,285],\"cee1d46b15fe230aefab61ea0b5a812c\":[450,360],\"159cbd5cf2c32fa36dc08e0463f9c4e7\":[705,360],\"c6c620c25340ef76f4bb259bcd416a77\":[1005,360],\"7363d196a07326f911623f1c324f75fa\":[1005,765],\"b88917312190602eda5699fbb5409551\":[1260,765],\"edf0dd13f4be51dbe0eff9ae4d85b19f\":[450,765],\"35ca2c501b4d58e5bb3a9faa1a83a047\":[705,495],\"ba148a31e74090ac749da0c854226710\":[450,495],\"c924e601b64c3605af78c91770450aad\":[1005,495],\"fc7c321e1f0cd640dc44e8927d96c70d\":[600,1095],\"148d4036049e080fb5fd465c5159b292\":[600,1020],\"ef7c28e2f0642b43a53b70524831d1f7\":[600,1350],\"ed20a2fad21e2bffdca4e38be406b9d5\":[600,1275],\"84d92a442801d3de579726e7c90fc4a0\":[1245,0],\"e3a66a678def7b1a88ada81fa6e4ff4e\":[705,585],\"5bbfb9239fd714371573393fb9952aea\":[705,675],\"4a54829ea6bcbdf93e8491f19bf599e7\":[705,765],\"82f614c92946e9aaf67171513c91e3f3\":[600,930],\"ae4fab0cd5f6fbf7567ff84a489d299b\":[600,855],\"1d167e16b8221813b8f1354f903c3fcf\":[1245,-90],\"15cc24ff52fcd82c3058c9ca797af474\":[600,1185],\"f35bc28a9ec5ab4ad4577d7023bc32cc\":[600,1440]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Open PagerDuty Security Incident",
+    "description": "",
+    "fields": [
+      {
+        "name": "Urgency",
+        "description": "",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Low",
+          "High"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Description",
+        "description": "",
+        "required": true,
+        "type": "LONG_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Title",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "1d167e16b8221813b8f1354f903c3fcf",
+    "success_message": "Thank you for your submission"
+  }
+}

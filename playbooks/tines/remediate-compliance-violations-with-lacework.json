@@ -1,0 +1,436 @@
+{
+  "schema_version": 4,
+  "name": "Remediate compliance violations with Lacework",
+  "description": "This Story ensures the S3 bucket policy restricts access, verifies user activity via Slack, and remediates compliance violations.\n\ntags: Lacework, Slack, Verify, Remediate, Beginner\nicons: 🪣, 🔧, ❌\nvisibility: public",
+  "guid": "5a4cb898962eff09261632efdd606aca",
+  "slug": "remediate_compliance_violations_with_lacework",
+  "exported_at": "2022-07-11T17:29:41Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Lacework Events",
+      "disabled": false,
+      "guid": "656da1a8bf5d7251289c5c934f5ad551",
+      "options": {
+        "secret": "4377530508bb672c882b11ecc942236a",
+        "path": "facefab2fe3eef8e4c4ba9112f966603"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Event by ID in Lacework",
+      "disabled": false,
+      "guid": "b98439341076f836ae66b8ef2664abc5",
+      "options": {
+        "url": "https://<<RESOURCE.lacework_domain>>/api/v1/external/events/GetEventDetails?EVENT_ID=<<receive_lacework_events.body.event_id>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.lacework>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to Slack",
+      "disabled": false,
+      "guid": "814bce2c5a42a573f5229646ff848c72",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "engineering-team",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*New Lacework Alert*\n*Alert Title:* <<receive_lacework_events.body.event_title>> <<get_event_by_id_in_lacework.body.data.first.EVENT_ID>>\n*Description:* <<receive_lacework_events.body.event_description>>\n*Event Type:* <<get_event_by_id_in_lacework.body.data.first.EVENT_TYPE>>\n*Event Source:* <<receive_lacework_events.body.event_source>>\nClick *\\<<<receive_lacework_events.body.event_link>>|here>* to open the event in Lacework"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Resource:*\n<<get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.NewViolation.first.RESOURCE>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Recommendation:*\n<<get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.RecId.first.TITLE>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Bucket:*\n<<extract_s3_bucket.bucket.first.first>>"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "This is Fine - Add Public Tags"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"knowngood\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "Make Bucket Private"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"private\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if OK",
+      "disabled": false,
+      "guid": "11468d86ecc5fadd122b80118dbc1b08",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "knowngood",
+            "path": "<<post_message_to_slack.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Set AWS S3 PublicAccessBlock Policy",
+      "disabled": false,
+      "guid": "2ea0dfd2a7a1f61bf027d8b93519aded",
+      "options": {
+        "url": "https://<<extract_s3_bucket.bucket.first.first>>.s3.eu-central-1.amazonaws.com/?tagging",
+        "method": "put",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>",
+          "Content-MD5": "<<MD5_BASE64(capture_tags.message)>>"
+        },
+        "payload": "<Tagging>\n  <TagSet>\n    <Tag>\n      <Key>Public</Key>\n      <Value>True</Value>\n    </Tag>\n  </TagSet>\n</Tagging>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Capture Tags",
+      "disabled": false,
+      "guid": "9f5bdaaf72b4debd7c3f2925f14ccf0f",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "message": "<Tagging>\n  <TagSet>\n    <Tag>\n      <Key>Public</Key>\n      <Value>True</Value>\n    </Tag>\n  </TagSet>\n</Tagging>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Not Ok",
+      "disabled": false,
+      "guid": "1b2577ccc1e727922685ed29c7fb807c",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "private",
+            "path": "<<post_message_to_slack.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get S3 Bucket Policy",
+      "disabled": false,
+      "guid": "8b7613f048816f72ba8814853fc9a279",
+      "options": {
+        "url": "https://bucket.s3.eu-central-1.amazonaws.com/?tagging",
+        "method": "get",
+        "content_type": "xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract S3 Bucket",
+      "disabled": false,
+      "guid": "e106102a0fc27cbd87d2da7dac7809bf",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_event_by_id_in_lacework.body.data.first.ENTITY_MAP.Resource.first.VALUE",
+            "regexp": "s3:::([a-zA-Z0-9\\-]+)",
+            "to": "bucket"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Make Bucket Private",
+      "disabled": false,
+      "guid": "9be461e2d654c8c0a0b48f607cde3c72",
+      "options": {
+        "url": "https://<<extract_s3_bucket.bucket.first.first>>.s3.eu-central-1.amazonaws.com/?publicAccessBlock",
+        "method": "put",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        },
+        "payload": "<PublicAccessBlockConfiguration>\n      <BlockPublicAcls>TRUE</BlockPublicAcls>\n      <IgnorePublicAcls>TRUE</IgnorePublicAcls>\n      <BlockPublicPolicy>TRUE</BlockPublicPolicy>\n    <RestrictPublicBuckets>TRUE</RestrictPublicBuckets>\n</PublicAccessBlockConfiguration>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check Bucket Status",
+      "disabled": false,
+      "guid": "6083d424061b8a0f8f0630fe38b017a7",
+      "options": {
+        "url": "https://bucket.s3.eu-central-1.amazonaws.com/?publicAccessBlock",
+        "method": "get",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Make Bucket Public",
+      "disabled": false,
+      "guid": "323ec2650922a19923f659858cb06b50",
+      "options": {
+        "url": "https://bucket.s3.eu-central-1.amazonaws.com/?publicAccessBlock",
+        "method": "put",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        },
+        "payload": "<PublicAccessBlockConfiguration>\n      <BlockPublicAcls>FALSE</BlockPublicAcls>\n      <IgnorePublicAcls>FALSE</IgnorePublicAcls>\n      <BlockPublicPolicy>FALSE</BlockPublicPolicy>\n      <RestrictPublicBuckets>FALSE</RestrictPublicBuckets>\n</PublicAccessBlockConfiguration>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/lacework.png\n\nThis story is a demo of how to process anomaly events from Lacework. For more information on this story you can watch our webinar with lacework [here](https://www.tines.com/webinars/automating-remediation)\n\n![Watch the Webinar](https://www.youtube.com/watch?v=1jDeljZ1ER0)\n\n\n# Compliance Violations\n\nThis story processes sample compliance violations\ne.g. \n- Ensure the attached S3 bucket policy does not grant 'Allow' permission to everyone\n- Ingress from 0.0.0.0/0 on port 22\n- Security Group should not accept traffic other than 80 and 443\n- Ensure access keys are rotated every 90 days or less\n",
+      "position": [
+        0.0,
+        225.0
+      ],
+      "guid": "19625cf59fa5f18ce68edb86e9b95636",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/lacework.png\n\n\n# Compliance Violation\nReset Environment",
+      "position": [
+        690.0,
+        945.0
+      ],
+      "guid": "7fe06810c36270a00e4c44fbb0529685",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\nIn order to use this story the following Resources and Credentials must be created.\n\n**Resource**\n- `lacework_domain` : the domain of your Lacework tenant\n\n\n**Credential**\n- `slack` : A Slack Token which can post to a channel\n- `lacework` : an HTTP Request Action credential that fetches a Lacework Bearer token\n- `aws`: an AWS credential with sufficient permissions to take remediation actions you wish to use",
+      "position": [
+        675.0,
+        225.0
+      ],
+      "guid": "0f2de24352872c0b99412843d1a36c82",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 8
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 6
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 4
+    },
+    {
+      "source": 6,
+      "receiver": 9
+    },
+    {
+      "source": 8,
+      "receiver": 2
+    },
+    {
+      "source": 11,
+      "receiver": 10
+    }
+  ],
+  "diagram_layout": "{\"656da1a8bf5d7251289c5c934f5ad551\":[345,210],\"b98439341076f836ae66b8ef2664abc5\":[345,300],\"814bce2c5a42a573f5229646ff848c72\":[345,480],\"11468d86ecc5fadd122b80118dbc1b08\":[585,615],\"2ea0dfd2a7a1f61bf027d8b93519aded\":[585,780],\"9f5bdaaf72b4debd7c3f2925f14ccf0f\":[585,690],\"1b2577ccc1e727922685ed29c7fb807c\":[345,615],\"8b7613f048816f72ba8814853fc9a279\":[990,945],\"e106102a0fc27cbd87d2da7dac7809bf\":[345,390],\"9be461e2d654c8c0a0b48f607cde3c72\":[345,705],\"6083d424061b8a0f8f0630fe38b017a7\":[990,1125],\"323ec2650922a19923f659858cb06b50\":[990,1035]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Remediate compliance violations with Lacework Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

@@ -1,0 +1,2 @@
+# Create new users in Azure AD from a predefined list
+This custom workflow contains a custom activity (AzureADCreateAccount) and thus the custom activity should be imported before you can import the workflow itself

@@ -1,0 +1,1626 @@
+{
+  "schema_version": 4,
+  "name": "Identify and remediate malicious SentinelOne threats with VirusTotal",
+  "description": "With this Story, query SentinelOne for unresolved threats on a schedule, determine if they're truly malicious, and take different actions to remediate. Notify specific users via email and gather all of the information in Jira.\n\ntags: SentinelOne, Jira, VirusTotal, Threats, Remediate, Notify, Advanced\nicons:🌁, sentinelone, ☀️\nvisibility: public",
+  "guid": "9f3876395aa5a37aceb4d4418a114168",
+  "slug": "identify_and_remediate_malicious_sentinelone_threats_with_virustotal",
+  "exported_at": "2022-07-11T17:50:42Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Jira Ticket",
+      "disabled": false,
+      "guid": "5b97adc7822e62da5a586d494f266e88",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "SEC"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "summary": "S1 Agent - <<SLICE(explode_individual_s1_alerts.individual_alert.agentComputerName, 0, 30)>>",
+            "description": "h1.{color:red}*S1 Agent Incident*{color}  \n ---- \n h3.{color:red}(!)  +Threat Information+  (!){color} \n|*Classification:*| *{color:orange}<<explode_individual_s1_alerts.individual_alert.classification>>{color}*|\n|*Agent Infected:*| <<explode_individual_s1_alerts.individual_alert.agentInfected>>|\n|*Display Name:*| <<explode_individual_s1_alerts.individual_alert.threatName>>|\n|*Description:*| <<explode_individual_s1_alerts.individual_alert.description>>|\n|*File Path:*| <<explode_individual_s1_alerts.individual_alert.filePath>>|\n|*File Hash:*| <<explode_individual_s1_alerts.individual_alert.fileContentHash>>|\n \n ---- \n h3.{color:red}(!)  +Agent Information+  (!){color} \n|*Computer Name:*| <<explode_individual_s1_alerts.individual_alert.agentComputerName>>|\n|*Agent Id:*| <<explode_individual_s1_alerts.individual_alert.agentId>>|\n|*Account Id:*| <<explode_individual_s1_alerts.individual_alert.accountId>>|\n|*Agent Version:*| <<explode_individual_s1_alerts.individual_alert.agentVersion>>|\n|*OS Type:*| <<explode_individual_s1_alerts.individual_alert.agentOsType>>|\n|*Machine Type:*| <<explode_individual_s1_alerts.individual_alert.agentMachineType>>|\n|*Username:*| <<explode_individual_s1_alerts.individual_alert.username>>|\n \n ---- Story Run Link: <<STORY_RUN_LINK()>> ",
+            "labels": [
+              "Tines_S1_Incident_Ticket"
+            ]
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_user>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Initiate a Scan on S1 Agent",
+      "disabled": false,
+      "guid": "28d053ec14377d3a0b2f954b749cee64",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/agents/actions/initiate-scan",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "ids": [
+              "\"<<explode_individual_s1_alerts.individual_alert.agentId>>\""
+            ]
+          },
+          "data": {}
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Unresolved S1 Threats",
+      "disabled": false,
+      "guid": "dfc27eb307e22d9bb7dabe7800dcd79d",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/threats",
+        "content_type": "json",
+        "payload": {
+          "limit": "1000",
+          "resolved": "false",
+          "createdAt__gt": "<<DATE(\"now\", \"%s\") |> MINUS(%, 86400) |> DATE(%, \"%Y-%m-%dT%H:%M:%SZ\")>>"
+        },
+        "method": "get",
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay 2 Seconds",
+      "disabled": false,
+      "guid": "535376d9d0305febc563051ea7babe64",
+      "options": {
+        "mode": "delay",
+        "seconds": "2"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Incidents",
+      "disabled": false,
+      "guid": "ad7bcc632e82f73691c0c09ed482086b",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "250",
+        "path": "<<explode_individual_s1_alerts.individual_alert>><<explode_individual_s1_alerts.individual_alert.createdAt>><<explode_individual_s1_alerts.individual_alert.agentId>><<explode_individual_s1_alerts.individual_alert.filepath>><<explode_individual_s1_alerts.individual_alert.fileContentHash>><<explode_individual_s1_alerts.individual_alert.threatName>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Hash IS Found in VT",
+      "disabled": false,
+      "guid": "163d8eb1fd815af524cfd22195e6165e",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "1",
+            "path": "<<check_vt_for_hash.body.response_code>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Throttle Events",
+      "disabled": false,
+      "guid": "ca29cc57ecd234537c92b6b2403cf874",
+      "options": {
+        "mode": "delay",
+        "seconds": "<<TIMES(explode_individual_s1_alerts.index, 30) |> PLUS(%, 30)>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Security Alert",
+      "disabled": false,
+      "guid": "c5c0231dacb7b78480bf8adc226e9d57",
+      "options": {
+        "recipients": [
+          "user@example.com"
+        ],
+        "subject": "S1 MAJOR SECURITY ALERT - <<explode_individual_s1_alerts.individual_alert.threatName>> - <<explode_individual_s1_alerts.individual_alert.fileContentHash>> !",
+        "body": "Alert! - S1 - An event has been detected <<search_jira_for_malware_breakout.body.total>> times in the last hour <br>   Look for <<explode_individual_s1_alerts.individual_alert.fileDisplayName>> <br>   Related tickets <br>   [<%for alert in search_jira_for_malware_breakout.body.issues%> <br><<alert.fields.summary>> - <<alert.self>> <%endfor%><br>] Story Run Link: <<STORY_RUN_LINK()>> "
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Hash Does Exist",
+      "disabled": false,
+      "guid": "46b1318662f758332079e1f57ddc580b",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "path": "<<explode_individual_s1_alerts.individual_alert.fileContentHash>>",
+            "value": "\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}\\b"
+          },
+          {
+            "type": "field!=value",
+            "value": "ffffffffffffffffffffffffffffffffffffffff",
+            "path": "<<explode_individual_s1_alerts.individual_alert.fileContentHash>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay 2 Seconds",
+      "disabled": false,
+      "guid": "f0ba22f373bc5afbc73b7425ab81a263",
+      "options": {
+        "mode": "delay",
+        "seconds": "2"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay 2 Seconds",
+      "disabled": false,
+      "guid": "3f38f44ecb6e0fbab2a20233f7297137",
+      "options": {
+        "mode": "delay",
+        "seconds": "2"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IF 5 OR More of the Same Incident",
+      "disabled": false,
+      "guid": "39254ce9e3286d7f0ddc350ef2cb227a",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "5",
+            "path": "<<search_jira_for_malware_breakout.body.total>>"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IF Hash is NOT Found in VT",
+      "disabled": false,
+      "guid": "c0ba52533a7f4e9854526941be551911",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<check_vt_for_hash.body.response_code>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay 60 Seconds",
+      "disabled": false,
+      "guid": "5249883cee05bc1fa653d41a5e1b0dfc",
+      "options": {
+        "mode": "delay",
+        "seconds": "60"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IF Jira Ticket Exists",
+      "disabled": false,
+      "guid": "b1fa6aadde2159217988128f28c82e7d",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "path": "<<search_issues_in_jira.body.total>>",
+            "value": "0"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Hash IS Malicious",
+      "disabled": false,
+      "guid": "ceb1e92332735cce28752a5a674947fb",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "4",
+            "path": "<<check_vt_for_hash.body.positives>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Individual S1 Alerts",
+      "disabled": false,
+      "guid": "a370902dcb04ba9955220ebccba50c40",
+      "options": {
+        "mode": "explode",
+        "path": "=get_unresolved_s1_threats.body.data",
+        "to": "individual_alert"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay 2 Seconds",
+      "disabled": false,
+      "guid": "9df35a91b3d13dda012f5917442c3759",
+      "options": {
+        "mode": "delay",
+        "seconds": "2"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate events for 5 minutes",
+      "disabled": false,
+      "guid": "766074e14d5c826f20cd63281a3c88ea",
+      "options": {
+        "mode": "deduplicate",
+        "period": "330",
+        "path": "<<explode_individual_s1_alerts.individual_alert.agentComputerName>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Security Alert",
+      "disabled": false,
+      "guid": "76397e5c463f6eee03df66d3dbf0fa4b",
+      "options": {
+        "recipients": [
+          "user@example.com"
+        ],
+        "subject": "S1 Incident Alert!",
+        "body": "Alert! - Check Jira Ticket - https://<<RESOURCE.jira>>/browse/<<create_jira_ticket.key>> <br> Story Run Link: <<STORY_RUN_LINK()>> "
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate events for 1 Hour",
+      "disabled": false,
+      "guid": "c6170a0c0a5baba294a8b60cc8ca78f2",
+      "options": {
+        "mode": "deduplicate",
+        "period": "3605",
+        "path": "<<explode_individual_s1_alerts.individual_alert.agentComputerName>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IF Jira Ticket Does NOT Exist",
+      "disabled": false,
+      "guid": "93ad72d6fd01e8779f63cb0d21ccb97d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<search_issues_in_jira.body.total>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IF Hash is NOT Malicious",
+      "disabled": false,
+      "guid": "fde905e65c7f4b69345ce6ae08c61f29",
+      "options": {
+        "rules": [
+          {
+            "type": "field<value",
+            "value": "4",
+            "path": "<<check_vt_for_hash.body.positives>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger IF More Pages",
+      "disabled": false,
+      "guid": "ca31be38536af9760818daa1dba3369a",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "path": "<<get_unresolved_s1_threats.body.pagination.nextCursor>>",
+            "value": "^$"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if there is a Threat",
+      "disabled": false,
+      "guid": "824d54b400ad9aa3e2a257ce1e6b4e52",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "1",
+            "path": "<<get_unresolved_s1_threats.body.pagination.totalItems>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Agent Ticket",
+      "disabled": false,
+      "guid": "0b0ec3d7aa6ff841c56073c925ac5890",
+      "options": {
+        "url": "https://<<RESOURCE.jira>>/rest/api/2/issue/<<create_jira_ticket.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "body": " h3.{color:red}(!)  +Threat Update+  (!){color} \n ---- \n |*Display Name:*| <<explode_individual_s1_alerts.individual_alert.fileDisplayName>>|\n|*Threat Hash:*| <<explode_individual_s1_alerts.individual_alert.fileContentHash>>|\n *Update* \n ---- \n |*1.*| VT Positives: <<check_vt_for_hash.body.positives>>|\n|*2.*| Mark Incident as a Threat in S1|\n|*3.*| Initiate S1 Kill Command|\n|*4.*| Initiate S1 Quarantine Command|\n|*5.*| Initiate S1 Agent Scan Command|\n|*6.*| Email Security Team|\n\n ---- Story Run Link: <<STORY_RUN_LINK()>>"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_user>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Agent Ticket",
+      "disabled": false,
+      "guid": "f168a78a4376b19cac706f5d07be10cd",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_jira_ticket.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "body": " h3.{color:red}(!)  +Threat Update+  (!){color} \n ---- \n |*Display Name:*| <<explode_individual_s1_alerts.individual_alert.threatName>>|\n|*Threat Hash:*| <<explode_individual_s1_alerts.individual_alert.fileContentHash>>|\n|*Update:*| Threat Hash appears to be *Benign* in VirusTotal|\n\n ---- Story Run Link: <<STORY_RUN_LINK()>>"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_user>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Mark as Threat to S1",
+      "disabled": false,
+      "guid": "ef3d480a4683cb35539afe4e2b3ae836",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/threats/mark-as-threat",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "siteIds": [
+              "<<RESOURCE.s1_siteid>>"
+            ],
+            "tenant": true,
+            "osTypes": [
+              "windows"
+            ],
+            "agentId": "<<explode_individual_s1_alerts.individual_alert.agentId>>",
+            "contentHashes": "<<check_vt_for_hash.body.sha1>>"
+          },
+          "data": {
+            "targetScope": "site"
+          }
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check VT For Hash",
+      "disabled": false,
+      "guid": "718a4068b4ebc0727c289b897db02c66",
+      "options": {
+        "url": "https://www.virustotal.com/vtapi/v2/file/report",
+        "method": "get",
+        "headers": {},
+        "payload": {
+          "apikey": "<<CREDENTIAL.virustotal>>",
+          "resource": "<<explode_individual_s1_alerts.individual_alert.fileContentHash>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Quarantine Command to S1",
+      "disabled": false,
+      "guid": "1f074c6043f0a6f47d1b841732be916c",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/threats/mitigate/quarantine",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "siteIds": [
+              "<<RESOURCE.sentinelone_site_id>>"
+            ],
+            "tenant": true,
+            "osTypes": [
+              "windows"
+            ],
+            "agentId": "<<explode_individual_s1_alerts.individual_alert.agentId>>",
+            "contentHashes": "<<check_vt_for_hash.body.sha1>>"
+          },
+          "data": {}
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Ban Hash in S1 - Linux",
+      "disabled": false,
+      "guid": "19d887c4fc340c6541e84e9c5cb074ea",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/restrictions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "siteIds": [
+              "<<RESOURCE.sentinelone_site_id>>"
+            ],
+            "groupIds": [],
+            "tenant": true
+          },
+          "data": {
+            "description": "S1 + Tines - S1 Incident - ",
+            "value": "<<check_vt_for_hash.body.sha1>>",
+            "source": "Import ID null",
+            "inject": true,
+            "osType": "linux",
+            "type": "black_hash",
+            "mode": "suppress"
+          }
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Ban Hash in S1 - MacOS",
+      "disabled": false,
+      "guid": "c426762954b5815b6e4b2474372222ee",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/restrictions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "siteIds": [
+              "<<RESOURCE.sentinelone_site_id>>"
+            ],
+            "groupIds": [],
+            "tenant": true
+          },
+          "data": {
+            "description": "S1 + Tines - S1 Incident - ",
+            "value": "<<check_vt_for_hash.body.sha1>>",
+            "source": "Import ID null",
+            "inject": true,
+            "osType": "macos",
+            "type": "black_hash",
+            "mode": "suppress"
+          }
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Jira for Malware Breakout",
+      "disabled": false,
+      "guid": "d91acee8cd550e4a592b91aaf8fc3eb5",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/search",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "jql": "project = IR AND created >= -6h AND description ~ \"<<explode_individual_s1_alerts.individual_alert.fileContentHash>>\""
+        },
+        "basic_auth": "<<RESOURCE.jira_user>>:<<CREDENTIAL.jira>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Initiate a Scan on S1 Agent",
+      "disabled": false,
+      "guid": "2b957d3b4e5f477d2452bc536e45ecc3",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/agents/actions/initiate-scan",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "ids": [
+              "\"<<explode_individual_s1_alerts.individual_alert.agentId>>\""
+            ]
+          },
+          "data": {}
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Ban Hash in S1 - Windows",
+      "disabled": false,
+      "guid": "ab01f501e743fa8ae81e6b6d9e7b6eb4",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/restrictions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "siteIds": [
+              "<<RESOURCE.sentinelone_site_id>>"
+            ],
+            "groupIds": [],
+            "tenant": true
+          },
+          "data": {
+            "description": "S1 + Tines - S1 Incident - ",
+            "value": "<<check_vt_for_hash.body.sha1>>",
+            "source": "Import ID null",
+            "inject": true,
+            "osType": "windows",
+            "type": "black_hash",
+            "mode": "suppress"
+          }
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Agent Ticket",
+      "disabled": false,
+      "guid": "3ec20104ce7ff2cafcbc7923f0561b45",
+      "options": {
+        "url": "https://<<RESOURCE.jira>>/rest/api/2/issue/<<create_jira_ticket.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_user>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": " h3.{color:red}(!)  +Threat Update+  (!){color} \n ---- \n |*Display Name:*| <<explode_individual_s1_alerts.individual_alert.fileDisplayName>>|\n| *Threat Hash:*| <<explode_individual_s1_alerts.individual_alert.fileContentHash>>|\n| *Update:*| Threat Hash *Does NOT Exist* in VirusTotal|\n\n ---- Story Run Link: <<STORY_RUN_LINK()>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Unresolved S1 Threats",
+      "disabled": false,
+      "guid": "65d5a4f2a8f4ef11d24e4145f958257f",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/threats",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "resolved": "false",
+          "createdAt__gt": "<<DATE(\"now\", \"%s\") |> MINUS(%, 315) |> DATE(%, \"%Y-%m-%dT%H:%M:%SZ\")>>",
+          "cursor": "<<get_unresolved_s1_threats.body.pagination.nextCursor>>",
+          "limit": "100"
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Kill Command to S1",
+      "disabled": false,
+      "guid": "6ae5836df91237b4383b02706ba4b291",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone>>/web/api/v2.0/threats/mitigate/kill",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "siteIds": [
+              "<<RESOURCE.s1_siteid>>"
+            ],
+            "tenant": true,
+            "osTypes": [
+              "windows"
+            ],
+            "agentId": "<<explode_individual_s1_alerts.individual_alert.agentId>>",
+            "contentHashes": "<<check_vt_for_hash.body.sha1>>"
+          },
+          "data": {}
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Comment to Ticket",
+      "disabled": false,
+      "guid": "cd16a4105e366a25b347c32e5248c6d3",
+      "options": {
+        "url": "https://<<RESOURCE.jira>>/rest/api/2/issue/<<search_jira_for_related_issues.body.issues[0].id>>",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": "<<RESOURCE.jira_user>>:<<CREDENTIAL.jira>>",
+        "payload": {
+          "fields": {
+            "summary": "S1 Agent - <<SLICE(explode_individual_s1_alerts.individual_alert.agentComputerName, 0, 30)>>",
+            "description": "<<search_jira_for_related_issues.body.issues[0].fields.description>>\n (+)(+) *Updated Description Below AT <<DATE(\"now\", \"%Y-%m-%d %H:%M\")>>* (+)(+) \n ---- \n h3.{color:red}(!)  +Threat Information+  (!){color} \n |*Detected At:*| <<explode_individual_s1_alerts.individual_alert.createdAt>>|\n|*Classification:*| *{color:orange}<<explode_individual_s1_alerts.individual_alert.classification>>{color}*|\n|*Agent Infected:*| <<explode_individual_s1_alerts.individual_alert.agentInfected>>|\n|*Display Name:*| <<explode_individual_s1_alerts.individual_alert.threatName>>|\n|*File Path:*| <<explode_individual_s1_alerts.individual_alert.filePath>>|\n|*Description:*| <<explode_individual_s1_alerts.individual_alert.description>>|\n|*File Hash:*| <<explode_individual_s1_alerts.individual_alert.fileContentHash>>|\n ---- Story Run Link: <<STORY_RUN_LINK()>> "
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Jira for Related Issues",
+      "disabled": false,
+      "guid": "437aec05b276e50d0224a19fea97caf8",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/search",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "jql": "project = IR AND description ~ \"<<explode_individual_s1_alerts.individual_alert.agentId>>~\""
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_user>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Broadcast an Alert to Agent in S1",
+      "disabled": false,
+      "guid": "416d26723f0530f90258793b9e990a16",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/agents/actions/broadcast",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filter": {
+            "siteIds": [
+              "<<RESOURCE.sentinelone_site_id>>"
+            ],
+            "computerName": "<<explode_individual_s1_alerts.individual_alert.agentComputerName>>"
+          },
+          "data": {
+            "message": " SentinelOne has flagged your recent activity as suspicious. \\n \\n An Alert has been sent to the Information Security team. \\n \\n They will reach out to you if any more information is required. \\n \\n There is no further action required from you at this time. "
+          }
+        },
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Ticket",
+      "disabled": false,
+      "guid": "50e2a7931774dfe808315b4e74889dc0",
+      "options": {
+        "url": "https://<<RESOURCE.jira>>/rest/api/2/issue/<<create_jira_ticket.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "body": " h3.{color:red}(!)  +Threat Update+  (!){color} \n ---- \n |*Display Name:*| <<explode_individual_s1_alerts.individual_alert.fileDisplayName>>|\n|*Threat Hash:*| <<explode_individual_s1_alerts.individual_alert.fileContentHash>>|\n *Update* \n ---- \n |*1.*| Mark Incident as a Threat in S1|\n|*2.*| Initiate S1 Agent Scan Command|\n|*3.*| Email Security Team|\n\n ---- Story Run Link: <<STORY_RUN_LINK()>>"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_user>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "Start by pulling in recent unresolved SentinelOne threats into Tines. Limit is set to 1000.\n\n",
+      "position": [
+        1215.0,
+        -3060.0
+      ],
+      "guid": "105c694dfab6120419dd28f50a51dd33",
+      "width": null
+    },
+    {
+      "content": "This trigger action handles the case of there being more than >1000 results. \n\nIf there are more pages, a 60-second delay is enabled before fetching the next page of unresolved S1 threats.",
+      "position": [
+        1275.0,
+        -2910.0
+      ],
+      "guid": "1253c74664dbdc741974d6ad7b0836fb",
+      "width": null
+    },
+    {
+      "content": "If there are any threats found, the flow will continue.\n\n",
+      "position": [
+        1200.0,
+        -2655.0
+      ],
+      "guid": "9da7afb090a4e4ec140b3dd10036ed37",
+      "width": null
+    },
+    {
+      "content": "[Explode](https://hub.tines.com/docs/actions/types/event-transformation#explode-mode) each alert out for further analysis.",
+      "position": [
+        1200.0,
+        -2550.0
+      ],
+      "guid": "c797f0a92819eff127efcc06c1fa210d",
+      "width": null
+    },
+    {
+      "content": "Throttle the events to aid in processing.",
+      "position": [
+        1200.0,
+        -2460.0
+      ],
+      "guid": "46933353ac67fdf3489aef437fdf909d",
+      "width": null
+    },
+    {
+      "content": "Deduplicate the incidents:\nHere, 250 past events are [examined for uniqueness](https://hub.tines.com/docs/actions/types/event-transformation#configuration-options). You can edit this if you so choose, up to a max of 1000.",
+      "position": [
+        1200.0,
+        -2370.0
+      ],
+      "guid": "5c313a5d76c4c68561503f4815b6f26d",
+      "width": null
+    },
+    {
+      "content": "This action searches for any mention of the agentID in the description field within a specific Jira project.",
+      "position": [
+        1200.0,
+        -2220.0
+      ],
+      "guid": "f67e590f7093e289010a61c8d84eccb8",
+      "width": null
+    },
+    {
+      "content": "These [trigger actions](https://hub.tines.com/docs/actions/types/trigger/) use the total number of results returned in the previous search to determine which branch will be activated.",
+      "position": [
+        930.0,
+        -2055.0
+      ],
+      "guid": "e09fa2d7d0f4ed9a5f0eaff310e37572",
+      "width": null
+    },
+    {
+      "content": "Add a comment to the pre-existing Jira ticket with details from SentintelOne.",
+      "position": [
+        435.0,
+        -1935.0
+      ],
+      "guid": "8675ee2efef228e93e0ff34a10ce1e6f",
+      "width": null
+    },
+    {
+      "content": "Events are deduplicated by agent computer name using [`deduplicate` mode](https://hub.tines.com/docs/actions/types/event-transformation#deduplicate-mode). When an event is received, subsequent events will not be emitted until an hour and a few seconds have elapsed.",
+      "position": [
+        1860.0,
+        -1860.0
+      ],
+      "guid": "47f74b6bf7394a79cb9969fe03d00018",
+      "width": null
+    },
+    {
+      "content": "A scan is initiated on the agent using the agent ID and the Jira ticket is updated accordingly.",
+      "position": [
+        1860.0,
+        -1710.0
+      ],
+      "guid": "2bb193aafd4434c8fb06bb1d55fed98f",
+      "width": null
+    },
+    {
+      "content": "If the hash exists, the flow continues.",
+      "position": [
+        1260.0,
+        -1800.0
+      ],
+      "guid": "a349fa90d7cce626c65155ada7e170c8",
+      "width": null
+    },
+    {
+      "content": "Takes the hash and retrieves file scan reports in VirusTotal.",
+      "position": [
+        1260.0,
+        -1710.0
+      ],
+      "guid": "42b1627375dceb606aec8a4e57e1a425",
+      "width": null
+    },
+    {
+      "content": "If the VirusTotal scan reports do not return any results for the hash, the Jira ticket is updated to reflect this information.",
+      "position": [
+        1380.0,
+        -1530.0
+      ],
+      "guid": "62911d874d2c615002ad851600c29601",
+      "width": null
+    },
+    {
+      "content": "If there are VirusTotal scan reports with this hash, two possible routes are taken depending if the file is deemed to be malicious or not. Here, the triggers are set that the hash will be considered malicious if there are 4 or more positives.",
+      "position": [
+        525.0,
+        -1485.0
+      ],
+      "guid": "9a80264c1d55548195927988ae412c0e",
+      "width": null
+    },
+    {
+      "content": "If the VirusTotal scan reports do not deem this file to be malicious, the Jira ticket is updated to reflect this information.",
+      "position": [
+        510.0,
+        -1320.0
+      ],
+      "guid": "89805b077a386eddcfc9cc0eecd86ebe",
+      "width": null
+    },
+    {
+      "content": "Events are deduplicated by agent computer name using [`deduplicate` mode](https://hub.tines.com/docs/actions/types/event-transformation#deduplicate-mode). When an event is received, subsequent events will not be emitted until 5 and a half minutes have passed. This is to allow events that have been queued to come through.",
+      "position": [
+        1830.0,
+        -1200.0
+      ],
+      "guid": "4617732133b9475381ba7a237ce030da",
+      "width": null
+    },
+    {
+      "content": "An alert is sent to the agent, notifying that SentinelOne has flagged recent activity as suspicious and that the security team will be contacted.",
+      "position": [
+        1830.0,
+        -1020.0
+      ],
+      "guid": "a09cbce9f8b457123c564fb7838af47d",
+      "width": null
+    },
+    {
+      "content": "\n📓  [Delays](https://hub.tines.com/docs/actions/types/event-transformation#delay-mode-2) are used in this branch so as not to overload the system and allow for the correct order of commands to be processed.",
+      "position": [
+        450.0,
+        -1140.0
+      ],
+      "guid": "0511a1bc1a72869beba729a9182800a1",
+      "width": null
+    },
+    {
+      "content": "This hash will be marked as a threat in SentinelOne using the site id, agent id and the sha1 hash from VirusTotal. This action and subsequent actions in this branch will work for the Windows OS only, but others can be added.",
+      "position": [
+        450.0,
+        -1020.0
+      ],
+      "guid": "b1e32161d351d5d5a569d5cfa61a9b70",
+      "width": null
+    },
+    {
+      "content": "Kill command is sent to SentinelOne using the site id, agent id and the sha1 hash from VirusTotal.",
+      "position": [
+        465.0,
+        -825.0
+      ],
+      "guid": "555a7871990d9a0f33a578b243abb3ce",
+      "width": null
+    },
+    {
+      "content": "Quarantine command is sent to SentinelOne using the site id, agent id and the sha1 hash from VirusTotal.",
+      "position": [
+        480.0,
+        -630.0
+      ],
+      "guid": "fe26433b1a3de7e7791297faaedfa2f3",
+      "width": null
+    },
+    {
+      "content": "A scan is initiated on the agent using the agent ID to verify that kill and quarantine has worked. ",
+      "position": [
+        480.0,
+        -435.0
+      ],
+      "guid": "a032d6eb1cd7b00d289458a67bc1037d",
+      "width": null
+    },
+    {
+      "content": "Three separate actions are required here in order to ban the hash, as SentinelOne requires three separate block lists.",
+      "position": [
+        1335.0,
+        -840.0
+      ],
+      "guid": "bf95072b20f60a8c811fd9c777ea45f5",
+      "width": null
+    },
+    {
+      "content": "An email is sent to a specified user notifying them of the SentinelOne incident including a link to the Jira ticket. ",
+      "position": [
+        480.0,
+        -195.0
+      ],
+      "guid": "919011c279c93f8e25e1a6d3c88c4d0d",
+      "width": null
+    },
+    {
+      "content": "A new Jira ticket is created with details from SentinelOne.",
+      "position": [
+        1440.0,
+        -1935.0
+      ],
+      "guid": "2580cf81d014eb7dde74c2717b19fbac",
+      "width": null
+    },
+    {
+      "content": "The Jira ticket is updated with the new results from the verification scan.",
+      "position": [
+        825.0,
+        -180.0
+      ],
+      "guid": "be8d378252f4332b29f02760325d55e9",
+      "width": null
+    },
+    {
+      "content": "This branch searches Jira to see if there have been 5 or more occurrences of the incident within the past 6 hours. If so, the Security team is emailed as this is considered to be a malware breakout. You can modify this time period or number of occurrences to suit your needs.",
+      "position": [
+        1050.0,
+        -840.0
+      ],
+      "guid": "410c5a998ad5c18823a5355973d9645e",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/sentinelone.png\n\nThe major steps of this story are:\n\n1. Pull SentinelOne threats into Tines\n2. Get information about each threat\n3. Create a new Jira ticket or add to an existing one\n4. Determine if the threat is malicious using VirusTotal\n5. If malicious, Kill, Quarantine, Ban, and initiate another agent scan \n6. Email a specific user and/or the Security team\n7. Update Jira ticket to reflect what was decided & add information\n\n\nThis story is set to run on a daily schedule, each day at 9 AM. You can modify this to better suit your company's needs.",
+      "position": [
+        630.0,
+        -3075.0
+      ],
+      "guid": "49b9e7f4430b3824309df6ced125ef1a",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 20
+    },
+    {
+      "source": 0,
+      "receiver": 8
+    },
+    {
+      "source": 1,
+      "receiver": 41
+    },
+    {
+      "source": 2,
+      "receiver": 24
+    },
+    {
+      "source": 2,
+      "receiver": 23
+    },
+    {
+      "source": 3,
+      "receiver": 29
+    },
+    {
+      "source": 4,
+      "receiver": 39
+    },
+    {
+      "source": 5,
+      "receiver": 22
+    },
+    {
+      "source": 5,
+      "receiver": 15
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 8,
+      "receiver": 28
+    },
+    {
+      "source": 9,
+      "receiver": 33
+    },
+    {
+      "source": 10,
+      "receiver": 37
+    },
+    {
+      "source": 11,
+      "receiver": 7
+    },
+    {
+      "source": 12,
+      "receiver": 35
+    },
+    {
+      "source": 13,
+      "receiver": 36
+    },
+    {
+      "source": 14,
+      "receiver": 38
+    },
+    {
+      "source": 15,
+      "receiver": 34
+    },
+    {
+      "source": 15,
+      "receiver": 32
+    },
+    {
+      "source": 15,
+      "receiver": 18
+    },
+    {
+      "source": 15,
+      "receiver": 17
+    },
+    {
+      "source": 16,
+      "receiver": 6
+    },
+    {
+      "source": 17,
+      "receiver": 27
+    },
+    {
+      "source": 18,
+      "receiver": 40
+    },
+    {
+      "source": 20,
+      "receiver": 1
+    },
+    {
+      "source": 21,
+      "receiver": 0
+    },
+    {
+      "source": 22,
+      "receiver": 26
+    },
+    {
+      "source": 23,
+      "receiver": 13
+    },
+    {
+      "source": 24,
+      "receiver": 16
+    },
+    {
+      "source": 27,
+      "receiver": 10
+    },
+    {
+      "source": 28,
+      "receiver": 12
+    },
+    {
+      "source": 28,
+      "receiver": 5
+    },
+    {
+      "source": 29,
+      "receiver": 9
+    },
+    {
+      "source": 31,
+      "receiver": 30
+    },
+    {
+      "source": 32,
+      "receiver": 11
+    },
+    {
+      "source": 33,
+      "receiver": 25
+    },
+    {
+      "source": 33,
+      "receiver": 19
+    },
+    {
+      "source": 34,
+      "receiver": 31
+    },
+    {
+      "source": 36,
+      "receiver": 24
+    },
+    {
+      "source": 36,
+      "receiver": 23
+    },
+    {
+      "source": 37,
+      "receiver": 3
+    },
+    {
+      "source": 39,
+      "receiver": 21
+    },
+    {
+      "source": 39,
+      "receiver": 14
+    }
+  ],
+  "diagram_layout": "{\"5b97adc7822e62da5a586d494f266e88\":[1245,-1920],\"28d053ec14377d3a0b2f954b749cee64\":[1635,-1740],\"dfc27eb307e22d9bb7dabe7800dcd79d\":[960,-3030],\"535376d9d0305febc563051ea7babe64\":[825,-720],\"ad7bcc632e82f73691c0c09ed482086b\":[960,-2340],\"163d8eb1fd815af524cfd22195e6165e\":[840,-1575],\"ca29cc57ecd234537c92b6b2403cf874\":[960,-2445],\"c5c0231dacb7b78480bf8adc226e9d57\":[1095,-915],\"46b1318662f758332079e1f57ddc580b\":[1050,-1800],\"f0ba22f373bc5afbc73b7425ab81a263\":[825,-510],\"3f38f44ecb6e0fbab2a20233f7297137\":[825,-915],\"39254ce9e3286d7f0ddc350ef2cb227a\":[1095,-1020],\"c0ba52533a7f4e9854526941be551911\":[1170,-1575],\"5249883cee05bc1fa653d41a5e1b0dfc\":[1050,-2850],\"b1fa6aadde2159217988128f28c82e7d\":[720,-2055],\"ceb1e92332735cce28752a5a674947fb\":[840,-1440],\"a370902dcb04ba9955220ebccba50c40\":[960,-2550],\"9df35a91b3d13dda012f5917442c3759\":[825,-1140],\"766074e14d5c826f20cd63281a3c88ea\":[1605,-1140],\"76397e5c463f6eee03df66d3dbf0fa4b\":[585,-270],\"c6170a0c0a5baba294a8b60cc8ca78f2\":[1635,-1830],\"93ad72d6fd01e8779f63cb0d21ccb97d\":[1245,-2055],\"fde905e65c7f4b69345ce6ae08c61f29\":[270,-1455],\"ca31be38536af9760818daa1dba3369a\":[1050,-2925],\"824d54b400ad9aa3e2a257ce1e6b4e52\":[960,-2640],\"0b0ec3d7aa6ff841c56073c925ac5890\":[825,-285],\"f168a78a4376b19cac706f5d07be10cd\":[270,-1290],\"ef3d480a4683cb35539afe4e2b3ae836\":[825,-1035],\"718a4068b4ebc0727c289b897db02c66\":[1050,-1695],\"1f074c6043f0a6f47d1b841732be916c\":[825,-615],\"19d887c4fc340c6541e84e9c5cb074ea\":[1350,-915],\"c426762954b5815b6e4b2474372222ee\":[1350,-1020],\"d91acee8cd550e4a592b91aaf8fc3eb5\":[1095,-1140],\"2b957d3b4e5f477d2452bc536e45ecc3\":[825,-420],\"ab01f501e743fa8ae81e6b6d9e7b6eb4\":[1350,-1140],\"3ec20104ce7ff2cafcbc7923f0561b45\":[1170,-1455],\"65d5a4f2a8f4ef11d24e4145f958257f\":[1050,-2760],\"6ae5836df91237b4383b02706ba4b291\":[825,-825],\"cd16a4105e366a25b347c32e5248c6d3\":[720,-1935],\"437aec05b276e50d0224a19fea97caf8\":[960,-2220],\"416d26723f0530f90258793b9e990a16\":[1605,-1005],\"50e2a7931774dfe808315b4e74889dc0\":[1635,-1635]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Identify and remediate malicious SentinelOne threats with VirusTotal Form",
+    "description": "",
+    "fields": [],
+    "visibility": "world",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

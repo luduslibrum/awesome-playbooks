@@ -1,0 +1,1523 @@
+{
+  "schema_version": 4,
+  "name": "Retrieve & enrich Okta alerts from Logz.io",
+  "description": "Retrieve Okta alerts from Logz.io and enrich the information with extra IP reputation context. Users can be contacted via Slack to confirm or deny this activity to help in auto-closing or escalating these alerts.\n\ntags: Logz.io, Okta, Slack, SIEM, Intermediate\nicons: logz, 🔔, slack\nvisibility: public",
+  "guid": "f879d6da05f9b3fa400141f79b8a1d1b",
+  "slug": "retrieve_enrich_okta_alerts_from_logz_io",
+  "exported_at": "2022-07-11T17:27:16Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch Security Events",
+      "disabled": false,
+      "guid": "1ebbd632b652e4fe1dd101bf3977d4fe",
+      "options": {
+        "url": "https://api.logz.io/v2/security/rules/events/search",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "filter": {
+            "status": [
+              "NEW"
+            ],
+            "timeRange": {
+              "fromDate": "<<DATE(\"now\", \"%s\") |> MINUS(%, 900)>>",
+              "toDate": "<<DATE(\"now\", \"%s\")>>"
+            }
+          },
+          "sort": [
+            {
+              "field": "SEVERITY"
+            },
+            {
+              "field": "DATE"
+            }
+          ],
+          "pagination": {
+            "pageNumber": 1,
+            "pageSize": 25
+          }
+        },
+        "headers": {
+          "X-API-TOKEN": "<<CREDENTIAL.logz_io>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch Top Related Logs",
+      "disabled": false,
+      "guid": "5f6fa97456d6f9b903d1fa5f2c9abd0d",
+      "options": {
+        "url": "https://api.logz.io/v2/security/rules/events/logs/search",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "filter": {
+            "alertEventId": "<<fetch_security_events.body.results.first.alertEventId>>"
+          },
+          "pagination": {
+            "pageNumber": 1,
+            "pageSize": 10
+          }
+        },
+        "headers": {
+          "X-API-TOKEN": "<<CREDENTIAL.logz_io>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Results",
+      "disabled": false,
+      "guid": "e6990f5e8e0d49f2e86140269c574a88",
+      "options": {
+        "mode": "explode",
+        "path": "=fetch_security_events.body.results",
+        "to": "new_alert"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "254ce6776e8eb4ed6db42666d341e117",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "A login attempt with a failed Okta 2 Factor Authentication request has been detected.\nThe user will be sent a Slack message to confirm this activity.\n\n*Alert Name:* <<explode_results.new_alert.name>>\n*Alert Description:* <<explode_results.new_alert.description>>\n\nh3. Alert Details\n*Target User Name:* <<fetch_top_related_logs.body.results.first.actor.displayName>>\n*Target User Email:* <<fetch_top_related_logs.body.results.first.actor.alternateId>>\n*Source IP Address:* <<fetch_top_related_logs.body.results.first.client.ipAddress>>\n*Source User Agent:* <<fetch_top_related_logs.body.results.first.client.userAgent.rawUserAgent>>\n*Okta IP Location:* <<fetch_top_related_logs.body.results.first.client.geographicalContext.city>>. <<fetch_top_related_logs.body.results.first.client.geographicalContext.country>>\n*Time:* <<fetch_top_related_logs.body.results.first.@timestamp>>\n*Logz.io ID SearchLink:* [<<explode_results.new_alert.alertEventId>>  |https://app.logz.io/#/dashboard/security/research/discover?_a=(query:(language:lucene,query:<<explode_results.new_alert.alertEventId>>),time:(from:now-24d,to:now))]\n\nh3. IP Analysis Results\n*Overall Verdict:* <%if check_ip_reputation.suspisicous%>Potentially malicious<%else%>Not identified as malicious<%endif%>\n*Virustotal Results:* <<check_ip_reputation.virustotal_malicious_count>> Malicious\n*AbuseIPDB Confidence:* <<check_ip_reputation.abuseipdb_confidence_score>>% \n*Location:* <<check_ip_reputation.city>>, <<check_ip_reputation.country>>",
+            "summary": "New Okta Alert triggered for user <<fetch_top_related_logs.body.results.first.actor.displayName>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Results",
+      "disabled": false,
+      "guid": "6d766e46292f19300710e716cd2d7f7f",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<explode_results.new_alert.alertEventId>>",
+        "lookback": "500"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Okta Alert",
+      "disabled": false,
+      "guid": "df75bec073d8291d01129bbcbf003edb",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "okta",
+            "path": "<<explode_results.new_alert.name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "2FA Failure",
+      "disabled": false,
+      "guid": "95a66328fb7f5926804bdcdd4f75be28",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Multi-factor authentication failed",
+            "path": "<<explode_results.new_alert.name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Failed Login Attempt",
+      "disabled": false,
+      "guid": "d00c9295163ad931433afc7e2fb34782",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Failed authentication attempt",
+            "path": "<<explode_results.new_alert.name>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch Top Related Logs",
+      "disabled": false,
+      "guid": "2236cd2e3b0f86dc0b463b7207683b94",
+      "options": {
+        "url": "https://api.logz.io/v2/security/rules/events/logs/search",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "filter": {
+            "alertEventId": "<<fetch_security_events.body.results.first.alertEventId>>"
+          },
+          "pagination": {
+            "pageNumber": 1,
+            "pageSize": 10
+          }
+        },
+        "headers": {
+          "X-API-TOKEN": "<<CREDENTIAL.logz_io>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Check IP Reputation",
+      "disabled": false,
+      "guid": "b32ce1091527573b9d12216b3cfeb67e",
+      "options": {
+        "payload": {
+          "ip": "<<fetch_top_related_logs.body.results.first.request.ipChain.first.ip>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "1a2546d84f1bb8dd228a1fc4c0f9c6f2",
+        "slug": null,
+        "exported_at": "2022-07-11T17:27:16Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Search for IP Address in Abuse IPDB",
+            "disabled": false,
+            "guid": "a16da0388aac25100c26c4c8ed1e115d",
+            "options": {
+              "url": "https://api.abuseipdb.com/api/v2/check",
+              "content_type": "json",
+              "method": "get",
+              "payload": {
+                "maxAgeInDays": "90",
+                "ipAddress": "<<input.payload.ip>>",
+                "verbose": "true"
+              },
+              "headers": {
+                "key": "<<CREDENTIAL.abuseipdb>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Search for IP Address in VirusTotal",
+            "disabled": false,
+            "guid": "aeb84b2c5bf86aa981b297c8ce5f4e23",
+            "options": {
+              "url": "https://www.virustotal.com/api/v3/ip_addresses/<<input.payload.ip>>",
+              "method": "get",
+              "payload": {},
+              "headers": {
+                "x-apikey": "<<CREDENTIAL.virustotal>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "GeoLocate an IP Address",
+            "disabled": false,
+            "guid": "c5f95acb83706f74e85355ed19604cc9",
+            "options": {
+              "url": "http://ip-api.com/json/<<input.payload.ip>>",
+              "content_type": "json",
+              "method": "post",
+              "payload": {},
+              "headers": {}
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "33aba4e182b6d6cbd8e43ad6d2f737ae",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "4bd84e56b73733bc180fde00e16af08d",
+            "options": {
+              "payload": {
+                "abuseipdb_confidence_score": "<<search_for_ip_address_in_abuse_ipdb.body.data.abuseConfidenceScore>>",
+                "virustotal_malicious_count": "<<search_for_ip_address_in_virustotal.body.data.attributes.last_analysis_stats.malicious>>",
+                "city": "<<geolocate_an_ip_address.body.city>>",
+                "country": "<<geolocate_an_ip_address.body.country>>",
+                "suspicious": "<<determine_if_suspicious.rule_matched>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Determine if Suspicious",
+            "disabled": false,
+            "guid": "e5ebc8a2e5c94763663ae015a87ea096",
+            "options": {
+              "rules": [
+                {
+                  "type": "field>=value",
+                  "value": "25",
+                  "path": "<<search_for_ip_address_in_abuse_ipdb.body.data.abuseConfidenceScore>>"
+                },
+                {
+                  "type": "field>value",
+                  "value": "1",
+                  "path": "<<search_for_ip_address_in_virustotal.body.data.attributes.last_analysis_stats.malicious>>"
+                },
+                {
+                  "type": "field>value",
+                  "value": "10",
+                  "path": "<<search_for_ip_address_in_virustotal.body.data.attributes.last_analysis_stats.suspicious>>"
+                },
+                {
+                  "type": "field==value",
+                  "value": "foo",
+                  "path": "<<somekey.subkey.subkey.goal>>"
+                },
+                {
+                  "type": "in",
+                  "value": "<<geolocate_an_ip_address.body.country>>",
+                  "path": [
+                    "China",
+                    "Russia"
+                  ]
+                }
+              ],
+              "emit_no_match": true
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [
+          {
+            "content": "The Output Node lays out the information that the Group should return. It is summarising the results of these Actions, and returning just the important information.",
+            "position": [
+              675.0,
+              1110.0
+            ],
+            "guid": "7863a40395175b5508fea300f60037d7",
+            "width": 363
+          },
+          {
+            "content": "The Input Node acts as the listener for this Group. The data sent into the Group is received here, and passed down through these Actions.",
+            "position": [
+              705.0,
+              675.0
+            ],
+            "guid": "062ba4410b74814e6e7c57e2d46f9b5f",
+            "width": 358
+          }
+        ],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 1,
+            "receiver": 2
+          },
+          {
+            "source": 2,
+            "receiver": 5
+          },
+          {
+            "source": 3,
+            "receiver": 0
+          },
+          {
+            "source": 5,
+            "receiver": 4
+          }
+        ],
+        "diagram_layout": "{\"a16da0388aac25100c26c4c8ed1e115d\":[465,780],\"aeb84b2c5bf86aa981b297c8ce5f4e23\":[465,870],\"c5f95acb83706f74e85355ed19604cc9\":[465,960],\"33aba4e182b6d6cbd8e43ad6d2f737ae\":[465,675],\"4bd84e56b73733bc180fde00e16af08d\":[465,1110],\"e5ebc8a2e5c94763663ae015a87ea096\":[465,1035]}"
+      }
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Check IP Reputation",
+      "disabled": false,
+      "guid": "2e0298456471da6f656dafff42e29886",
+      "options": {
+        "payload": {
+          "ip": "<<fetch_top_related_logs.body.results.first.request.ipChain.first.ip>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "b56a20478332f662ea8bbe4831dfbdd0",
+        "slug": null,
+        "exported_at": "2022-07-11T17:27:17Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Search for IP Address in Abuse IPDB",
+            "disabled": false,
+            "guid": "9a4e39fef474d046eb6505c24c2df201",
+            "options": {
+              "url": "https://api.abuseipdb.com/api/v2/check",
+              "content_type": "json",
+              "method": "get",
+              "payload": {
+                "maxAgeInDays": "90",
+                "ipAddress": "<<input.payload.ip>>",
+                "verbose": "true"
+              },
+              "headers": {
+                "key": "<<CREDENTIAL.abuseipdb>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Search for IP Address in VirusTotal",
+            "disabled": false,
+            "guid": "513d3e4bc708b2d973869b7cc701b563",
+            "options": {
+              "url": "https://www.virustotal.com/api/v3/ip_addresses/<<input.payload.ip>>",
+              "method": "get",
+              "payload": {},
+              "headers": {
+                "x-apikey": "<<CREDENTIAL.virustotal>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "GeoLocate an IP Address",
+            "disabled": false,
+            "guid": "4fde7095c83b42de42eb535a110b2a80",
+            "options": {
+              "url": "http://ip-api.com/json/<<input.payload.ip>>",
+              "content_type": "json",
+              "method": "post",
+              "payload": {},
+              "headers": {}
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "418b04336a2bc8a82d7cebb8ef00e7e2",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "1a5f283a4f805b1e566440aba102f433",
+            "options": {
+              "payload": {
+                "abuseipdb_confidence_score": "<<search_for_ip_address_in_abuse_ipdb.body.data.abuseConfidenceScore>>",
+                "virustotal_malicious_count": "<<search_for_ip_address_in_virustotal.body.data.attributes.last_analysis_stats.malicious>>",
+                "city": "<<geolocate_an_ip_address.body.city>>",
+                "country": "<<geolocate_an_ip_address.body.country>>",
+                "suspisicous": "<<determine_if_suspicious.rule_matched>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::TriggerAgent",
+            "name": "Determine if Suspicious",
+            "disabled": false,
+            "guid": "ddc6eab65746bd387eeb97fa06b77b92",
+            "options": {
+              "rules": [
+                {
+                  "type": "field>=value",
+                  "value": "25",
+                  "path": "<<search_for_ip_address_in_abuse_ipdb.body.data.abuseConfidenceScore>>"
+                },
+                {
+                  "type": "field>value",
+                  "value": "1",
+                  "path": "<<search_for_ip_address_in_virustotal.body.data.attributes.last_analysis_stats.malicious>>"
+                },
+                {
+                  "type": "field>value",
+                  "value": "10",
+                  "path": "<<search_for_ip_address_in_virustotal.body.data.attributes.last_analysis_stats.suspicious>>"
+                },
+                {
+                  "type": "field==value",
+                  "value": "foo",
+                  "path": "<<somekey.subkey.subkey.goal>>"
+                },
+                {
+                  "type": "in",
+                  "value": "<<geolocate_an_ip_address.body.country>>",
+                  "path": [
+                    "China",
+                    "Russia"
+                  ]
+                }
+              ],
+              "emit_no_match": true
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [
+          {
+            "content": "The Output Node lays out the information that the Group should return. \nIt is summarising the results of these Actions, and returning just the important information.",
+            "position": [
+              660.0,
+              1110.0
+            ],
+            "guid": "8457796fc63621a1135427874e22a31b",
+            "width": 330
+          },
+          {
+            "content": "The Input Node acts as the listener for this Group. The data sent into the Group is received here, and passed down through these Actions.",
+            "position": [
+              705.0,
+              675.0
+            ],
+            "guid": "c30c8e09a839b949c1917e32580e63d1",
+            "width": 340
+          }
+        ],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 1,
+            "receiver": 2
+          },
+          {
+            "source": 2,
+            "receiver": 5
+          },
+          {
+            "source": 3,
+            "receiver": 0
+          },
+          {
+            "source": 5,
+            "receiver": 4
+          }
+        ],
+        "diagram_layout": "{\"9a4e39fef474d046eb6505c24c2df201\":[465,780],\"513d3e4bc708b2d973869b7cc701b563\":[465,870],\"4fde7095c83b42de42eb535a110b2a80\":[465,960],\"418b04336a2bc8a82d7cebb8ef00e7e2\":[465,675],\"1a5f283a4f805b1e566440aba102f433\":[465,1110],\"ddc6eab65746bd387eeb97fa06b77b92\":[465,1035]}"
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search User by Email in Slack",
+      "disabled": false,
+      "guid": "a127581a524e6bbe604ad8ec9fb64256",
+      "options": {
+        "url": "https://slack.com/api/users.lookupByEmail",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "email": "<<fetch_top_related_logs.body.results.first.actor.alternateId>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.tines_chatbot_se_slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Message User for Confirmation",
+      "disabled": false,
+      "guid": "0a79fbfbbb254c772203dffad30b4987",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "A login attempt to your account has been blocked due to a failed or denied Okta Verification Request.\nPlease review the details below, and confirm whether this activity was legitimate."
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Location:*\n\n<<fetch_top_related_logs.body.results.first.client.geographicalContext.city>>. <<fetch_top_related_logs.body.results.first.client.geographicalContext.country>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Login Time:*\n\n<<DATE(fetch_top_related_logs.body.results.first.@timestamp, \"%s\") |> DATE(%, \"%Y-%m-%d %H:%M\")>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*User Agent:*\n\n<<fetch_top_related_logs.body.results.first.client.userAgent.rawUserAgent>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*IP Address:*\n\n<<fetch_top_related_logs.body.results.first.client.ipAddress>>"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "This Was Me"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"confirm\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "I don't recognize this"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"deny\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.tines_chatbot_se_slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "User Confirmed",
+      "disabled": false,
+      "guid": "5f13d8c53a9ba2973beb4df966f57441",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "confirm",
+            "path": "<<message_user_for_confirmation.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "User Denied",
+      "disabled": false,
+      "guid": "e379d2299262fc1486ca35f47611001c",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "deny",
+            "path": "<<message_user_for_confirmation.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Issue",
+      "disabled": false,
+      "guid": "e9a141235639d3bea85024062bfbe38e",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "The user <<fetch_top_related_logs.body.results.first.actor.alternateId>> has confirmed this activity."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Issue",
+      "disabled": false,
+      "guid": "19e27954f3dcf79ca9d41b3d8ec81b40",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "The user <<fetch_top_related_logs.body.results.first.actor.alternateId>> has denied this activity. Escalalting alert."
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Escalate Issue to High Priority",
+      "disabled": false,
+      "guid": "1bb18df60693e93b3c800b5a30e8d554",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.key>>",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "priority": {
+              "name": "High"
+            }
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search User by Email in Slack",
+      "disabled": false,
+      "guid": "a2e8d3c57654cd56b31ff3c6f3edcf14",
+      "options": {
+        "url": "https://slack.com/api/users.lookupByEmail",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "email": "<<fetch_top_related_logs.body.results.first.actor.alternateId>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.tines_chatbot_se_slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Message User for Confirmation",
+      "disabled": false,
+      "guid": "29db2d1ee8479152e22a23b97477e78d",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "A failed login attempt to your Okta Account has been detected.\nPlease review the details below, and confirm whether this activity was legitimate."
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Location:*\n\n<<fetch_top_related_logs.body.results.first.client.geographicalContext.city>>. <<fetch_top_related_logs.body.results.first.client.geographicalContext.country>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Login Time:*\n\n<<DATE(fetch_top_related_logs.body.results.first.@timestamp, \"%s\") |> DATE(%, \"%Y-%m-%d %H:%M\")>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*User Agent:*\n\n<<fetch_top_related_logs.body.results.first.client.userAgent.rawUserAgent>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*IP Address:*\n\n<<fetch_top_related_logs.body.results.first.client.ipAddress>>"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "This Was Me"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"confirm\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "I don't recognize this"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"deny\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.tines_chatbot_se_slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "User Confirmed",
+      "disabled": false,
+      "guid": "a1e3bc8f305908927758444f7d186a35",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "confirm",
+            "path": "<<message_user_for_confirmation.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "User Denied",
+      "disabled": false,
+      "guid": "da84ae6efc6958615e8880c413cf0a29",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "deny",
+            "path": "<<message_user_for_confirmation.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "3edcb4457607a5c7c9877b950ebc1d56",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Low"
+            },
+            "description": "A failed login attempt has been detected, and the user has indicated that this attempt was not made by them.\n\n*Alert Name:* <<explode_results.new_alert.name>>\n*Alert Description:* <<explode_results.new_alert.description>>\n\nh3. Alert Details\n*Target User Name:* <<fetch_top_related_logs.body.results.first.actor.displayName>>\n*Target User Email:* <<fetch_top_related_logs.body.results.first.actor.alternateId>>\n*Source IP Address:* <<fetch_top_related_logs.body.results.first.client.ipAddress>>\n*Source User Agent:* <<fetch_top_related_logs.body.results.first.client.userAgent.rawUserAgent>>\n*Okta IP Location:* <<fetch_top_related_logs.body.results.first.client.geographicalContext.city>>. <<fetch_top_related_logs.body.results.first.client.geographicalContext.country>>\n*Time:* <<fetch_top_related_logs.body.results.first.@timestamp>>\n*Logz.io ID SearchLink:* [<<explode_results.new_alert.alertEventId>>  |https://app.logz.io/#/dashboard/security/research/discover?_a=(query:(language:lucene,query:<<explode_results.new_alert.alertEventId>>),time:(from:now-24d,to:now))]\n\nh3. IP Analysis Results\n*Overall Verdict:* <%if check_ip_reputation.suspisicous%>Potentially malicious<%else%>Not identified as malicious<%endif%>\n*Virustotal Results:* <<check_ip_reputation.virustotal_malicious_count>> Malicious\n*AbuseIPDB Confidence:* <<check_ip_reputation.abuseipdb_confidence_score>>% \n*Location:* <<check_ip_reputation.city>>, <<check_ip_reputation.country>>",
+            "summary": "New Okta Alert triggered for user <<fetch_top_related_logs.body.results.first.actor.displayName>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Reply to User",
+      "disabled": false,
+      "guid": "2913e54300c6a68eb5fc001804e1df0d",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_user_by_email_in_slack.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Thank you for confirming. No further action is necessary on this alert."
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.tines_chatbot_se_slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedup User",
+      "disabled": false,
+      "guid": "da3f9afed45c70feb99f1083a81304ea",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<fetch_top_related_logs.body.results.first.actor.displayName>>",
+        "period": "86400"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add IP to Logz Lookup List",
+      "disabled": false,
+      "guid": "78682264ce38be80f6293e122d54e666",
+      "options": {
+        "url": "https://api.logz.io/v1/lookup-lists/335dd2a0-210c-45ef-8cf8-3265b10d5436/elements",
+        "method": "post",
+        "content_type": "json",
+        "headers": {
+          "X-API-TOKEN": "<<CREDENTIAL.logz_io>>"
+        },
+        "payload": {
+          "value": "<<fetch_top_related_logs.body.results.first.request.ipChain.first.ip>>",
+          "comment": "Suspicious login attempt detected from this IP",
+          "expirationDate": 0
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add IP to Logz Lookup List",
+      "disabled": false,
+      "guid": "1f2f87d7417d737c6dd59fa524cf3d5e",
+      "options": {
+        "url": "https://api.logz.io/v1/lookup-lists/<<lookup_list_id>>/elements",
+        "method": "post",
+        "content_type": "json",
+        "headers": {
+          "X-API-TOKEN": "<<CREDENTIAL.logz_io>>"
+        },
+        "payload": {
+          "value": "<<fetch_top_related_logs.body.results.first.request.ipChain.first.ip>>",
+          "comment": "Suspicious login attempt detected from this IP",
+          "expirationDate": 0
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Story Requirements",
+      "position": [
+        1320.0,
+        240.0
+      ],
+      "guid": "e2239174c3206cb9157a2136ff3b96fb",
+      "width": null
+    },
+    {
+      "content": "# Other\n- [ ] Update Project Key in 'Create Issue in Jira' Action with proper Jira Project name\n\n- [ ] Update the `lookup_list_id` field in each `Add IP to Logz Lookup List`.",
+      "position": [
+        1320.0,
+        555.0
+      ],
+      "guid": "28730c91e7e5686a8382af0527286db6",
+      "width": null
+    },
+    {
+      "content": "# Tines\n\n# Credentials\n- [ ] CREDENTIAL.logz_io\n- [ ] CREDENTIAL.jira\n- [ ] CREDENTIAL.abuseipdb\n- [ ] CREDENTIAL.virustotal\n\n# Resources\n- [ ] RESOURCE.jira_username ",
+      "position": [
+        1320.0,
+        315.0
+      ],
+      "guid": "b4b287f2614b6bd428c90b0c3c17f726",
+      "width": null
+    },
+    {
+      "content": "![](https://image-uploads.tines.com/logzio.jpg)\n\n# Story Overview\n\nThis Story will pull security events from Logz.io and filter for any Okta events. There are multiple types of Okta alerts, so each one can be handled separately using Trigger Actions.\n\nTines will query Logz.io to identify the raw log entries that contributed to this security alert.\n\nThis Story provides a starting point for working with Logz.io security events. It can be easily expanded to add additional Okta alerts, change or adapt the existing flows, or even handle different alert types entirely.",
+      "position": [
+        420.0,
+        120.0
+      ],
+      "guid": "4522f812fa73a0b57af879d92743aec6",
+      "width": null
+    },
+    {
+      "content": "The `Check IP Reputation` Group will query VirusTotal, AbuseIPDB, and IP-API to check the reputation and geo-location of the IP address in question.\n\nDouble click the Group Action to jump in and view this process.",
+      "position": [
+        150.0,
+        750.0
+      ],
+      "guid": "1e3817fbc4460008e249c18c78a023e3",
+      "width": 263
+    },
+    {
+      "content": "The `Dedup User` Action will deduplicate on the username, so they will only be contacted once per 24 hours. This is to avoid sending the user many messages in the event of a brute force or credential stuffing attack.",
+      "position": [
+        1320.0,
+        750.0
+      ],
+      "guid": "1590f8e8b998c62c7c4b380d3761e930",
+      "width": 540
+    },
+    {
+      "content": "If the user's response indicates that the IP address was the source of an unauthorized login, add the IP to a Lookup List in Logz for ongoing monitoring.",
+      "position": [
+        855.0,
+        1320.0
+      ],
+      "guid": "64b40b96e4524077a620a87c99f06167",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 9
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 11
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 1
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 24
+    },
+    {
+      "source": 9,
+      "receiver": 3
+    },
+    {
+      "source": 10,
+      "receiver": 22
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 12,
+      "receiver": 14
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 15
+    },
+    {
+      "source": 14,
+      "receiver": 16
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 17,
+      "receiver": 26
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 19,
+      "receiver": 21
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 20,
+      "receiver": 23
+    },
+    {
+      "source": 21,
+      "receiver": 10
+    },
+    {
+      "source": 22,
+      "receiver": 25
+    },
+    {
+      "source": 24,
+      "receiver": 18
+    }
+  ],
+  "diagram_layout": "{\"1ebbd632b652e4fe1dd101bf3977d4fe\":[750,315],\"5f6fa97456d6f9b903d1fa5f2c9abd0d\":[465,705],\"e6990f5e8e0d49f2e86140269c574a88\":[750,390],\"254ce6776e8eb4ed6db42666d341e117\":[465,855],\"6d766e46292f19300710e716cd2d7f7f\":[750,465],\"df75bec073d8291d01129bbcbf003edb\":[750,540],\"95a66328fb7f5926804bdcdd4f75be28\":[465,615],\"d00c9295163ad931433afc7e2fb34782\":[1065,615],\"2236cd2e3b0f86dc0b463b7207683b94\":[1065,690],\"b32ce1091527573b9d12216b3cfeb67e\":[465,780],\"2e0298456471da6f656dafff42e29886\":[1275,1095],\"a127581a524e6bbe604ad8ec9fb64256\":[465,930],\"0a79fbfbbb254c772203dffad30b4987\":[465,1005],\"5f13d8c53a9ba2973beb4df966f57441\":[285,1095],\"e379d2299262fc1486ca35f47611001c\":[600,1095],\"e9a141235639d3bea85024062bfbe38e\":[285,1170],\"19e27954f3dcf79ca9d41b3d8ec81b40\":[600,1170],\"1bb18df60693e93b3c800b5a30e8d554\":[600,1245],\"a2e8d3c57654cd56b31ff3c6f3edcf14\":[1065,840],\"29db2d1ee8479152e22a23b97477e78d\":[1065,930],\"a1e3bc8f305908927758444f7d186a35\":[960,1020],\"da84ae6efc6958615e8880c413cf0a29\":[1275,1020],\"3edcb4457607a5c7c9877b950ebc1d56\":[1275,1170],\"2913e54300c6a68eb5fc001804e1df0d\":[960,1095],\"da3f9afed45c70feb99f1083a81304ea\":[1065,765],\"78682264ce38be80f6293e122d54e666\":[1275,1245],\"1f2f87d7417d737c6dd59fa524cf3d5e\":[600,1335]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Retrieve & enrich Okta alerts from Logz.io Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

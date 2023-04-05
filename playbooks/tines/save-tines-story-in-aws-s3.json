@@ -1,0 +1,248 @@
+{
+  "schema_version": 4,
+  "name": "Save Tines Story in AWS S3",
+  "description": "The form will ask for a name and a Story ID. The Story will be exported to an S3 bucket specified by RESOURCE.s3-bucket with an object name given in the form and appended with two underscores and a timestamp.\n\ntags: AWS, Backup, S3, Intermediate, \nicons: tines, 😅, aws \nvisibility: public",
+  "guid": "ef5453b55eec38c0def920e532a2414b",
+  "slug": "save_tines_story_in_aws_s3",
+  "exported_at": "2022-07-11T17:45:00Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Form",
+      "disabled": false,
+      "guid": "3c9e3e21413f89eaa13799147aee8f43",
+      "options": {
+        "path": "fb91667a2b36f4ce32c99451ed16b6f8",
+        "secret": "523b0b90fbf04009143c028dd88f32df",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Export Story",
+      "disabled": false,
+      "guid": "dde37d31f2e5ad989db31e20dc47f278",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/stories/<<receive_form.body.story_id>>/export",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Stories",
+      "disabled": false,
+      "guid": "c19c59934bb75451cd30acf776148c88",
+      "options": {
+        "url": "https://<<RESOURCE.tines_domain>>/api/v1/stories?per_page=500",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update annotation with list of stories",
+      "disabled": false,
+      "guid": "907556343853619707e2408cef01b409",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/annotations/99064",
+        "method": "put",
+        "content_type": "json",
+        "payload": {
+          "story_id": "META.story.id",
+          "content": "| ID | Name |\n| ------ | ----------- |\n<%for item in get_stories.body.stories%>| <<item.id>>  |   <<item.name>> |\n<%endfor%>\n"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add an Object to an S3 Bucket",
+      "disabled": false,
+      "guid": "b6483cb0f402a389e8d7d645d35943bb",
+      "options": {
+        "url": "https://<<RESOURCE.s3_bucket>>.s3.<<RESOURCE.s3_region>>.amazonaws.com/<%if receive_form.body.name%><<TO_SNAKE_CASE(PREPEND(DATE(\"now\", \"__%Y-%m-%d_%H-%M-%S\"), receive_form.body.name))>> <%else%><<TO_SNAKE_CASE(PREPEND(DATE(\"now\", \"__%Y-%m-%d_%H-%M-%S\"), export_story.body.name))>><%endif%>",
+        "content_type": "json",
+        "method": "put",
+        "payload": "=export_story.body",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_s3>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# **Save Story in an S3 Bucket**\n---\nhttps://image-uploads.tines.com/aws.png\n# What does this story do?\nThe form will ask for a name and a story ID.  The story will be exported to an S3 bucket specified by `RESOURCE.s3-bucket` with an object name given in the form and appended with two underscores and a timestamp.",
+      "position": [
+        255.0,
+        60.0
+      ],
+      "guid": "66ab851852995e193b5ab11f2cbfe6a3",
+      "width": null
+    },
+    {
+      "content": "\n# Options for changing the saved object name:\n⬅️ ⬅️ ⬅️ ⬅️ ⬅️ \nThis example adds a timestamp to the object for versioning and overwrite protection, but this can be removed from the formula if desired.\n",
+      "position": [
+        825.0,
+        345.0
+      ],
+      "guid": "43f8b06567f6590a2b869b5521c00e51",
+      "width": null
+    },
+    {
+      "content": "# Get a list of stories in this account\n---\nRun the action below to update the list of stories. You'll have to update the ID of the annotation - this is visible in the URL bar when you select the annotation\n⬇️⬇️⬇️⬇️⬇️\n",
+      "position": [
+        840.0,
+        690.0
+      ],
+      "guid": "aef67d279657e87d5d8aac052a0b2c76",
+      "width": null
+    },
+    {
+      "content": "| ID | Name |\n| ------ | ----------- |\n\n\n",
+      "position": [
+        840.0,
+        1020.0
+      ],
+      "guid": "ea9e2fbb9f906c14fc697d1c3bafa4d7",
+      "width": null
+    },
+    {
+      "content": "# Enter a story ID and optionally an object name in the form:\n---\n⬇️⬇️⬇️⬇️⬇️\n",
+      "position": [
+        555.0,
+        60.0
+      ],
+      "guid": "43f6c549597a1717ffc9e31959d38d15",
+      "width": null
+    },
+    {
+      "content": "# **Requirements**\n# Resources:\n- `RESOURCE.tines_domain` The domain where the story resides. (This can be substituted with `META.tenant.domain` to use the current domain)\n- `RESOURCE.tines_api_email` Email address for authentication.  See also: https://hub.tines.com/api/stories/export\n- `RESOURCE.s3_bucket` Target bucket to export the story to.\n- `RESOURCE.s3_region` AWS Region the bucket is located (e.g. us-east-2)\n\n# Credentials:\n- `CREDENTIAL.tines_user_token` Tines API credential generated by user in `RESOURCE.tines_api_email`.  To generate a Tines API token, see: https://hub.tines.com/api/authentication\n- `CREDENTIAL.aws_s3` AWS Credentials with permissions for S3. See: https://hub.tines.com/docs/credentials/aws",
+      "position": [
+        255.0,
+        435.0
+      ],
+      "guid": "37af4c294fadd7a9bc87d1cab0804777",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    }
+  ],
+  "diagram_layout": "{\"3c9e3e21413f89eaa13799147aee8f43\":[555,180],\"dde37d31f2e5ad989db31e20dc47f278\":[555,270],\"c19c59934bb75451cd30acf776148c88\":[840,855],\"907556343853619707e2408cef01b409\":[840,930],\"b6483cb0f402a389e8d7d645d35943bb\":[555,375]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Save Tines Story in AWS S3 Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Name",
+        "description": "Leave blank to use the Story name as the name of the backup.",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 536870912,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Story ID",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": -1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "3c9e3e21413f89eaa13799147aee8f43",
+    "success_message": "Thank you for your submission"
+  }
+}

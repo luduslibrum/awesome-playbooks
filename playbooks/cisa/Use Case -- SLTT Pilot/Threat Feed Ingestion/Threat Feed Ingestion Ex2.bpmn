@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1s9xkig" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.7.2">
+  <bpmn:process id="ThrtFedIngstEx2" name="Threat Feed Ingest Ex2" isExecutable="true" camunda:versionTag="Shareable_Workflow">
+    <bpmn:startEvent id="StartEvent_1" name="STIX Object Received from Info Broker TAXII Server">
+      <bpmn:outgoing>Flow_11bnb1w</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_11bnb1w" sourceRef="StartEvent_1" targetRef="Activity_13rj3qq" />
+    <bpmn:serviceTask id="Activity_13rj3qq" name="SOAR creates incident">
+      <bpmn:incoming>Flow_11bnb1w</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ohft89</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1ohft89" sourceRef="Activity_13rj3qq" targetRef="Activity_1rpts4l" />
+    <bpmn:serviceTask id="Activity_1rpts4l" name="SOAR extracts IOC data from STIX object">
+      <bpmn:incoming>Flow_1ohft89</bpmn:incoming>
+      <bpmn:outgoing>Flow_0jn9ls3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_1wdu6xm">
+      <bpmn:incoming>Flow_0jn9ls3</bpmn:incoming>
+      <bpmn:outgoing>Flow_0rkgz8c</bpmn:outgoing>
+      <bpmn:outgoing>Flow_13h0m2t</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0jn9ls3" sourceRef="Activity_1rpts4l" targetRef="Gateway_1wdu6xm" />
+    <bpmn:sequenceFlow id="Flow_0rkgz8c" name="No" sourceRef="Gateway_1wdu6xm" targetRef="Activity_04cqn5r" />
+    <bpmn:sequenceFlow id="Flow_13h0m2t" name="Yes" sourceRef="Gateway_1wdu6xm" targetRef="Activity_0fn8d84" />
+    <bpmn:sendTask id="Activity_0fn8d84" name="Send Email Alert for workflow error">
+      <bpmn:incoming>Flow_13h0m2t</bpmn:incoming>
+      <bpmn:outgoing>Flow_12iwscc</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="Event_0or404b" name="End">
+      <bpmn:incoming>Flow_12iwscc</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_12iwscc" sourceRef="Activity_0fn8d84" targetRef="Event_0or404b" />
+    <bpmn:serviceTask id="Activity_04cqn5r" name="SOAR invokes IOC-specific workflow">
+      <bpmn:incoming>Flow_0rkgz8c</bpmn:incoming>
+      <bpmn:outgoing>Flow_0wpx4jz</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0wpx4jz" sourceRef="Activity_04cqn5r" targetRef="Event_0n6vtqr" />
+    <bpmn:intermediateThrowEvent id="Event_0n6vtqr" name="Update Incident">
+      <bpmn:incoming>Flow_0wpx4jz</bpmn:incoming>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_00ejbju" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:textAnnotation id="TextAnnotation_14ged08">
+      <bpmn:text>Error in processing STIX object?</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0m5bxh7" sourceRef="Gateway_1wdu6xm" targetRef="TextAnnotation_14ged08" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ThrtFedIngstEx2">
+      <bpmndi:BPMNEdge id="Flow_0wpx4jz_di" bpmnElement="Flow_0wpx4jz">
+        <di:waypoint x="810" y="237" />
+        <di:waypoint x="882" y="237" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12iwscc_di" bpmnElement="Flow_12iwscc">
+        <di:waypoint x="810" y="350" />
+        <di:waypoint x="882" y="350" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13h0m2t_di" bpmnElement="Flow_13h0m2t">
+        <di:waypoint x="620" y="262" />
+        <di:waypoint x="620" y="350" />
+        <di:waypoint x="710" y="350" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="626" y="303" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0rkgz8c_di" bpmnElement="Flow_0rkgz8c">
+        <di:waypoint x="645" y="237" />
+        <di:waypoint x="710" y="237" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="670" y="219" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jn9ls3_di" bpmnElement="Flow_0jn9ls3">
+        <di:waypoint x="530" y="237" />
+        <di:waypoint x="595" y="237" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ohft89_di" bpmnElement="Flow_1ohft89">
+        <di:waypoint x="370" y="237" />
+        <di:waypoint x="430" y="237" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11bnb1w_di" bpmnElement="Flow_11bnb1w">
+        <di:waypoint x="215" y="237" />
+        <di:waypoint x="270" y="237" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="179" y="219" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="155" y="262" width="84" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1t14imb_di" bpmnElement="Activity_13rj3qq">
+        <dc:Bounds x="270" y="197" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_17in7mn_di" bpmnElement="Activity_1rpts4l">
+        <dc:Bounds x="430" y="197" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1wdu6xm_di" bpmnElement="Gateway_1wdu6xm" isMarkerVisible="true">
+        <dc:Bounds x="595" y="212" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0g1ecnn_di" bpmnElement="Activity_0fn8d84">
+        <dc:Bounds x="710" y="310" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0or404b_di" bpmnElement="Event_0or404b" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="882" y="332" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="890" y="375" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1w1xw01_di" bpmnElement="Activity_04cqn5r">
+        <dc:Bounds x="710" y="197" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1egp7wi_di" bpmnElement="Event_0n6vtqr" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="882" y="219" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="861" y="262" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_14ged08_di" bpmnElement="TextAnnotation_14ged08">
+        <dc:Bounds x="570" y="120" width="100" height="54" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0m5bxh7_di" bpmnElement="Association_0m5bxh7">
+        <di:waypoint x="620" y="212" />
+        <di:waypoint x="620" y="174" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

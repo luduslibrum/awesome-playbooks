@@ -1,0 +1,192 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Add Attacker Tag to Indicator (FortiDeceptor)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Finds the Attacker IP Address in a FortiDeceptor alert and adds the Attacker Tag to the indicator as well as updates the reputation of the indicator to Malicious.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/20289298-cdd6-4052-8fa0-11e2603dca00",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/3f0b42af-427d-4c9e-b598-59c8919c250b",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Attacker IP",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "alerts.source",
+                            "value": "%FortiDeceptor%",
+                            "operator": "like",
+                            "_operator": "like"
+                        },
+                        {
+                            "type": "primitive",
+                            "field": "value",
+                            "value": "{{vars.input.records[0].sourceIp}}",
+                            "operator": "eq",
+                            "_operator": "eq"
+                        }
+                    ]
+                },
+                "module": "indicators?$limit=30",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "220",
+            "left": "100",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "0fd6bf6b-fd03-4c1b-979f-920b127c0e5c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add Tag to Indicator and Update Reputation",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "{{vars.input.records[0].sourceIp}}  Identified as Attacker IP Tagged as FortiDeceptor-Attacker and Marked Malicious",
+                    "records": ""
+                },
+                "for_each": {
+                    "item": "{{vars.steps.Find_Attacker_IP}}",
+                    "__bulk": true,
+                    "condition": ""
+                },
+                "resource": {
+                    "__link": {
+                        "alerts": "{{vars.input.records[0]['@id']}}",
+                        "recordTags": [
+                            "\/api\/3\/tags\/FortiDeceptor-Attacker"
+                        ]
+                    },
+                    "reputation": {
+                        "id": 109,
+                        "@id": "\/api\/3\/picklists\/7074e547-7785-4979-be32-c6d0c863e4bd",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": "#c42323",
+                        "display": "Malicious",
+                        "listName": "\/api\/3\/picklist_names\/e75ed3c3-9f23-4a43-832b-0daf236209ba",
+                        "itemValue": "Malicious",
+                        "orderIndex": 1
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.item['@id']}}",
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "category": "Append",
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "380",
+            "left": "100",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "08ea08ee-16fe-4670-94e4-7b67406e531c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "alerts",
+                "resources": [
+                    "alerts"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "state",
+                            "value": "\/api\/3\/picklists\/501d0562-89a0-4079-9a9e-cdde7d34e3ed",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/501d0562-89a0-4079-9a9e-cdde7d34e3ed",
+                                "itemValue": "Indicator Extracted"
+                            },
+                            "operator": "eq"
+                        },
+                        {
+                            "type": "object",
+                            "field": "state",
+                            "value": null,
+                            "_value": {
+                                "@id": null,
+                                "display": "",
+                                "itemValue": ""
+                            },
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "primitive",
+                            "field": "source",
+                            "value": "FortiDeceptor",
+                            "operator": "eq",
+                            "_operator": "eq"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "40",
+            "left": "100",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "3f0b42af-427d-4c9e-b598-59c8919c250b"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find -> Add Tag to Indicator and Update Reputation",
+            "targetStep": "\/api\/3\/workflow_steps\/08ea08ee-16fe-4670-94e4-7b67406e531c",
+            "sourceStep": "\/api\/3\/workflow_steps\/0fd6bf6b-fd03-4c1b-979f-920b127c0e5c",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "95e7343b-07cb-4085-9784-7baa8fb01790"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Find",
+            "targetStep": "\/api\/3\/workflow_steps\/0fd6bf6b-fd03-4c1b-979f-920b127c0e5c",
+            "sourceStep": "\/api\/3\/workflow_steps\/3f0b42af-427d-4c9e-b598-59c8919c250b",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "312c3551-99f7-4370-9674-42deebb164cc"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "91480e70-f262-41c3-8d8b-5db0021bd13b",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "PostUpdate"
+    ]
+}

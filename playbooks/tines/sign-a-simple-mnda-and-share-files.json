@@ -1,0 +1,519 @@
+{
+  "schema_version": 4,
+  "name": "Sign a simple MNDA and share files",
+  "description": "Use this Story to manage a file request and sign a simple MNDA. Once approved, requesters will receive a ZIP file in their inbox and a notification via Slack.\n\ntags: DocuSign, Notify, Slack, Intermediate, Orchestrate, Share\nicons: docusign, ➡️, 📂\nvisibility: public",
+  "guid": "d4d8ae03d64bc4ba4681ce2757d3cfc4",
+  "slug": "sign_a_simple_mnda_and_share_files",
+  "exported_at": "2022-07-11T17:51:42Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive request for security pack",
+      "disabled": false,
+      "guid": "0bd9cf1639063a0b6d1724188e540c96",
+      "options": {
+        "secret": "9841b2f8e97e7d7558c4e1314af11ded",
+        "verbs": "post",
+        "path": "5e1ee71df49fd9d88ffab3c696ec31ec"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send MNDA",
+      "disabled": false,
+      "guid": "a45d032e11995e0b1ba9a806d7d5efb6",
+      "options": {
+        "url": "https://na3.docusign.net/restapi/v2.1/accounts/<<RESOURCE.docusign_account_id>>/envelopes",
+        "method": "post",
+        "payload": {
+          "emailSubject": "Please Sign Tines Mutual NDA",
+          "templateId": "12345678-5a25-4ceb-8638-181679817811",
+          "templateRoles": [
+            {
+              "name": "<<receive_request_for_security_pack.body.nda_signer_s_name>>",
+              "email": "<<receive_request_for_security_pack.body.nda_signer_s_email>>",
+              "roleName": "Second party"
+            }
+          ],
+          "status": "sent"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.docusign>>"
+        },
+        "content_type": "json",
+        "log_error_on_status": [
+          "401",
+          "400"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay 10 minutes",
+      "disabled": false,
+      "guid": "725038c3ae9c1dd8fb2d8118774dab13",
+      "options": {
+        "mode": "delay",
+        "seconds": 600
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get status of MNDA",
+      "disabled": false,
+      "guid": "84dff2705c72eaa84835ff65a944e073",
+      "options": {
+        "url": "https://na3.docusign.net/restapi/v2.1/accounts/<<RESOURCE.docusign_account_id>>/envelopes/<<send_mnda.body.envelopeId>>",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.docusign>>"
+        },
+        "content_type": "json",
+        "log_error_on_status": [
+          "401",
+          "400"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Document status is sent",
+      "disabled": false,
+      "guid": "8f2a8ddf8a832680511f7d7e4489d29e",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "sent|delivered",
+            "path": "<<get_status_of_mnda.body.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Document status is completed",
+      "disabled": false,
+      "guid": "de75ed67d6bab7be799510eed8ae5b75",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "completed",
+            "path": "<<get_status_of_mnda.body.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Document status is other",
+      "disabled": false,
+      "guid": "390a8a6e3f4e0b4117c63e179f51ded7",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "completed|delivered",
+            "path": "<<get_status_of_mnda.body.status>>"
+          },
+          {
+            "type": "!regex",
+            "value": "sent",
+            "path": "<<get_status_of_mnda.body.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "loop when not complete",
+      "disabled": false,
+      "guid": "60fe8804446ab1f33881d35af873fc2e",
+      "options": {
+        "rules": [
+          {
+            "type": "field<value",
+            "value": "1000",
+            "path": "<<set_counter.message>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "set counter",
+      "disabled": false,
+      "guid": "2deeb842ee89704cfa3e16fd69c28ec6",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "message": "<<PLUS(set_counter.message, 1)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "NDA not signed after 1 week",
+      "disabled": false,
+      "guid": "907f567e8eee0ea621d77a3f75688a0d",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "1000",
+            "path": "<<set_counter.message>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "9ff80301a160d1b403ac17ba6431e392",
+      "options": {
+        "mode": "delay",
+        "seconds": 600
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Let requester know",
+      "disabled": false,
+      "guid": "a78d602848d688b2ca0dc68214b6b3bd",
+      "options": {
+        "recipients": "<<receive_request_for_security_pack.body.your_email>>",
+        "subject": "Update on Tines Security Assurance Pack",
+        "body": "Hi there,\n<br /><br />\nYou recently requested a copy of the Tines Security Assurance Pack. As part of this process, we sent a NDA to <<receive_request_for_security_pack.body.nda_signer_s_name>> (<<receive_request_for_security_pack.body.your_email>>). After a week, the NDA hasn't been completed so we've cancelled your request.\n<br /><br />\nFeel free to send another request <a href=\"https://hq.tines.io/forms/1f6490fe664b995b022e0241dbe7825a\">here</a> or contact us at security@tines.io.\n<br /><br />\nThanks,<br />\nThe Team at Tines"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send pack to requester",
+      "disabled": false,
+      "guid": "1a85bdc0b6c4cb5e14ffec7e7dd3b105",
+      "options": {
+        "recipients": "<<receive_request_for_security_pack.body.your_email>>",
+        "subject": "Tines Security Assurance Pack",
+        "body": "Hi there,\n<br /><br />\nYou recently requested a copy of the Tines Security Assurance Pack. In the attached zip file, you'll find:\n\n<ol>\n<li>An overview of the security program at Tines</li>\n<li>Our SOC2 Type II Report</li>\n<li>Results of a third-party risk assessment</li>\n<li>Results of a recent vulnerability scan</li>\n<li>A recent penetration test report</li>\n<li>Content of the Tines policy bank</li>\n<ol/>\n\n<br/><br/>\nThanks,\nThe Team at Tines\n",
+        "attachments": [
+          {
+            "filename": "Tines_Security_Assurance_Pack.zip",
+            "base64encodedcontents": "<<zip_file_base64_encoded>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel using a Channel Name",
+      "disabled": false,
+      "guid": "31285ce7005e7822905fe691ab1bf3cc",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "#sales",
+          "text": "The Tines Security Pack was successfully sent to <<receive_request_for_security_pack.body.your_email>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel using a Channel Name",
+      "disabled": false,
+      "guid": "569bce8e1d690e4a5ca47be970da6b23",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "#sales",
+          "text": "The Tines Security Pack was successfully sent to <<receive_request_for_security_pack.body.your_email>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://www.docusign.com/sites/default/files/docusign_logo_black_text_on_white_0.png\n\nThis story is kicked off from a Tines [form](./form).\n\nWhen a user requests our Security Pack it sends a simple NDA in DocuSign using an uploaded template. It then waits to see if it has been signed, and, as soon as it has been, it sends a ZIP file containing details about our security policies and procedures in Tines.\n\nNote, the relevant `template_id` for the Tines template, along with the base64 encoded zip file contents for the actual Tines security pack have been removed.",
+      "position": [
+        -45.0,
+        -510.0
+      ],
+      "guid": "4f5ad586bea4637ba0a5c6933574e661",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 6
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 8
+    },
+    {
+      "source": 5,
+      "receiver": 12
+    },
+    {
+      "source": 7,
+      "receiver": 10
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 8,
+      "receiver": 7
+    },
+    {
+      "source": 9,
+      "receiver": 11
+    },
+    {
+      "source": 10,
+      "receiver": 3
+    },
+    {
+      "source": 11,
+      "receiver": 14
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    }
+  ],
+  "diagram_layout": "{\"0bd9cf1639063a0b6d1724188e540c96\":[330,-525],\"a45d032e11995e0b1ba9a806d7d5efb6\":[330,-420],\"725038c3ae9c1dd8fb2d8118774dab13\":[330,-330],\"84dff2705c72eaa84835ff65a944e073\":[330,-240],\"8f2a8ddf8a832680511f7d7e4489d29e\":[150,-135],\"de75ed67d6bab7be799510eed8ae5b75\":[390,-135],\"390a8a6e3f4e0b4117c63e179f51ded7\":[645,-150],\"60fe8804446ab1f33881d35af873fc2e\":[150,15],\"2deeb842ee89704cfa3e16fd69c28ec6\":[150,-60],\"907f567e8eee0ea621d77a3f75688a0d\":[-75,15],\"9ff80301a160d1b403ac17ba6431e392\":[150,120],\"a78d602848d688b2ca0dc68214b6b3bd\":[-75,120],\"1a85bdc0b6c4cb5e14ffec7e7dd3b105\":[390,-60],\"31285ce7005e7822905fe691ab1bf3cc\":[390,15],\"569bce8e1d690e4a5ca47be970da6b23\":[-75,195]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Request Tines Security Assurance Pack",
+    "description": "To receive a copy of the Tines security assurance pack, please complete the below form. Once an NDA is in place you'll receive a copy of the pack to your email address.\n\nThe pack contains:\n• An overview of the security program at Tines\n• Our SOC2 Type II Report\n• Results of a third-party risk assessment\n• Results of a recent vulnerability scan\n• A recent penetration test report\n• Content of the Tines policy bank\n\nMore information covering the security program at Tines is available here: https://tines.com/security\n\nIf you have questions or would like to use your company's own NDA, contact us at security@tines.com.",
+    "fields": [
+      {
+        "name": "Your email",
+        "description": "Enter the email address to which we should send the security pack.",
+        "required": true,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "NDA Signer's Name",
+        "description": "Enter the name of the person that should sign the Tines MNDA.",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "NDA Signer's Email",
+        "description": "Enter the email address of the individual that will sign the Tines MNDA.",
+        "required": true,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "world",
+    "agent_guid": "0bd9cf1639063a0b6d1724188e540c96",
+    "success_message": "Thank you! We'll send you an email shortly."
+  }
+}

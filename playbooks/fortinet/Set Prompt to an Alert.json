@@ -1,0 +1,145 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Set Prompt to an Alert",
+    "aliasName": null,
+    "tag": null,
+    "description": "Displays a prompt on alerts when an indicator is linked to campaign.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_type",
+        "indicator_value",
+        "alert_iri_list",
+        "camp_data",
+        "camp_iri"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/1caaeaab-0bec-4df8-aebd-704249e0dca1",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": []
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "1caaeaab-0bec-4df8-aebd-704249e0dca1"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Prompt",
+            "description": null,
+            "arguments": {
+                "type": "DecisionBased",
+                "input": {
+                    "schema": {
+                        "title": "Indicator Linked to Campaign",
+                        "description": "The following Indicator {{vars.input.params['indicator_value']}} is linked to campaign(s) - {{vars.input.params['camp_data']  | replace(\"[\",\"\") | replace(\"]\",\"\") }}",
+                        "inputVariables": []
+                    }
+                },
+                "record": "{{vars.input.params['alert_iri_list']}}",
+                "resources": "alerts",
+                "owner_detail": {
+                    "isAssigned": false
+                },
+                "step_variables": [],
+                "response_mapping": {
+                    "options": [
+                        {
+                            "option": "Ok",
+                            "step_iri": "\/api\/3\/workflow_steps\/f11d4f42-e1aa-4c7a-9718-b155f686f722"
+                        }
+                    ],
+                    "duplicateOption": false
+                },
+                "email_notification": {
+                    "enabled": false,
+                    "smtpParameters": []
+                }
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/fc04082a-d7dc-4299-96fb-6837b1baa0fe",
+            "uuid": "46cc7c02-1edc-4303-9be5-91bf4c6f78b9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add Note and Link Campaign",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [
+                        "\/api\/3\/tags\/LinkedToCampaign"
+                    ],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "<p>Indicator {{vars.input.params['indicator_value']}} is linked to <span class=\"badge badge-pill badge-danger\" style=\"background: #e31b1d; color: #fff;\">campaign(s)<\/span> - {{vars.input.params['camp_data'] | replace(\"[\",\"\") | replace(\"]\",\"\") }}<\/p>",
+                    "records": ""
+                },
+                "resource": {
+                    "__link": {
+                        "campaigns": "{{vars.input.params['camp_iri']}}"
+                    }
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "{{vars.input.params['alert_iri_list']}}",
+                "__recommend": [],
+                "collectionType": "\/api\/3\/alerts",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "f11d4f42-e1aa-4c7a-9718-b155f686f722"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Prompt -> Add Note and Link Campaign",
+            "targetStep": "\/api\/3\/workflow_steps\/f11d4f42-e1aa-4c7a-9718-b155f686f722",
+            "sourceStep": "\/api\/3\/workflow_steps\/46cc7c02-1edc-4303-9be5-91bf4c6f78b9",
+            "label": "Ok",
+            "isExecuted": false,
+            "uuid": "d47cce96-9b9b-4fb6-8d01-9feff2a45a4d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Prompt",
+            "targetStep": "\/api\/3\/workflow_steps\/46cc7c02-1edc-4303-9be5-91bf4c6f78b9",
+            "sourceStep": "\/api\/3\/workflow_steps\/1caaeaab-0bec-4df8-aebd-704249e0dca1",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "aba09889-904e-440a-aa5f-a4cce919dc28"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "b808f4be-88fa-4b72-a5d7-8edf45407309",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "Subroutine"
+    ]
+}

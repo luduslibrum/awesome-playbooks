@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1anz320" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.7.2">
+  <bpmn:process id="IdSysAndIOCs" name="Identify Systems and IOCs" isExecutable="true" camunda:versionTag="Shareable_Workflow">
+    <bpmn:startEvent id="StartEvent_1" name="Suspicious Email Submission Triage&#10;&#10;OR&#10;&#10;Process AV-EDR Alert&#10;&#10;OR&#10;&#10;Process Internal Firewall Alert&#10;&#10;OR&#10;&#10;Process Internal IDS Alert&#10;&#10;OR&#10;&#10;Process Service Heartbeat Failure&#10;&#10;OR&#10;&#10;Process ICS Alert">
+      <bpmn:outgoing>Flow_0jrnfb2</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0ovrht8" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0jrnfb2" sourceRef="StartEvent_1" targetRef="Activity_0fr3m0n" />
+    <bpmn:serviceTask id="Activity_0fr3m0n" name="SOAR extracts Alert type, affected systems, and IOCs">
+      <bpmn:incoming>Flow_0jrnfb2</bpmn:incoming>
+      <bpmn:outgoing>Flow_07qam5y</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_07qam5y" sourceRef="Activity_0fr3m0n" targetRef="Gateway_02ytjf9" />
+    <bpmn:parallelGateway id="Gateway_02ytjf9">
+      <bpmn:incoming>Flow_07qam5y</bpmn:incoming>
+      <bpmn:outgoing>Flow_1iy644c</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0t8wut8</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="Gateway_0ier0wq" name="IOCs present in case?">
+      <bpmn:incoming>Flow_1iy644c</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lcopve</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0d9emzo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1iy644c" sourceRef="Gateway_02ytjf9" targetRef="Gateway_0ier0wq" />
+    <bpmn:exclusiveGateway id="Gateway_1lxtnvr" name="Systems present in case?">
+      <bpmn:incoming>Flow_0t8wut8</bpmn:incoming>
+      <bpmn:outgoing>Flow_11085h7</bpmn:outgoing>
+      <bpmn:outgoing>Flow_06tt9nw</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0t8wut8" sourceRef="Gateway_02ytjf9" targetRef="Gateway_1lxtnvr" />
+    <bpmn:sequenceFlow id="Flow_1lcopve" name="Yes" sourceRef="Gateway_0ier0wq" targetRef="Event_1curr0w" />
+    <bpmn:endEvent id="Event_05muabd" name="End">
+      <bpmn:incoming>Flow_0d9emzo</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0d9emzo" name="No" sourceRef="Gateway_0ier0wq" targetRef="Event_05muabd" />
+    <bpmn:endEvent id="Event_1curr0w" name="Process New IOCs">
+      <bpmn:incoming>Flow_1lcopve</bpmn:incoming>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_02q1drf" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_11085h7" name="Yes" sourceRef="Gateway_1lxtnvr" targetRef="Event_0p8ffaw" />
+    <bpmn:sequenceFlow id="Flow_06tt9nw" name="No" sourceRef="Gateway_1lxtnvr" targetRef="Event_1pvrn9s" />
+    <bpmn:endEvent id="Event_0p8ffaw" name="System Response Type Review">
+      <bpmn:incoming>Flow_11085h7</bpmn:incoming>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0rw5s46" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_1pvrn9s" name="End">
+      <bpmn:incoming>Flow_06tt9nw</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="IdSysAndIOCs">
+      <bpmndi:BPMNEdge id="Flow_06tt9nw_di" bpmnElement="Flow_06tt9nw">
+        <di:waypoint x="560" y="325" />
+        <di:waypoint x="560" y="400" />
+        <di:waypoint x="652" y="400" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="568" y="360" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11085h7_di" bpmnElement="Flow_11085h7">
+        <di:waypoint x="585" y="300" />
+        <di:waypoint x="652" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="601" y="282" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0d9emzo_di" bpmnElement="Flow_0d9emzo">
+        <di:waypoint x="560" y="135" />
+        <di:waypoint x="560" y="200" />
+        <di:waypoint x="652" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="568" y="167" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lcopve_di" bpmnElement="Flow_1lcopve">
+        <di:waypoint x="585" y="110" />
+        <di:waypoint x="652" y="110" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="610" y="92" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0t8wut8_di" bpmnElement="Flow_0t8wut8">
+        <di:waypoint x="450" y="202" />
+        <di:waypoint x="450" y="300" />
+        <di:waypoint x="535" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1iy644c_di" bpmnElement="Flow_1iy644c">
+        <di:waypoint x="450" y="152" />
+        <di:waypoint x="450" y="110" />
+        <di:waypoint x="535" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_07qam5y_di" bpmnElement="Flow_07qam5y">
+        <di:waypoint x="370" y="177" />
+        <di:waypoint x="425" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jrnfb2_di" bpmnElement="Flow_0jrnfb2">
+        <di:waypoint x="215" y="177" />
+        <di:waypoint x="270" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_11g7u33_di" bpmnElement="StartEvent_1" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="179" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="154" y="202" width="87" height="357" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_066b6hw_di" bpmnElement="Activity_0fr3m0n">
+        <dc:Bounds x="270" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1bpa9n8_di" bpmnElement="Gateway_02ytjf9">
+        <dc:Bounds x="425" y="152" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0ier0wq_di" bpmnElement="Gateway_0ier0wq" isMarkerVisible="true">
+        <dc:Bounds x="535" y="85" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="521" y="48" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1lxtnvr_di" bpmnElement="Gateway_1lxtnvr" isMarkerVisible="true">
+        <dc:Bounds x="535" y="275" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="519" y="238" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_05muabd_di" bpmnElement="Event_05muabd" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="652" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="661" y="225" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1y72v4g_di" bpmnElement="Event_1curr0w" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="652" y="92" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="638" y="135" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0klucod_di" bpmnElement="Event_0p8ffaw" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="652" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="625" y="325" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ecwsm8_di" bpmnElement="Event_1pvrn9s" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="652" y="382" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="661" y="425" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

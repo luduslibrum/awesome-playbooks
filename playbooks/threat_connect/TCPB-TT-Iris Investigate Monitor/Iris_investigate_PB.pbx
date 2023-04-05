@@ -1,0 +1,984 @@
+{
+  "name" : "Iris Investigate Monitor",
+  "type" : "Standard",
+  "panX" : 6.0,
+  "panY" : 454.0,
+  "logLevel" : "DEBUG",
+  "description" : "Playbook to implement tracking in Iris Investigate so newly updated hosts can be imported into TC.",
+  "priority" : 6,
+  "version" : "1.24",
+  "comment" : "Auto-Saved on Thu Mar 19 19:34:22 UTC 2020",
+  "jobList" : [ {
+    "id" : 100279,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DataStore v3.0",
+      "displayName" : "DataStore",
+      "programVersion" : "3.0.1"
+    },
+    "name" : "Update DS",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_optional"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "domain"
+      },
+      "value" : "Organization"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "mapping"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tc_action"
+      },
+      "value" : "POST"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_type"
+      },
+      "value" : "String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_required"
+      },
+      "value" : "#App:100280:datetime.format.date!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rid_optional"
+      },
+      "value" : "#App:100356:find_replace.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_type"
+      },
+      "value" : "iris_investigate"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rid_required"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_not_found"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 2780.0,
+    "locationTop" : 290.0,
+    "layoutDisplayOutputVariables" : "[{\"name\":\"datastore.response.version\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.type\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.id\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.shard.success\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.result\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.action\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.json\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.shard.failed\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.shard.total\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"tc_action\",\"domain\",\"data_type\",\"data_required\"]",
+    "layoutDisplayedInputParams" : "[\"tc_action\",\"domain\",\"data_type\",\"rid_optional\",\"data_required\"]"
+  }, {
+    "id" : 100273,
+    "appCatalogItem" : {
+      "programName" : "Logger",
+      "displayName" : "Logger",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Log Hosts",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "log_message"
+      },
+      "value" : "#App:100272:dt.result.domains!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "logging"
+      },
+      "value" : "INFO"
+    } ],
+    "locationLeft" : 2530.0,
+    "locationTop" : 400.0
+  }, {
+    "id" : 100295,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SignatureRetrieveById v1.0",
+      "displayName" : "Get ThreatConnect Signature by ID",
+      "programVersion" : "1.0.26"
+    },
+    "name" : "Get ThreatConnect Signature by ID 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "ids"
+      },
+      "value" : "#App:100294:sig_id!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Signature"
+    } ],
+    "locationLeft" : 2270.0,
+    "locationTop" : 290.0,
+    "outputVariables" : "[{\"name\":\"tc.signature\",\"type\":\"TCEntity\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100294,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge 2",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"sig_id\",\"value\":\"#App:100293:sig_id!String #App:100292:tc.signature.id!String\"}]"
+    } ],
+    "locationLeft" : 2100.0,
+    "locationTop" : 290.0,
+    "outputVariables" : "[{\"name\":\"sig_id\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100287,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SignatureRetrieveByName v1.0",
+      "displayName" : "Get ThreatConnect Signature by Name",
+      "programVersion" : "1.0.26"
+    },
+    "name" : "Get Query Signature",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "TARGET_OWNER"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Signature"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "names"
+      },
+      "value" : "#App:100285:name!String"
+    } ],
+    "locationLeft" : 1400.0,
+    "locationTop" : 270.0,
+    "outputVariables" : "[{\"name\":\"tc.signature.count\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"tc.signature.id\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100286,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JMESPath v2.0",
+      "displayName" : "JMESPath",
+      "programVersion" : "2.0.5"
+    },
+    "name" : "Extract Hosts",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_expressions"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_quotes"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_data"
+      },
+      "value" : "#App:100272:dt.result.json.raw!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "string_array_expressions"
+      },
+      "value" : "[{\"key\":\"domains\",\"value\":\"[0].response.results[*].domain\"}]"
+    } ],
+    "locationLeft" : 1160.0,
+    "locationTop" : 270.0,
+    "outputVariables" : "[{\"name\":\"domains\",\"type\":\"StringArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100272,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DomainTools v1",
+      "displayName" : "DomainTools Iris Investigate",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "DomainTools Iris Investigate 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "create_date"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tld"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "updated_after"
+      },
+      "value" : "#App:100283:last_update_date!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "domainTools_pw"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ssl_hash"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "registrant"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "not_tagged_with_all"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "nameserver_host"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tagged_with_any"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "not_tagged_with_any"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "active"
+      },
+      "value" : "All"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "email"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "nameserver_domain"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_no_results"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "mailserver_ip"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "nameserver_ip"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tagged_with_all"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "adsense"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "registrar"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "email_domain"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "domainTools_userid"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ssl_email"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "mailserver_host"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ssl_subject"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tc_action"
+      },
+      "value" : "Monitoring"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "redirect_domain"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "indicators"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "search_hash"
+      },
+      "value" : "#App:100285:query!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "google_analytics"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ssl_org"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ip"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "expiration_date"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "registrant_org"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "mailserver_domain"
+      }
+    } ],
+    "locationLeft" : 920.0,
+    "locationTop" : 270.0,
+    "outputVariables" : "[{\"name\":\"dt.result.domains\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"dt.result.json.raw\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutDisplayOutputVariables" : "[{\"name\":\"dt.result.message\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"dt.result.missing_domains\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"dt.action\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"dt.result.json.raw\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"dt.result.domains.0\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"dt.result.count\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"dt.result.domains\",\"type\":\"StringArray\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"tc_action\",\"domainTools_userid\",\"domainTools_pw\"]",
+    "layoutDisplayedInputParams" : "[\"tc_action\",\"domainTools_userid\",\"domainTools_pw\",\"updated_after\",\"search_hash\",\"fail_on_no_results\"]"
+  }, {
+    "id" : 100283,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"last_update_date\",\"value\":\"#App:100281:last_update_date!String #App:100282:last_update_date!String\"}]"
+    } ],
+    "locationLeft" : 750.0,
+    "locationTop" : 270.0,
+    "outputVariables" : "[{\"name\":\"last_update_date\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100281,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set Last Update for New",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"last_update_date\",\"value\":\"#App:100278:datastore.data.string!String\"}]"
+    } ],
+    "locationLeft" : 520.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"last_update_date\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100278,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DataStore v3.0",
+      "displayName" : "DataStore",
+      "programVersion" : "3.0.1"
+    },
+    "name" : "Get Last Update from DS",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "mapping"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "domain"
+      },
+      "value" : "Organization"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tc_action"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_required"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_type"
+      },
+      "value" : "String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_optional"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rid_optional"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "data_type"
+      },
+      "value" : "iris_investigate"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rid_required"
+      },
+      "value" : "#App:100356:find_replace.output!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_not_found"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 290.0,
+    "locationTop" : 210.0,
+    "outputVariables" : "[{\"name\":\"datastore.data.string\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutDisplayOutputVariables" : "[{\"name\":\"datastore.found\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.version\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.type\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.id\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.shard.success\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.action\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.json\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.data.string\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.shard.failed\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"datastore.response.shard.total\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"tc_action\",\"output_type\",\"domain\",\"data_type\",\"rid_required\"]",
+    "layoutDisplayedInputParams" : "[\"tc_action\",\"output_type\",\"domain\",\"data_type\",\"rid_required\",\"fail_on_not_found\"]"
+  }, {
+    "id" : 100297,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HostCreate v1.1",
+      "displayName" : "Create ThreatConnect Host",
+      "programVersion" : "1.1.24"
+    },
+    "name" : "Create Hosts",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "dns_active"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "confidence"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:100286:domains!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "TARGET_OWNER"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : "#App:100295:tc.signature!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Host"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "whois_active"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "rating"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 2530.0,
+    "locationTop" : 290.0
+  }, {
+    "id" : 100293,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set Sig ID",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"sig_id\",\"value\":\"#App:100287:tc.signature.id!String\"}]"
+    } ],
+    "locationLeft" : 1840.0,
+    "locationTop" : 230.0,
+    "outputVariables" : "[{\"name\":\"sig_id\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100292,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SignatureCreate v1.0",
+      "displayName" : "Create ThreatConnect Signature",
+      "programVersion" : "1.0.26"
+    },
+    "name" : "Create Query Signature",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_type"
+      },
+      "value" : "Iris Search Query"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_data"
+      },
+      "value" : "#App:100285:query!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : "#App:100276:tc.document!TCEntity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_name"
+      },
+      "value" : "#App:100285:name!String.txt"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Signature"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "TARGET_OWNER"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:100285:name!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      }
+    } ],
+    "locationLeft" : 1840.0,
+    "locationTop" : 350.0,
+    "outputVariables" : "[{\"name\":\"tc.signature.id\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100356,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Replace Spaces with Underscores",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "\\s|\\/"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      },
+      "value" : "_"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:100285:name!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 70.0,
+    "locationTop" : 210.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100276,
+    "appCatalogItem" : {
+      "programName" : "TCPB - DocumentRetrieveByName v1.0",
+      "displayName" : "Get ThreatConnect Document by Name",
+      "programVersion" : "1.0.26"
+    },
+    "name" : "Get Queries List Document",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "TARGET_OWNER"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "names"
+      },
+      "value" : "Iris Queries"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Document"
+    } ],
+    "locationLeft" : 720.0,
+    "locationTop" : -100.0,
+    "outputVariables" : "[{\"name\":\"tc.document.file_data\",\"type\":\"Binary\",\"loopVariables\":false},{\"name\":\"tc.document\",\"type\":\"TCEntity\",\"loopVariables\":false}]",
+    "playbookRetryDelayMinutes" : 5,
+    "playbookRetryMaxRetries" : 12
+  }, {
+    "id" : 100291,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Found?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "0"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:100287:tc.signature.count!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "not equals"
+    } ],
+    "locationLeft" : 1660.0,
+    "locationTop" : 260.0
+  }, {
+    "id" : 100285,
+    "appCatalogItem" : {
+      "programName" : "Iterator",
+      "displayName" : "Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Iterator 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_inputs"
+      },
+      "value" : "[{\"key\":\"name\",\"value\":\"#App:100277:name!StringArray\"},{\"key\":\"query\",\"value\":\"#App:100277:query!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_outputs"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 1190.0,
+    "locationTop" : -100.0,
+    "outputVariables" : "[{\"name\":\"query\",\"type\":\"String\",\"loopVariables\":false},{\"name\":\"name\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"array_inputs\"]",
+    "layoutDisplayedInputParams" : "[\"array_inputs\",\"array_outputs\"]"
+  }, {
+    "id" : 100282,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Set Last Update for Historic",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"last_update_date\",\"value\":\"1000-01-01\"}]"
+    } ],
+    "locationLeft" : 520.0,
+    "locationTop" : 270.0,
+    "outputVariables" : "[{\"name\":\"last_update_date\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100280,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Datetime Format v2.0",
+      "displayName" : "Datetime Formatter",
+      "programVersion" : "2.0.2"
+    },
+    "name" : "Datetime Formatter 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "date_format"
+      },
+      "value" : "%Y-%m-%d"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "date_input"
+      },
+      "value" : "#Global:0:gbl.timestamp.epoch!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "date_timezone"
+      },
+      "value" : "UTC"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "date_offset"
+      }
+    } ],
+    "locationLeft" : 490.0,
+    "locationTop" : -100.0,
+    "outputVariables" : "[{\"name\":\"datetime.format.date\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 100277,
+    "appCatalogItem" : {
+      "programName" : "TCPB - CsvParser v1.0",
+      "displayName" : "CSV Parser",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "CSV Parser 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "ignore_header_rows"
+      },
+      "value" : "0"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "csv_content"
+      },
+      "value" : "#App:100276:tc.document.file_data!Binary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "csv_delimiter"
+      },
+      "value" : ","
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"name\",\"value\":\"0\"},{\"key\":\"query\",\"value\":\"1\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "use_column_names"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 960.0,
+    "locationTop" : -100.0,
+    "outputVariables" : "[{\"name\":\"query\",\"type\":\"StringArray\",\"loopVariables\":false},{\"name\":\"name\",\"type\":\"StringArray\",\"loopVariables\":false}]"
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 100280,
+    "sourceTriggerId" : 12887
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100295,
+    "targetJobId" : 100273
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100295,
+    "targetJobId" : 100297
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100286,
+    "targetJobId" : 100287
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100272,
+    "targetJobId" : 100286
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100283,
+    "targetJobId" : 100272
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100273,
+    "targetJobId" : 100279
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100297,
+    "targetJobId" : 100279
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100280,
+    "targetJobId" : 100276
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100356,
+    "targetJobId" : 100278
+  }, {
+    "type" : "StartLoop",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100285,
+    "targetJobId" : 100356
+  }, {
+    "type" : "EndLoop",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 100279,
+    "targetJobId" : 100285
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100294,
+    "targetJobId" : 100295
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100292,
+    "targetJobId" : 100294
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100293,
+    "targetJobId" : 100294
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100291,
+    "targetJobId" : 100293
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100291,
+    "targetJobId" : 100292
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100287,
+    "targetJobId" : 100291
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100282,
+    "targetJobId" : 100283
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100278,
+    "targetJobId" : 100282
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100277,
+    "targetJobId" : 100285
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100281,
+    "targetJobId" : 100283
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100278,
+    "targetJobId" : 100281
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 100276,
+    "targetJobId" : 100277
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 12887,
+    "name" : "Timer Trigger 1",
+    "type" : "Timer",
+    "eventType" : "External",
+    "locationLeft" : 270.0,
+    "locationTop" : -100.0,
+    "scheduleType" : "Daily",
+    "scheduleCronFormat" : "00 30 19 * * ? *",
+    "anyOrg" : true,
+    "playbookTriggerFilterList" : [ ]
+  } ],
+  "playbookLabels" : [ {
+    "playbookLabelType" : {
+      "label" : "DomainTools Iris Investigate"
+    }
+  } ],
+  "exportablePipes" : [ ]
+}

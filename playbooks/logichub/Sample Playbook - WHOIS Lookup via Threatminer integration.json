@@ -1,0 +1,558 @@
+{
+  "flows": [
+    {
+      "name": "Sample Playbook - WHOIS Lookup via Threatminer integration",
+      "nodes": [
+        {
+          "id": "57989c11-e7b9-4e70-9bf7-bd5658d345fa",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "585f6ecd-1c54-4e39-8eec-f9299ad14f56"
+          ],
+          "isExplainable": true,
+          "x": 0,
+          "y": 1092,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "da0ef6a9-d60e-42c4-8f99-2af6e0446807",
+          "name": "Validate_IP_Format",
+          "kind": "augmentation",
+          "lql": "`SELECT BOOLEAN(REGEXP_COUNT(TRIM(source_ip), \"^(\\\\d{1,3}\\\\.\\\\d{1,3}\\\\.\\\\d{1,3}\\\\.\\\\d{1,3})$\")) AS is_valid_ip,\n       *\nFROM Fake_Event_Data`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 171,
+          "vertices": [],
+          "title": "",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "156381c9-1d44-4df4-8498-43c9d13d809f",
+          "name": "IP_is_Valid",
+          "kind": "augmentation",
+          "lql": "`SELECT * FROM Validate_IP_Format\nWHERE is_valid_ip = true`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 302,
+          "vertices": [],
+          "title": "",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e2d0f67b-8f7b-44eb-b7e8-04926ee8df8f",
+          "name": "Query_Threatminer_for_IP",
+          "kind": "task",
+          "lql": "runAction(IP_is_Valid, \"logichub.threatminer\", 39, \"ip-scan\", {\"__lh_action_timeout_sec\": \"\", \"__lh_rows_to_process\": \"\", \"threatminer_column_name\": \"source_ip\", \"threatminer_time_between_consecutive_requests_milliseconds\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 0,
+          "y": 433,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "ip-scan",
+            "integrationId": "logichub.threatminer",
+            "integrationInstanceId": 39,
+            "data": {
+              "__lh_multithread_count": "",
+              "threatminer_column_name": "source_ip",
+              "threatminer_time_between_consecutive_requests_milliseconds": "",
+              "__lh_rows_to_process": "",
+              "__lh_action_timeout_sec": ""
+            }
+          },
+          "title": "",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.threatminer",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/threatminer.png",
+            "name": "Threatminer",
+            "actionId": "ip-scan",
+            "actionName": "IP Scan"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.threatminer/ip-scan"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "56b3dbd7-66b0-4532-9143-106eea5217bb",
+          "name": "IP_is_Invalid",
+          "kind": "augmentation",
+          "lql": "`SELECT * FROM Validate_IP_Format\nWHERE is_valid_ip = false`",
+          "operator": "SELECT",
+          "isLeaf": true,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 302,
+          "vertices": [],
+          "title": "",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "9071bc97-7d13-4393-8d39-462e7d944f4a",
+          "name": "Explode_WHOIS_Results",
+          "kind": "augmentation",
+          "lql": "`SELECT \nEXPLODE_OUTER(\n    FROM_JSON(\n        coalesceEmpty(\n            GET_JSON_OBJECT(result, \"$.WHOIS\"),\n            '[]'),\n        \"ARRAY<STRING>\"\n    )\n) AS whois_result,\n*\nFROM Query_Threatminer_for_IP`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 589,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "a713f37c-b0cc-45b9-a826-519bd6953304",
+          "name": "Parse_Threatminer_WHOIS_Results",
+          "kind": "augmentation",
+          "lql": "`SELECT\n    GET_JSON_OBJECT(whois_result, '$.org_name') AS org_name,\n    GET_JSON_OBJECT(whois_result, '$.cc') AS cc,\n    GET_JSON_OBJECT(whois_result, '$.register') AS register,\n    GET_JSON_OBJECT(whois_result, '$.asn_name') AS asn_name,\n    GET_JSON_OBJECT(whois_result, '$.bgp_prefix') AS bgp_prefix,\n    GET_JSON_OBJECT(whois_result, '$.reverse_name') AS reverse_name,\n    GET_JSON_OBJECT(whois_result, '$.asn') AS asn,\n*\nFROM Explode_WHOIS_Results`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 720,
+          "vertices": [],
+          "title": "",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "585f6ecd-1c54-4e39-8eec-f9299ad14f56",
+          "name": "Logins_from_Outside_of_US",
+          "kind": "augmentation",
+          "lql": "`SELECT * FROM Parse_Threatminer_WHOIS_Results\nWHERE cc != \"US\"`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Example of a real-world use case: use for filtering on geographic location",
+          "isExplainable": true,
+          "x": 0,
+          "y": 876,
+          "vertices": [],
+          "title": "Logins from Outside of US",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": true,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e62ff70e-1173-4eb0-be2a-125eb7090eea",
+          "name": "Fake_Event_Data",
+          "kind": "createData",
+          "lql": "customData(\"TableMode\", \"[{\\\"event_time_epoch\\\":1610469824546,\\\"source_ip\\\":\\\"103.106.250.210\\\",\\\"event_category\\\":\\\"UserLoginSuccess\\\",\\\"username\\\":\\\"Arthur\\\"},{\\\"event_time_epoch\\\":1610469824892,\\\"source_ip\\\":\\\"176.111.174.249\\\",\\\"event_category\\\":\\\"UserLoginFailed\\\",\\\"username\\\":\\\"Zaphod\\\"},{\\\"event_time_epoch\\\":1610469854892,\\\"source_ip\\\":\\\"132.145.162.31\\\",\\\"event_category\\\":\\\"UserDeleted\\\",\\\"username\\\":\\\"Marvin\\\"},{\\\"event_time_epoch\\\":1610469828546,\\\"source_ip\\\":\\\"209.141.58.2311\\\",\\\"event_category\\\":\\\"UserFake\\\",\\\"username\\\":\\\"Trillian\\\"}]\")",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Starting with a custom data to begin the playbook",
+          "isExplainable": true,
+          "x": 150,
+          "y": 0,
+          "vertices": [],
+          "title": "",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1069",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "[LogicHub BuiltIn][1.0.7] Threatminer Connection",
+      "descriptor": {
+        "id": "logichub.threatminer",
+        "name": "Threatminer",
+        "description": "An open source search engine for fast threat intelligence research & pivoting with context.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/threatminer.png",
+        "categories": [
+          "threat_intelligence"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:latest-4dd9d220ee4f99496d64b616bd111a29e947794d"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "Threatminer Authentication Information",
+              "description": "Enter authentication information for the Threatminer integration",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "echo \"[result]\" {}"
+          }
+        },
+        "actions": [
+          {
+            "id": "ip-scan",
+            "name": "IP Scan",
+            "description": "Scans an IP address.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "IP Scan",
+                  "description": "Scans an IP address",
+                  "inputs": [
+                    {
+                      "id": "threatminer_column_name",
+                      "description": "Column name from parent table to scan IP",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "threatminer_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.threatminer.action_scan_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.threatminer.action_ip-scan_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "domain-scan",
+            "name": "Domain Scan",
+            "description": "Scans a domain.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Domain Scan",
+                  "description": "Scans a domain",
+                  "inputs": [
+                    {
+                      "id": "threatminer_column_name",
+                      "description": "Column name from parent table to scan domain",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "threatminer_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.threatminer.action_scan_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.threatminer.action_domain-scan_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          },
+          {
+            "id": "hash-scan",
+            "name": "Hash Scan",
+            "description": "Scans a hash.",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Hash Scan",
+                  "description": "Scans a hash",
+                  "inputs": [
+                    {
+                      "id": "threatminer_column_name",
+                      "description": "Column name from parent table to scan hash",
+                      "label": "Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "threatminer_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.threatminer.action_scan_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.threatminer.action_hash-scan_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "1.0.7",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-04-30T11:33:08.649Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:08:51.188Z",
+          "errorMessage": "This imported connection is using a different version of the Threatminer (logichub.threatminer) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_label": "[LogicHub BuiltIn][1.0.7] Threatminer Connection"
+      },
+      "id": 39,
+      "isDefault": true
+    }
+  ],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

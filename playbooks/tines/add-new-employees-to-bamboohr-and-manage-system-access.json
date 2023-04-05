@@ -1,0 +1,714 @@
+{
+  "schema_version": 4,
+  "name": "Add new employees to BambooHR and manage system access",
+  "description": "With this Story, new employees will be up and running in your organization in no time and have access to everything they need.\n\ntags: BambooHR, HR, Onboarding, Access, Advanced\nicons:  bamboohr,🔑,🏘\nvisibility: public",
+  "guid": "2149f7987772757def208468480cdb06",
+  "slug": "add_new_employees_to_bamboohr_and_manage_system_access",
+  "exported_at": "2022-07-11T17:36:05Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "New Hire Information",
+      "disabled": false,
+      "guid": "b3a3f01eb0d0b5dd6b9625d0867b723f",
+      "options": {
+        "secret": "823a7b452a0615c657846gdjhfgdjhghdnm",
+        "verbs": "get,post",
+        "path": "9cb1bbee4feda78g51fkhuiqfs932479"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create New Employee in BambooHR",
+      "disabled": false,
+      "guid": "0678c3f7ac0647c9245fac75875746bd",
+      "options": {
+        "url": "https://api.bamboohr.com/api/gateway.php/<<RESOURCE.bamboohr>>/v1/employees/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fullName1": "<<new_hire_information.body.first_name>> <<new_hire_information.body.last_name>>",
+          "hireDate": "<<new_hire_information.body.hire_date>>",
+          "workEmail": "<<new_hire_information.body.work_email>>",
+          "department": "<<new_hire_information.body.department>>",
+          "firstname": "<<new_hire_information.body.first_name>>",
+          "lastname": "<<new_hire_information.body.last_name>>",
+          "jobTitle": "<<new_hire_information.body.job_title>>"
+        },
+        "headers": {
+          "Accept": "application/json"
+        },
+        "basic_auth": "<<CREDENTIAL.bamboohr>>:x"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Run Report",
+      "disabled": false,
+      "guid": "d77b33134f3c97889f7290b7e74e45c2",
+      "options": {
+        "url": "https://api.bamboohr.com/api/gateway.php/<<RESOURCE.bamboohr>>/v1/reports/custom",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filters": {
+            "lastChanged": {
+              "value": "<<DATE(\"now\", \"%s\") |> MINUS(%, 86400) |> DATE(%, \"%Y-%m-%dT%H:%M:%SZ\")>>",
+              "includeNull": "no"
+            }
+          },
+          "fields": [
+            "hireDate",
+            "originalHireDate",
+            "fullName1",
+            "department",
+            "workEmail",
+            "supervisorEmail",
+            "jobTitle",
+            "id",
+            "lastChanged",
+            "firstName",
+            "lastName"
+          ]
+        },
+        "headers": {
+          "Accept": "application/json"
+        },
+        "basic_auth": "<<CREDENTIAL.bamboohr>>:x"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Filter Employees Starting Today",
+      "disabled": false,
+      "guid": "a96d887075ca42f9ed3173b800d63e6f",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "starters": "=WHERE(run_report.body.employees, \"hireDate\", generate_date.today)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Generate Date",
+      "disabled": false,
+      "guid": "cbb37e92028c57c92dec9983b4c28d94",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "today": "<<DATE(\"now\", \"%Y-%m-%d\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create New User in Google Workspace",
+      "disabled": false,
+      "guid": "1a439bee25febd94b98f4c4b25c2981a",
+      "options": {
+        "url": "https://www.googleapis.com/admin/directory/v1/users",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "primaryEmail": "<<explode_employees.individual_employee.workEmail>>",
+          "name": {
+            "givenName": "<<explode_employees.individual_employee.firstName>>",
+            "familyName": "<<explode_employees.individual_employee.lastName>>"
+          },
+          "suspended": false,
+          "password": "<<SHA1(LOCAL.random)>>",
+          "changePasswordAtNextLogin": true,
+          "organizations": [
+            {
+              "name": "{yourcompanydomain}",
+              "primary": true,
+              "type": "work",
+              "description": "<<explode_employees.individual_employee.jobTitle>>"
+            }
+          ],
+          "includeInGlobalAddressList": true,
+          "orgUnitPath": "/Pre-start"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.google>>"
+        },
+        "local": {
+          "random": "<<STORY_RUN_GUID()>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Run Report",
+      "disabled": false,
+      "guid": "72ac503c85b1d4fb53e452e8782aa835",
+      "options": {
+        "url": "https://api.bamboohr.com/api/gateway.php/<<RESOURCE.bamboohr>>/v1/reports/custom",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "filters": {
+            "lastChanged": {
+              "value": "<<DATE(\"now\", \"%s\") |> MINUS(%, 86400) |> DATE(%, \"%Y-%m-%dT%H:%M:%SZ\")>>",
+              "includeNull": "no"
+            }
+          },
+          "fields": [
+            "hireDate",
+            "originalHireDate",
+            "fullName1",
+            "department",
+            "workEmail",
+            "supervisorEmail",
+            "jobTitle",
+            "id",
+            "lastChanged",
+            "firstName",
+            "lastName"
+          ]
+        },
+        "headers": {
+          "Accept": "application/json"
+        },
+        "basic_auth": "<<CREDENTIAL.bamboohr>>:x"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Employees",
+      "disabled": false,
+      "guid": "6ae7b1d9039124e86070c3708f128c20",
+      "options": {
+        "mode": "explode",
+        "path": "=run_report.body.employees",
+        "to": "individual_employee"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "New Hire or Rehire - Create in Okta",
+      "disabled": false,
+      "guid": "a6b6d1e66471e94d608b1255debfdb8e",
+      "options": {
+        "story": "<<STORY.sts_create_user_in_okta>>",
+        "payload": {
+          "firstName": "<<explode_employees.individual_employee.firstName>>",
+          "lastName": "<<explode_employees.individual_employee.lastName>>",
+          "email": "<<explode_employees.individual_employee.workEmail>>",
+          "login": "<<explode_employees.individual_employee.workEmail>>",
+          "mobilePhone": "<<explode_profiles.individual_profile.mobile_phone>>",
+          "startdate": "<<explode_employees.individual_employee.hireDate>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search User by Email in Slack",
+      "disabled": false,
+      "guid": "cb1bde5de0c40b053439be598543dcba",
+      "options": {
+        "url": "https://slack.com/api/users.lookupByEmail",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "email": "<<explode_employees.individual_employee.workEmail>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Not Found",
+      "disabled": false,
+      "guid": "6f5f0186769afb40efd938d82d3ac2b7",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "users_not_found",
+            "path": "<<search_user_by_email_in_slack.body.error>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add User to Slack",
+      "disabled": false,
+      "guid": "afe578fc9c54f057b19d6234095ef7bf",
+      "options": {
+        "url": "https://tinesio.slack.com/api/users.admin.invite",
+        "method": "post",
+        "payload": {
+          "email": "<<webhook_agent.body.email_address>>",
+          "token": "<<CREDENTIAL.slack>>",
+          "set_active": "true"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Okta Success Message to a Slack Channel",
+      "disabled": false,
+      "guid": "c2aee17109430cc669ceab8ea4a1e845",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "#demo",
+          "text": "Success for <<explode_employees.individual_employee.workEmail>>: <<new_hire_or_rehire_create_in_okta.message>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post New Hire Starting Today Message to a Slack Channel",
+      "disabled": false,
+      "guid": "b03d34e51a913922fd4a37219edbd7f8",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "#demo",
+          "text": "New Hire Starting Today\n\nEmployee Name: <<explode_employees.individual_employee.firstName>> <<explode_employees.individual_employee.lastName>>\nDepartment: <<explode_employees.individual_employee.department>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Find New Hire Starting Today",
+      "disabled": false,
+      "guid": "a0ff0e71f5b7d93d3c20bb45597818ef",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "<<DATE(\"now\", \"%Y-%m-%d\")>>",
+            "path": "<<explode_employees.individual_employee.hireDate>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create a New User using MSGraph for Office365",
+      "disabled": false,
+      "guid": "e2ddcaeb92bc6b19d1bad04c5fbce279",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/users",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "accountEnabled": true,
+          "department": "<<explode_employees.individual_employee.department>>",
+          "displayName": "<<explode_employees.individual_employee.fullName1>>",
+          "givenName": "<<explode_employees.individual_employee.firstName>>",
+          "jobTitle": "<<explode_employees.individual_employee.jobTitle>>",
+          "mailNickname": "<<explode_employees.individual_employee.firstName>><<explode_employees.individual_employee.lastName>>",
+          "passwordPolicies": "DisablePasswordExpiration",
+          "passwordProfile": {
+            "password": "<<SHA1(LOCAL.random)>>",
+            "forceChangePasswordNextSignIn": true
+          },
+          "surname": "<<explode_employees.individual_employee.lastName>>",
+          "userPrincipalName": "<<explode_employees.individual_employee.firstName>><<explode_employees.individual_employee.lastName>>@tenant.onmicrosoft.com"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.msgraph>>"
+        },
+        "log_error_on_status": [
+          "201",
+          "500"
+        ],
+        "local": {
+          "random": "<<STORY_RUN_GUID()>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Find New Hire: \n\n1. Report runs to find any employee changed in last 24hr\n     * This assumes that employee is only created in 24hr prior to starting, should be increased if not the case.\n\n\n2. Individual Employee data exploded \n\n\n3. Find Employee with HireDate = today\n\n\n4. Post a Message to a Slack Channel and take other actions",
+      "position": [
+        -780.0,
+        420.0
+      ],
+      "guid": "4abd8dfb63b8b00aab2e789c09e89d0c",
+      "width": null
+    },
+    {
+      "content": "https://www.bamboohr.com/images/about/media-assets/bamboohr-logo-green.png\n\nThis branch runs a report against BambooHR to pull details of all employees recently hired. It then creates a user in Okta, Slack, Google Workspace or O365. It can easily be modified to create users in other tools either in sequence or parallel.\n\nSchedule should be set to run daily.",
+      "position": [
+        -780.0,
+        165.0
+      ],
+      "guid": "7809553b6907c39b998c877049da1f61",
+      "width": null
+    },
+    {
+      "content": "# Create New Employee in BambooHR\nUse the [Tines form](https://hub.tines.com/docs/stories/forms) for this story to enter a new hire's details. Tines will then use this information to create a new employee in BambooHR.",
+      "position": [
+        0.0,
+        180.0
+      ],
+      "guid": "55e4df7eb7eb71a63963e6ad7dfdbf67",
+      "width": null
+    },
+    {
+      "content": "# Example: Filter Employees by Hire Date\nQuickly return those employees with a specified start date using this branch. The example is configured for `today` but can be modified to a specific date.",
+      "position": [
+        -780.0,
+        990.0
+      ],
+      "guid": "915b863d1a3f6364fdfc061910271b0e",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements\n\n## BambooHR\n- [ ] API Key from BambooHR added\n\n\n\n## Other Tools\n- [ ] Okta API Key\n- [ ] Slack API Token\n- [ ] Google Workspace API Token\n- [ ] Microsoft Graph API Key\n\n\n## Additional Documentation\n[Creating a Slack Bot](https://www.tines.com/blog/chatbots-for-security-and-it-teams-part-3-creating-a-slack-chatbot)\n[Getting Started with MS Graph](https://www.tines.com/blog/updated-microsoft-graph-security-automation)",
+      "position": [
+        -780.0,
+        705.0
+      ],
+      "guid": "054dbe70ef2c4d360a199fc7248f4d54",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 3
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 14
+    },
+    {
+      "source": 8,
+      "receiver": 12
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 14,
+      "receiver": 5
+    },
+    {
+      "source": 14,
+      "receiver": 9
+    },
+    {
+      "source": 14,
+      "receiver": 8
+    },
+    {
+      "source": 14,
+      "receiver": 13
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    }
+  ],
+  "diagram_layout": "{\"b3a3f01eb0d0b5dd6b9625d0867b723f\":[30,330],\"0678c3f7ac0647c9245fac75875746bd\":[30,435],\"d77b33134f3c97889f7290b7e74e45c2\":[-765,1140],\"a96d887075ca42f9ed3173b800d63e6f\":[-765,1320],\"cbb37e92028c57c92dec9983b4c28d94\":[-765,1230],\"1a439bee25febd94b98f4c4b25c2981a\":[435,585],\"72ac503c85b1d4fb53e452e8782aa835\":[-435,255],\"6ae7b1d9039124e86070c3708f128c20\":[-435,330],\"a6b6d1e66471e94d608b1255debfdb8e\":[-435,585],\"cb1bde5de0c40b053439be598543dcba\":[-120,585],\"6f5f0186769afb40efd938d82d3ac2b7\":[-120,735],\"afe578fc9c54f057b19d6234095ef7bf\":[-120,840],\"c2aee17109430cc669ceab8ea4a1e845\":[-435,840],\"b03d34e51a913922fd4a37219edbd7f8\":[165,585],\"a0ff0e71f5b7d93d3c20bb45597818ef\":[-435,435],\"e2ddcaeb92bc6b19d1bad04c5fbce279\":[690,600]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Add new employees to BambooHR and manage system access Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Tools List",
+        "description": "",
+        "required": false,
+        "type": "OPTION",
+        "multi_select": true,
+        "options": [
+          "Zendesk",
+          "Slack",
+          "Jira",
+          "Salesforce"
+        ],
+        "ranking": 2080374784,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Department",
+        "description": "",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Operations",
+          "HR",
+          "Sales"
+        ],
+        "ranking": 1879048192,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Hire Date",
+        "description": "",
+        "required": false,
+        "type": "DATE",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1744830464,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "First Name",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Job Title",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 2013265920,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Work Email",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Last Name",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "b3a3f01eb0d0b5dd6b9625d0867b723f",
+    "success_message": "Thank you for your submission"
+  }
+}

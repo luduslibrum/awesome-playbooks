@@ -1,0 +1,319 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Prioritize Alerts With VIP Assets",
+    "aliasName": null,
+    "tag": "#PostCreate Alert",
+    "description": "Raises the severity of the alert if it is associated with a super critical asset.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/4a9adb3a-1a68-4b28-8096-ea12210dfeab",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/8bf6a590-ba71-47ea-98b8-c016265c18ef",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Is Asset Critical",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/8e3c6da3-c501-4048-a5fc-6217fe8fb383",
+                        "condition": "{{ vars.steps.Find_Asset_In_Existing_Assets[0].criticality.itemValue==\"Super High\" }}"
+                    },
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/e819f7f8-fc34-45de-ad76-5aab91a50802"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "110",
+            "left": "1425",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "0f856679-9327-4604-94eb-c00db668e8b1"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Find Asset In Existing Assets",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "hostname",
+                            "value": "{{vars.assetName}}",
+                            "operator": "eq",
+                            "_operator": "eq"
+                        }
+                    ]
+                },
+                "module": "assets?$limit=30",
+                "step_variables": {
+                    "asset_iri": "{{vars.result | json_query('[].\"@id\"')}}",
+                    "is_asset_found": "{{vars.result | length > 0}}"
+                }
+            },
+            "status": null,
+            "top": "190",
+            "left": "775",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "395033f0-fec3-46d2-bae7-ec9d2f2d6a58"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "If Asset Exists",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/0f856679-9327-4604-94eb-c00db668e8b1",
+                        "condition": "{{ vars.is_asset_found }}",
+                        "step_name": "Is Asset Critical"
+                    },
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/5aebaa61-8afb-4ea6-9860-5adbb59d85c7",
+                        "step_name": "Create and Link Assets"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "190",
+            "left": "1100",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "509e80c5-643c-45dd-a61a-2dc4cd0aa2c7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create and Link Assets",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "assetIP": "",
+                    "indicatorIRI": "",
+                    "assetHostname": "",
+                    "alertRecordIRI": "{{vars.input.records[0]['@id']}}",
+                    "incidentRecordIRI": ""
+                },
+                "apply_async": false,
+                "ignore_errors": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/24f12289-5860-4857-ac0e-354e65f46e18"
+            },
+            "status": null,
+            "top": "270",
+            "left": "1425",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "5aebaa61-8afb-4ea6-9860-5adbb59d85c7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "alerts",
+                "resources": [
+                    "alerts"
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": [],
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "state",
+                            "value": "",
+                            "_value": {
+                                "@id": "",
+                                "display": "",
+                                "itemValue": ""
+                            },
+                            "operator": "changed"
+                        },
+                        {
+                            "type": "object",
+                            "field": "state",
+                            "value": "\/api\/3\/picklists\/501d0562-89a0-4079-9a9e-cdde7d34e3ed",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/501d0562-89a0-4079-9a9e-cdde7d34e3ed",
+                                "itemValue": "Indicator Extracted"
+                            },
+                            "operator": "eq"
+                        },
+                        {
+                            "type": "primitive",
+                            "field": "targetAsset",
+                            "value": "false",
+                            "operator": "isnull",
+                            "_operator": "isnull"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "190",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/9300bf69-5063-486d-b3a6-47eb9da24872",
+            "uuid": "8bf6a590-ba71-47ea-98b8-c016265c18ef"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Alert Severity",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "assets": "{{vars.asset_iri}}",
+                    "severity": "\/api\/3\/picklists\/7efa2220-39bb-44e4-961f-ac368776e3b0"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "__recommend": [],
+                "tagsOperation": "OverwriteTags",
+                "collectionType": "\/api\/3\/alerts",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "190",
+            "left": "1750",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "8e3c6da3-c501-4048-a5fc-6217fe8fb383"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Link Asset",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "assets": "{{vars.asset_iri}}",
+                    "tenant": "\/api\/3\/tenants\/b3a700f7-00be-4ef9-90c6-3c8fe6e1be63"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "__recommend": [],
+                "collectionType": "\/api\/3\/alerts",
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "30",
+            "left": "1750",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "e819f7f8-fc34-45de-ad76-5aab91a50802"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Config",
+            "description": null,
+            "arguments": {
+                "assetName": "{{vars.input.records[0].targetAsset}}"
+            },
+            "status": null,
+            "top": "190",
+            "left": "450",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "f5ae2575-3565-45a5-b72b-aa2a09a2ada9"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Find Asset In Existing Assets -> If Asset Exists",
+            "targetStep": "\/api\/3\/workflow_steps\/509e80c5-643c-45dd-a61a-2dc4cd0aa2c7",
+            "sourceStep": "\/api\/3\/workflow_steps\/395033f0-fec3-46d2-bae7-ec9d2f2d6a58",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "01de15f1-aa7c-4810-8105-de015ca8d73f"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Config -> Find Asset In Existing Assets",
+            "targetStep": "\/api\/3\/workflow_steps\/395033f0-fec3-46d2-bae7-ec9d2f2d6a58",
+            "sourceStep": "\/api\/3\/workflow_steps\/f5ae2575-3565-45a5-b72b-aa2a09a2ada9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "147534e2-dc86-465a-b7b5-5b920b95c8eb"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "If Asset Exists -> Is Asset Critical",
+            "targetStep": "\/api\/3\/workflow_steps\/0f856679-9327-4604-94eb-c00db668e8b1",
+            "sourceStep": "\/api\/3\/workflow_steps\/509e80c5-643c-45dd-a61a-2dc4cd0aa2c7",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "3299053b-6c46-44b4-98c1-af99a68e8652"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Asset Critical -> Copy  of Update Alert Severity",
+            "targetStep": "\/api\/3\/workflow_steps\/e819f7f8-fc34-45de-ad76-5aab91a50802",
+            "sourceStep": "\/api\/3\/workflow_steps\/0f856679-9327-4604-94eb-c00db668e8b1",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "3c385a8d-ce71-4b04-b4b8-7427ca9e3d18"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Asset Critical -> Update Alert Severity",
+            "targetStep": "\/api\/3\/workflow_steps\/8e3c6da3-c501-4048-a5fc-6217fe8fb383",
+            "sourceStep": "\/api\/3\/workflow_steps\/0f856679-9327-4604-94eb-c00db668e8b1",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "622cb1e0-bf6f-4b00-b410-424fbbf57a2b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Config",
+            "targetStep": "\/api\/3\/workflow_steps\/f5ae2575-3565-45a5-b72b-aa2a09a2ada9",
+            "sourceStep": "\/api\/3\/workflow_steps\/8bf6a590-ba71-47ea-98b8-c016265c18ef",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "815fb1bb-2230-41ac-8a1d-2fd2b2e166a7"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "If Asset Exists -> Create Or Link Assets",
+            "targetStep": "\/api\/3\/workflow_steps\/5aebaa61-8afb-4ea6-9860-5adbb59d85c7",
+            "sourceStep": "\/api\/3\/workflow_steps\/509e80c5-643c-45dd-a61a-2dc4cd0aa2c7",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "bae12985-ca5c-467d-b80d-0cfbf70e8626"
+        }
+    ],
+    "priority": null,
+    "uuid": "ece5974f-7150-44dd-836a-e7b07e4b3ad2",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "PostCreate"
+    ]
+}

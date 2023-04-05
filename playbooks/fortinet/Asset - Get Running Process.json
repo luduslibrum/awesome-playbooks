@@ -1,0 +1,130 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Asset - Get Running Process",
+    "aliasName": null,
+    "tag": "#ManualAction #EDR",
+    "description": "Retrieves a list of all processes that are running on the specified host.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/deaa4d19-7444-4f3a-a80e-9577436f25ef",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/133d255b-7585-4095-99bc-60099a0a4af6",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "30c1a0b5-ec43-4e77-802b-c7220a809f50",
+                "title": "Get Running Process",
+                "resources": [
+                    "assets"
+                ],
+                "inputVariables": [],
+                "step_variables": {
+                    "input": {
+                        "records": "{{vars.input.records}}"
+                    },
+                    "useMockOutput": "true"
+                },
+                "displayConditions": {
+                    "assets": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "133d255b-7585-4095-99bc-60099a0a4af6"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Note for Running Process List",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "assets": "['{{vars.request.data.records[0]['@id']}}']",
+                    "content": "<table border-color: #ffffff;\" border=\"1\">\n<thead>\n<tr>\n<th width=\"70\">PID<\/th>\n<th width=\"250\">Path<\/th>\n<th width=\"180\">User Name<\/th>\n<th width=\"600\">Command Line<\/th>\n<\/tr>\n<\/thead>\n<tbody>\n<tr>\n<td>{% for each_dict in vars.steps.Get_Running_Process.data %}<\/td> \n<\/tr>\n<tr>\n<td>{{ each_dict['pid'] }}<\/td>\n<td>{{ each_dict['path'] }}<\/td>\n<td>{{ each_dict['username'] }}<\/td>\n<td>{{ each_dict['command_line'] }}<\/td>\n<\/tr>\n<tr>\n<td>{% endfor %}<\/td>\n<\/tr>\n<\/tbody>\n<\/table>",
+                    "__replace": ""
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "e36b5487-2f3f-43d0-9420-81208a03cc15"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Running Process",
+            "description": null,
+            "arguments": {
+                "name": "CarbonBlack Response",
+                "params": {
+                    "value": "{{vars.request.data.records[0].hostname}}",
+                    "input_type": "Hostname"
+                },
+                "version": "2.0.1",
+                "connector": "carbonblack-response",
+                "operation": "get_process_list",
+                "mock_result": "{\"data\": [\n        {\n          \"parent_guid\": \"\",\n          \"parent\": \"\",\n          \"command_line\": \"\",\n          \"proc_guid\": \"\",\n          \"create_time\": \"\",\n          \"pid\": \"42141\",\n          \"username\": \"abc\",\n          \"sid\": \"\",\n          \"path\": \"\/tmp\/ada.exe\"\n        }]\n}",
+                "operationTitle": "Get All Processes",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "3e909455-f09e-4572-9133-806408cfc8a9"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Get Running Process",
+            "targetStep": "\/api\/3\/workflow_steps\/3e909455-f09e-4572-9133-806408cfc8a9",
+            "sourceStep": "\/api\/3\/workflow_steps\/133d255b-7585-4095-99bc-60099a0a4af6",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9b49ea26-fbc9-4159-8b33-f7b86d7ad210"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Running Process -> Note for Running Process List",
+            "targetStep": "\/api\/3\/workflow_steps\/e36b5487-2f3f-43d0-9420-81208a03cc15",
+            "sourceStep": "\/api\/3\/workflow_steps\/3e909455-f09e-4572-9133-806408cfc8a9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e7161fc8-d987-4362-8e07-dce75015e453"
+        }
+    ],
+    "priority": null,
+    "uuid": "5e76fb21-5ecc-4ffe-b00a-2ca721028f48",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "EDR",
+        "ManualAction"
+    ]
+}

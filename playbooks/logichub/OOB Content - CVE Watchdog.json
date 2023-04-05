@@ -1,0 +1,1471 @@
+{
+  "flows": [
+    {
+      "name": "OOB Content - CVE Watchdog",
+      "nodes": [
+        {
+          "id": "start-node-353642cf-91ea-4096-9fb2-6cd634a9f3a8",
+          "name": "_Start_Node",
+          "kind": "start",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 308,
+          "y": 0,
+          "vertices": [],
+          "title": "Trigger",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "956489f7-c826-440b-8580-cf55cf600463",
+          "name": "Configure_Extract_JSON_Fields",
+          "kind": "augmentation",
+          "lql": "`select get_json_object(\\`result\\`, '$.response') as response from Web_API`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 532,
+          "y": 280,
+          "vertices": [],
+          "title": "Extract Response Field",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "LQLEditor",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "db093b63-a956-420c-a4e7-e93ac695ab9b",
+          "name": "Extract_CVE_Details",
+          "kind": "augmentation",
+          "lql": "`select get_json_object(\\`response\\`, '$.Modified') as CVE_Modified, get_json_object(\\`response\\`, '$.Published') as CVE_Published, get_json_object(\\`response\\`, '$.access.authentication') as CVSS_Authentication, get_json_object(\\`response\\`, '$.access.complexity') as CVSS_Complexity, get_json_object(\\`response\\`, '$.access.vector') as CVSS_Vector, get_json_object(\\`response\\`, '$.cvss') as CVSS, get_json_object(\\`response\\`, '$.id') as CVE_Id, get_json_object(\\`response\\`, '$.impact.availability') as Availability_Impact, get_json_object(\\`response\\`, '$.impact.confidentiality') as Confidentiality_Impact, get_json_object(\\`response\\`, '$.impact.integrity') as Integrity_Impact, get_json_object(\\`response\\`, '$.summary') as CVE_Summary from Configure_Extract_JSON_Fields`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 532,
+          "y": 434,
+          "vertices": [],
+          "title": "Extract CVE Details",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "SelectNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "d0ac8be1-5380-4129-8cb0-1dd7631b3b1f",
+          "name": "operator_loadList",
+          "kind": "augmentation",
+          "lql": "loadList(\"CVE Watchdog History\")",
+          "operator": "loadList",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator returns all the rows from a list",
+          "isExplainable": true,
+          "x": 0,
+          "y": 602,
+          "vertices": [],
+          "title": "Load History",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "loadList"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "CustomListContentKind",
+            "id": "loadList"
+          },
+          "categoryKind": "LogicHub",
+          "linkToTrigger": true,
+          "iconTitle": "Logichub: Load List",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "0c7c5cb2-bfcb-433f-afc1-aec8ec5bf3d3",
+          "name": "Add_History_Field",
+          "kind": "augmentation",
+          "lql": "`SELECT \"true\" AS is_history, * FROM operator_loadList`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Add one or more fields.",
+          "isExplainable": true,
+          "x": 0,
+          "y": 756,
+          "vertices": [],
+          "title": "Add History Field",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "formType": "AddFieldsForm",
+          "contentItemIdentifier": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Add Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "8556e2d5-d3c7-4240-b175-4602d54e7de9",
+          "name": "operator_loadList_1",
+          "kind": "augmentation",
+          "lql": "loadList(\"CVE Watchdog Patterns\")",
+          "operator": "loadList",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator returns all the rows from a list",
+          "isExplainable": true,
+          "x": 238,
+          "y": 280,
+          "vertices": [],
+          "title": "Load Pattern List",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "loadList"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "CustomListContentKind",
+            "id": "loadList"
+          },
+          "categoryKind": "LogicHub",
+          "linkToTrigger": true,
+          "iconTitle": "Logichub: Load List",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "a71362f3-006a-4ee7-82f5-c4c737ad234a",
+          "name": "Add_Fields",
+          "kind": "augmentation",
+          "lql": "`SELECT concat('.*', cve_pattern, '.*') AS formatted_pattern, * FROM operator_loadList_1`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Add one or more fields.",
+          "isExplainable": true,
+          "x": 238,
+          "y": 434,
+          "vertices": [],
+          "title": "Format match pattern",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "formType": "LQLEditor",
+          "contentItemIdentifier": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Add Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "60758b1c-ea6f-421e-9693-2344d25de132",
+          "name": "operator_matchPattern",
+          "kind": "augmentation",
+          "lql": "matchPattern(Extract_CVE_Details, $.CVE_Summary, Add_Fields, $.formatted_pattern, $.cve_pattern, str(\"2\"))",
+          "operator": "matchPattern",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Match pattern column to stringToMatch column and assing tags based on a match.",
+          "isExplainable": true,
+          "x": 378,
+          "y": 588,
+          "vertices": [],
+          "title": "Match Pattern",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "matchPattern"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "matchPattern"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Match Pattern",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "8aaa8642-313b-45da-897a-275bebd72e4c",
+          "name": "Create_a_filter",
+          "kind": "augmentation",
+          "lql": "`select * from operator_matchPattern where ( get_json_object(lhub_pattern_tags, '$.tags') != '[]' )`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Filter rows with basic boolean statements",
+          "isExplainable": true,
+          "x": 378,
+          "y": 756,
+          "vertices": [],
+          "title": "Create a filter",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "formType": "ConditionNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Filter",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "12f54021-895e-492b-9ded-8a3f40984f0e",
+          "name": "operator_joinTables",
+          "kind": "augmentation",
+          "lql": "joinTables([Create_a_filter,Add_History_Field], [\"CVE_Id\",\"CVE_Modified\",\"CVE_Published\"], \"left\")",
+          "operator": "joinTables",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator joins tables based on columns in the parameters. Columns used for joining must be present in all tables, and they should not include other common fields",
+          "isExplainable": true,
+          "x": 238,
+          "y": 910,
+          "vertices": [],
+          "title": "Join Tables",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "joinTables"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "joinTables"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Join Tables",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "98d94d2a-95ff-418e-b57b-91f763750634",
+          "name": "Create_a_filter_1",
+          "kind": "augmentation",
+          "lql": "`select * from operator_joinTables where ( CVSS >= '5' AND isnull(is_history) = 'true' )`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Filter rows with basic boolean statements",
+          "isExplainable": true,
+          "x": 238,
+          "y": 1078,
+          "vertices": [],
+          "title": "Create a filter",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "formType": "ConditionNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "basic-where"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Filter",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "b8b9531c-c1c0-4546-9c42-01fbc18ced81",
+          "name": "Extract_Report_Fields",
+          "kind": "augmentation",
+          "lql": "`select \\`CVE_Id\\` as CVE_Id, \\`CVE_Modified\\` as CVE_Modified, \\`CVE_Published\\` as CVE_Published, \\`CVSS\\` as CVSS, \\`CVE_Summary\\` as CVE_Summary, \\`CVSS_Authentication\\` as CVSS_Authentication, \\`CVSS_Complexity\\` as CVSS_Complexity, \\`CVSS_Vector\\` as CVSS_Vector from Create_a_filter_1`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 238,
+          "y": 1246,
+          "vertices": [],
+          "title": "Extract Report Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "SelectNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "c863b432-45c0-4305-ac7f-c5f468b42847",
+          "name": "operator_tableToHtmlString",
+          "kind": "augmentation",
+          "lql": "tableToHtmlString(Extract_Report_Fields, \"10\")",
+          "operator": "tableToHtmlString",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator converts LQL table to HTML table",
+          "isExplainable": true,
+          "x": 84,
+          "y": 1400,
+          "vertices": [],
+          "title": "Table To HTML",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "tableToHtmlString"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "tableToHtmlString"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Table To Html String",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "96f2c987-d02e-4f9b-9d07-25d1114ec7c0",
+          "name": "Add_Email_Fields",
+          "kind": "augmentation",
+          "lql": "`SELECT \"chris.botelho@logichub.com\" AS email_recipient, \"New CVE Notification\" AS email_subject, * FROM operator_tableToHtmlString`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Add one or more fields.",
+          "isExplainable": true,
+          "x": 84,
+          "y": 1554,
+          "vertices": [],
+          "title": "Add Email Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "formType": "AddFieldsForm",
+          "contentItemIdentifier": {
+            "kind": "TransformContentKind",
+            "id": "add-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Add Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "2c536277-1f5b-4b0b-aed1-2cc8aebbe51f",
+          "name": "Extract_History_Fields",
+          "kind": "augmentation",
+          "lql": "`select \\`CVE_Id\\` as CVE_Id, \\`CVE_Modified\\` as CVE_Modified, \\`CVE_Published\\` as CVE_Published from Extract_Report_Fields`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Extract fields from a JSON column in the table",
+          "isExplainable": true,
+          "x": 378,
+          "y": 1554,
+          "vertices": [],
+          "title": "Extract History Fields",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "automationId": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "formType": "SelectNodeForm",
+          "contentItemIdentifier": {
+            "kind": "OtherContentKind",
+            "id": "extract-json-fields"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Extract JSON Fields",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "a18aa789-629f-41a9-8c8a-865b611c718c",
+          "name": "operator_appendToList",
+          "kind": "augmentation",
+          "lql": "appendToList(Extract_History_Fields, \"CVE Watchdog History\")",
+          "operator": "appendToList",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "This operator appends its input table to the list, deduping the rows as needed",
+          "isExplainable": true,
+          "x": 378,
+          "y": 1694,
+          "vertices": [],
+          "title": "Append List",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": true,
+          "automationId": {
+            "kind": "OperatorContentKind",
+            "id": "appendToList"
+          },
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "CustomListContentKind",
+            "id": "appendToList"
+          },
+          "categoryKind": "LogicHub",
+          "iconTitle": "Logichub: Append To List",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "515517fd-1bc3-42ae-8d70-1f48e803d414",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "9ff2a5eb-7a75-4524-910b-8dcf9f1e94af",
+            "a18aa789-629f-41a9-8c8a-865b611c718c"
+          ],
+          "isExplainable": true,
+          "x": 306,
+          "y": 1862,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "1a4706a9-a75f-496c-9265-aa2d2ff48e47",
+          "name": "Web_API",
+          "kind": "task",
+          "lql": "runAction(_Start_Node, \"logichub.web_api\", 29, \"execute-web-api\", {\"__lh_action_timeout_sec\": \"\", \"web_api_response_format\": \"json\", \"web_api_explode_results\": \"True\", \"__lh_rows_to_process\": \"\", \"web_api_username\": \"\", \"web_api_time_between_consecutive_requests_milliseconds\": \"\", \"web_api_params\": \"\", \"web_api_client_certificate_password\": \"\", \"web_api_url\": \"http://cve.circl.lu/api/last/200\", \"web_api_request_type\": \"get\", \"web_api_headers\": \"\", \"web_api_body\": \"\", \"web_api_client_certificate\": \"\", \"web_api_password\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Web API integration allows you to execute any Web API and retrieve results.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 532,
+          "y": 112,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "execute-web-api",
+            "integrationId": "logichub.web_api",
+            "integrationInstanceId": 29,
+            "data": {
+              "web_api_body": "",
+              "web_api_url": "http://cve.circl.lu/api/last/200",
+              "web_api_password": "",
+              "web_api_explode_results": "True",
+              "__lh_multithread_count": "",
+              "web_api_client_certificate": "",
+              "web_api_params": "",
+              "web_api_time_between_consecutive_requests_milliseconds": "",
+              "web_api_request_type": "get",
+              "web_api_username": "",
+              "web_api_headers": "",
+              "__lh_rows_to_process": "",
+              "web_api_response_format": "json",
+              "__lh_action_timeout_sec": "",
+              "web_api_client_certificate_password": ""
+            }
+          },
+          "title": "Web API",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.web_api",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/default-integration-logo.svg",
+            "name": "Web API",
+            "actionId": "execute-web-api",
+            "actionName": "Execute Web API"
+          },
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.web_api/execute-web-api"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: Web API - Execute Web API",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "9ff2a5eb-7a75-4524-910b-8dcf9f1e94af",
+          "name": "Send_Email",
+          "kind": "task",
+          "lql": "runAction(Add_Email_Fields, \"logichub.smtp\", 17, \"send_email\", {\"__lh_action_timeout_sec\": \"\", \"smtp_cc_email_column_name\": \"\", \"__lh_rows_to_process\": \"\", \"smtp_email_body_type\": \"htmlbody\", \"smtp_body_column_name\": \"$.htmlTable\", \"smtp_attachments_column_name\": \"\", \"smtp_bcc_email_column_name\": \"\", \"smtp_email_to_column_name\": \"$.email_recipient\", \"time_between_consecutive_requests_milliseconds\": \"\", \"smtp_subject_column_name\": \"$.email_subject\", \"smtp_attachment_extension\": \"\", \"smtp_email_from_column_name\": \"\", \"__lh_multithread_count\": \"\"})",
+          "operator": "runAction",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Simple Mail Transfer Protocol (SMTP) is a standard communication protocol for sending email messages on business networks and the Internet.",
+          "isExplainable": true,
+          "maxRowsToProcess": 500,
+          "delayBetweenRowsMillis": 0,
+          "x": 84,
+          "y": 1694,
+          "vertices": [],
+          "actionInstance": {
+            "actionId": "send_email",
+            "integrationId": "logichub.smtp",
+            "integrationInstanceId": 17,
+            "data": {
+              "__lh_multithread_count": "",
+              "smtp_cc_email_column_name": "",
+              "smtp_bcc_email_column_name": "",
+              "smtp_body_column_name": "$.htmlTable",
+              "time_between_consecutive_requests_milliseconds": "",
+              "__lh_rows_to_process": "",
+              "smtp_email_from_column_name": "",
+              "smtp_attachment_extension": "",
+              "__lh_action_timeout_sec": "",
+              "smtp_attachments_column_name": "",
+              "smtp_email_body_type": "htmlbody",
+              "smtp_subject_column_name": "$.email_subject",
+              "smtp_email_to_column_name": "$.email_recipient"
+            }
+          },
+          "title": "Send Email",
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "integrationId": "logichub.smtp",
+            "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/smtp1-logo.png",
+            "name": "SMTP",
+            "actionId": "send_email",
+            "actionName": "Send Email"
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "IntegrationContentKind",
+            "id": "logichub.smtp/send_email"
+          },
+          "categoryKind": "Integration",
+          "iconTitle": "Integration: SMTP - Send Email",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1057",
+      "listNames": [
+        "CVE Watchdog Patterns",
+        "CVE Watchdog History",
+        "CVE Watchdog History"
+      ],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [],
+  "connections": [],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [
+    {
+      "label": "CIRCL CVE",
+      "descriptor": {
+        "id": "logichub.web_api",
+        "name": "Web API",
+        "description": "Web API integration allows you to execute any Web API and retrieve results.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/default-integration-logo.svg",
+        "documentationSlug": "web-api",
+        "categories": [
+          "utilities"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m91.8"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "web_api Authentication Information",
+              "description": "Enter authentication information for the web_api integration",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "client_certificate",
+                  "description": "Upload a .p12 Client Certificate file (p12 file at action input takes precedence over connection)",
+                  "label": "Client Certificate",
+                  "dataType": "string",
+                  "inputType": "encryptedFile",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "client_certificate_password",
+                  "description": "Enter password to read the client certificate",
+                  "label": "Client Certificate Password",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "optional": true,
+                  "columnTemplating": false
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python3 -m src.web_api.instance_validation"
+          }
+        },
+        "actions": [
+          {
+            "id": "execute-web-api",
+            "name": "Execute Web API",
+            "description": "Execute given Web API and return the response",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Step Name",
+                  "description": "Step Description",
+                  "inputs": [
+                    {
+                      "id": "web_api_request_type",
+                      "description": "Request type to get the method name",
+                      "label": "Request type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "get",
+                          "label": "GET"
+                        },
+                        {
+                          "value": "post",
+                          "label": "POST"
+                        },
+                        {
+                          "value": "put",
+                          "label": "PUT"
+                        },
+                        {
+                          "value": "delete",
+                          "label": "DELETE"
+                        },
+                        {
+                          "value": "patch",
+                          "label": "PATCH"
+                        }
+                      ],
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_url",
+                      "description": "Url Endpoint",
+                      "label": "URL",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "web_api_headers",
+                      "description": "Web api request headers",
+                      "label": "Headers",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "web_api_params",
+                      "description": "Web api request parameters",
+                      "label": "Params",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "web_api_body",
+                      "description": "Web api request body",
+                      "label": "Body",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "optional": true,
+                      "columnTemplating": true
+                    },
+                    {
+                      "id": "web_api_username",
+                      "description": "Username for request",
+                      "label": "Username",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_password",
+                      "description": "Password for request",
+                      "label": "Password",
+                      "dataType": "string",
+                      "inputType": "password",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_client_certificate",
+                      "description": "Upload a .p12 Client Certificate file (p12 file at action input takes precedence over connection)",
+                      "label": "Client Certificate",
+                      "dataType": "string",
+                      "inputType": "encryptedFile",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_client_certificate_password",
+                      "description": "Enter password to read the client certificate",
+                      "label": "Client Certificate Password",
+                      "dataType": "string",
+                      "inputType": "password",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_response_format",
+                      "description": "Select how to parse the response based on its expected format. (Default is \"Raw\" and will pass the full body to the response field). `File` will write the response to a file and return the file-id.",
+                      "label": "Expected Response Format",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "raw",
+                          "label": "Raw"
+                        },
+                        {
+                          "value": "csv",
+                          "label": "CSV"
+                        },
+                        {
+                          "value": "html_tables",
+                          "label": "HTML Tables"
+                        },
+                        {
+                          "value": "json",
+                          "label": "JSON"
+                        },
+                        {
+                          "value": "file",
+                          "label": "File"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_explode_results",
+                      "description": "If server response is parsed as a list of values instead of a single value, return as individual rows for each value (Default is False)",
+                      "label": "Explode Results",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "False",
+                          "label": "False"
+                        },
+                        {
+                          "value": "True",
+                          "label": "True"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "web_api_time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python3 -m src.web_api.action_execute-web-api_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python3 -m src.web_api.action_execute-web-api_exec"
+            },
+            "isDataSource": "Optional",
+            "isMultiThreaded": "Yes",
+            "tags": []
+          }
+        ],
+        "version": "3.1.0",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2022-02-02T11:31:03Z",
+        "failedAttempt": {
+          "modified": "2022-09-02T09:06:24.125Z",
+          "errorMessage": "This imported connection is using a different version of the Web API (logichub.web_api) integration than what is currently available on this deployment. Please edit the connection to ensure it works correctly."
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "false",
+        "__lh_table_key_value": "",
+        "__lh_ssl_verify": "",
+        "client_certificate": "",
+        "__lh_label": "CIRCL CVE",
+        "client_certificate_password": ""
+      },
+      "id": 29,
+      "isDefault": false
+    },
+    {
+      "label": "CB Testing - Logichub Demo",
+      "descriptor": {
+        "id": "logichub.smtp",
+        "name": "SMTP",
+        "description": "Simple Mail Transfer Protocol (SMTP) is a standard communication protocol for sending email messages on business networks and the Internet.",
+        "logoUrl": "https://s3.amazonaws.com/lhub-public/integrations/smtp1-logo.png",
+        "documentationSlug": "smtp",
+        "categories": [
+          "messaging"
+        ],
+        "runtimeEnvironment": {
+          "runtimeType": "docker",
+          "descriptor": {
+            "image": "logichub/integrations-builtin:m88.21"
+          },
+          "id": "default",
+          "version": "v0"
+        },
+        "instantiation": {
+          "steps": [
+            {
+              "name": "SMTP Server and Account Authentication",
+              "description": "Enter authentication information for your SMTP connection",
+              "inputs": [
+                {
+                  "id": "__lh_label",
+                  "description": "Label for this integration instance.",
+                  "label": "Label",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_table_key_value",
+                  "description": "Define variables here to templatize integration connections and actions. For example, you can use https://www.{{hostname}}.com, where hostname is a variable defined in this input.",
+                  "label": "Reference Values",
+                  "dataType": "json",
+                  "inputType": "table",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "__lh_ssl_verify",
+                  "description": "Select option to verify connecting server's SSL certificate (Default is Verify SSL Certificate)",
+                  "label": "Verify SSL",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "True",
+                      "label": "Verify SSL Certificate"
+                    },
+                    {
+                      "value": "False",
+                      "label": "Skip Verifying SSL Certificate"
+                    }
+                  ],
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_server_name",
+                  "description": "Server name for your SMTP connection",
+                  "label": "SMTP Server Name",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_server_port",
+                  "description": "Server port for your SMTP connection",
+                  "label": "SMTP Server Port",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_authentication_type",
+                  "description": "Authentication type for your SMTP connection",
+                  "label": "Authentication type",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "basic",
+                      "label": "Basic"
+                    },
+                    {
+                      "value": "ntlm",
+                      "label": "NTLM"
+                    },
+                    {
+                      "value": "none",
+                      "label": "None"
+                    }
+                  ],
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_use_encryption",
+                  "description": "Whether or not to use encryption",
+                  "label": "Use encryption",
+                  "dataType": "string",
+                  "inputType": "select",
+                  "options": [
+                    {
+                      "value": "Yes",
+                      "label": "Yes"
+                    },
+                    {
+                      "value": "No",
+                      "label": "No"
+                    }
+                  ],
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_email_address",
+                  "description": "Email Address to send from",
+                  "label": "Email Address",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "columnTemplating": false,
+                  "isCredential": true
+                },
+                {
+                  "id": "smtp_username",
+                  "description": "Username if different from Email Address",
+                  "label": "Username",
+                  "dataType": "string",
+                  "inputType": "text",
+                  "optional": true,
+                  "columnTemplating": false
+                },
+                {
+                  "id": "smtp_password",
+                  "description": "Password to log in with. Leave empty if using None Authentication type.",
+                  "label": "Password",
+                  "dataType": "string",
+                  "inputType": "password",
+                  "optional": true,
+                  "columnTemplating": false,
+                  "isCredential": true
+                }
+              ],
+              "isVariadic": false
+            }
+          ],
+          "validation": {
+            "cmd": "python -m src.smtp.instantiate"
+          }
+        },
+        "actions": [
+          {
+            "id": "send_email",
+            "name": "Send Email",
+            "description": "Sends an e-mail to a recipient using SMTP",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "Create and Send Email",
+                  "description": "Create and send an email using column names from the parent table",
+                  "inputs": [
+                    {
+                      "id": "smtp_subject_column_name",
+                      "description": "A column containing the subject title for e-mails",
+                      "label": "Subject Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_body_column_name",
+                      "description": "A column containing the body for outbound e-mails",
+                      "label": "Body Column name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_to_column_name",
+                      "description": "A column containing the e-mail addresses to send an e-mail to",
+                      "label": "Column containing the e-mail address for recipients",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_from_column_name",
+                      "description": "A column containing the e-mail addresses as sender to send an e-mail to",
+                      "label": "Column containing the from e-mail address",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_body_type",
+                      "description": "Select type of email body (Default is Plain Text)",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "plaintext",
+                          "label": "Plain Text"
+                        },
+                        {
+                          "value": "htmlbody",
+                          "label": "HTML"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_cc_email_column_name",
+                      "description": "Column containing e-mail addresses to attach as cc on an outbound e-mail",
+                      "label": "CC on outbound e-mail Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_bcc_email_column_name",
+                      "description": "Column containing e-mail addresses to attach as bcc on an outbound e-mail",
+                      "label": "BCC on outbound e-mail Column Name",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_attachments_column_name",
+                      "description": "Column containing one or more file IDs to attachment. (Can be a comma separated string of lhub_file_id values or a json dict in the format of {\"<lhub_id>\":\"<file_name>\"})",
+                      "label": "File Attachment",
+                      "dataType": "column",
+                      "inputType": "columnSelect",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_attachment_extension",
+                      "description": "If no file name is provided, add this extension to attached files.",
+                      "label": "Attachment File Extension",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "time_between_consecutive_requests_milliseconds",
+                      "description": "Time to wait between consecutive API requests in milliseconds (Default is 0 millisecond)",
+                      "label": "Time between consecutive API requests (in millis)",
+                      "dataType": "string",
+                      "inputType": "number",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_rows_to_process",
+                      "description": "Number of rows to read from parent table",
+                      "label": "Rows to Process",
+                      "dataType": "number",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_multithread_count",
+                      "description": "Count of threads to use for processing rows of input table (Default is 1 thread)",
+                      "label": "Count of threads",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.smtp.action_send-email_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.smtp.action_send-email_exec"
+            },
+            "isDataSource": "No",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "email"
+            ]
+          },
+          {
+            "id": "send_email_empty_table",
+            "name": "Send static email, If table is empty",
+            "description": "Sends an e-mail to a recipient with static input if table is empty",
+            "instantiation": {
+              "steps": [
+                {
+                  "name": "",
+                  "description": "",
+                  "inputs": [
+                    {
+                      "id": "smtp_subject",
+                      "description": "Subject title for e-mails",
+                      "label": "Subject",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_body",
+                      "description": "Body for outbound e-mails",
+                      "label": "Body",
+                      "dataType": "string",
+                      "inputType": "textarea",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_to",
+                      "description": "E-mail addresses to send an e-mail to",
+                      "label": "E-mail address for recipients",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_from",
+                      "description": "E-mail addresses as sender to send an e-mail to",
+                      "label": "From E-mail address",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_email_body_type",
+                      "description": "Select type of email body (Default is Plain Text)",
+                      "label": "Type",
+                      "dataType": "string",
+                      "inputType": "select",
+                      "options": [
+                        {
+                          "value": "plaintext",
+                          "label": "Plain Text"
+                        },
+                        {
+                          "value": "htmlbody",
+                          "label": "HTML"
+                        }
+                      ],
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_cc_email",
+                      "description": "E-mail addresses to attach as cc on an outbound e-mail",
+                      "label": "CC on outbound e-mail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "smtp_bcc_email",
+                      "description": "E-mail addresses to attach as bcc on an outbound e-mail",
+                      "label": "BCC on outbound e-mail",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    },
+                    {
+                      "id": "__lh_action_timeout_sec",
+                      "description": "Timeout in seconds (Default is 360 seconds)",
+                      "label": "Action Timeout",
+                      "dataType": "string",
+                      "inputType": "text",
+                      "optional": true,
+                      "columnTemplating": false
+                    }
+                  ],
+                  "isVariadic": false
+                }
+              ],
+              "validation": {
+                "cmd": "python -m src.smtp.action_send-email-empty-table_validate"
+              }
+            },
+            "execution": {
+              "cmd": "python -m src.smtp.action_send-email-empty-table_exec"
+            },
+            "isDataSource": "Yes",
+            "isMultiThreaded": "Yes",
+            "tags": [
+              "send_emails"
+            ]
+          }
+        ],
+        "version": "2.1.11",
+        "compatible_versions": [],
+        "tags": []
+      },
+      "updateInfo": {
+        "currentModified": "2021-12-16T13:39:28Z",
+        "failedAttempt": {
+          "modified": "2022-08-03T12:36:03Z",
+          "errorMessage": "Failed to update connection: CB Testing - Logichub Demo from SMTP:2.1.11 to SMTP:2.1.12 added on 2022-08-03T12:36:03ZDetails: Authentication failed: (535, '5.7.8 Username and Password not accepted. Learn more at\\n5.7.8  https://support.google.com/mail/?p=BadCredentials p4-20020a17090a284400b001fd81970d1fsm184623pjf.47 - gsmtp')"
+        }
+      },
+      "data": {
+        "__lh_is_default_connection": "false",
+        "__lh_table_key_value": "",
+        "smtp_authentication_type": "basic",
+        "__lh_ssl_verify": "True",
+        "smtp_email_address": "logichub.automation.demo@gmail.com",
+        "smtp_server_port": "587",
+        "smtp_username": "logichub.automation.demo@gmail.com",
+        "smtp_password": "****restricted****",
+        "smtp_use_encryption": "Yes",
+        "smtp_server_name": "smtp.gmail.com",
+        "__lh_label": "CB Testing - Logichub Demo"
+      },
+      "id": 17,
+      "isDefault": false
+    }
+  ],
+  "customLists": [
+    {
+      "id": "6",
+      "name": "CVE Watchdog Patterns",
+      "overflowBehavior": "DeleteOldest",
+      "deduplicate": true,
+      "table": "list_data_18R4CTlOPm",
+      "schema": {
+        "columns": [
+          {
+            "name": "cve_pattern",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          }
+        ]
+      }
+    },
+    {
+      "id": "5",
+      "name": "CVE Watchdog History",
+      "overflowBehavior": "DeleteOldest",
+      "deduplicate": true,
+      "table": "list_data_zY84uWVbcP",
+      "schema": {
+        "columns": [
+          {
+            "name": "CVE_Id",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          },
+          {
+            "name": "CVE_Published",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          },
+          {
+            "name": "CVE_Modified",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          }
+        ]
+      }
+    }
+  ],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

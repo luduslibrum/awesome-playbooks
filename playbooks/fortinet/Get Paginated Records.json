@@ -1,0 +1,120 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Get Paginated Records",
+    "aliasName": null,
+    "tag": null,
+    "description": "Gets paginated records data and appends them in a .CSV file. This playbook is a reference playbook for 'Export as CSV'.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "queryURL",
+        "fileToUpdate",
+        "queryBody",
+        "datetimeFieldsToConvert"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/e811949a-45b4-4189-b524-fdb64c417810",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/b91a0668-7406-4c6f-bbcd-c6028d19f841",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Append to CSV File",
+            "description": null,
+            "arguments": {
+                "config": "0fd89191-0436-4ba1-8eca-88771f17e159",
+                "params": {
+                    "python_function": "import csv\nimport arrow\n\nrecordsToSave = {{vars.steps.Run_Query.data['hydra:member']}}\ncolumns = recordsToSave[0].keys()\nwith open('{{vars.fileToUpdate}}','a') as out_file:\n    csv_w = csv.writer(out_file)\n    for record in recordsToSave:\n        values = []\n        for key in columns:\n            if type(record[key]) is dict:\n               recordType = (record[key]).get('@type', None)\n               if recordType == 'Picklist':\n                   values.append(str(record[key]['itemValue']))\n               elif recordType == 'Person':\n                   values.append(str(record[key]['firstname'] + record[key]['lastname']))\n               elif recordType == 'Appliance':\n                   values.append(str(record[key]['name']))\n            elif key in {{ vars.input.params.datetimeFieldsToConvert}} and record[key]:\n                values.append(arrow.get(record[key]).format('YYYY-MM-DD HH:mm:ss ZZ'))\n            elif key in {{ vars.input.params.queryBody['__selectFields']}}:\n                values.append(str(record[key]))\n        csv_w.writerow(values)"
+                },
+                "version": "1.2.1",
+                "connector": "code-snippet",
+                "operation": "python_inline",
+                "operationTitle": "Execute Python Code",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/1fdd14cc-d6b4-4335-a3af-ab49c8ed2fd8",
+            "uuid": "fe3b6f20-a1d9-4492-9c46-0cc12695c2e9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "queryURL": "{{ vars.queryURL }}",
+                            "queryBody": "{{ vars.queryBody }}",
+                            "queryToRun": "{{ vars.queryToRun }}",
+                            "fileToUpdate": "{{ vars.fileToUpdate }}",
+                            "selectFields": "{{ vars.selectFields }}",
+                            "datetimeFieldsToConvert": "{{ vars.datetimeFieldsToConvert }}"
+                        }
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "b91a0668-7406-4c6f-bbcd-c6028d19f841"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Run Query",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{vars.input.params.queryURL}}",
+                    "body": "{{vars.input.params.queryBody}}",
+                    "method": "POST"
+                },
+                "version": "2.7.0",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "c79e3327-d78f-4555-bc87-d4c117d38053"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Run Query",
+            "targetStep": "\/api\/3\/workflow_steps\/c79e3327-d78f-4555-bc87-d4c117d38053",
+            "sourceStep": "\/api\/3\/workflow_steps\/b91a0668-7406-4c6f-bbcd-c6028d19f841",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "0086b33c-f543-4031-8ece-2405c5475042"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Run Query -> Append to CSV File",
+            "targetStep": "\/api\/3\/workflow_steps\/fe3b6f20-a1d9-4492-9c46-0cc12695c2e9",
+            "sourceStep": "\/api\/3\/workflow_steps\/c79e3327-d78f-4555-bc87-d4c117d38053",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "eadc2b37-dc9e-4a50-90c1-4eb6254f6368"
+        }
+    ],
+    "priority": null,
+    "uuid": "040d22ad-4796-4154-8592-c89af670abb5",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine",
+        "Export as CSV"
+    ]
+}

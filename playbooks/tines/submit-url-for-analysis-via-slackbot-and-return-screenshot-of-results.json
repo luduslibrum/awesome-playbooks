@@ -1,0 +1,880 @@
+{
+  "schema_version": 4,
+  "name": "Submit URL for analysis via Slackbot and return screenshot of results",
+  "description": "This is Story ingests a URL via Slack slash command, checks that URL in both URLScan.io and VirusTotal and returns a verdict on its security and a screenshot of the website.\nTags: Slack, VirusTotal, URLScan, Intermediate, Threat, Analyze, Slackbot\nIcons: 🦠, ✅, slack \nvisibility: public",
+  "guid": "411ff3511a930806aa2512589c8a674b",
+  "slug": "submit_url_for_analysis_via_slackbot_and_return_screenshot_of_results",
+  "exported_at": "2022-07-11T17:23:57Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive URLs from Slack",
+      "disabled": false,
+      "guid": "5abb8ea9270d56c2650301216eaf0643",
+      "options": {
+        "path": "a1f7dc802e0909b49deebe4e6f102b05",
+        "secret": "2110e1f1b9c0c3097e243b6f308f736a",
+        "verbs": "get,post",
+        "response": "Hi, <<body.user_name>>!  Thanks for submitting your <<body.command>> request to tines, we're analysing it now"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Domain",
+      "disabled": false,
+      "guid": "bff3844f3b4c460c83284d96d90681d6",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=receive_urls_from_slack.body.text",
+            "regexp": "^(?:https?:\\/\\/)?(?:[^@\\n]+@)?(?:www\\.)?([^:\\/\\n?]+)",
+            "to": "url_domain"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Results",
+      "disabled": false,
+      "guid": "9a6ce320d662bdaeb51a28767b0dee0f",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "url": "",
+          "malicious": "<<submit_domain_to_urlscan_io.get_urlscan_results.body.verdicts.overall.malicious>>",
+          "analysis_link": "<<submit_domain_to_urlscan_io.get_urlscan_results.body.data.links.first.href>>",
+          "analysis_date": "<<submit_domain_to_urlscan_io.get_urlscan_results.body.data.timing>>",
+          "scan_engine": "URLScan",
+          "page_screenshot": "<<submit_domain_to_urlscan_io.get_urlscan_results.body.task.screenshotURL>>",
+          "screenshot": "<<submit_domain_to_urlscan_io.download_screenshot.body.base64encodedcontents>>",
+          "Virus_Total_Result": "<<submit_domain_to_virustotal.virustotal_results.attributes.stats.malicious>>",
+          "VirusTotal_link": "<<submit_domain_to_virustotal.virustotal_results.links.item>>",
+          "VirusTotal_total": "<<submit_domain_to_virustotal.virustotal_total>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Threat Detected",
+      "disabled": false,
+      "guid": "867acaf685e59f33b4bfd23cfde68813",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<build_results.malicious>>"
+          },
+          {
+            "type": "field>=value",
+            "value": "1",
+            "path": "<<build_results.Virus_Total_Result>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if No Threat Detected",
+      "disabled": false,
+      "guid": "e7c1ffae155aa3652666f15eccb2cdb3",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<build_results.malicious>>"
+          },
+          {
+            "type": "field<value",
+            "value": "1",
+            "path": "<<build_results.Virus_Total_Result>>"
+          }
+        ],
+        "must_match": "2"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post No Threat Message",
+      "disabled": false,
+      "guid": "3b3935d7f56f29bd4210d79db95e70a2",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<receive_urls_from_slack.body.user_id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Hi <<receive_urls_from_slack.body.user_name>>,\n\nYour URL analysis request has completed, see details below. "
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*URL*: <<receive_urls_from_slack.body.text>> \n\n *Verdict*:  No threats identified \n\n*Malicious Score in VirusTotal*: <<build_results.Virus_Total_Result>>/<<build_results.VirusTotal_total>>\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Analysis Link from URLScan*: <<submit_domain_to_urlscan_io.get_urlscan_results.body.task.reportURL>>\n*Analysis Link from VirusTotal*: <<build_results.VirusTotal_link>> \n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Page Screenshot*:\n"
+                  }
+                },
+                {
+                  "type": "image",
+                  "title": {
+                    "type": "plain_text",
+                    "text": "Website Screenshot",
+                    "emoji": true
+                  },
+                  "image_url": "<<build_results.page_screenshot>>",
+                  "alt_text": "Website Screenshot"
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack_chatbot>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Threat Message",
+      "disabled": false,
+      "guid": "cd6459d525c1c51cb9453700074a6f07",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<receive_urls_from_slack.body.user_id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Hi <<receive_urls_from_slack.body.user_name>>,\n\nYour URL analysis request has completed, see details below. "
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*URL*: <<receive_urls_from_slack.body.text>> \n\n *Verdict*:  Possible malicious website identified \n\n*Malicious Score in VirusTotal*: <<implode_events.first.get_virustotal_results.body.data.attributes.stats.malicious>>/<<build_results.VirusTotal_total>>\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Analysis Link from URLScan*: <<submit_domain_to_virustotal.get_urlscan_results.body.task.reportURL>>\n*Analysis Link from VirusTotal*: <<implode_events.first.get_virustotal_results.body.data.links.item>> \n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Page Screenshot*:\n"
+                  }
+                },
+                {
+                  "type": "image",
+                  "title": {
+                    "type": "plain_text",
+                    "text": "Website Screenshot",
+                    "emoji": true
+                  },
+                  "image_url": "<<build_results.page_screenshot>>",
+                  "alt_text": "Website Screenshot"
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack_chatbot>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Submit Domain to VirusTotal",
+      "disabled": false,
+      "guid": "c41a64ac521531288a1e0e56a14c48f4",
+      "options": {
+        "payload": {
+          "domain": "<<extract_domain.url_domain.first.first>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "8eed23493459a9c0305a2908127538f0",
+        "slug": null,
+        "exported_at": "2022-07-11T17:23:57Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Submit URL to VirusTotal",
+            "disabled": false,
+            "guid": "d3bd7609d2999f48b539b815ed5e8458",
+            "options": {
+              "url": "https://www.virustotal.com/api/v3/urls",
+              "method": "post",
+              "content_type": "form",
+              "payload": {
+                "url": "<<input.payload.domain>>\n"
+              },
+              "headers": {
+                "x-apikey": "<<CREDENTIAL.virustotal>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Get VirusTotal Results",
+            "disabled": false,
+            "guid": "45999babeea9007e6a653f6906ec39e2",
+            "options": {
+              "url": "https://www.virustotal.com/api/v3/analyses/<<submit_url_to_virustotal.body.data.id>>",
+              "method": "get",
+              "headers": {
+                "x-apikey": "<<CREDENTIAL.virustotal>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Delay Event",
+            "disabled": false,
+            "guid": "5ff0ced9bdc3eb197634df13b1d78a28",
+            "options": {
+              "mode": "delay",
+              "seconds": "15"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "d3751af850b9452e1be001f950f49b68",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "084c20a1450d3ac41aa04bd79802f889",
+            "options": {
+              "payload": {
+                "virustotal_results": "=get_virustotal_results.body.data",
+                "virustotal_total": "<<submit_to_vt.body.total>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Submit to VT",
+            "disabled": false,
+            "guid": "95aff318726b544f7adf180fe9bc3c74",
+            "options": {
+              "url": "https://www.virustotal.com/vtapi/v2/url/report",
+              "method": "get",
+              "payload": {
+                "apikey": "<<CREDENTIAL.virustotal>>",
+                "resource": "<<input.payload.domain>>"
+              },
+              "retry_on_status": [
+                "429",
+                "204"
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          }
+        ],
+        "diagram_notes": [
+          {
+            "content": "Delay the scan in case the scan gets Queued",
+            "position": [
+              1035.0,
+              555.0
+            ],
+            "guid": "d6e778070d8042c266067a6b2f369456",
+            "width": null
+          },
+          {
+            "content": "Retrieve results from VirusTotal",
+            "position": [
+              1050.0,
+              765.0
+            ],
+            "guid": "00acb10f9f7a3d69cecfe307b1373cad",
+            "width": null
+          }
+        ],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 2
+          },
+          {
+            "source": 1,
+            "receiver": 5
+          },
+          {
+            "source": 2,
+            "receiver": 1
+          },
+          {
+            "source": 3,
+            "receiver": 0
+          },
+          {
+            "source": 5,
+            "receiver": 4
+          }
+        ],
+        "diagram_layout": "{\"d3bd7609d2999f48b539b815ed5e8458\":[780,465],\"45999babeea9007e6a653f6906ec39e2\":[780,645],\"5ff0ced9bdc3eb197634df13b1d78a28\":[780,555],\"d3751af850b9452e1be001f950f49b68\":[885,315],\"084c20a1450d3ac41aa04bd79802f889\":[885,855],\"95aff318726b544f7adf180fe9bc3c74\":[780,735]}"
+      }
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Submit Domain to URLScan.io",
+      "disabled": false,
+      "guid": "e885d568e75c0c2f66119b82e4f6063f",
+      "options": {
+        "payload": {
+          "domain": "<<extract_domain.url_domain.first.first>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "439aa2725e13d6d136d0fb1a6833b283",
+        "slug": null,
+        "exported_at": "2022-07-11T17:23:57Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Submit URL to URLScan.io",
+            "disabled": false,
+            "guid": "224b536c31c7ec636b142ea453e62ce6",
+            "options": {
+              "url": "https://urlscan.io/api/v1/scan/",
+              "content_type": "json",
+              "method": "post",
+              "payload": {
+                "url": "<<input.payload.domain>>",
+                "public": "on"
+              },
+              "headers": {
+                "API-Key": "<<CREDENTIAL.urlscan_io>>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Delay Event",
+            "disabled": false,
+            "guid": "120ec70fd70b74710cd314d2ae125cf5",
+            "options": {
+              "mode": "delay",
+              "seconds": "15"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Get URLScan Results",
+            "disabled": false,
+            "guid": "ed7a2a1d623ba8b44f60e84baa6f4146",
+            "options": {
+              "url": "https://urlscan.io/api/v1/result/<<submit_url_to_urlscan_io.body.uuid>>",
+              "method": "get",
+              "headers": {
+                "API-Key": "<<CREDENTIAL.urlscan_io>>"
+              },
+              "log_error_on_status": [],
+              "retry_on_status": [
+                "404",
+                "429"
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Download Screenshot",
+            "disabled": false,
+            "guid": "2a19464b62c5375837293688e468d406",
+            "options": {
+              "url": "<<get_urlscan_results.body.task.screenshotURL>>",
+              "content_type": "json",
+              "method": "get",
+              "payload": {},
+              "headers": {
+                "API-Key": "<<CREDENTIAL.urlscan_io>>"
+              },
+              "retry_on_status": [
+                "400",
+                "429"
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "f5882f2618eddceb3e6340f5141bdd14",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "617c1001a0782befc3132b204bd46bf4",
+            "options": {
+              "payload": {
+                "download_screenshot": "=download_screenshot",
+                "get_urlscan_results": "=get_urlscan_results"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [
+          {
+            "content": "Delay the scan in case the scan gets Queued",
+            "position": [
+              465.0,
+              390.0
+            ],
+            "guid": "c60600642c7eb13f529c01ad10483bcc",
+            "width": null
+          },
+          {
+            "content": "Retrieve results from URLScan.io",
+            "position": [
+              465.0,
+              510.0
+            ],
+            "guid": "0a72acd4c7a5700cec74b71d356183c8",
+            "width": null
+          },
+          {
+            "content": "Download screenshot of website",
+            "position": [
+              465.0,
+              615.0
+            ],
+            "guid": "51487faf90b177dffbac6be5c5f4b5f5",
+            "width": null
+          }
+        ],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 1,
+            "receiver": 2
+          },
+          {
+            "source": 2,
+            "receiver": 3
+          },
+          {
+            "source": 3,
+            "receiver": 5
+          },
+          {
+            "source": 4,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"224b536c31c7ec636b142ea453e62ce6\":[780,270],\"120ec70fd70b74710cd314d2ae125cf5\":[780,390],\"ed7a2a1d623ba8b44f60e84baa6f4146\":[780,510],\"2a19464b62c5375837293688e468d406\":[780,615],\"f5882f2618eddceb3e6340f5141bdd14\":[645,120],\"617c1001a0782befc3132b204bd46bf4\":[645,765]}"
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/Slack_RGB.png\n",
+      "position": [
+        405.0,
+        150.0
+      ],
+      "guid": "ec455e931c85ff599c65fa02e120b833",
+      "width": null
+    },
+    {
+      "content": "# Description\nThis is a simple Story that ingests a URL via Slack slash command, checks that URL in both URLScan.io and VirusTotal and returns a verdict on its security and a screenshot of the website.",
+      "position": [
+        405.0,
+        285.0
+      ],
+      "guid": "18f879c917008f6c3e5ca8e39348ed21",
+      "width": 180
+    },
+    {
+      "content": "# Prerequisites\n\n- [ ] Slack bot with Slash commands prepared\n- [Slackbot](https://www.tines.com/blog/chatbots-for-security-and-it-teams-part-3-creating-a-slack-chatbot)\n\n- `CREDENTIAL.slack_chatbot` - \n\n- [ ] URLScan.io\n- `CREDENTIAL.urlscan_io` - URLScan.io [API Token](https://urlscan.io/docs/api/)\n\n- [ ] VirusTotal\n- `CREDENTIAL.virustotal` - VirusTotal  [API Token](https://developers.virustotal.com/reference/overview)",
+      "position": [
+        405.0,
+        510.0
+      ],
+      "guid": "58c7af30a4c9f5d9a8c337fe926a3268",
+      "width": 268
+    },
+    {
+      "content": "Ingest a URL from Slack using the **/analyzedomain** slash command.",
+      "position": [
+        1065.0,
+        195.0
+      ],
+      "guid": "0978e88f842322e04724b3cd68069519",
+      "width": null
+    },
+    {
+      "content": "Extract the domain from the URL using regex.",
+      "position": [
+        1065.0,
+        300.0
+      ],
+      "guid": "725e1e06d89cc901ad22ddf48729f04e",
+      "width": null
+    },
+    {
+      "content": "This Action submits the url to VirusTotal and includes a delay of 20 seconds to ensure the scan runs. successfully.",
+      "position": [
+        1065.0,
+        585.0
+      ],
+      "guid": "28b3b5cce9802759ed3010552e5c514e",
+      "width": null
+    },
+    {
+      "content": "Parse the results to make them ready for output.",
+      "position": [
+        1065.0,
+        690.0
+      ],
+      "guid": "58ad5fda25f68053a373a80021124942",
+      "width": null
+    },
+    {
+      "content": "The Triggers determine if the URL is potentially malicious or not.  The appropriate Slack message is sent based on these Triggers.",
+      "position": [
+        1230.0,
+        810.0
+      ],
+      "guid": "312ad8220982f97f3179cab0ba558b64",
+      "width": null
+    },
+    {
+      "content": "The Slack message is sent as a DM to the original requester.",
+      "position": [
+        1230.0,
+        930.0
+      ],
+      "guid": "e7d33eaf02593aa6ecb617e2ffc314bc",
+      "width": null
+    },
+    {
+      "content": "This Action submits the url to URLScan.io and includes a delay of 30 seconds to ensure the scan runs successfully.",
+      "position": [
+        1065.0,
+        450.0
+      ],
+      "guid": "54a34d8e3e67d191a54b9e310f3ff3f5",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 8
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 6
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 7,
+      "receiver": 2
+    },
+    {
+      "source": 8,
+      "receiver": 7
+    }
+  ],
+  "diagram_layout": "{\"5abb8ea9270d56c2650301216eaf0643\":[780,195],\"bff3844f3b4c460c83284d96d90681d6\":[780,315],\"9a6ce320d662bdaeb51a28767b0dee0f\":[780,690],\"867acaf685e59f33b4bfd23cfde68813\":[615,810],\"e7c1ffae155aa3652666f15eccb2cdb3\":[960,810],\"3b3935d7f56f29bd4210d79db95e70a2\":[960,915],\"cd6459d525c1c51cb9453700074a6f07\":[615,915],\"c41a64ac521531288a1e0e56a14c48f4\":[780,555],\"e885d568e75c0c2f66119b82e4f6063f\":[780,450]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Submit URL for analysis via Slackbot and return screenshot of results Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

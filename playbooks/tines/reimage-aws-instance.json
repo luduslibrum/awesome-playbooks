@@ -1,0 +1,775 @@
+{
+  "schema_version": 4,
+  "name": "Reimage AWS instance",
+  "description": "Receive public/private IP information about an AWS instance and requires the root volume to be restored from a snapshot. \n\ntags: AWS, Respond, Advanced, ThreatIntelligence,\nicons: AWS, 📸, 📝,\nvisibility: public",
+  "guid": "988c072f9f68f7050b9c3a1ee3f39e3c",
+  "slug": "reimage_aws_instance",
+  "exported_at": "2022-07-11T17:46:46Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Intake IPs",
+      "disabled": false,
+      "guid": "adb658551d395de01f4b209ed52a608a",
+      "options": {
+        "path": "a8cf5ac7f04721fb24db6e1960c9a794",
+        "secret": "98391273c135ea4df1cb16db16cb51ce",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is IP Private",
+      "disabled": false,
+      "guid": "7620a9c8e9492fe9c199e4297ee07872",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Private",
+            "path": "<<extract_ip_selection.ip_selection>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract IP Selection",
+      "disabled": false,
+      "guid": "a2203433a653564960afa7064a1a936e",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "ip_selection": "<<intake_ips.body.option_1>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is IP Public",
+      "disabled": false,
+      "guid": "614fa8e94b0cdcf3e389c909af6e5a74",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Public",
+            "path": "<<extract_ip_selection.ip_selection>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get AWS EC2 instances that matches Address",
+      "disabled": false,
+      "guid": "b7c9343db3a683cc3c81e89af39e35b3",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=DescribeInstances&Filter.1.<<create_ip_url.url>>&Filter.1.Value=<<intake_ips.body.aws_instance_ip>>&Version=2016-11-15 ",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Create IP URL",
+      "disabled": false,
+      "guid": "48ae1cafc06090407f5c36fc8d700cb6",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "url": "Name=network-interface.addresses.private-ip-address"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Create IP URL",
+      "disabled": false,
+      "guid": "16e363590bd39edb249e8b76e0eaeef3",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "url": "Name=ip-address"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Snapshot from EBS",
+      "disabled": false,
+      "guid": "3700c397f5266709fa05b8c802c39537",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=DescribeSnapshots&Filter.1.Name=description&Filter.1.Value=<<RESOURCE.snapshot_name>>&Version=2016-11-15",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get AWS EC2 Availability Zone",
+      "disabled": false,
+      "guid": "cd07b34498d02316fef96b8088a065c1",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=DescribeInstances&Filter.1.Name=instance-id&Filter.1.Value=<<get_aws_ec2_instances_that_matches_address.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.instanceId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Volume from Snapshot",
+      "disabled": false,
+      "guid": "4fccb889a4fdd4a7be6634b1763bf8ea",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=CreateVolume&AvailabilityZone=<<get_aws_ec2_availability_zone.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.placement.availabilityZone>>&SnapshotId=<<get_snapshot_from_ebs.body.DescribeSnapshotsResponse.snapshotSet.item.snapshotId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Stop Instance",
+      "disabled": false,
+      "guid": "140ddd27ddbcf3ba5f864f380224ada6",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=StopInstances&InstanceId=<<get_aws_ec2_instances_that_matches_address.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.instanceId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is Instance Stopped",
+      "disabled": false,
+      "guid": "723aba587a8852cce19267f77c40cf1d",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<convert_to_string.message>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "9c36b64c315f1f920701205d76585b75",
+      "options": {
+        "mode": "delay",
+        "seconds": 10
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is Instance Running",
+      "disabled": false,
+      "guid": "0b56423c1a5f60813a33e0a7a0681c59",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<convert_to_string.message>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Instance Status",
+      "disabled": false,
+      "guid": "b24af7b1dbba0b7518ed88bf667dd323",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=DescribeInstanceStatus&InstanceId=<<get_aws_ec2_instances_that_matches_address.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.instanceId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Detach EBS Root Volume",
+      "disabled": false,
+      "guid": "7e4f5cfbad078c2053aa3cd390daa2d1",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=DetachVolume&VolumeId=<<get_root_volume_name.message[0].ebs.volumeId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "{{.CREDENTIAL.aws_ec2}}"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Attach New EBS Root Volume",
+      "disabled": false,
+      "guid": "6d4d29120c15c0b267c41efaff5af1c9",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=AttachVolume&InstanceId=<<get_aws_ec2_instances_that_matches_address.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.instanceId>>&VolumeId=<<create_volume_from_snapshot.body.CreateVolumeResponse.volumeId>>&Device=<<get_aws_ec2_instances_that_matches_address.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.rootDeviceName>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start AWS Instance",
+      "disabled": false,
+      "guid": "0ed3f511e696b272fca7a00b6b8d45c4",
+      "options": {
+        "url": "https://ec2.<<RESOURCE.aws_region>>.amazonaws.com?Action=StartInstances&InstanceId=<<get_aws_ec2_instances_that_matches_address.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.instanceId>>&Version=2016-11-15 ",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_ec2>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "552ae7b231327bcbdf718909c734fd8c",
+      "options": {
+        "mode": "delay",
+        "seconds": 20
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is Volume Attaching",
+      "disabled": false,
+      "guid": "05e083e8f156ff2abe3a4d1fadd15ade",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "attaching",
+            "path": "<<attach_new_ebs_root_volume.body.AttachVolumeResponse.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "cd06080d8a1f02834f16c80e4ec85cde",
+      "options": {
+        "mode": "delay",
+        "seconds": 10
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is Volume Attached",
+      "disabled": false,
+      "guid": "151a68ebe8abd2ed8b365a8cd8fdc417",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "attached",
+            "path": "<<attach_new_ebs_root_volume.body.AttachVolumeResponse.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Convert to String",
+      "disabled": false,
+      "guid": "53b052f1f8babda65abe44c43ef5be46",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "<<get_instance_status.body.DescribeInstanceStatusResponse.instanceStatusSet>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "19c43e30dfe7c944826d29dd5634a037",
+      "options": {
+        "mode": "delay",
+        "seconds": 27
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Root Volume Name",
+      "disabled": false,
+      "guid": "ce5b6510298db84bf0f061ffd6e41274",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "=WHERE(get_aws_ec2_instances_that_matches_address.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.blockDeviceMapping.item, \"deviceName\", get_aws_ec2_instances_that_matches_address.body.DescribeInstancesResponse.reservationSet.item.instancesSet.item.rootDeviceName)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "To ensure adequate time is allowed between AWS tasks predefined Delays have been put in place for: \n- Stopping Instance\n- Detaching Root Volume\n- Attaching New Root Volume \n\nWithout proper time to complete tasks 400 errors can be received from AWS informing that device is not ready or in a state for action to be performed. ",
+      "position": [
+        2265.0,
+        705.0
+      ],
+      "guid": "7faa21346babc7491cb4598149b34e3c",
+      "width": null
+    },
+    {
+      "content": "Story Requirements\n\nIn order to use this story the following Resources and Credentials must be created. \n\nResource \n- aws_region : aws region the instance resides in  \n- snapshot_name : image name (i.e. golden-image) of root device\n\nCredential\n-  aws_ec2 : aws credential \n\nCredential provided must have adequate permissions in AWS to: \n- Stop EC2 Instance\n- Start EC2 Instance\n- Detach EBS Volume\n- Attach EBS Volume \n- Create EBS Volume from Snapshot\n\n",
+      "position": [
+        2370.0,
+        -150.0
+      ],
+      "guid": "34b7cb77f891f2711a8ca2a05a09c0d8",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-aws.png\n\nRe-image AWS Instance \n\nThis Story starts by using a Tines Form and Webhook to pull in Public / Private IP information about an AWS instance that has triggered a threat intelligence incident within another system. \n\nThe Story will: \n- Query for EC2 Instance ID and Instance Region by Public or Private IP Address\n- Query the golden image \n- Create a new volume from the image \n- Stop the EC2 instance with relevant IP\n- Detach the current root volume\n- Attach the new volume from the image\n- Start the image ",
+      "position": [
+        1245.0,
+        -180.0
+      ],
+      "guid": "cf85e691cb5c5980078b8a58a0628958",
+      "width": null
+    },
+    {
+      "content": "# ⬅️ ⬅️. Receive the Event\n\nThe webhook action will receive the event from the form",
+      "position": [
+        1995.0,
+        -210.0
+      ],
+      "guid": "5f508be67210d2a22dc564967ac08b86",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 5
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 6
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 4
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 14
+    },
+    {
+      "source": 11,
+      "receiver": 23
+    },
+    {
+      "source": 12,
+      "receiver": 14
+    },
+    {
+      "source": 13,
+      "receiver": 12
+    },
+    {
+      "source": 14,
+      "receiver": 22
+    },
+    {
+      "source": 15,
+      "receiver": 18
+    },
+    {
+      "source": 16,
+      "receiver": 19
+    },
+    {
+      "source": 16,
+      "receiver": 21
+    },
+    {
+      "source": 18,
+      "receiver": 16
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 20,
+      "receiver": 17
+    },
+    {
+      "source": 21,
+      "receiver": 17
+    },
+    {
+      "source": 22,
+      "receiver": 13
+    },
+    {
+      "source": 22,
+      "receiver": 11
+    },
+    {
+      "source": 23,
+      "receiver": 24
+    },
+    {
+      "source": 24,
+      "receiver": 15
+    }
+  ],
+  "diagram_layout": "{\"adb658551d395de01f4b209ed52a608a\":[1710,-210],\"7620a9c8e9492fe9c199e4297ee07872\":[1575,-15],\"a2203433a653564960afa7064a1a936e\":[1710,-105],\"614fa8e94b0cdcf3e389c909af6e5a74\":[1905,-15],\"b7c9343db3a683cc3c81e89af39e35b3\":[1695,180],\"48ae1cafc06090407f5c36fc8d700cb6\":[1575,75],\"16e363590bd39edb249e8b76e0eaeef3\":[1905,75],\"3700c397f5266709fa05b8c802c39537\":[1695,300],\"cd07b34498d02316fef96b8088a065c1\":[1695,375],\"4fccb889a4fdd4a7be6634b1763bf8ea\":[1695,480],\"140ddd27ddbcf3ba5f864f380224ada6\":[1695,570],\"723aba587a8852cce19267f77c40cf1d\":[1695,795],\"9c36b64c315f1f920701205d76585b75\":[1995,870],\"0b56423c1a5f60813a33e0a7a0681c59\":[1995,795],\"b24af7b1dbba0b7518ed88bf667dd323\":[1695,645],\"7e4f5cfbad078c2053aa3cd390daa2d1\":[1695,1050],\"6d4d29120c15c0b267c41efaff5af1c9\":[1695,1200],\"0ed3f511e696b272fca7a00b6b8d45c4\":[1695,1440],\"552ae7b231327bcbdf718909c734fd8c\":[1695,1125],\"05e083e8f156ff2abe3a4d1fadd15ade\":[1950,1290],\"cd06080d8a1f02834f16c80e4ec85cde\":[1950,1365],\"151a68ebe8abd2ed8b365a8cd8fdc417\":[1695,1290],\"53b052f1f8babda65abe44c43ef5be46\":[1995,720],\"19c43e30dfe7c944826d29dd5634a037\":[1695,870],\"ce5b6510298db84bf0f061ffd6e41274\":[1695,960]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "AWS Instance Form - Reimage",
+    "description": "Only one IP address type can be supplied at a time (Public or Private)",
+    "fields": [
+      {
+        "name": "AWS Instance IP",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Option 1",
+        "description": "",
+        "required": true,
+        "type": "OPTION",
+        "multi_select": false,
+        "options": [
+          "Public",
+          "Private"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "adb658551d395de01f4b209ed52a608a",
+    "success_message": "Beginning of process of re-imaging instance"
+  }
+}

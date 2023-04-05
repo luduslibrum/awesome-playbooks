@@ -1,0 +1,397 @@
+id: TIM - Indicators Exclusion By Related Incidents
+version: 1
+contentitemexportablefields:
+  contentitemfields:
+    packID: TIM_Processing
+    packName: TIM - Indicator Auto-Processing
+    itemVersion: 1.1.12
+    fromServerVersion: 6.0.0
+    toServerVersion: ""
+    definitionid: ""
+vcShouldKeepItemLegacyProdMachine: false
+name: TIM - Indicators Exclusion By Related Incidents
+description: This playbooks allows you to exclude indicators according to the number
+  of incidents the indicator is related to. The indicator query is "investigationsCount:>=X"
+  where X is the number of related incidents to the indicator that you set. Excluded
+  indicators are located in the Cortex XSOAR exclusion list and are removed from all
+  of their related incidents and future ones. The purpose of excluding these indicators
+  is to reduce the amount internal and common indicators appearing in many incidents
+  and showing only relevant indicators. Creating exclusions can also accelerate performance.
+starttaskid: "0"
+tasks:
+  "0":
+    id: "0"
+    taskid: 73c05597-8f99-4aad-89bb-b7b7eefb9c0a
+    type: start
+    task:
+      id: 73c05597-8f99-4aad-89bb-b7b7eefb9c0a
+      version: -1
+      name: ""
+      iscommand: false
+      brand: ""
+    nexttasks:
+      '#none#':
+      - "3"
+    separatecontext: false
+    continueonerrortype: ""
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 90
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+  "1":
+    id: "1"
+    taskid: 4525954c-5152-4069-864f-2ef2092cb066
+    type: condition
+    task:
+      id: 4525954c-5152-4069-864f-2ef2092cb066
+      version: -1
+      name: Was a valid input provided?
+      type: condition
+      iscommand: false
+      brand: ""
+    nexttasks:
+      '#default#':
+      - "2"
+      Auto exclude:
+      - "9"
+      Create manual incident:
+      - "7"
+    separatecontext: false
+    conditions:
+    - label: Auto exclude
+      condition:
+      - - operator: isEqualString
+          left:
+            value:
+              simple: inputs.ActionToPerform
+            iscontext: true
+          right:
+            value:
+              simple: AutoExclude
+    - label: Create manual incident
+      condition:
+      - - operator: isEqualString
+          left:
+            value:
+              simple: inputs.ActionToPerform
+            iscontext: true
+          right:
+            value:
+              simple: TagIndicators
+      - - operator: isNotEmpty
+          left:
+            value:
+              simple: inputs.TagValueForIndicators
+            iscontext: true
+    continueonerrortype: ""
+    view: |-
+      {
+        "position": {
+          "x": 100,
+          "y": 400
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+  "2":
+    id: "2"
+    taskid: eeb4f997-fec3-4236-8b11-823b9f2cb9ae
+    type: title
+    task:
+      id: eeb4f997-fec3-4236-8b11-823b9f2cb9ae
+      version: -1
+      name: Done
+      type: title
+      iscommand: false
+      brand: ""
+    separatecontext: false
+    continueonerrortype: ""
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 1100
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+  "3":
+    id: "3"
+    taskid: 1d5b7b59-b477-4b17-82e8-8bb770180f4f
+    type: condition
+    task:
+      id: 1d5b7b59-b477-4b17-82e8-8bb770180f4f
+      version: -1
+      name: Are there query results?
+      type: condition
+      iscommand: false
+      brand: ""
+    nexttasks:
+      '#default#':
+      - "2"
+      "yes":
+      - "1"
+    separatecontext: false
+    conditions:
+    - label: "yes"
+      condition:
+      - - operator: isNotEmpty
+          left:
+            value:
+              simple: playbookQuery.value
+            iscontext: true
+    continueonerrortype: ""
+    view: |-
+      {
+        "position": {
+          "x": 450,
+          "y": 230
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+  "6":
+    id: "6"
+    taskid: 3b2faf00-1df0-4dfd-8fc8-a7585ba16d97
+    type: regular
+    task:
+      id: 3b2faf00-1df0-4dfd-8fc8-a7585ba16d97
+      version: -1
+      name: Open manual incident
+      description: Create a new incident to manually review indicators for exclusion.
+      script: Builtin|||createNewIncident
+      type: regular
+      iscommand: true
+      brand: Builtin
+    nexttasks:
+      '#none#':
+      - "2"
+    scriptarguments:
+      name:
+        simple: Review Indicators Manually For Whitelisting
+      type:
+        simple: Review Indicators Manually For Whitelisting
+    separatecontext: false
+    continueonerrortype: ""
+    view: |-
+      {
+        "position": {
+          "x": -600,
+          "y": 930
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+  "7":
+    id: "7"
+    taskid: d5b3bc5c-26cc-43d0-891b-6e223dd14144
+    type: regular
+    task:
+      id: d5b3bc5c-26cc-43d0-891b-6e223dd14144
+      version: -1
+      name: Tag indicators for review
+      description: Add tag to indicators.
+      script: Builtin|||appendIndicatorField
+      type: regular
+      iscommand: true
+      brand: Builtin
+    nexttasks:
+      '#none#':
+      - "8"
+    scriptarguments:
+      field:
+        simple: tags
+      fieldValue:
+        simple: ${inputs.TagValueForIndicators}
+      indicatorsValues:
+        simple: ${playbookQuery.value}
+    separatecontext: false
+    continueonerrortype: ""
+    view: |-
+      {
+        "position": {
+          "x": -410,
+          "y": 600
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+  "8":
+    id: "8"
+    taskid: e371d45d-7496-4200-856c-f77c7209c9fb
+    type: condition
+    task:
+      id: e371d45d-7496-4200-856c-f77c7209c9fb
+      version: -1
+      name: Open manual incident?
+      type: condition
+      iscommand: false
+      brand: ""
+    nexttasks:
+      '#default#':
+      - "2"
+      "yes":
+      - "6"
+    separatecontext: false
+    conditions:
+    - label: "yes"
+      condition:
+      - - operator: isNotEqualString
+          left:
+            value:
+              simple: inputs.OpenIncidentToReviewIndicatorsManually
+            iscontext: true
+          right:
+            value:
+              simple: "No"
+    continueonerrortype: ""
+    view: |-
+      {
+        "position": {
+          "x": -410,
+          "y": 760
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+  "9":
+    id: "9"
+    taskid: 444adddb-eb6b-4c1b-8beb-a4c2d77fb7bf
+    type: regular
+    task:
+      id: 444adddb-eb6b-4c1b-8beb-a4c2d77fb7bf
+      version: -1
+      name: Exclude indicators
+      description: Add indicators to XSOAR exclusion list.
+      script: Builtin|||excludeIndicators
+      type: regular
+      iscommand: true
+      brand: Builtin
+    nexttasks:
+      '#none#':
+      - "2"
+    scriptarguments:
+      indicatorsValues:
+        simple: ${playbookQuery.value}
+      reason:
+        simple: ${inputs.AutoExcludeReason}
+    separatecontext: false
+    continueonerrortype: ""
+    view: |-
+      {
+        "position": {
+          "x": 100,
+          "y": 760
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+system: true
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 1075,
+        "width": 1430,
+        "x": -600,
+        "y": 90
+      }
+    }
+  }
+inputs:
+- key: ""
+  value: {}
+  required: false
+  description: ""
+  playbookInputQuery:
+    query: ""
+    queryEntity: indicators
+    results: null
+    daterange:
+      fromdate: 0001-01-01T00:00:00Z
+      todate: 0001-01-01T00:00:00Z
+      period:
+        by: ""
+        byto: ""
+        byfrom: ""
+        tovalue: null
+        fromvalue: null
+        field: ""
+      fromdatelicenseval: 0001-01-01T00:00:00Z
+    runFromLastJobTime: false
+- key: ActionToPerform
+  value: {}
+  required: false
+  description: |-
+    This input specifies which action the playbook performs on the provided indicators. Possible input values can be
+        AutoExclude
+        TagIndicators
+  playbookInputQuery: null
+- key: TagValueForIndicators
+  value: {}
+  required: false
+  description: This input specifies the tag value to apply to the indicators. An example
+    value can be whitelist_review. This input should be used only if The ActionToPerform
+    input value is TagIndicators.
+  playbookInputQuery: null
+- key: OpenIncidentToReviewIndicatorsManually
+  value:
+    simple: "No"
+  required: false
+  description: This input determines if processed indicators that have the whitelist
+    review tag are reviewed in a new incident. To create an incident, enter any value
+    other than 'No'.
+  playbookInputQuery: null
+- key: AutoExcludeReason
+  value: {}
+  required: false
+  description: Provide the reason that will appear in the XSOAR exclusion
+  playbookInputQuery: null
+outputs: []
+quiet: true

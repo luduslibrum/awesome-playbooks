@@ -1,0 +1,114 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Alert - [01] Capture All SLA (Upon Create)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Updates the alert's acknowledgement due date and response due date based on the alert\u2019s severity.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/c06eaac2-1723-4043-9dc8-38cc973e330c",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "alerts",
+                "resources": [
+                    "alerts"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    },
+                    "day_today": "{{arrow.utcnow().format('dddd')}}"
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "datetime",
+                            "field": "dueBy",
+                            "value": "true",
+                            "operator": "isnull"
+                        },
+                        {
+                            "type": "datetime",
+                            "field": "respDueDate",
+                            "value": "true",
+                            "operator": "isnull"
+                        },
+                        {
+                            "type": "object",
+                            "field": "status",
+                            "value": "\/api\/3\/picklists\/7de816ff-7140-4ee5-bd05-93ce22002146",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/7de816ff-7140-4ee5-bd05-93ce22002146",
+                                "itemValue": "Open"
+                            },
+                            "operator": "eq"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/ea155646-3821-4542-9702-b246da430a8d",
+            "uuid": "c06eaac2-1723-4043-9dc8-38cc973e330c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update SLA",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "alert_id": "{{vars.input.records[0]['@id']}}",
+                    "severity": "{{vars.input.records[0].severity.itemValue}}",
+                    "tenant_iri": "{{vars.input.records[0].tenant['@id'] | ternary(vars.input.records[0].tenant['@id'], none)}}",
+                    "alert_crt_dt": "{{vars.input.records[0].createDate}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/ef9acc85-0610-45f5-a0ca-fe6b06d53e0a"
+            },
+            "status": null,
+            "top": "160",
+            "left": "120",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "794cd6ac-ce09-4fa3-af8f-42005b3ec404"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Update SLA",
+            "targetStep": "\/api\/3\/workflow_steps\/794cd6ac-ce09-4fa3-af8f-42005b3ec404",
+            "sourceStep": "\/api\/3\/workflow_steps\/c06eaac2-1723-4043-9dc8-38cc973e330c",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d8809ea8-71ce-4040-913e-772d10411144"
+        }
+    ],
+    "priority": null,
+    "uuid": "2855e308-a058-41a5-a9ad-1919a7629912",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "SLA",
+        "PostCreate"
+    ]
+}

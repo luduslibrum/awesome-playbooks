@@ -1,0 +1,953 @@
+{
+  "schema_version": 4,
+  "name": "Send an IOC to Recorded Future for Analysis",
+  "description": "This Story allows you to send a hash, IP, or domain to Recorded Future and returns a criticality level, summary, score, and link to Recorded Future.\n\ntags: Recorded Future, Enrich, IOCs, ThreatIntelligence, Intermediate\nicons: Recorded Future, 🚦, 😈\nvisibility: public",
+  "guid": "5ded05b1a037ecdc5eb4bcc4ec94f601",
+  "slug": "send_an_ioc_to_recorded_future_for_analysis",
+  "exported_at": "2022-07-11T17:30:58Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "webhook action",
+      "disabled": false,
+      "guid": "c5bdfb9a4549e8130b5fcb3758c5234b",
+      "options": {
+        "secret": "5c9cfe5efe8ff454bc3bbc1ddb4456f1",
+        "verbs": "get,post",
+        "path": "46ba3f12af7b2e35b4ebe1fd7d8ac7d4"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Domain trigger",
+      "disabled": false,
+      "guid": "a5277fc80090c18d4cfd3dc94d24e096",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "domain",
+            "path": "=webhook_action.body.ioc_type"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Recorded Future Lookup Domain",
+      "disabled": false,
+      "guid": "db026b4d3ed19c4fa3b05d0795e43296",
+      "options": {
+        "url": "https://api.recordedfuture.com/v2/domain/<<webhook_action.body.ioc_value>>",
+        "method": "get",
+        "payload": {
+          "fields": "intelCard,risk",
+          "domain": "<<webhook_action.body[\"IOC Value\"]>>"
+        },
+        "headers": {
+          "X-RFToken": "<<CREDENTIAL.recordedfuture>>",
+          "User-Agent": "tines_automation/templates_1.0"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Domain Exit",
+      "disabled": false,
+      "guid": "f65859451d48d0ff0e1353b231779696",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "<<recorded_future_lookup_domain.body.data.risk.criticalityLabel>>",
+          "Summary": "<<recorded_future_lookup_domain.body.data.risk.riskSummary>>",
+          "Score": "<<recorded_future_lookup_domain.body.data.risk.score>>",
+          "Link": "<<recorded_future_lookup_domain.body.data.intelCard>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Recorded Future Lookup IP",
+      "disabled": false,
+      "guid": "1cb1c74b503fd980c578297c3a209403",
+      "options": {
+        "url": "https://api.recordedfuture.com/v2/ip/<<webhook_action.body.ioc_value>>",
+        "method": "get",
+        "payload": {
+          "fields": "analystNotes,counts,entity,intelCard,metrics,risk,sightings,threatLists,timestamps",
+          "ip": "<<webhook_action.body[\"IOC Value\"]>>"
+        },
+        "headers": {
+          "X-RFToken": "<<CREDENTIAL.recordedfuture>>",
+          "User-Agent": "tines_automation/templates_1.0"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "IP Exit",
+      "disabled": false,
+      "guid": "7a44f4ecacf8e2cac7059f29a8d1baba",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "<<recorded_future_lookup_ip.body.data.risk.criticalityLabel>>",
+          "Summary": "<<recorded_future_lookup_ip.body.data.risk.riskSummary>>",
+          "Score": "<<recorded_future_lookup_ip.body.data.risk.score>>",
+          "Link": "<<recorded_future_lookup_ip.body.data.intelCard>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Recorded Future Lookup Hash",
+      "disabled": false,
+      "guid": "c2c29253181ce955b34c31deaaf7ff22",
+      "options": {
+        "url": "https://api.recordedfuture.com/v2/hash/<<webhook_action.body.ioc_value>>",
+        "method": "get",
+        "payload": {
+          "fields": "analystNotes,counts,entity,intelCard,metrics,risk,sightings,threatLists,timestamps",
+          "hash": "<<webhook_action.body.ioc_value>>"
+        },
+        "headers": {
+          "X-RFToken": "<<CREDENTIAL.recordedfuture>>",
+          "User-Agent": "tines_automation/templates_1.0"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Hash Exit",
+      "disabled": false,
+      "guid": "f42f44a1ab4cc6949b6ad8efe251c863",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "<<recorded_future_lookup_hash.body.data.risk.criticalityLabel>>",
+          "Summary": "<<recorded_future_lookup_hash.body.data.risk.riskSummary>>",
+          "Score": "<<recorded_future_lookup_hash.body.data.risk.score>>",
+          "Link": "<<recorded_future_lookup_hash.body.data.intelCard>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Hash trigger",
+      "disabled": false,
+      "guid": "66924f4ad278e7e973c23cb050db579b",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "hash",
+            "path": "<<webhook_action.body.ioc_type>>"
+          },
+          {
+            "type": "regex",
+            "value": "sha",
+            "path": "<<webhook_action.body.ioc_type>>"
+          },
+          {
+            "type": "regex",
+            "value": "filename",
+            "path": "<<webhook_action.body.ioc_type>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IP trigger",
+      "disabled": false,
+      "guid": "29d4223710cda4d021fee3558cb98c1e",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "ip",
+            "path": "=webhook_action.body.ioc_type"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Domain is Known Good",
+      "disabled": false,
+      "guid": "8f53f72d1631a672ef8710b14f15ef78",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "<<webhook_action.body.ioc_value>>",
+            "path": "=webhook_action.body.customer_metadata.known_good_domain"
+          },
+          {
+            "type": "in",
+            "value": "<<webhook_action.body.ioc_value>>",
+            "path": "=RESOURCE.global_known_good_domains"
+          }
+        ],
+        "emit_no_match": "true",
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Domain Known Good",
+      "disabled": false,
+      "guid": "716c19b7c56b698b11997e71f87ae741",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<check_if_domain_is_known_good.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Domain Not Known Good",
+      "disabled": false,
+      "guid": "7376abb4bd3e9341fdf6b67c551c540c",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<check_if_domain_is_known_good.rule_matched>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if in CIDR Range",
+      "disabled": false,
+      "guid": "68fec2a378a19db068100ef0eadf671b",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "true",
+            "path": "<<IN_CIDR(webhook_action.body.ioc_value, \"202.146.24.0/24\")>><<IN_CIDR(webhook_action.body.ioc_value, \"202.146.25.0/24\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if Not in CIDR Range",
+      "disabled": false,
+      "guid": "3a0b9a505dace40b5b947c1f9dc8fc43",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "true",
+            "path": "<<IN_CIDR(webhook_action.body.ioc_value, \"202.146.24.0/24\")>><<IN_CIDR(webhook_action.body.ioc_value, \"202.146.25.0/24\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Known Good IP",
+      "disabled": false,
+      "guid": "fe9f7506ea3eeeb73f67e9cc5566035a",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "Low",
+          "Summary": "This is an Known Good IP address",
+          "Score": "0",
+          "Link": "N/A"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Domain is Good Exit",
+      "disabled": false,
+      "guid": "b24dd623a0a1b03da17e0ee26683d230",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "Low",
+          "Summary": "Domain is a known good domain",
+          "Score": "0",
+          "Link": "N/A"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IP Not Found",
+      "disabled": false,
+      "guid": "40dc907b35d69950f61d1d980aa9f987",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "404",
+            "path": "=recorded_future_lookup_ip.status"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "IP not in RF",
+      "disabled": false,
+      "guid": "4a19a4b8825798e98c9ec4c76dcfc504",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "Unknown",
+          "Summary": "Hash does not exist in RF",
+          "Score": "0",
+          "Link": "N/A"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if invalid",
+      "disabled": false,
+      "guid": "55aeed7246ceadb026f2b9e2b78c63d3",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "",
+            "path": "<<webhook_action.body.ioc_value>>"
+          },
+          {
+            "type": "!regex",
+            "value": "domain|sha|hash|filename|ip",
+            "path": "<<webhook_action.body.ioc_type>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Invalid Exit",
+      "disabled": false,
+      "guid": "085070ec69bf6ce10e34cf6ed136d017",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "Unknown",
+          "Summary": "No IOC was provided to search or IOC invalid",
+          "Score": "N/A",
+          "Link": "N/A"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Hash Not Found",
+      "disabled": false,
+      "guid": "5944e0b6a83ddde8d971fc451d3cbd26",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "404",
+            "path": "=recorded_future_lookup_hash.status"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Hash IOC is Not Found",
+      "disabled": false,
+      "guid": "db11c907d1fe8cce1266fe4d063bbd15",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "Unknown",
+          "Summary": "Hash does not exist in RF",
+          "Score": "0",
+          "Link": "N/A"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Domain Not Found",
+      "disabled": false,
+      "guid": "8337295c408c5fcada3559f57778bc6a",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "404",
+            "path": "=recorded_future_lookup_domain.status"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Domain Not Found",
+      "disabled": false,
+      "guid": "a67a88d0cc433c08f021a9c041841d71",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "criticality": "Unknown",
+          "Summary": "Hash does not exist in RF",
+          "Score": "0",
+          "Link": "N/A"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Hash Found",
+      "disabled": false,
+      "guid": "6f2a7782f132ae43f8c596718b6b0070",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "200",
+            "path": "=recorded_future_lookup_hash.status"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Domain Found",
+      "disabled": false,
+      "guid": "905813ccfc999a02d0317e49ca12d049",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "200",
+            "path": "=recorded_future_lookup_domain.status"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IP Found",
+      "disabled": false,
+      "guid": "4b3cb080d3eff147ce2e1f9f91374b81",
+      "options": {
+        "rules": [
+          {
+            "type": "in",
+            "value": "200",
+            "path": "=recorded_future_lookup_ip.status"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Send IP to RF enrichment",
+      "disabled": false,
+      "guid": "effd26c50783af2f1fc63a214f614ba8",
+      "options": {
+        "story": "<<STORY.send_an_ioc_to_recorded_future_for_analysis>>",
+        "payload": {
+          "ioc_type": "ip",
+          "ioc_value": "83.1.1.2",
+          "data_source": "Crowdstrike Detection Enrichment"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Send Domain to RF enrichment",
+      "disabled": false,
+      "guid": "b2c541ade0611f8c35d00f46858961f3",
+      "options": {
+        "story": "<<STORY.send_an_ioc_to_recorded_future_for_analysis>>",
+        "payload": {
+          "ioc_type": "domain",
+          "ioc_value": "deparnized.ru",
+          "data_source": "Crowdstrike Detection Enrichment"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Send Hash to RF enrichment",
+      "disabled": false,
+      "guid": "a3462992927f5089f3bf63131de934eb",
+      "options": {
+        "story": "<<STORY.send_an_ioc_to_recorded_future_for_analysis>>",
+        "payload": {
+          "ioc_type": "hash",
+          "ioc_value": "ab2a474c3fd276095d7db5d78df356a572b1eee397ef1977facd8df214db3db0",
+          "data_source": "Crowdstrike Detection Enrichment"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/recorded_future.png\n\nSend an IOC to recorded future for analysis. This story allows you to send a hash, IP, or Domain to Recorded Future and returns a criticality level, summary, score and link to Recorded Future\n\n\n",
+      "position": [
+        615.0,
+        15.0
+      ],
+      "guid": "14358e804efec2921d09726b6fd975bb",
+      "width": null
+    },
+    {
+      "content": "\n# Required\n- [ ] A Resource `global known good domains` with an array of domains to be excluded from analysis\n- [ ] A  Credential `RecordedFuture`\n- [ ] Enter an IP Range in the `Check if in CIDR Range` and `Check if Not in CIDR Range` actions",
+      "position": [
+        930.0,
+        15.0
+      ],
+      "guid": "5e583164c1cd20faaccf1216cc8422b8",
+      "width": null
+    },
+    {
+      "content": "**NOTE**: \"Trigger if invalid\" has the 3 IOC types specified (see rule syntax). If for whatever reason new IOC types need to be analysed via RF, add them here also\n",
+      "position": [
+        -780.0,
+        465.0
+      ],
+      "guid": "5cbdf7ccda997f07ad866d266fa70a39",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 9
+    },
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 0,
+      "receiver": 8
+    },
+    {
+      "source": 0,
+      "receiver": 19
+    },
+    {
+      "source": 1,
+      "receiver": 10
+    },
+    {
+      "source": 2,
+      "receiver": 23
+    },
+    {
+      "source": 2,
+      "receiver": 26
+    },
+    {
+      "source": 4,
+      "receiver": 17
+    },
+    {
+      "source": 4,
+      "receiver": 27
+    },
+    {
+      "source": 6,
+      "receiver": 21
+    },
+    {
+      "source": 6,
+      "receiver": 25
+    },
+    {
+      "source": 8,
+      "receiver": 6
+    },
+    {
+      "source": 9,
+      "receiver": 13
+    },
+    {
+      "source": 9,
+      "receiver": 14
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 10,
+      "receiver": 12
+    },
+    {
+      "source": 11,
+      "receiver": 16
+    },
+    {
+      "source": 12,
+      "receiver": 2
+    },
+    {
+      "source": 13,
+      "receiver": 4
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 17,
+      "receiver": 18
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 21,
+      "receiver": 22
+    },
+    {
+      "source": 23,
+      "receiver": 24
+    },
+    {
+      "source": 25,
+      "receiver": 7
+    },
+    {
+      "source": 26,
+      "receiver": 3
+    },
+    {
+      "source": 27,
+      "receiver": 5
+    }
+  ],
+  "diagram_layout": "{\"c5bdfb9a4549e8130b5fcb3758c5234b\":[390,285],\"a5277fc80090c18d4cfd3dc94d24e096\":[390,390],\"db026b4d3ed19c4fa3b05d0795e43296\":[285,645],\"f65859451d48d0ff0e1353b231779696\":[285,870],\"1cb1c74b503fd980c578297c3a209403\":[915,645],\"7a44f4ecacf8e2cac7059f29a8d1baba\":[915,870],\"c2c29253181ce955b34c31deaaf7ff22\":[-15,645],\"f42f44a1ab4cc6949b6ad8efe251c863\":[-15,870],\"66924f4ad278e7e973c23cb050db579b\":[-15,390],\"29d4223710cda4d021fee3558cb98c1e\":[915,390],\"8f53f72d1631a672ef8710b14f15ef78\":[390,465],\"716c19b7c56b698b11997e71f87ae741\":[675,555],\"7376abb4bd3e9341fdf6b67c551c540c\":[285,555],\"68fec2a378a19db068100ef0eadf671b\":[915,495],\"3a0b9a505dace40b5b947c1f9dc8fc43\":[1305,495],\"fe9f7506ea3eeeb73f67e9cc5566035a\":[1305,870],\"b24dd623a0a1b03da17e0ee26683d230\":[675,870],\"40dc907b35d69950f61d1d980aa9f987\":[1125,735],\"4a19a4b8825798e98c9ec4c76dcfc504\":[1125,870],\"55aeed7246ceadb026f2b9e2b78c63d3\":[-495,390],\"085070ec69bf6ce10e34cf6ed136d017\":[-495,870],\"5944e0b6a83ddde8d971fc451d3cbd26\":[-225,750],\"db11c907d1fe8cce1266fe4d063bbd15\":[-225,870],\"8337295c408c5fcada3559f57778bc6a\":[480,735],\"a67a88d0cc433c08f021a9c041841d71\":[480,870],\"6f2a7782f132ae43f8c596718b6b0070\":[-15,750],\"905813ccfc999a02d0317e49ca12d049\":[285,735],\"4b3cb080d3eff147ce2e1f9f91374b81\":[915,735],\"effd26c50783af2f1fc63a214f614ba8\":[75,270],\"b2c541ade0611f8c35d00f46858961f3\":[75,180],\"a3462992927f5089f3bf63131de934eb\":[75,105]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "c5bdfb9a4549e8130b5fcb3758c5234b",
+  "exit_agent_guids": [
+    "f65859451d48d0ff0e1353b231779696",
+    "7a44f4ecacf8e2cac7059f29a8d1baba",
+    "f42f44a1ab4cc6949b6ad8efe251c863",
+    "085070ec69bf6ce10e34cf6ed136d017"
+  ],
+  "exit_agent_guid": "f65859451d48d0ff0e1353b231779696",
+  "send_to_stories": [],
+  "form": {
+    "name": "Send an IOC to Recorded Future for Analysis Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

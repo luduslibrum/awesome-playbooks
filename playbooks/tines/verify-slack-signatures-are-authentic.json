@@ -1,0 +1,303 @@
+{
+  "schema_version": 4,
+  "name": "Verify Slack signatures are authentic",
+  "description": "With this Story, you can respond to requests within Slack with confidence by verifying signatures. You'll be notified immediately if a signature doesn't match.\n\ntags: Slack, Phishing, Verify, Respond, Intermediate\nicons: slack,✍️,✅\nvisibility: public",
+  "guid": "51d7db3cfc5529ddd38c5c4a032395e1",
+  "slug": "verify_slack_signatures_are_authentic",
+  "exported_at": "2022-07-11T17:51:34Z",
+  "agents": [
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Gather Signature Information",
+      "disabled": false,
+      "guid": "6c85e0c7c34946b626a66715c5699ff5",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "X-Slack-Request-Timestamp": "<<webhook_action.headers.x_slack_request_timestamp>>",
+          "version": "v0",
+          "body": "<%for element in webhook_action.body%><<element[0]>>=<<REPLACE(URL_ENCODE(element[1]), \"~\", \"%7E\")>><%if FORLOOP.last != TRUE%>&<%endif%><%endfor%>",
+          "signing_secret": "YOU CAN REMOVE THIS BUT IT CAN BE USEFUL TO TEST WITH"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Gather Signature Information",
+      "disabled": false,
+      "guid": "51cd1397bcebbbec0abd9738649c13fb",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "X-Slack-Request-Timestamp": "1531420618",
+          "version": "v0",
+          "body": "token=xyzz0WbapA4vBCDEFasx0q6G&team_id=T1DC2JH3J&team_domain=testteamnow&channel_id=G8PSS9T3V&channel_name=foobar&user_id=U2CERLKJA&user_name=roadrunner&command=%2Fwebhook-collect&text=&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT1DC2JH3J%2F397700885554%2F96rGlfmibIGlgcZRskXaIFfN&trigger_id=398738663015.47445629121.803a0bc887a14d10d2c447fce8b6703c",
+          "signing_secret": "8f742231b10e8888abcd99yyyzzz85a5"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Signature",
+      "disabled": false,
+      "guid": "dd3ae71bb5f8d20b133b5ac8f5a8e89e",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "capture_all_parameters": "<<LOCAL.parameters>>",
+          "generate_signature": "<<HMAC_SHA256(LOCAL.parameters, gather_signature_information.signing_secret)>>",
+          "output_signature": "v0=<<HMAC_SHA256(LOCAL.parameters, gather_signature_information.signing_secret)>>"
+        },
+        "local": {
+          "parameters": "<<gather_signature_information.version>>:<<gather_signature_information[\"X-Slack-Request-Timestamp\"]>>:<<gather_signature_information.body>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Signatures Match",
+      "disabled": false,
+      "guid": "f6c7fba8677911113728ae4e450dbfb8",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "<<get_signature.output_signature>>",
+            "path": "<<webhook_action.headers.x_slack_signature>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Signatures Do Not Match",
+      "disabled": false,
+      "guid": "72966f3efa31f72576e4c29e57abc1cb",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "<<get_signature.output_signature>>",
+            "path": "<<webhook_action.headers.x_slack_signature>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Action",
+      "disabled": false,
+      "guid": "aca1fdbca60b8a59ee62ca780a216a20",
+      "options": {
+        "secret": "d4567cb744d505f3e2b79634a5a19c6c",
+        "verbs": "get,post",
+        "path": "ae0d157de2fbec6182544762f3f5526a"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Signature",
+      "disabled": false,
+      "guid": "71d86b2c2e52ddd9ce034726e824b443",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "capture_all_parameters": "<<LOCAL.parameters>>",
+          "generate_signature": "<<HMAC_SHA256(LOCAL.parameters, CREDENTIAL.slack_signing_secret)>>",
+          "output_signature": "v0=<<HMAC_SHA256(LOCAL.parameters, CREDENTIAL.slack_signing_secret)>>"
+        },
+        "local": {
+          "parameters": "<<gather_signature_information.version>>:<<gather_signature_information[\"X-Slack-Request-Timestamp\"]>>:<<gather_signature_information.body>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Action",
+      "disabled": false,
+      "guid": "ef97b6ba917b0265b2680795245034d3",
+      "options": {
+        "secret": "d4567cb744d505f3e2b79634a5a19c6c",
+        "verbs": "get,post",
+        "response_code": "<%if LOCAL.signature = headers.x_slack_signature%>201<%else%>401<%endif%>",
+        "path": "6bd5540039b7bc846d18cde9ccb5f0c7",
+        "local": {
+          "timestamp": "<<headers.x_slack_request_timestamp>>",
+          "version": "v0",
+          "requestbody": "<%for element in body%><<element[0]>>=<<REPLACE(URL_ENCODE(element[1]), \"~\", \"%7E\")>><%if FORLOOP.last != TRUE%>&<%endif%><%endfor%>",
+          "parameters": "<<LOCAL.version>>:<<LOCAL.timestamp>>:<<LOCAL.requestbody>>",
+          "signature": "v1=<<HMAC_SHA256(LOCAL.parameters, CREDENTIAL.slack_signing_secret)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Valid",
+      "disabled": false,
+      "guid": "f1fc809e9fa70a9524ee8473eb1ad7c8",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "201",
+            "path": "<<webhook_action.response.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Slack Documentation Example\n\nUsing the example from https://api.slack.com/authentication/verifying-requests-from-slack we can test easily\n\n```\n{**\n  \"X-Slack-Request-Timestamp\": \"1531420618\",\n  \"version\": \"v0\",\n  \"body\": \"token=xyzz0WbapA4vBCDEFasx0q6G&team_id=T1DC2JH3J&team_domain=testteamnow&channel_id=G8PSS9T3V&channel_name=foobar&user_id=U2CERLKJA&user_name=roadrunner**&command=%2Fwebhook-collect&text=&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT1DC2JH3J%2F397700885554%2F96rGlfmibIGlgcZRskXaIFfN&trigger_id=398738663015.47445629121.803a0bc887a14d10d2c447fce8b6703c\",\n  \"signing_secret\": \"8f742231b10e8888abcd99yyyzzz85a5\"\n}\n```\n\nWe use the hmac_sha256 liquid filter to generate the signature and see it matches the signature in the link\n`v0=a2114d57b48eac39b9ad189dd8316235a7b4a8d21a10bd27519666489c69b503`",
+      "position": [
+        1110.0,
+        525.0
+      ],
+      "guid": "d43dbabac00c296da08fd6e07952d92a",
+      "width": null
+    },
+    {
+      "content": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Slack_Technologies_Logo.svg/2560px-Slack_Technologies_Logo.svg.png\n\n# Slack Signature Verification\nUse the Webhook Action as your webhook for your slash command\n\nYou'll need to create a credential `slack signing secret` with your Secret from the Basic Information page of your Slack App\n\nIn the 'gather signature information' we're simply gathering up the parameters referenced in the documentation for ease of reference i.e. the version, timestamp, and body of the request (url encoded)\n\nWe then generate the signature using the `hmac_sha256` liquid filter together with a credential\n\nLastly, we check if the signature generated matches the one sent by Slack. If it does, we can continue our workflow, if it doesn't we should generate an alert",
+      "position": [
+        1115.0,
+        6.0
+      ],
+      "guid": "30d73349c77f6469ead0a30b1b8ebf23",
+      "width": null
+    },
+    {
+      "content": "# Single Webhook Action\n\nAll the logic in a single webhook. This will return a 201 if the request is valid, and a 401 if it is not.",
+      "position": [
+        1110.0,
+        915.0
+      ],
+      "guid": "8377c2ed1b74cbb459acd0f1e4338d74",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 6
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 5,
+      "receiver": 0
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 6,
+      "receiver": 3
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    }
+  ],
+  "diagram_layout": "{\"6c85e0c7c34946b626a66715c5699ff5\":[630,120],\"51cd1397bcebbbec0abd9738649c13fb\":[630,540],\"dd3ae71bb5f8d20b133b5ac8f5a8e89e\":[630,660],\"f6c7fba8677911113728ae4e450dbfb8\":[630,315],\"72966f3efa31f72576e4c29e57abc1cb\":[870,315],\"aca1fdbca60b8a59ee62ca780a216a20\":[630,45],\"71d86b2c2e52ddd9ce034726e824b443\":[630,210],\"ef97b6ba917b0265b2680795245034d3\":[630,915],\"f1fc809e9fa70a9524ee8473eb1ad7c8\":[630,1020]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Verify Slack signatures are authentic Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

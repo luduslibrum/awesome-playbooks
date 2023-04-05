@@ -1,0 +1,562 @@
+{
+  "name" : "CrowdStrike Snort Rules Ingest",
+  "type" : "Standard",
+  "panX" : 20.0,
+  "panY" : 20.0,
+  "logLevel" : "WARN",
+  "description" : "# CrowdStrike Snort Rules Ingest\n## Summary\nThis Playbook runs on a timer trigger to reach out to CrowdStrike's Falcon Intelligence Rules API, download the latest set of Snort rules, and create them as signatures within the ThreatConnect platform. In addition to storing the rule itself, the report number of the report associated to the Snort rule is extracted and added as a tag. Additionally the version number is added as an attribute.\n\n\n## Dependencies\n- Valid CrowdStrike Falcon Intelligence subscription and API access\n\n\n## Input parameters\nThe Component requires the following configuration parameters:\n- **CrowdStrike Falcon Intelligence API ID**: Your CrowdStrike Falcon Intelligence API ID.\n\n- **CrowdStrike Falcon Intelligence API Secret Key**: Your CrowdStrike Falcon Intelligence API Secret Key.\n\n\n## Output parameters\nN/A\n\n\nFor more information on CrowdStrike Falcon Intelligence service, please refer to [https://www.crowdstrike.com/endpoint-security-products/falcon-x-threat-intelligence/](https://www.crowdstrike.com/endpoint-security-products/falcon-x-threat-intelligence/)",
+  "priority" : 6,
+  "version" : "1.18",
+  "comment" : "Auto-Saved on Fri Jun 07 17:59:52 UTC 2019",
+  "jobList" : [ {
+    "id" : 35062,
+    "appCatalogItem" : {
+      "programName" : "TCPB - HTTP Client v2.0",
+      "displayName" : "HTTP Client",
+      "programVersion" : "2.0.15"
+    },
+    "name" : "Retrieve Today's Snort Rule ZIP",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "params"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "verify_ssl"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[{\"key\":\"Accept\",\"value\":\"application/zip\"},{\"key\":\"X-CSIX-CUSTID\",\"value\":\"${ORGANIZATION:TEXT:CrowdStrike Falcon Intelligence API ID}\"},{\"key\":\"X-CSIX-CUSTKEY\",\"value\":\"${ORGANIZATION:KEYCHAIN:CrowdStrike Falcon Intelligence API Secret}\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "https://intelapi.crowdstrike.com/rules/entities/latest-files/v1?type=snort-suricata-update"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "exclude_null_parameters"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "advanced"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "proxies_enabled"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "multipart"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "urlencode_body"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "http_method"
+      },
+      "value" : "GET"
+    } ],
+    "locationLeft" : 990.0,
+    "locationTop" : 140.0,
+    "outputVariables" : "[{\"name\":\"http.content\",\"type\":\"Binary\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"url\"]",
+    "layoutDisplayedInputParams" : "[\"url\",\"http_method\",\"params\",\"exclude_null_parameters\",\"headers\",\"advanced\",\"fail_on_error\",\"verify_ssl\",\"proxies_enabled\"]",
+    "playbookRetryDelayMinutes" : 1,
+    "playbookRetryMaxRetries" : 5
+  }, {
+    "id" : 35063,
+    "appCatalogItem" : {
+      "programName" : "TCPB - UncompressFile v1.0",
+      "displayName" : "Uncompress File",
+      "programVersion" : "1.0.8"
+    },
+    "name" : "Uncompress Snort Zip",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "password"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "content"
+      },
+      "value" : "#App:35062:http.content!Binary"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "algorithm"
+      },
+      "value" : "ZIP"
+    } ],
+    "locationLeft" : 1210.0,
+    "locationTop" : 140.0,
+    "outputVariables" : "[{\"name\":\"uncompress.stringdata\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35064,
+    "appCatalogItem" : {
+      "programName" : "TCPB - RegexExtract v1.0",
+      "displayName" : "Regex Extract",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Regex Snort Rules",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#App:35063:uncompress.stringdata!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_groups"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_nulls"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern_mapping"
+      },
+      "value" : "[{\"key\":\"snort.rules\",\"value\":\"(alert (?:.[\\\\\\\\\\\\n]?)*\\\\S)\"}]"
+    } ],
+    "locationLeft" : 1430.0,
+    "locationTop" : 140.0,
+    "outputVariables" : "[{\"name\":\"snort.rules\",\"type\":\"StringArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35065,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SignatureCreate v1.0",
+      "displayName" : "Create ThreatConnect Signature",
+      "programVersion" : "1.0.24"
+    },
+    "name" : "Create Signature",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "fail_on_error"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "CrowdStrike Falcon Intelligence"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "associations"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_name"
+      },
+      "value" : "#App:35066:j.rule.name!String.rules"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_name"
+      },
+      "value" : "#App:35066:j.rule.name!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_data"
+      },
+      "value" : "#App:35068:snort.rule!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags"
+      },
+      "value" : "#App:35077:report.ids!StringArray"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "attributes"
+      },
+      "value" : "[{\"key\":\"Additional Analysis and Context\",\"value\":\"Signature version: #App:35339:find_replace.output!String\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "signature_file_type"
+      },
+      "value" : "Snort"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "labels_all"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Signature"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "tags_all"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 1870.0,
+    "locationTop" : 820.0
+  }, {
+    "id" : 35066,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Join Rule Name Array",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"j.rule.name\",\"value\":\"#App:35069:rule.name!StringArray\"},{\"key\":\"j.rule.version\",\"value\":\"#App:35069:rule.version!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    } ],
+    "locationLeft" : 1450.0,
+    "locationTop" : 450.0
+  }, {
+    "id" : 35068,
+    "appCatalogItem" : {
+      "programName" : "Iterator",
+      "displayName" : "Iterator",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Iterate Rules",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_inputs"
+      },
+      "value" : "[{\"key\":\"snort.rule\",\"value\":\"#App:35064:snort.rules!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_outputs"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 1650.0,
+    "locationTop" : 140.0,
+    "outputVariables" : "[{\"name\":\"snort.rule\",\"type\":\"String\",\"loopVariables\":false}]",
+    "layoutRequiredInputParams" : "[\"array_inputs\"]",
+    "layoutDisplayedInputParams" : "[\"array_inputs\",\"array_outputs\"]"
+  }, {
+    "id" : 35069,
+    "appCatalogItem" : {
+      "programName" : "TCPB - RegexExtract v1.0",
+      "displayName" : "Regex Extract",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Regex Rule Name",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#App:35068:snort.rule!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_nulls"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern_mapping"
+      },
+      "value" : "[{\"key\":\"rule.name\",\"value\":\"msg: \\\"CrowdStrike ([a-zA-Z0-9 ,-\\\\[\\\\]]{1,})\\\"\"},{\"key\":\"rule.version\",\"value\":\"rev:([0-9]{8})\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_groups"
+      },
+      "value" : "true"
+    } ],
+    "locationLeft" : 1450.0,
+    "locationTop" : 340.0
+  }, {
+    "id" : 35077,
+    "appCatalogItem" : {
+      "programName" : "TCPB - RegexExtract v1.0",
+      "displayName" : "Regex Extract",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Regex Report ID",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_content"
+      },
+      "value" : "#App:35068:snort.rule!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "regex_pattern_mapping"
+      },
+      "value" : "[{\"key\":\"report.ids\",\"value\":\"(CSIT|CSA|CSTA|CSMR|CSIR)-[0-9]{1,10}\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "capture_groups"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "strip_nulls"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1870.0,
+    "locationTop" : 720.0,
+    "outputVariables" : "[{\"name\":\"report.ids\",\"type\":\"StringArray\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35339,
+    "appCatalogItem" : {
+      "programName" : "Find / Replace",
+      "displayName" : "Find and Replace",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Backreference Version Number",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "replace_regex"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_regex"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "input_text"
+      },
+      "value" : "#App:35066:j.rule.version!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "find_regex"
+      },
+      "value" : "$1"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1870.0,
+    "locationTop" : 610.0,
+    "outputVariables" : "[{\"name\":\"find_replace.output\",\"type\":\"String\",\"loopVariables\":false}]"
+  }, {
+    "id" : 35359,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SignatureRetrieveByName v1.0",
+      "displayName" : "Get ThreatConnect Signature by Name",
+      "programVersion" : "1.0.24"
+    },
+    "name" : "Check For Existing Rule",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "owner"
+      },
+      "value" : "CrowdStrike Falcon Intelligence"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "resource_type"
+      },
+      "value" : "Signature"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "names"
+      },
+      "value" : "#App:35066:j.rule.name!String"
+    } ],
+    "locationLeft" : 1450.0,
+    "locationTop" : 560.0
+  }, {
+    "id" : 35360,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Rule Already Exists?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:35359:tc.signature.count!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "true"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "0"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 1710.0,
+    "locationTop" : 770.0
+  }, {
+    "id" : 35361,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.13"
+    },
+    "name" : "Rule Already Exists",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"rule.exists\",\"value\":\"Snort Rule Already Exists In Platform\"}]"
+    } ],
+    "locationLeft" : 1870.0,
+    "locationTop" : 940.0
+  }, {
+    "id" : 35362,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Branches",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 2150.0,
+    "locationTop" : 820.0
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35062,
+    "targetJobId" : 35063
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35063,
+    "targetJobId" : 35064
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35064,
+    "targetJobId" : 35068
+  }, {
+    "type" : "StartLoop",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35068,
+    "targetJobId" : 35069
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35069,
+    "targetJobId" : 35066
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35077,
+    "targetJobId" : 35065
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35339,
+    "targetJobId" : 35077
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 35062,
+    "sourceTriggerId" : 4002
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35066,
+    "targetJobId" : 35359
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35359,
+    "targetJobId" : 35360
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35360,
+    "targetJobId" : 35339
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35360,
+    "targetJobId" : 35361
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35065,
+    "targetJobId" : 35362
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 35361,
+    "targetJobId" : 35362
+  }, {
+    "type" : "EndLoop",
+    "isCircularOnTarget" : true,
+    "sourceJobId" : 35362,
+    "targetJobId" : 35068
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 4002,
+    "name" : "Every Wednesday @ 1700",
+    "type" : "Timer",
+    "eventType" : "Create",
+    "locationLeft" : 770.0,
+    "locationTop" : 140.0,
+    "scheduleType" : "Weekly",
+    "scheduleCronFormat" : "00 00 22 ? * 4 *",
+    "anyOrg" : true,
+    "playbookTriggerFilterList" : [ ]
+  } ],
+  "playbookLabels" : [ {
+    "playbookLabelType" : {
+      "label" : "CrowdStrike"
+    }
+  }, {
+    "playbookLabelType" : {
+      "label" : "Snort"
+    }
+  } ],
+  "exportablePipes" : [ ]
+}

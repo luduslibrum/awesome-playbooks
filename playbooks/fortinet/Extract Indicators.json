@@ -1,0 +1,515 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Extract Indicators",
+    "aliasName": null,
+    "tag": "#PostCreate #system",
+    "description": "Extracts and creates indicators from the specified data and then enriches specific fields in alerts with the indicator data.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "alertMetaData"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/deaa4d19-7444-4f3a-a80e-9577436f25ef",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/0b115b6f-1dd8-49e3-ac26-24eb9ecb242b",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Wait for Enrichment",
+            "description": null,
+            "arguments": {
+                "when": "{{vars.steps.Create_Indicator | length > 0}}",
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "alerts.id",
+                            "value": "{{vars.input.records[0].id}}",
+                            "operator": "eq",
+                            "_operator": "eq"
+                        },
+                        {
+                            "type": "object",
+                            "field": "reputation",
+                            "value": "\/api\/3\/picklists\/ae98ebc6-beef-4882-9980-1d88fc6d87cd",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/ae98ebc6-beef-4882-9980-1d88fc6d87cd",
+                                "itemValue": "TBD"
+                            },
+                            "operator": "eq"
+                        }
+                    ]
+                },
+                "module": "indicators?$limit=30",
+                "do_until": {
+                    "delay": 65,
+                    "retries": 2,
+                    "condition": "{{vars.result | length == 0}}"
+                },
+                "checkboxFields": false,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "1520",
+            "left": "120",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "6387638d-9134-4ecb-a492-fe721b866e7a"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Indicators",
+            "description": null,
+            "arguments": {
+                "alert_field_iocs": "{{ vars.alert_field_iocs | json_query('[?value != null]') }}"
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "085701c3-8411-41da-9bc4-86d7ef5660ec"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Indicator List",
+            "description": null,
+            "arguments": {
+                "temp": "{% for key,value in vars.indicator_type_map.items()%}{%if vars.alert_metadata.get(key) %}{% set list_vals = vars.alert_metadata.get(key).split(\",\") %}{%for val in list_vals%}{{vars.alert_field_iocs.append({\"type\": value, \"value\":val})}}{%endfor%}{%endif%}{%endfor%}{{vars.alert_field_iocs}}",
+                "excluded_indicators": "{{vars.ips | union(vars.domains) | union(vars.urls)}}"
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "7d4b5714-825d-4abd-a258-18db0cfd3475"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Alert State",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "state": {
+                        "id": 71,
+                        "@id": "\/api\/3\/picklists\/501d0562-89a0-4079-9a9e-cdde7d34e3ed",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Indicator Extracted",
+                        "listName": "\/api\/3\/picklist_names\/2f9ed741-25fe-475a-9f12-64336288eebf",
+                        "itemValue": "Indicator Extracted",
+                        "orderIndex": 2
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "collectionType": "\/api\/3\/alerts",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "1650",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "ba6e4c12-47f0-40f3-9ff4-3c16acde7abd"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Unified Email IOCs",
+            "description": null,
+            "arguments": {
+                "_dummy": "{%if vars.email_body_iocs %} \n{%for item in vars.email_body_iocs%}\n{{vars.unified_iocs.append(item)}}\n{%endfor%}\n{%endif%}\n\n{%if vars.header_iocs%}\n{%for item in vars.header_iocs%}\n{{vars.unified_iocs.append(item)}}\n{%endfor%}\n{%endif%}\n\n{%if vars.description_iocs%}\n{%for item in vars.description_iocs%}\n{{vars.unified_iocs.append(item)}}\n{%endfor%}\n{%endif%}\n\n{%if vars.file_hash_iocs %}\n{%for item in vars.file_hash_iocs%}\n{{vars.unified_iocs.append(item)}}\n{%endfor%}\n{%endif%}\n\n{%for item in vars.alert_field_iocs%}\n{{vars.unified_iocs.append(item)}}\n{%endfor%}"
+            },
+            "status": null,
+            "top": "1110",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "971f518b-11b9-432c-ab86-2b9d67c63f20"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Extract Indicators from header",
+            "description": "This is step is specifically designed for 'Suspicious Email' Alert",
+            "arguments": {
+                "name": "CyOps Utilities",
+                "when": "{{vars.input.records[0].returnPath or vars.input.params.alertMetaData.returnPath}}",
+                "params": {
+                    "data": "{{vars.input.params.alertMetaData.returnPath| ternary(vars.input.params.alertMetaData.returnPath,vars.input.records[0].returnPath)}}",
+                    "whitelist": "{{vars.excluded_indicators}}",
+                    "case_sensitive": "",
+                    "override_regex": "",
+                    "private_whitelist": ""
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "extract_artifacts",
+                "operationTitle": "CyOPs: Extract Artifacts from string",
+                "step_variables": {
+                    "header_iocs": "{{vars.result.data.results}}"
+                },
+                "operationOutput": []
+            },
+            "status": null,
+            "top": "705",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "1f26db7b-ace2-4ded-bcd7-43fd4e401d19"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "alerts",
+                "resources": [
+                    "alerts"
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "alertMetaData": "{{ vars.alertMetaData }}"
+                        },
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "state",
+                            "value": "\/api\/3\/picklists\/501d0562-89a0-4079-9a9e-cdde7d34e3ed",
+                            "_value": {
+                                "@id": "\/api\/3\/picklists\/501d0562-89a0-4079-9a9e-cdde7d34e3ed",
+                                "display": "Indicator Extracted",
+                                "itemValue": "Indicator Extracted"
+                            },
+                            "operator": "neq"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/ea155646-3821-4542-9702-b246da430a8d",
+            "uuid": "0b115b6f-1dd8-49e3-ac26-24eb9ecb242b"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Extract Indicators from body",
+            "description": "This is step is specifically designed for 'Suspicious Email' Alert",
+            "arguments": {
+                "name": "CyOps Utilities",
+                "when": "{{vars.input.records[0].emailBody or vars.input.params.alertMetaData.emailBody}}",
+                "params": {
+                    "data": "{{vars.input.params.alertMetaData.emailBody | ternary(vars.input.params.alertMetaData.emailBody,vars.input.records[0].emailBody)}}",
+                    "whitelist": "{{vars.excluded_indicators}}",
+                    "case_sensitive": "",
+                    "override_regex": "",
+                    "private_whitelist": ""
+                },
+                "version": "3.0.3",
+                "connector": "cyops_utilities",
+                "operation": "extract_artifacts",
+                "operationTitle": "CyOPs: Extract Artifacts from string",
+                "step_variables": {
+                    "email_body_iocs": "{{vars.result.data.results}}"
+                },
+                "operationOutput": []
+            },
+            "status": null,
+            "top": "840",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "46eae51d-e1e1-420f-a8f9-5023687232af"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": "You can customize extraction by modifying indicator map in configuration step",
+            "arguments": {
+                "ips": "{{globalVars.Excludelist_IPs.split(',')}}",
+                "urls": "{{globalVars.Excludelist_URLs.split(',')}}",
+                "domains": "{{globalVars.Excludelist_Domains.split(',')}}",
+                "alert_iri": "{{vars.input.params.alertMetaData['@id'] | ternary(vars.input.params.alertMetaData['@id'],vars.input.records[0]['@id'])}}",
+                "unified_iocs": "[]",
+                "alert_metadata": "{{vars.input.params.alertMetaData | ternary(vars.input.params.alertMetaData,vars.input.records[0])}}",
+                "alert_field_iocs": "[]",
+                "indicator_type_map": "{{globalVars.Indicator_Type_Map}}",
+                "excluded_indicators": "[]"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "2fcbe2aa-1531-4947-8de8-03e733d545b2"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Indicator",
+            "description": "Note, Skipping Host Indicator Creation",
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.unified_iocs}}",
+                    "__bulk": true,
+                    "parallel": false,
+                    "condition": "{{vars.item.value != \"NA\"}}",
+                    "batch_size": 200
+                },
+                "resource": {
+                    "tlp": "\/api\/3\/picklists\/7bff95b7-6438-4b01-b23a-0fe8cb5b33d3",
+                    "file": "{{ vars.item.indicatorFileIri or None }}",
+                    "value": "{%if vars.item.type == \"IndicatorType\" | picklist(\"Email Address\", \"itemValue\")%}{{vars.item.value | regex_search('[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+')}}{%else%}{{vars.item.value}}{%endif%}",
+                    "__link": {
+                        "alerts": "{{vars.alert_iri}}"
+                    },
+                    "__replace": "true",
+                    "expiryDate": "{{arrow.utcnow().shift(days=+(globalVars.Default_Indicator_TTL_Days | int)).timestamp}}",
+                    "expiredStatus": "\/api\/3\/picklists\/d4ca4a72-7974-4b93-843e-da9efa235c6e",
+                    "indicatorStatus": "\/api\/3\/picklists\/2f5cff61-fbff-4bb3-96be-302b78a9fb47",
+                    "typeofindicator": "{{('IndicatorType' | picklist(vars.item.type))['@id']}}"
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "\/api\/3\/upsert\/indicators",
+                "__recommend": [],
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "1380",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "c9057eb9-06a7-4b9c-a2d6-4f7f16ae54a0"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Removing NULL Indicators",
+            "description": "Removing null indicators extracted from email",
+            "arguments": {
+                "unified_iocs": "{{ vars.unified_iocs | json_query('[?value != null]') }}"
+            },
+            "status": null,
+            "top": "1245",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "f0e42b54-be9f-4333-b881-20b73aade2f7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Is Dedicated Tenant Record",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes, Extract at Tenant Node",
+                        "step_iri": "\/api\/3\/workflow_steps\/d3f73ed3-d9c9-40a1-8262-d41d2f0d82ba",
+                        "condition": "{{ 'tenant' in vars.input.records[0] and vars.input.records[0].tenant.isDedicated and vars.input.records[0].tenant.role != 'self' }}",
+                        "step_name": "Exit"
+                    },
+                    {
+                        "option": "No, Extract Here",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/2fcbe2aa-1531-4947-8de8-03e733d545b2",
+                        "step_name": "Configuration"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "165",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "3ecbf0dd-0d18-438a-8675-e57ddecad6f2"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Exit",
+            "description": null,
+            "arguments": {
+                "params": [],
+                "version": "3.2.1",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "475",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "d3f73ed3-d9c9-40a1-8262-d41d2f0d82ba"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Extract Indicators from description",
+            "description": "This is step is specifically designed for 'Suspicious Email' Alert",
+            "arguments": {
+                "name": "CyOps Utilities",
+                "when": "{{vars.input.records[0].description or vars.input.params.alertMetaData.description}}",
+                "params": {
+                    "data": "{{vars.input.params.alertMetaData.description | ternary(vars.input.params.alertMetaData.description,vars.input.records[0].description)}}",
+                    "whitelist": "{{vars.excluded_indicators}}",
+                    "case_sensitive": "",
+                    "override_regex": "",
+                    "private_whitelist": ""
+                },
+                "version": "3.2.0",
+                "connector": "cyops_utilities",
+                "operation": "extract_artifacts",
+                "operationTitle": "CyOPs: Extract Artifacts from string",
+                "step_variables": {
+                    "description_iocs": "{{vars.result.data.results}}"
+                },
+                "operationOutput": []
+            },
+            "status": null,
+            "top": "975",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "eb147845-3329-4cd1-b4d3-0d58e7604a04"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Update Indicator List -> Get Indicators",
+            "targetStep": "\/api\/3\/workflow_steps\/085701c3-8411-41da-9bc4-86d7ef5660ec",
+            "sourceStep": "\/api\/3\/workflow_steps\/7d4b5714-825d-4abd-a258-18db0cfd3475",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "45796dd1-f9fb-4a70-a1d4-3990f2644e13"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Check Reputation Status -> Update Alert State",
+            "targetStep": "\/api\/3\/workflow_steps\/ba6e4c12-47f0-40f3-9ff4-3c16acde7abd",
+            "sourceStep": "\/api\/3\/workflow_steps\/6387638d-9134-4ecb-a492-fe721b866e7a",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "2b8c9353-feba-4b82-b58a-169a2e5ba3c5"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Extract Indicators from header -> Extract Indicators from body",
+            "targetStep": "\/api\/3\/workflow_steps\/46eae51d-e1e1-420f-a8f9-5023687232af",
+            "sourceStep": "\/api\/3\/workflow_steps\/1f26db7b-ace2-4ded-bcd7-43fd4e401d19",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "2b0d0c6f-3877-42d2-af09-28c02ad6e256"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Indicators -> Extract Indicators from header",
+            "targetStep": "\/api\/3\/workflow_steps\/1f26db7b-ace2-4ded-bcd7-43fd4e401d19",
+            "sourceStep": "\/api\/3\/workflow_steps\/085701c3-8411-41da-9bc4-86d7ef5660ec",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "91000150-9aa1-4262-8f88-6eb088f48b4e"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Update Indicator List",
+            "targetStep": "\/api\/3\/workflow_steps\/7d4b5714-825d-4abd-a258-18db0cfd3475",
+            "sourceStep": "\/api\/3\/workflow_steps\/2fcbe2aa-1531-4947-8de8-03e733d545b2",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d15beded-415c-4dba-94f7-a5aaf66c0ba3"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create Indicator -> Wait for Enrichment",
+            "targetStep": "\/api\/3\/workflow_steps\/6387638d-9134-4ecb-a492-fe721b866e7a",
+            "sourceStep": "\/api\/3\/workflow_steps\/c9057eb9-06a7-4b9c-a2d6-4f7f16ae54a0",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9ef9abf7-9b2e-45f3-a84a-19d248741b1d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Unified Email IOCs -> Removing NULL Indicators",
+            "targetStep": "\/api\/3\/workflow_steps\/f0e42b54-be9f-4333-b881-20b73aade2f7",
+            "sourceStep": "\/api\/3\/workflow_steps\/971f518b-11b9-432c-ab86-2b9d67c63f20",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "f5b0a166-2c71-4a3d-9a4d-654ec617b8f0"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Removing NULL Indicators -> Create Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/c9057eb9-06a7-4b9c-a2d6-4f7f16ae54a0",
+            "sourceStep": "\/api\/3\/workflow_steps\/f0e42b54-be9f-4333-b881-20b73aade2f7",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "8726ec8f-0495-4d87-aea0-2972500117c7"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Is the record for a dedicated tenant",
+            "targetStep": "\/api\/3\/workflow_steps\/3ecbf0dd-0d18-438a-8675-e57ddecad6f2",
+            "sourceStep": "\/api\/3\/workflow_steps\/0b115b6f-1dd8-49e3-ac26-24eb9ecb242b",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "326528b9-5a7f-4870-ba51-d7e526c3a02e"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Extract Indicators from body -> Extract Indicators from description",
+            "targetStep": "\/api\/3\/workflow_steps\/eb147845-3329-4cd1-b4d3-0d58e7604a04",
+            "sourceStep": "\/api\/3\/workflow_steps\/46eae51d-e1e1-420f-a8f9-5023687232af",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "8cf2970e-d756-4caf-8d92-aab89a766f14"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Extract Indicators from description -> Unified Email IOCs",
+            "targetStep": "\/api\/3\/workflow_steps\/971f518b-11b9-432c-ab86-2b9d67c63f20",
+            "sourceStep": "\/api\/3\/workflow_steps\/eb147845-3329-4cd1-b4d3-0d58e7604a04",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1fc57de4-bef1-4809-8474-48a408be6501"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is the record for a dedicated tenant -> Exit",
+            "targetStep": "\/api\/3\/workflow_steps\/d3f73ed3-d9c9-40a1-8262-d41d2f0d82ba",
+            "sourceStep": "\/api\/3\/workflow_steps\/3ecbf0dd-0d18-438a-8675-e57ddecad6f2",
+            "label": "Yes, Extract at Tenant Node",
+            "isExecuted": false,
+            "uuid": "26b78dab-5c1d-4eae-8dfa-df53b0dae554"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is the record for a dedicated tenant -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/2fcbe2aa-1531-4947-8de8-03e733d545b2",
+            "sourceStep": "\/api\/3\/workflow_steps\/3ecbf0dd-0d18-438a-8675-e57ddecad6f2",
+            "label": "No, Extract Here",
+            "isExecuted": false,
+            "uuid": "3620c7ae-c72c-4a17-9832-1ff743c38dbc"
+        }
+    ],
+    "priority": null,
+    "uuid": "eb230ee2-e402-4327-8dba-1982c84ea1c1",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "PostCreate"
+    ]
+}

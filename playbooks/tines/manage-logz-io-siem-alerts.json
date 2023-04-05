@@ -1,0 +1,242 @@
+{
+  "schema_version": 4,
+  "name": "Manage Logz.io SIEM Alerts",
+  "description": "Query Logz.io to retrieve security alerts in the past 15 minutes. A Jira ticket will be created for each event, containing some alert context.\n\ntags: Logz.io, SIEM, Alerts, Jira, CaseManagement, Intermediate\nicons: logz, ⏳, ❓\nvisibility: public",
+  "guid": "3dcb455f8239db19af7e6886257066ba",
+  "slug": "manage_logz_io_siem_alerts",
+  "exported_at": "2022-07-11T17:28:02Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch Security Events",
+      "disabled": false,
+      "guid": "14cd0a2ead20f1d15ce3990207b4c936",
+      "options": {
+        "url": "https://api.logz.io/v2/security/rules/events/search",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "filter": {
+            "status": [
+              "NEW"
+            ],
+            "timeRange": {
+              "fromDate": "<<DATE(\"now\", \"%s\") |> MINUS(%, 900)>>",
+              "toDate": "<<DATE(\"now\", \"%s\")>>"
+            }
+          },
+          "sort": [
+            {
+              "field": "SEVERITY"
+            },
+            {
+              "field": "DATE"
+            }
+          ],
+          "pagination": {
+            "pageNumber": 1,
+            "pageSize": 25
+          }
+        },
+        "headers": {
+          "X-API-TOKEN": "<<CREDENTIAL.logz_io>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch the Logs that triggered a Security Event",
+      "disabled": false,
+      "guid": "2d94108beb53697ff7658e69444f7956",
+      "options": {
+        "url": "https://api.logz.io/v2/security/rules/events/logs/search",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "filter": {
+            "alertEventId": "<<fetch_security_events.body.results.first.alertEventId>>"
+          },
+          "pagination": {
+            "pageNumber": 1,
+            "pageSize": 10
+          }
+        },
+        "headers": {
+          "X-API-TOKEN": "<<CREDENTIAL.logz_io>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Results",
+      "disabled": false,
+      "guid": "c7c1866c26d6d062a2b4a0c441befa19",
+      "options": {
+        "mode": "explode",
+        "path": "=fetch_security_events.body.results",
+        "to": "new_alert"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "0905ab7bf13cf75a97ebd42244db4569",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "*Name:* <<explode_results.new_alert.name>>\n*Event Description:* <<explode_results.new_alert.description>>\n||Type||Tenant Name||Target||Outcome||Client IP||<%for log in SLICE_ARRAY(fetch_the_logs_that_triggered_a_security_event.body.results, 0, 10)%>\n|<<log.type>>|<<log.tenant_name>>|<<log.target.first.displayName>>|<<log.outcome.result>>|<<log.client.ipAddress>><%endfor%>",
+            "summary": "New Security Alert Triggered"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Results",
+      "disabled": false,
+      "guid": "eb2df27c3b36875058f63d531834d6b8",
+      "options": {
+        "mode": "deduplicate",
+        "path": "<<explode_results.new_alert.alertEventId>>",
+        "lookback": "500"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "![](https://image-uploads.tines.com/logzio.jpg)\n\n# Story Overview\n\nThis Story will pull security events from Logz.io, look up the logs associated to the triggered security event, and create a Jira ticket for each event with the information extracted from the logs. ",
+      "position": [
+        510.0,
+        180.0
+      ],
+      "guid": "d5b91f6ef334c837d3880813d96e778a",
+      "width": null
+    },
+    {
+      "content": "# Story Requirements",
+      "position": [
+        1110.0,
+        300.0
+      ],
+      "guid": "e806e1c4cd4f35eec0b89136cb178917",
+      "width": null
+    },
+    {
+      "content": "# Other\n- [ ] Update Project Key in 'Create Issue in Jira' Action with proper Jira Project name",
+      "position": [
+        1110.0,
+        555.0
+      ],
+      "guid": "a8392fe9aa91d66a31b996c7cc310680",
+      "width": null
+    },
+    {
+      "content": "# Tines\n\n# Credentials\n- [ ] .CREDENTIAL.logz_io\n- [ ] .CREDENTIAL.jira\n\n# Resources\n- [ ] .RESOURCE.jira_username ",
+      "position": [
+        1110.0,
+        360.0
+      ],
+      "guid": "84cad0b7f5f0d372139616175cc5e340",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"14cd0a2ead20f1d15ce3990207b4c936\":[825,255],\"2d94108beb53697ff7658e69444f7956\":[825,525],\"c7c1866c26d6d062a2b4a0c441befa19\":[825,345],\"0905ab7bf13cf75a97ebd42244db4569\":[825,630],\"eb2df27c3b36875058f63d531834d6b8\":[825,435]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Manage Logz.io SIEM Alerts Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

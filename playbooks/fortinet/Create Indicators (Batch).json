@@ -1,0 +1,134 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Create Indicators (Batch)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Creates indicator records in bulk.",
+    "isActive": false,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicator_list",
+        "alert_iri"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/deaa4d19-7444-4f3a-a80e-9577436f25ef",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/1e01b065-f834-40a9-89ff-1bb2a38f48c8",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "alert_iri": "{{ vars.alert_iri }}",
+                            "indicator_list": "{{ vars.indicator_list }}"
+                        }
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "1e01b065-f834-40a9-89ff-1bb2a38f48c8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Indicator",
+            "description": "Note, Skipping Host Indicator Creation",
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.input.params['indicator_list']}}",
+                    "__bulk": true,
+                    "condition": "{{vars.item.value != \"NA\"}}",
+                    "batch_size": 100
+                },
+                "resource": {
+                    "tlp": {
+                        "id": 329,
+                        "@id": "\/api\/3\/picklists\/7bff95b7-6438-4b01-b23a-0fe8cb5b33d3",
+                        "icon": null,
+                        "uuid": "7bff95b7-6438-4b01-b23a-0fe8cb5b33d3",
+                        "@type": "Picklist",
+                        "color": "#FFBF00",
+                        "display": "Amber",
+                        "listName": "\/api\/3\/picklist_names\/40f1345f-f679-43c0-9237-5b06edd8385f",
+                        "itemValue": "Amber",
+                        "orderIndex": 1
+                    },
+                    "file": "{{ vars.item.indicatorFileIri or None }}",
+                    "value": "{%if vars.item.type == \"IndicatorType\" | picklist(\"Email Address\", \"itemValue\")%}{{vars.item.value | regex_search('[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+')}}{%else%}{{vars.item.value}}{%endif%}",
+                    "__link": {
+                        "alerts": "{{vars.input.params['alert_iri']}}"
+                    },
+                    "__replace": "true",
+                    "expiryDate": "{{arrow.utcnow().shift(days=+(globalVars.Default_Indicator_TTL_Days | int)).timestamp}}",
+                    "expiredStatus": {
+                        "id": 327,
+                        "@id": "\/api\/3\/picklists\/d4ca4a72-7974-4b93-843e-da9efa235c6e",
+                        "icon": null,
+                        "uuid": "d4ca4a72-7974-4b93-843e-da9efa235c6e",
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "No",
+                        "listName": "\/api\/3\/picklist_names\/315954aa-906f-405c-989e-66477ecc268b",
+                        "itemValue": "No",
+                        "orderIndex": 1
+                    },
+                    "indicatorStatus": {
+                        "id": 346,
+                        "@id": "\/api\/3\/picklists\/2f5cff61-fbff-4bb3-96be-302b78a9fb47",
+                        "icon": null,
+                        "uuid": "2f5cff61-fbff-4bb3-96be-302b78a9fb47",
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "TBD",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/e6639d57-94a9-432f-a46f-b2b530402077",
+                        "itemValue": "TBD",
+                        "orderIndex": 2
+                    },
+                    "typeofindicator": "{{('IndicatorType' | picklist(vars.item.type))['@id']}}"
+                },
+                "_showJson": false,
+                "operation": "Append",
+                "collection": "\/api\/3\/upsert\/indicators",
+                "__recommend": [],
+                "fieldOperation": {
+                    "recordTags": "Append"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "a2fcb8e7-679a-4235-a24c-c4181a2b8f39"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Create Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/a2fcb8e7-679a-4235-a24c-c4181a2b8f39",
+            "sourceStep": "\/api\/3\/workflow_steps\/1e01b065-f834-40a9-89ff-1bb2a38f48c8",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1962d216-25f0-4674-ac0a-558c88a8053a"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "7e4998c7-bbe7-465f-8654-892db9fda9ba",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "Subroutine"
+    ]
+}

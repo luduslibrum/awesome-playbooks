@@ -1,0 +1,582 @@
+{
+  "schema_version": 4,
+  "name": "Analyze IOCs in Pulsedive",
+  "description": "Submit IOCs, analyze them in Pulsedive, and email a report of the results.\n\ntags: Pulsedive, IOCs, Domain, IP, URL, Threats, Orchestrate, Intermediate\nicons: 🕵️‍♀️🪄🌚\nvisibility: public",
+  "guid": "eeb7de517c617171f0f6942cfaf2bb99",
+  "slug": "analyze_iocs_in_pulsedive",
+  "exported_at": "2022-07-11T17:47:02Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive Data",
+      "disabled": false,
+      "guid": "4b745dda3533bf11bd7757d0ad4146b0",
+      "options": {
+        "path": "0f1bbdc8a29d4f844d829e8f64c0d0cb",
+        "secret": "7e17bd42d19d28b15a397864371c7861",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Indicators in Pulsedive",
+      "disabled": false,
+      "guid": "ad12fbedbee58d0c50eda0d0145a2c0b",
+      "options": {
+        "url": "https://pulsedive.com/api/explore.php",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "limit": "10",
+          "pretty": "1",
+          "q": "ioc=<<explode_iocs.ioc>>"
+        },
+        "headers": {},
+        "timeout": "300"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract IOCs",
+      "disabled": false,
+      "guid": "84cec06891daf8356916f6d1385647b3",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=receive_data.body.iocs",
+            "regexp": "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b",
+            "to": "ip"
+          },
+          {
+            "path": "=receive_data.body.iocs",
+            "regexp": "\\b[a-fA-F0-9]{32}\\b",
+            "to": "md5"
+          },
+          {
+            "path": "=receive_data.body.iocs",
+            "regexp": "\\b[a-fA-F0-9]{64}\\b",
+            "to": "sha256"
+          },
+          {
+            "path": "=receive_data.body.iocs",
+            "regexp": "[A-Za-z]+:\\/\\/[A-Za-z0-9\\-_]+\\.[A-Za-z0-9\\-_:%&;\\?\\#\\/.=]+",
+            "to": "url"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode IOCs",
+      "disabled": false,
+      "guid": "3a3da1f928d53d1f79d19ed91507e4fb",
+      "options": {
+        "mode": "explode",
+        "path": "=SPLIT(combine_iocs.data, \",\")",
+        "to": "ioc"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IOC Seen",
+      "disabled": false,
+      "guid": "c987dcbe787369ef61a91044b48bd150",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(search_indicators_in_pulsedive.body.results)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Combine IOCs",
+      "disabled": false,
+      "guid": "5a3619676476b823374a30c7a7f32f47",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "data": "<%if extract_iocs.ip%><<JOIN(extract_iocs.ip, \",\")>>,<%endif%><%if extract_iocs.sha256%><<JOIN(extract_iocs.sha256, \",\")>>,<%endif%><%if extract_iocs.md5%><<JOIN(extract_iocs.md5, \",\")>>,<%endif%><%if extract_iocs.url%><<JOIN(extract_iocs.url, \",\")>><%endif%>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IOCs Present",
+      "disabled": false,
+      "guid": "369137a30ab50a7315effdd11c75eb89",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b",
+            "path": "<<receive_data.body.iocs>>"
+          },
+          {
+            "type": "regex",
+            "value": "[A-Za-z]+:\\/\\/[A-Za-z0-9\\-_]+\\.[A-Za-z0-9\\-_:%&;\\?\\#\\/.=]+",
+            "path": "<<receive_data.body.iocs>>"
+          },
+          {
+            "type": "regex",
+            "value": "\\b[a-fA-F0-9]{32}\\b",
+            "path": "<<receive_data.body.iocs>>"
+          },
+          {
+            "type": "regex",
+            "value": "\\b[a-fA-F0-9]{64}\\b",
+            "path": "<<receive_data.body.iocs>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Scan an Indicator in Pulsedive",
+      "disabled": false,
+      "guid": "7cc75848146058a1cd3285980ae9a5a7",
+      "options": {
+        "url": "https://pulsedive.com/api/analyze.php",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "key": "<<CREDENTIAL.pulsedive>>",
+          "value": "<<explode_iocs.ioc>>",
+          "probe": "1"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "IOC Not Seen",
+      "disabled": false,
+      "guid": "10cb43caa7794b01babeca86c28c58ac",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(search_indicators_in_pulsedive.body.results)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Verdict",
+      "disabled": false,
+      "guid": "d97c7ff692a3c57ada0bdf3fe15aa3f1",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "ioc": "<<explode_iocs.ioc>>",
+          "result": "=search_indicators_in_pulsedive.body.results.first"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Verdict",
+      "disabled": false,
+      "guid": "ffc6fde21626a3dad3c020d6d3dda7b3",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "ioc": "<<explode_iocs.ioc>>",
+          "result": "=get_an_indicator_scan_in_pulsedive.body.data"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get an Indicator Scan in Pulsedive",
+      "disabled": false,
+      "guid": "96455c91d1f8c0da834efd5078d9c785",
+      "options": {
+        "url": "https://pulsedive.com/api/analyze.php",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "key": "<<CREDENTIAL.pulsedive>>",
+          "qid": "<<scan_an_indicator_in_pulsedive.body.qid>>"
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Failed Search",
+      "disabled": false,
+      "guid": "f21afe8f9ac153385dd392d15beeef27",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "200",
+            "path": "<<search_indicators_in_pulsedive.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build Verdict",
+      "disabled": false,
+      "guid": "daf045bb140b27cdcad1d6196331d918",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "ioc": "<<explode_iocs.ioc>>",
+          "result": "<<search_indicators_in_pulsedive.body.error>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay",
+      "disabled": false,
+      "guid": "729fbeb46d48038613b8be0030f09adc",
+      "options": {
+        "mode": "delay",
+        "seconds": 10
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode Results",
+      "disabled": false,
+      "guid": "5dc4b287698f411474c2dbb01b36092b",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=explode_iocs.guid",
+        "size_path": "=LIQUID_SIZE(explode_iocs, \"dot_notation\")",
+        "item_path": "=build_verdict"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Results",
+      "disabled": false,
+      "guid": "d3d04faab652e568a0fbbdc889f0069d",
+      "options": {
+        "recipients": [
+          "<<receive_data.body.email>>"
+        ],
+        "subject": "Pulsedive IoC Report",
+        "body": "<style type=\"text/css\">\n\tbody {\n\t\tmargin: 0;\n\t\tpadding: 0;\n\t}\n\n\ttable,\n\ttd,\n\ttr {\n\t\tvertical-align: top;\n\t\tborder-collapse: collapse;\n\t}\n\n\t* {\n\t\tline-height: inherit;\n\t}\n\n\ta[x-apple-data-detectors=true] {\n\t\tcolor: inherit !important;\n\t\ttext-decoration: none !important;\n\t}\n</style>\n<style id=\"media-query\" type=\"text/css\">\n\t@media (max-width: 500px) {\n\n\t\t.block-grid,\n\t\t.col {\n\t\t\tmin-width: 320px !important;\n\t\t\tmax-width: 100% !important;\n\t\t\tdisplay: block !important;\n\t\t}\n\n\t\t.block-grid {\n\t\t\twidth: 100% !important;\n\t\t}\n\n\t\t.col {\n\t\t\twidth: 100% !important;\n\t\t}\n\n\t\t.col>div {\n\t\t\tmargin: 0 auto;\n\t\t}\n\n\t\timg.fullwidth,\n\t\timg.fullwidthOnMobile {\n\t\t\tmax-width: 100% !important;\n\t\t}\n\n\t\t.no-stack .col {\n\t\t\tmin-width: 0 !important;\n\t\t\tdisplay: table-cell !important;\n\t\t}\n\n\t\t.no-stack.two-up .col {\n\t\t\twidth: 50% !important;\n\t\t}\n\n\t\t.no-stack .col.num4 {\n\t\t\twidth: 33% !important;\n\t\t}\n\n\t\t.no-stack .col.num8 {\n\t\t\twidth: 66% !important;\n\t\t}\n\n\t\t.no-stack .col.num4 {\n\t\t\twidth: 33% !important;\n\t\t}\n\n\t\t.no-stack .col.num3 {\n\t\t\twidth: 25% !important;\n\t\t}\n\n\t\t.no-stack .col.num6 {\n\t\t\twidth: 50% !important;\n\t\t}\n\n\t\t.no-stack .col.num9 {\n\t\t\twidth: 75% !important;\n\t\t}\n\n\t\t.video-block {\n\t\t\tmax-width: none !important;\n\t\t}\n\n\t\t.mobile_hide {\n\t\t\tmin-height: 0px;\n\t\t\tmax-height: 0px;\n\t\t\tmax-width: 0px;\n\t\t\tdisplay: none;\n\t\t\toverflow: hidden;\n\t\t\tfont-size: 0px;\n\t\t}\n\n\t\t.desktop_hide {\n\t\t\tdisplay: block !important;\n\t\t\tmax-height: none !important;\n\t\t}\n\t}\n</style>\n<!--[if IE]><div class=\"ie-browser\"><![endif]-->\n<table bgcolor=\"#FFFFFF\" cellpadding=\"0\" cellspacing=\"0\" class=\"nl-container\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; min-width: 320px; Margin: 0 auto; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #FFFFFF; width: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td style=\"word-break: break-word; vertical-align: top;\" valign=\"top\">\n<!--[if (mso)|(IE)]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td align=\"center\" style=\"background-color:#FFFFFF\"><![endif]-->\n<div style=\"background-color:transparent;\">\n<div class=\"block-grid three-up no-stack\" style=\"Margin: 0 auto; min-width: 320px; max-width: 480px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: transparent;\">\n<div style=\"border-collapse: collapse;display: table;width: 100%;background-color:transparent;\">\n<!--[if (mso)|(IE)]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:transparent;\"><tr><td align=\"center\"><table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:480px\"><tr class=\"layout-full-width\" style=\"background-color:transparent\"><![endif]-->\n<!--[if (mso)|(IE)]><td align=\"center\" width=\"160\" style=\";width:160px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;\" valign=\"top\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top:60px; padding-bottom:0px;\"><![endif]-->\n<div class=\"col num4\" style=\"max-width: 320px; min-width: 160px; display: table-cell; vertical-align: top; width: 160px;\">\n<div style=\"width:100% !important;\">\n<!--[if (!mso)&(!IE)]><!-->\n<div style=\"border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:60px; padding-bottom:0px; padding-right: 0px; padding-left: 0px;\">\n<!--<![endif]-->\n<div></div>\n<!--[if (!mso)&(!IE)]><!-->\n</div>\n<!--<![endif]-->\n</div>\n</div>\n<!--[if (mso)|(IE)]></td></tr></table><![endif]-->\n<!--[if (mso)|(IE)]></td><td align=\"center\" width=\"160\" style=\";width:160px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;\" valign=\"top\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top:60px; padding-bottom:0px;\"><![endif]-->\n<div class=\"col num4\" style=\"max-width: 320px; min-width: 160px; display: table-cell; vertical-align: top; width: 160px;\">\n<div style=\"width:100% !important;\">\n<!--[if (!mso)&(!IE)]><!-->\n<div style=\"border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:60px; padding-bottom:0px; padding-right: 0px; padding-left: 0px;\">\n<!--<![endif]-->\n<div align=\"center\" class=\"img-container center fixedwidth\" style=\"padding-right: 0px;padding-left: 0px;\">\n<!--[if mso]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr style=\"line-height:0px\"><td style=\"padding-right: 0px;padding-left: 0px;\" align=\"center\"><![endif]-->\n<div style=\"font-size:1px;line-height:40px\"> </div><a href=\"https://www.tines.io/?utm_source=phishly&utm_medium=microsite&utm_campaign=phishly\" style=\"outline:none\" tabindex=\"-1\" target=\"_blank\"><img align=\"center\" alt=\"Tines logo\" border=\"0\" class=\"center fixedwidth\" src=\"https://portal.tines.io/wp-content/uploads/2020/11/Tines-Logo-Dark-X.png\" style=\"text-decoration: none; -ms-interpolation-mode: bicubic; height: auto; border: 0; width: 100%; max-width: 80px; display: block; margin: auto;\" title=\"Tines logo\" width=\"80\"/></a>\n<!--[if mso]></td></tr></table><![endif]-->\n</div>\n<!--[if (!mso)&(!IE)]><!-->\n</div>\n<!--<![endif]-->\n</div>\n</div>\n<!--[if (mso)|(IE)]></td></tr></table><![endif]-->\n<!--[if (mso)|(IE)]></td><td align=\"center\" width=\"160\" style=\";width:160px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;\" valign=\"top\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top:60px; padding-bottom:0px;\"><![endif]-->\n<div class=\"col num4\" style=\"max-width: 320px; min-width: 160px; display: table-cell; vertical-align: top; width: 160px;\">\n<div style=\"width:100% !important;\">\n<!--[if (!mso)&(!IE)]><!-->\n<div style=\"border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:60px; padding-bottom:0px; padding-right: 0px; padding-left: 0px;\">\n<!--<![endif]-->\n<div></div>\n<!--[if (!mso)&(!IE)]><!-->\n</div>\n<!--<![endif]-->\n</div>\n</div>\n<!--[if (mso)|(IE)]></td></tr></table><![endif]-->\n<!--[if (mso)|(IE)]></td></tr></table></td></tr></table><![endif]-->\n</div>\n</div>\n</div>\n<div style=\"background-color:transparent;\">\n<div class=\"block-grid\" style=\"Margin: 0 auto; min-width: 320px; max-width: 480px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: transparent;\">\n<div style=\"border-collapse: collapse;display: table;width: 100%;background-color:transparent;\">\n<!--[if (mso)|(IE)]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:transparent;\"><tr><td align=\"center\"><table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:480px\"><tr class=\"layout-full-width\" style=\"background-color:transparent\"><![endif]-->\n<!--[if (mso)|(IE)]><td align=\"center\" width=\"480\" style=\";width:480px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;\" valign=\"top\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:5px;\"><![endif]-->\n<div class=\"col num12\" style=\"min-width: 320px; max-width: 480px; display: table-cell; vertical-align: top; width: 480px;\">\n<div style=\"width:100% !important;\">\n<!--[if (!mso)&(!IE)]><!-->\n<div style=\"border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;\">\n<!--<![endif]-->\n<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"divider\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td class=\"divider_inner\" style=\"word-break: break-word; vertical-align: top; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; padding-top: 32px; padding-right: 60px; padding-bottom: 32px; padding-left: 60px;\" valign=\"top\">\n<table align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"divider_content\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-top: 1px solid #F2F2F2; width: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td style=\"word-break: break-word; vertical-align: top; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;\" valign=\"top\"><span></span></td>\n</tr>\n</tbody>\n</table>\n</td>\n</tr>\n</tbody>\n</table>\n<!--[if (!mso)&(!IE)]><!-->\n</div>\n<!--<![endif]-->\n</div>\n</div>\n<!--[if (mso)|(IE)]></td></tr></table><![endif]-->\n<!--[if (mso)|(IE)]></td></tr></table></td></tr></table><![endif]-->\n</div>\n</div>\n</div>\n<div style=\"background-color:transparent;\">\n<div class=\"block-grid\" style=\"Margin: 0 auto; min-width: 320px; max-width: 480px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: transparent;\">\n<div style=\"border-collapse: collapse;display: table;width: 100%;background-color:transparent;\">\n<!--[if (mso)|(IE)]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:transparent;\"><tr><td align=\"center\"><table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:480px\"><tr class=\"layout-full-width\" style=\"background-color:transparent\"><![endif]-->\n<!--[if (!mso)&(!IE)]><!-->\n</div>\n<!--<![endif]-->\n</div>\n</div>\n<!--[if (mso)|(IE)]></td></tr></table><![endif]-->\n<!--[if (mso)|(IE)]></td></tr></table></td></tr></table><![endif]-->\n</div>\n</div>\n</div>\n<div style=\"background-color:transparent;\">\n<div class=\"block-grid\" style=\"Margin: 0 auto; min-width: 320px; max-width: 480px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: transparent;\">\n<div style=\"border-collapse: collapse;display: table;width: 100%;background-color:transparent;\">\n<!--[if (mso)|(IE)]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:transparent;\"><tr><td align=\"center\"><table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:480px\"><tr class=\"layout-full-width\" style=\"background-color:transparent\"><![endif]-->\n<!--[if (mso)|(IE)]><td align=\"center\" width=\"480\" style=\";width:480px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;\" valign=\"top\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:5px;\"><![endif]-->\n<div class=\"col num12\" style=\"min-width: 320px; max-width: 480px; display: table-cell; vertical-align: top; width: 480px;\">\n<div style=\"width:100% !important;\">\n<!--[if (!mso)&(!IE)]><!-->\n<div style=\"border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;\">\n<!--<![endif]-->\n<!--[if mso]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 60px; padding-left: 60px; padding-top: 0px; padding-bottom: 0px; font-family: Arial, sans-serif\"><![endif]-->\n<div style=\"color:#021721;font-family:Open Sans, Helvetica Neue, Helvetica, Arial, sans-serif;line-height:2;padding-top:0px;padding-right:60px;padding-bottom:0px;padding-left:60px;\">\n<div style=\"line-height: 2; font-size: 12px; color: #021721; font-family: Open Sans, Helvetica Neue, Helvetica, Arial, sans-serif; mso-line-height-alt: 24px;\">\n<p style=\"line-height: 2; word-break: break-word; mso-line-height-alt: NaNpx; margin: 0;\"><strong><span style=\"font-size: 15px; color: #9aa2a6;\">Pulsedive IoC Report</span></strong><br/><span style=\"font-size: 15px;\">Analyzed <<LIQUID_SIZE(implode_results)>> indicator(s):\n<br>The analysis results are below.</span><br/></div>\n<!--[if (mso)|(IE)]><td align=\"center\" width=\"480\" style=\";width:480px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;\" valign=\"top\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:5px;\"><![endif]-->\n<!--[if (mso)|(IE)]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:transparent;\"><tr><td align=\"center\"><table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:480px\"><tr class=\"layout-full-width\" style=\"background-color:transparent\"><![endif]-->\n<!--[if (mso)|(IE)]><td align=\"center\" width=\"480\" style=\";width:480px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;\" valign=\"top\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:5px;\"><![endif]-->\n<div class=\"col num12\" style=\"min-width: 320px; max-width: 480px; display: table-cell; vertical-align: top; width: 480px;\">\n<div style=\"width:100% !important;\">\n<!--[if (!mso)&(!IE)]><!-->\n<div style=\"border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;\">\n<!--<![endif]-->\n<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"divider\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td class=\"divider_inner\" style=\"word-break: break-word; vertical-align: top; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; padding-top: 32px; padding-right: 60px; padding-bottom: 32px; padding-left: 60px;\" valign=\"top\">\n<table align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"divider_content\" height=\"1\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-top: 1px solid #F2F2F2; height: 1px; width: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td height=\"1\" style=\"word-break: break-word; vertical-align: top; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;\" valign=\"top\"><span></span></td>\n</tr>\n</tbody>\n</table>\n</td>\n</tr>\n</tbody>\n</table>\n<!--[if mso]></td></tr></table><![endif]-->\n<!--[if mso]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top: 0px; padding-bottom: 0px; font-family: Arial, sans-serif\"><![endif]-->\n<div style=\"color:#021721;font-family:Open Sans, Helvetica Neue, Helvetica, Arial, sans-serif;line-height:2;padding-top:0px;padding-right:0px;padding-bottom:0px;padding-left:0px;\">\n<div style=\"line-height: 2; font-size: 12px; color: #021721; font-family: Open Sans, Helvetica Neue, Helvetica, Arial, sans-serif; mso-line-height-alt: 24px;\">\n<p style=\"line-height: 2; word-break: break-word; mso-line-height-alt: NaNpx; margin: 0;\">\n<%for item in implode_results%><span style=\"font-size: 15px;\"><strong>Scanned IoC: </strong><<TRUNCATE(REPLACE(REPLACE(item.ioc, \"http\", \"hxxp\"), \".\", \"[.]\"), 100)>><br/><%if item.result.risk != NULL%><strong>Risk: </strong> <<item.result.risk>><br/><strong>Report URL: </strong><a href=\"https://pulsedive.com/indicator/?iid=<<item.result.iid>>\" rel=\"noopener\" style=\"text-decoration: underline; color: #3ab4f1;\" target=\"_blank\">Pulsedive Results</a><br/><br/><%else%><strong>Result: </strong> <<item.result>><br/><br/><%endif%><br/><br/><br/>\n<%endfor%>\n</div>\n</div>\n<!--[if mso]></td></tr></table><![endif]-->\n<!--[if mso]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 60px; padding-left: 60px; padding-top: 32px; padding-bottom: 0px; font-family: Arial, sans-serif\"><![endif]-->\n<!--[if mso]></td></tr></table><![endif]-->\n<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"divider\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td class=\"divider_inner\" style=\"word-break: break-word; vertical-align: top; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; padding-top: 32px; padding-right: 60px; padding-bottom: 32px; padding-left: 60px;\" valign=\"top\">\n<table align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"divider_content\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-top: 1px solid #F2F2F2; width: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td style=\"word-break: break-word; vertical-align: top; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;\" valign=\"top\"><span></span></td>\n</tr>\n</tbody>\n</table>\n</td>\n</tr>\n</tbody>\n</table>\n<!--[if mso]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top: 0px; padding-bottom: 0px; font-family: Arial, sans-serif\"><![endif]-->\n<div style=\"color:#9aa2a6;font-family:Open Sans, Helvetica Neue, Helvetica, Arial, sans-serif;line-height:1.2;padding-top:0px;padding-right:0px;padding-bottom:0px;padding-left:0px;\">\n<div style=\"line-height: 1.2; font-size: 12px; color: #9aa2a6; font-family: Open Sans, Helvetica Neue, Helvetica, Arial, sans-serif; mso-line-height-alt: 14px;\">\n<p style=\"font-size: 14px; line-height: 1.2; word-break: break-word; text-align: center; mso-line-height-alt: 17px; margin: 0;\">Have questions about Tines? <a href=\"https://tines-community.slack.com\" rel=\"noopener\" style=\"text-decoration: underline; color: #3ab4f1;\" target=\"_blank\">Join our Slack community</a></p>\n</div>\n</div>\n<!--[if mso]></td></tr></table><![endif]-->\n<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"divider\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td class=\"divider_inner\" style=\"word-break: break-word; vertical-align: top; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; padding-top: 32px; padding-right: 60px; padding-bottom: 32px; padding-left: 60px;\" valign=\"top\">\n<table align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"divider_content\" role=\"presentation\" style=\"table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-top: 1px solid #F2F2F2; width: 100%;\" valign=\"top\" width=\"100%\">\n<tbody>\n<tr style=\"vertical-align: top;\" valign=\"top\">\n<td style=\"word-break: break-word; vertical-align: top; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;\" valign=\"top\"><span></span></td>\n</tr>\n</tbody>\n</table>\n</td>\n</tr>\n</tbody>\n</table>\n<!--[if mso]><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr><td style=\"padding-right: 0px; padding-left: 0px; padding-top: 0px; padding-bottom: 0px; font-family: Arial, sans-serif\"><![endif]-->\n<!--[if mso]></td></tr></table><![endif]-->\n<!--[if (!mso)&(!IE)]><!-->\n</div>\n<!--<![endif]-->\n</div>\n</div>\n<!--[if (mso)|(IE)]></td></tr></table><![endif]-->\n<!--[if (mso)|(IE)]></td></tr></table></td></tr></table><![endif]-->\n</div>\n</div>\n</div>\n<!--[if (mso)|(IE)]></td></tr></table><![endif]-->\n</td>\n</tr>\n</tbody>\n</table>\n<!--[if (IE)]></div><![endif]-->\n"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Analyze IOCs in Pulsedive\n\nUse the [Form](./form) to submit a list of IOCs to Tines. IOCs will be submitted to [Pulsedive](https://pulsedive.com/) to find if there are known risks associated with the IOC. If an IOC was not known, the IOC will be scanned and evaluated.\n\nThe analysis of all IOCs will be emailed to the email address submitted in the Form.\n\nOptional Configuration:\n- [ ] A text **Credential** with the name `pulsedive` containing your Pulsedive API key.",
+      "position": [
+        -720.0,
+        150.0
+      ],
+      "guid": "dd4db034701dda9cc63257365031f4f7",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/pulsedive2.png",
+      "position": [
+        -720.0,
+        30.0
+      ],
+      "guid": "1d058fd9ac98cb4ae354f9f7873d9202",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 6
+    },
+    {
+      "source": 1,
+      "receiver": 12
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 1,
+      "receiver": 8
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 1
+    },
+    {
+      "source": 4,
+      "receiver": 9
+    },
+    {
+      "source": 5,
+      "receiver": 3
+    },
+    {
+      "source": 6,
+      "receiver": 2
+    },
+    {
+      "source": 7,
+      "receiver": 14
+    },
+    {
+      "source": 8,
+      "receiver": 7
+    },
+    {
+      "source": 9,
+      "receiver": 15
+    },
+    {
+      "source": 10,
+      "receiver": 15
+    },
+    {
+      "source": 11,
+      "receiver": 10
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 15
+    },
+    {
+      "source": 14,
+      "receiver": 11
+    },
+    {
+      "source": 15,
+      "receiver": 16
+    }
+  ],
+  "diagram_layout": "{\"4b745dda3533bf11bd7757d0ad4146b0\":[-420,15],\"ad12fbedbee58d0c50eda0d0145a2c0b\":[-420,390],\"84cec06891daf8356916f6d1385647b3\":[-420,165],\"3a3da1f928d53d1f79d19ed91507e4fb\":[-420,315],\"c987dcbe787369ef61a91044b48bd150\":[-420,480],\"5a3619676476b823374a30c7a7f32f47\":[-420,240],\"369137a30ab50a7315effdd11c75eb89\":[-420,90],\"7cc75848146058a1cd3285980ae9a5a7\":[-210,555],\"10cb43caa7794b01babeca86c28c58ac\":[-210,480],\"d97c7ff692a3c57ada0bdf3fe15aa3f1\":[-420,810],\"ffc6fde21626a3dad3c020d6d3dda7b3\":[-210,810],\"96455c91d1f8c0da834efd5078d9c785\":[-210,720],\"f21afe8f9ac153385dd392d15beeef27\":[-630,480],\"daf045bb140b27cdcad1d6196331d918\":[-630,810],\"729fbeb46d48038613b8be0030f09adc\":[-210,645],\"5dc4b287698f411474c2dbb01b36092b\":[-420,885],\"d3d04faab652e568a0fbbdc889f0069d\":[-420,960]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Analyze IOCs in Pulsedive Form",
+    "description": "Submit a list of IoCs to be analyzed in Pulsedive and receive an email report of the findings.",
+    "fields": [
+      {
+        "name": "Email",
+        "description": "",
+        "required": false,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "IoCs",
+        "description": "",
+        "required": false,
+        "type": "LONG_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "4b745dda3533bf11bd7757d0ad4146b0",
+    "success_message": "Thank you for your submission"
+  }
+}

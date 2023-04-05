@@ -1,0 +1,274 @@
+{
+  "schema_version": 4,
+  "name": "Query GreyNoise for CVEs and update blocklist",
+  "description": "Query the GreyNoise API to get a list of malicious IPs and update a blocklist that can be read by firewalls and other services.\n\ntags: GreyNoise, Vulnerability, Intermediate,\nicons: 👀🖐🙅‍♂️\nvisibility: public",
+  "guid": "35319ac269360f175a0d77a6c219bdd8",
+  "slug": "query_greynoise_for_cves_and_update_blocklist",
+  "exported_at": "2022-07-11T17:50:55Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search GreyNoise For CVEs",
+      "disabled": false,
+      "guid": "fed5a5124d1dadb8fb372a1e3b5d1e10",
+      "options": {
+        "url": "https://api.greynoise.io/v2/experimental/gnql",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "query": "(cve:CVE-2018-13379 OR cve:CVE-2019-1653 OR cve:cve-2019-2725 OR cve:cve-2019-9670 OR cve:cve-2019-11510 OR cve:CVE-2019-19781 OR cve:cve-2020-5902 OR cve:cve-2020-14882 OR cve:cve-2021-26855) last_seen:7d classification:malicious"
+        },
+        "headers": {
+          "key": "<<CREDENTIAL.greynoise>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update a Blocklist",
+      "disabled": false,
+      "guid": "b881c56bfd6a700e43f91ec448f1892d",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources/<<set_blocklist_id.id>>",
+        "content_type": "json",
+        "method": "put",
+        "payload": {
+          "value": "=WHERE(search_greynoise_for_cves.body.data, \"classification\", \"malicious\") |> MAP(%, \"ip\")"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Serve Blocklist",
+      "disabled": false,
+      "guid": "cf89a7d61a846e08c7f76ee410f85ad5",
+      "options": {
+        "secret": "4aa9a007cbd6a864c6edb457f51f8fde",
+        "verbs": "get,post",
+        "response": "<<JOIN(RESOURCE.greynoise_blocklist, \"\\n\")>>",
+        "path": "de2b7459432dfa71841c03801a41d564"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Blocklist Resource in Tines",
+      "disabled": false,
+      "guid": "0731f71fb921fe63bee2bccb0bc6f6fa",
+      "options": {
+        "url": "https://<<META.tenant.domain>>/api/v1/global_resources",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "name": "greynoise_blocklist",
+          "value": "[]",
+          "team_id": "<<META.team.id>>"
+        },
+        "headers": {
+          "x-user-email": "<<RESOURCE.tines_api_email>>",
+          "x-user-token": "<<CREDENTIAL.tines_user_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Blocklist Exists",
+      "disabled": false,
+      "guid": "0c60c57c54170e8f04085a0eeb3852cf",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<list_resources.resources.greynoise_blocklist>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "List Resources",
+      "disabled": false,
+      "guid": "1f83280dadc7b248b7a290b4fa2f40a2",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "resources": "=RESOURCE"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Blocklist Missing",
+      "disabled": false,
+      "guid": "a72c67803d5790213cd0229497ede247",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<list_resources.resources.greynoise_blocklist>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Blocklist ID",
+      "disabled": false,
+      "guid": "db10ac2a9af0a88c1b4359e2e12737ba",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "id": "<<DEFAULT(list_resources.resources.greynoise_blocklist.id, create_blocklist_resource_in_tines.body.id)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# GreyNoise Blocklist\n\nQuery GreyNoise to gather malicious IPs scanning for specific CVE vulnerabilities and create a blocklist which firewalls and other services can utilize.\n\n**Requirements:**\n- [ ] GreyNoise API Key as Credential `greynoise`\n- [ ] A Resource `tines_api_email`\n- [ ] A Credential `tines_user_token`",
+      "position": [
+        930.0,
+        495.0
+      ],
+      "guid": "a398c73f7f9b48aea3ca0f357a9e3136",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/greynoise.png\n\n",
+      "position": [
+        930.0,
+        285.0
+      ],
+      "guid": "beb08ee39d9503adf6107e7a0d008b11",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 7
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 4
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 3
+    },
+    {
+      "source": 7,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"fed5a5124d1dadb8fb372a1e3b5d1e10\":[1245,270],\"b881c56bfd6a700e43f91ec448f1892d\":[1245,645],\"cf89a7d61a846e08c7f76ee410f85ad5\":[1530,270],\"0731f71fb921fe63bee2bccb0bc6f6fa\":[1455,480],\"0c60c57c54170e8f04085a0eeb3852cf\":[1245,420],\"1f83280dadc7b248b7a290b4fa2f40a2\":[1245,345],\"a72c67803d5790213cd0229497ede247\":[1455,420],\"db10ac2a9af0a88c1b4359e2e12737ba\":[1245,570]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Query GreyNoise for CVEs and update blocklist Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

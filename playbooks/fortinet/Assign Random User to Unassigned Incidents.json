@@ -1,0 +1,156 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Assign Random User to Unassigned Incidents",
+    "aliasName": null,
+    "tag": null,
+    "description": "Auto assigns incidents if their assignments were missing during incident creation.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/3267b12f-9113-4072-a9ec-abcb980fc8b8",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "resource": "incidents",
+                "resources": [
+                    "incidents"
+                ],
+                "step_variables": {
+                    "input": {
+                        "records": [
+                            "{{vars.input.records[0]}}"
+                        ]
+                    }
+                },
+                "fieldbasedtrigger": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "object",
+                            "field": "incidentLead",
+                            "value": "true",
+                            "_value": {
+                                "@id": "true",
+                                "display": "",
+                                "itemValue": ""
+                            },
+                            "operator": "isnull"
+                        }
+                    ]
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/ea155646-3821-4542-9702-b246da430a8d",
+            "uuid": "3267b12f-9113-4072-a9ec-abcb980fc8b8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "assignee": "{{(vars.steps.Get_available_assignees.data['hydra:member'] | json_query('[?csActive==`true`].[\"@id\"][]') | shuffle)[0]}}"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "c2d255d3-4331-41b9-a200-a9558776a4f5"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get available assignees",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "\/api\/3\/people",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "2.6.0",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "CyOPs: Make CyOPs API Call",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "f8d115bf-bd17-46c0-a82a-a50fcbc0453f"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Assign User",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "incidentLead": "{{vars.assignee}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.input.records[0]['@id']}}",
+                "collectionType": "\/api\/3\/incidents",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "04d1e446-8583-430c-af01-34b4a48980e1"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Assign User",
+            "targetStep": "\/api\/3\/workflow_steps\/04d1e446-8583-430c-af01-34b4a48980e1",
+            "sourceStep": "\/api\/3\/workflow_steps\/c2d255d3-4331-41b9-a200-a9558776a4f5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9f245f71-8ff6-4892-ac2e-f3892f15c832"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get available assignees -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/c2d255d3-4331-41b9-a200-a9558776a4f5",
+            "sourceStep": "\/api\/3\/workflow_steps\/f8d115bf-bd17-46c0-a82a-a50fcbc0453f",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "4ea6e690-c364-4506-a078-88f621883c0d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Get available assignees",
+            "targetStep": "\/api\/3\/workflow_steps\/f8d115bf-bd17-46c0-a82a-a50fcbc0453f",
+            "sourceStep": "\/api\/3\/workflow_steps\/3267b12f-9113-4072-a9ec-abcb980fc8b8",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b3d2199b-f643-4204-a86b-6e38820d1842"
+        }
+    ],
+    "priority": null,
+    "uuid": "596c30a9-76d4-4b73-86c3-028fb451813b",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "PostCreate"
+    ]
+}

@@ -1,0 +1,741 @@
+{
+  "schema_version": 4,
+  "name": "Triage new alerts in Google Alert Center with human oversight",
+  "description": "Query Google Workspace Alert Center for alerts at regular intervals, pass alerts to PagerDuty for individual handling, gate the logic and retain human oversight via Slack, and record incident details in Jira.\n\ntags: Google, Jira, Slack, Triage, Alerts, Respond, Notify, Intermediate\nicons: google, 📲, jira\nvisibility: public\n\n",
+  "guid": "03bba53c5279f13a5bda1b23a02a1172",
+  "slug": "triage_new_alerts_in_google_alert_center_with_human_oversight",
+  "exported_at": "2022-07-11T17:51:57Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Gsuite Auth Token",
+      "disabled": false,
+      "guid": "900793c9060d0e528c8b0380b067c608",
+      "options": {
+        "url": "https://www.googleapis.com/oauth2/v4/token",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+          "assertion": "<<CREDENTIAL.gsuite_alerts_center>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Phishing Alert",
+      "disabled": false,
+      "guid": "7a83b0d8d072b85f89244e17e5076a39",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Gmail phishing",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Alerts",
+      "disabled": false,
+      "guid": "ed22ade4b773c7c98f936861c944bb49",
+      "options": {
+        "mode": "explode",
+        "path": "=get_alerts_in_last_five_minutes.body.alerts",
+        "to": "alert"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Bulk User Data Export",
+      "disabled": false,
+      "guid": "c5a148caee339e0ec8f38cb7acc1fa56",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Domain wide takeout",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Identity Alert",
+      "disabled": false,
+      "guid": "3421062d27e57ab114dbea77fbec5e0c",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Google identity",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Google Operations Alert",
+      "disabled": false,
+      "guid": "f27ce41da7b8c041ccc21850a562e3cc",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Google Operations",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Google Voice Alert",
+      "disabled": false,
+      "guid": "20b1779cae1815b3806c03e0f85024bc",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Google Voice",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "State Sponsored Attack Alert",
+      "disabled": false,
+      "guid": "560964400654d16385041218f27d9f94",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "State Sponsored Attack",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Mobile Device Management Alert",
+      "disabled": false,
+      "guid": "d99083bb09ff89605ac3970bf7942240",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Mobile device management",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Security Centre Alert",
+      "disabled": false,
+      "guid": "d7a598879458f0e18bc38230298555d0",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Security Center rules",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "DLP Alert",
+      "disabled": false,
+      "guid": "8e2d57230bd57d5276a4d2c759d5a14c",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Data Loss Prevention",
+            "path": "<<explode_alerts.alert.source>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "d576b2c85ea4b3eb1d745e9b3b71671e",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "incident": {
+            "type": "incident",
+            "title": "<<explode_alerts.alert.source>>",
+            "service": {
+              "id": "<<id>>",
+              "type": "service_reference"
+            },
+            "urgency": "high",
+            "body": {
+              "type": "<<explode_alerts.alert.type>>",
+              "details": "Subject: <<explode_alerts.alert.data.messages[0].subjectText>> \nMessage: <<explode_alerts.alert.data.messages[0].messageBodySnippet>>\nmd5 Hash: <<explode_alerts.alert.data.messages[0].md5HashSubject>>"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<user_email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel",
+      "disabled": false,
+      "guid": "b551c86c2d5632a1df96fa242c7d7895",
+      "options": {
+        "url": "https://<<slack_webhook_url>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "text": "Google Alert Centre - <<explode_alerts.alert.type>>",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "<<explode_alerts.alert.source>>"
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Severity:*\n<<explode_alerts.alert.metadata.severity>>"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Date:* <<explode_alerts.alert.data.messages[0].date>>"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Recipient:* <<explode_alerts.alert.data.messages[0].recipient>>"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Alert Status:*\n<<explode_alerts.alert.metadata.status>>"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Create Jira Ticket?*"
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Create Jira Ticket"
+                  },
+                  "style": "primary",
+                  "url": "<<PROMPT(\"Yes\")>>"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Close PagerDuty Alert"
+                  },
+                  "style": "danger",
+                  "url": "<<PROMPT(\"No\")>>"
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Create Jira Ticket",
+      "disabled": false,
+      "guid": "d827d183b904c02fda0f36af4f59c401",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Yes",
+            "path": "<<post_message_to_a_slack_channel.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "b8f87583863d5f61230f6f5b0bf72e83",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "alice"
+            },
+            "priority": {
+              "name": "Highest"
+            },
+            "description": "Alert Overview\n||*Key*||*Value*||\n|*Severity*|<<explode_alerts.alert.metadata.severity>>|\n|*Status*|<<explode_alerts.alert.metadata.status>>|\n|*Alert Centre ID*|<<explode_alerts.alert.alertId>>|\n|*Recipient*|<<explode_alerts.alert.data.messages[0].recipient>>|\n|*customerId*|<<explode_alerts.alert.customerId>>|\n|*fromHeader*|<<explode_alerts.alert.data.maliciousEntity.fromHeader>>|\n|*Date*|<<explode_alerts.alert.data.messages[0].date>>|\n\n{code}\neMail Message: \n<<explode_alerts.alert.data.messages>>\n{code}",
+            "summary": "<<explode_alerts.alert.source>> - <<explode_alerts.alert.type>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create a Note for an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "cdaea534edad515f77662d3cd8f6cad0",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents/8/notes",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "note": {
+            "content": "<<create_issue_in_jira.body.key>> was created in Jira"
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<RESOURCE.pagerduty_email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger Action",
+      "disabled": false,
+      "guid": "d49e40b790ae0d3fde0097868fd141b0",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "No",
+            "path": "<<post_message_to_a_slack_channel.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Snooze an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "0fdd74ae788b9570ac7ea0ca84147846",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents/<<create_an_incident_in_pagerduty.body.incident.incident_number>>/snooze",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "duration": 3600
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<RESOURCE.pagerduty_email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get alerts in last five minutes",
+      "disabled": false,
+      "guid": "8a0611061331da95a90731bd505f4a8a",
+      "options": {
+        "url": "https://alertcenter.googleapis.com/v1beta1/alerts",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<get_g_suite_auth_token.body.access_token>>"
+        },
+        "payload": {
+          "filter": "create_time >= \"<<DATE(\"now\", \"%s\") |> MINUS(%, 300) |> DATE(%, \"%Y-%m-%dT%TZ\")>>\""
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Story Checklist\n\n# GSuite - [Relevant Blog](https://www.tines.com/blog/g-suite-alert-center)\n\n\n- [ ] Create a new Project in the [Google Cloud Console](https://console.cloud.google.com/)\n- [ ] Enable the Google Alert Center APIs under the hamburger menu -> APIs & Services -> Library\n- [ ] Create a new Service Account under the hamburger menu -> APIs & Services -> Credentials\n- [ ] Create a new `Key` within this Service Account, and download the JSON file containing important information.\n- [ ] Make note of the ID of this Service Account. This will be a long numeric value viewable within the Service Account under `Credentials`.\n- [ ] Log into the [GSuite Admin Portal](https://admin.google.com/)\n- [ ] Navigate to Security -> API Controls -> Manage Domain-Wide Delagation, and hit `Add New`.\n- [ ] Enter in the Service Account ID, and the scope `https://www.googleapis.com/auth/apps.alerts`\n\n\n# Tines\n\n- [ ] Create a JWT Credential using the information included in the downloaded JSON Key File. [This blog](https://www.tines.com/blog/tines-and-gsuite#Configuring_Tines_to_work_with_G_Suite) can be used for reference during this stage.\n- [ ] Update the `Get GSuite Auth Token` Action to use the newly created JWT Credential",
+      "position": [
+        195.0,
+        330.0
+      ],
+      "guid": "3696aa8ded23a99d46d7affcde493af1",
+      "width": null
+    },
+    {
+      "content": "https://workspace.google.com/static/img/google-workspace-logo.svg?cache=1d66531\n\n# Running This Story\n\nThis Story can be initiated by selecting the `Get GSuite Auth Token` Action and hitting Run at the top of the screen.\n\nAlternatively, this Action can be scheduled to run every few minutes. To do this, select the Action, and then click `Monitor Action` in the Right Bar. This will allow you to choose a cadence to automatically run this Action.\n\nThis Story pulls in any new Alerts in the past 5 minutes, so it would be best to schedule it to run every 5 minutes or so. The lookback time in `Get Alerts in Last Five Minutes` can be increased by changing the number of seconds in the filter. \n`create_time >= \"{{ \"now\" | date: \"%s\" | minus: 3600 | date: \"%Y-%m-%dT%TZ\" }}\"` will look back 1 Hour, for example.",
+      "position": [
+        -90.0,
+        330.0
+      ],
+      "guid": "443ed8baab643ad0def8fc8e5db22f22",
+      "width": null
+    },
+    {
+      "content": "# Getting the Auth Token\n\nThe JWT Credential will generate an Access Token, but to hit GSuite APIs, this needs to be used to request a Bearer Token.\n\nA [HTTP Request Credential ](https://hub.tines.com/docs/credentials/http-request) can be created with this Action's config. This Action could then be removed from the Story.",
+      "position": [
+        510.0,
+        645.0
+      ],
+      "guid": "3330331daa33c117c8db597588ce40a4",
+      "width": null
+    },
+    {
+      "content": "# Query for Alerts\n\nThis Action runs a Search against the GSuite Alerts API to look for any Alerts created in the past 5 minutes.\n\nIf required, this search can be adapted to look back over a longer timeframe, or just for a specific type of alert.\n\nThis Alerts are returned in a collection of results. The `Explode` Action will take this collection and break it up into individual Events.",
+      "position": [
+        510.0,
+        345.0
+      ],
+      "guid": "a2c0f30eea81bf76d74d4c434d41fbc4",
+      "width": null
+    },
+    {
+      "content": "# GSuite Alert Types\n\nEach type of alert coming from GSuite is broken out here into their broad categories. This will allow each one to be handled individually and to be customised at a later stage if necessary. \n\nThese Alert Types can be referenced in the [Documentation](https://developers.google.com/admin-sdk/alertcenter/reference/alert-types) for these Alerts.",
+      "position": [
+        990.0,
+        1035.0
+      ],
+      "guid": "c3f9d209ff3c99e7bd54cf0a4c933fe6",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 18
+    },
+    {
+      "source": 1,
+      "receiver": 11
+    },
+    {
+      "source": 2,
+      "receiver": 10
+    },
+    {
+      "source": 2,
+      "receiver": 9
+    },
+    {
+      "source": 2,
+      "receiver": 6
+    },
+    {
+      "source": 2,
+      "receiver": 5
+    },
+    {
+      "source": 2,
+      "receiver": 8
+    },
+    {
+      "source": 2,
+      "receiver": 7
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 3,
+      "receiver": 11
+    },
+    {
+      "source": 4,
+      "receiver": 11
+    },
+    {
+      "source": 5,
+      "receiver": 11
+    },
+    {
+      "source": 6,
+      "receiver": 11
+    },
+    {
+      "source": 7,
+      "receiver": 11
+    },
+    {
+      "source": 8,
+      "receiver": 11
+    },
+    {
+      "source": 9,
+      "receiver": 11
+    },
+    {
+      "source": 10,
+      "receiver": 11
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 12,
+      "receiver": 16
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 18,
+      "receiver": 2
+    }
+  ],
+  "diagram_layout": "{\"900793c9060d0e528c8b0380b067c608\":[840,645],\"7a83b0d8d072b85f89244e17e5076a39\":[840,960],\"ed22ade4b773c7c98f936861c944bb49\":[840,855],\"c5a148caee339e0ec8f38cb7acc1fa56\":[1515,960],\"3421062d27e57ab114dbea77fbec5e0c\":[1035,960],\"f27ce41da7b8c041ccc21850a562e3cc\":[585,960],\"20b1779cae1815b3806c03e0f85024bc\":[180,960],\"560964400654d16385041218f27d9f94\":[1770,960],\"d99083bb09ff89605ac3970bf7942240\":[-60,960],\"d7a598879458f0e18bc38230298555d0\":[1230,960],\"8e2d57230bd57d5276a4d2c759d5a14c\":[420,960],\"d576b2c85ea4b3eb1d745e9b3b71671e\":[840,1350],\"b551c86c2d5632a1df96fa242c7d7895\":[840,1455],\"d827d183b904c02fda0f36af4f59c401\":[735,1605],\"b8f87583863d5f61230f6f5b0bf72e83\":[735,1710],\"cdaea534edad515f77662d3cd8f6cad0\":[735,1815],\"d49e40b790ae0d3fde0097868fd141b0\":[990,1605],\"0fdd74ae788b9570ac7ea0ca84147846\":[990,1695],\"8a0611061331da95a90731bd505f4a8a\":[840,750]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Triage new alerts in Google Alert Center with human oversight Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

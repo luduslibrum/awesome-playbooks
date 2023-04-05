@@ -1,0 +1,745 @@
+{
+  "schema_version": 4,
+  "name": "Search Jira for open SLA breaches",
+  "description": "Avoid the Watermelon Effect! Use this Story to search for SLA breaches and open tickets with all the information you need to make decisions quickly.\n\ntags: SLA, CaseManagement, Compliance, Intermediate, Block, Jira\nicons:   ✅,🍉,🔴\nvisibility: public",
+  "guid": "c828edb62942971d6ddff34a0add4cac",
+  "slug": "search_jira_for_open_sla_breaches",
+  "exported_at": "2022-07-11T17:50:36Z",
+  "agents": [
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "JQL - tickets opened in the last 10h",
+      "disabled": false,
+      "guid": "3810a1eb94794f70052f4041201aed0a",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "resolution = Unresolved AND created >= -10h"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "JQL - breached SLAs",
+      "disabled": false,
+      "guid": "35d68138e303c35163afb230021049f9",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "status != Canceled AND resolution = Unresolved AND due <= \"0\""
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No Overdue Issues",
+      "disabled": false,
+      "guid": "1d6d229f240ce05f0e55e56683ed2eae",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(search_issues_with_jql.body.issues, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Issues with JQL",
+      "disabled": false,
+      "guid": "e137f98ca8564c42451e4a3c62ed67cd",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/search",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "expand": [
+            "names",
+            "schema",
+            "operations"
+          ],
+          "jql": "<<set_jql.message>>",
+          "maxResults": "50",
+          "fieldsByKeys": false,
+          "fields": [
+            "summary",
+            "status",
+            "assignee",
+            "duedate"
+          ],
+          "startAt": 0
+        },
+        "headers": {
+          "Accept": "application/json"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Manager CSV of all SLA breaches",
+      "disabled": false,
+      "guid": "736d25a9fc6abb92d87d7c2fdf29f029",
+      "options": {
+        "recipients": [
+          "kdavis@tines.io"
+        ],
+        "subject": "Unassigned Jira SLA Report for <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "See attached CSV with report on the number of Unassigned issues outside of SLA",
+        "attachments": [
+          {
+            "filename": "unassigned_tickets.csv",
+            "base64encodedcontents": "<<BASE64_ENCODE(create_csv_with_results.csv)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Not Zero Issues",
+      "disabled": false,
+      "guid": "aeec44e06fdb8c39c9e4a0e1e447758a",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(search_issues_with_jql.body.issues)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Iterate Counters",
+      "disabled": false,
+      "guid": "064f584a452f9febbb22acf27f4727a2",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "startAt": "<<PLUS(iterate_counters.startAt, 50)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Issues with JQL",
+      "disabled": false,
+      "guid": "0906f91058cbb50fb7b2c4c3c1bb9776",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/search",
+        "method": "post",
+        "content_type": "json",
+        "payload": {
+          "expand": [
+            "names",
+            "schema",
+            "operations"
+          ],
+          "jql": "<<set_jql.message>>",
+          "maxResults": 50,
+          "fieldsByKeys": false,
+          "fields": [
+            "summary",
+            "status",
+            "assignee",
+            "duedate"
+          ],
+          "startAt": "<<iterate_counters.startAt>>"
+        },
+        "headers": {
+          "Accept": "application/json"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Compile Issues",
+      "disabled": false,
+      "guid": "bfbe70e2a3fe7e8747f84090f51a75be",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "array": "=search_issues_with_jql.body.issues"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Compile Issues",
+      "disabled": false,
+      "guid": "db44bdf3c8704039871fd8d7d81ea8e6",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "array": "=CONCAT(compile_issues.array, search_issues_with_jql.body.issues)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Pagination Has Completed",
+      "disabled": false,
+      "guid": "0a797314459d7abd728772bd86067250",
+      "options": {
+        "rules": [
+          {
+            "type": "field<=value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(search_issues_with_jql.body.issues)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger for Pagination",
+      "disabled": false,
+      "guid": "63d4c82599799761beb2999346098de4",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(search_issues_with_jql.body.issues)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "JQL - created more 20 days ago and unresolved",
+      "disabled": false,
+      "guid": "37fa2cda87f682c32d75b3f120e2824f",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "created <= -20d AND resolution = Unresolved"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set JQL",
+      "disabled": false,
+      "guid": "8e9c4a9025823c9e4c5a040949fd883d",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "created >= -10d AND resolution = Unresolved"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "JQL - created within last 2 days",
+      "disabled": false,
+      "guid": "9ac76fb333e5164dc5eeae8384c8b98c",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "created >= -2d AND resolution = Unresolved"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Loop for Assignee and ID",
+      "disabled": false,
+      "guid": "d8f425849543a1978fb43e450394994b",
+      "options": {
+        "mode": "message_only",
+        "loop": "=compile_issues.array",
+        "payload": {
+          "assignee": "<<DEFAULT(LOOP.value.fields.assignee.displayName, \"Unassigned\")>>",
+          "assignee_email": "<<LOOP.value.fields.assignee.emailAddress>>",
+          "case_link": "https://<<RESOURCE.jiradomain>>/browse/<<LOOP.value.key>>",
+          "summary": "<<LOOP.value.fields.summary>>",
+          "duedate": "<<LOOP.value.fields.duedate>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Assignees",
+      "disabled": false,
+      "guid": "4e07604fa2cd0b31c6ebd9b7dd737a5e",
+      "options": {
+        "mode": "explode",
+        "path": "=MAP(loop_for_assignee_and_id, \"assignee\") |> UNIQ(%)",
+        "to": "assignee"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Issues by Assignee",
+      "disabled": false,
+      "guid": "1937947b6dc50d1c4b23d52801140de7",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "issue_by_assignee": "=WHERE(loop_for_assignee_and_id, \"assignee\", explode_assignees.assignee)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Create CSV with Results",
+      "disabled": false,
+      "guid": "f05195a1d17c129d1b55892c2a314ede",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "csv": "Assignee: <<get_issues_by_assignee.issue_by_assignee[0].assignee>>, Email: <<get_issues_by_assignee.issue_by_assignee[0].assignee_email>>\n<%for issue in get_issues_by_assignee.issue_by_assignee%><<issue.case_link>>, <<issue.summary>>, Due Date: <<issue.duedate>>\n<%endfor%>\n"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Unassigned Tickets",
+      "disabled": false,
+      "guid": "cc48d4c571f5012d76fc4bc04fc1f24a",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Unassigned",
+            "path": "<<explode_assignees.assignee>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Assigned",
+      "disabled": false,
+      "guid": "4d252293f424b5af570d455da66319a6",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "Unassigned",
+            "path": "<<explode_assignees.assignee>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Manager CSV of all SLA breaches",
+      "disabled": false,
+      "guid": "f9b8a0c9b711846c5c78661329ffbed9",
+      "options": {
+        "recipients": [
+          "<<email_address>>"
+        ],
+        "subject": "Jira SLA Report for <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "See attached CSV with report on the number of issues outside of SLA",
+        "attachments": [
+          {
+            "filename": "tickets.csv",
+            "base64encodedcontents": "<<BASE64_ENCODE(create_csv_with_results.csv)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "[Jira](https://image-uploads.tines.com/Jira-Logo.png)\n\n# Description\n\nSearch Jira for open issues that have breached SLA.  Then compile the results and sort the issues by Assignee.  Output is a CSV with the Assignee, their email address, open issues with summaries and clickable links to the issue\n\n\n",
+      "position": [
+        1335.0,
+        -90.0
+      ],
+      "guid": "d1da79be3c629559ffdc2fa0856ec111",
+      "width": null
+    },
+    {
+      "content": "Some JQL examples",
+      "position": [
+        2595.0,
+        -45.0
+      ],
+      "guid": "3e2b135eb7349d8db8a721bfe4e10f68",
+      "width": null
+    },
+    {
+      "content": "# Check for Unassigned\n\nIf the ticket is unassigned, we build a separate CSV for visibility",
+      "position": [
+        1455.0,
+        1110.0
+      ],
+      "guid": "fbfe251b1c0e16989591795df98e6342",
+      "width": null
+    },
+    {
+      "content": "# Requirements\nA Jira user and API key with user access, administrator is required for getting user email addresses.  \nA resource holding the Jira domain",
+      "position": [
+        1335.0,
+        225.0
+      ],
+      "guid": "7ef8a5bfac2727eea823783370975562",
+      "width": null
+    },
+    {
+      "content": "Using JQL to perform a search in Jira.  This can be edited to suit any needs, examples would include:\n\nCurrently breached SLAs\nIssues with SLAs due in an amount of time\nHistorically breached issues",
+      "position": [
+        2205.0,
+        -75.0
+      ],
+      "guid": "074aa4a010154da7b6034f2f4d679940",
+      "width": null
+    },
+    {
+      "content": "# Loop to gather Assignees\n\nLoop through the return, explode to create individual events, where the assignee is unique.  This is done to sort issues on assignee.",
+      "position": [
+        1650.0,
+        750.0
+      ],
+      "guid": "dba3a08a8c12f325ddabfe51f2f73827",
+      "width": null
+    },
+    {
+      "content": "# Build CSVs\n\nA separate CSV is built for each assignee present.  The CSV includes their Name, their email address (if visible), links to each of their issues matching the JQL and summaries of each case",
+      "position": [
+        2190.0,
+        915.0
+      ],
+      "guid": "d5738fe46ee5fc733e3fb4ea5374b3e0",
+      "width": null
+    },
+    {
+      "content": "# Pagination loop\n\nIf there are more issues than one call can retrieve, we will loop through until all issues have been received and then create one array with all of the issues before continuing the story",
+      "position": [
+        1530.0,
+        360.0
+      ],
+      "guid": "deeb53d6f08a2a940e093e19a7a31ab6",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 3,
+      "receiver": 2
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 8
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 9
+    },
+    {
+      "source": 8,
+      "receiver": 10
+    },
+    {
+      "source": 8,
+      "receiver": 11
+    },
+    {
+      "source": 9,
+      "receiver": 11
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 15
+    },
+    {
+      "source": 11,
+      "receiver": 6
+    },
+    {
+      "source": 13,
+      "receiver": 3
+    },
+    {
+      "source": 15,
+      "receiver": 16
+    },
+    {
+      "source": 16,
+      "receiver": 17
+    },
+    {
+      "source": 17,
+      "receiver": 18
+    },
+    {
+      "source": 18,
+      "receiver": 19
+    },
+    {
+      "source": 18,
+      "receiver": 20
+    },
+    {
+      "source": 19,
+      "receiver": 4
+    },
+    {
+      "source": 20,
+      "receiver": 21
+    }
+  ],
+  "diagram_layout": "{\"3810a1eb94794f70052f4041201aed0a\":[2595,90],\"35d68138e303c35163afb230021049f9\":[2595,15],\"1d6d229f240ce05f0e55e56683ed2eae\":[1695,120],\"e137f98ca8564c42451e4a3c62ed67cd\":[1950,15],\"736d25a9fc6abb92d87d7c2fdf29f029\":[1770,1290],\"aeec44e06fdb8c39c9e4a0e1e447758a\":[1950,120],\"064f584a452f9febbb22acf27f4727a2\":[2040,375],\"0906f91058cbb50fb7b2c4c3c1bb9776\":[2040,450],\"bfbe70e2a3fe7e8747f84090f51a75be\":[1950,210],\"db44bdf3c8704039871fd8d7d81ea8e6\":[2040,540],\"0a797314459d7abd728772bd86067250\":[1950,645],\"63d4c82599799761beb2999346098de4\":[2040,300],\"37fa2cda87f682c32d75b3f120e2824f\":[2595,180],\"8e9c4a9025823c9e4c5a040949fd883d\":[1950,-75],\"9ac76fb333e5164dc5eeae8384c8b98c\":[2595,285],\"d8f425849543a1978fb43e450394994b\":[1950,750],\"4e07604fa2cd0b31c6ebd9b7dd737a5e\":[1950,825],\"1937947b6dc50d1c4b23d52801140de7\":[1950,915],\"f05195a1d17c129d1b55892c2a314ede\":[1950,1005],\"cc48d4c571f5012d76fc4bc04fc1f24a\":[1770,1125],\"4d252293f424b5af570d455da66319a6\":[2130,1125],\"f9b8a0c9b711846c5c78661329ffbed9\":[2130,1290]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Search Jira for open SLA breaches Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

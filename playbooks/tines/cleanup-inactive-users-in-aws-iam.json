@@ -1,0 +1,1400 @@
+{
+  "schema_version": 4,
+  "name": "Cleanup inactive users in AWS IAM",
+  "description": "Search for inactive or unused AWS IAM users and create a Jira ticket with all of the important details if any are found. Prompts enable the deactivation and reactivation of an account if required.\n\ntags: AWS, Jira, Intermediate, Identify, Compliance\nicons: AWS, 🧼, Jira \nvisibility: public",
+  "guid": "54ec1e9d068a0eb1e59ec7b9f4838783",
+  "slug": "cleanup_inactive_users_in_aws_iam",
+  "exported_at": "2022-07-11T17:46:35Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get IAM Users in AWS",
+      "disabled": false,
+      "guid": "265f05fac04333a1906a38fb9f99761d",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "ListUsers",
+          "Version": "2010-05-08",
+          "MaxItems": "5"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Users",
+      "disabled": false,
+      "guid": "8ce29dec1c757cfd0b7989d151894902",
+      "options": {
+        "mode": "explode",
+        "path": "=compile_users.array_of_users",
+        "to": "user"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Account Has Never Been Used",
+      "disabled": false,
+      "guid": "53fdb4b48304c222168c1c44f06cc839",
+      "options": {
+        "rules": [
+          {
+            "type": "not in",
+            "value": "member",
+            "path": "=get_service_last_accessed_details.body.GetServiceLastAccessedDetailsResponse.GetServiceLastAccessedDetailsResult.ServicesLastAccessed"
+          },
+          {
+            "type": "field==value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(get_last_authenticated_and_service)>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Compile Users",
+      "disabled": false,
+      "guid": "7ea5da92e5af129d6e4a89203e4c1edc",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "array_of_users": "=get_iam_users_in_aws.body.ListUsersResponse.ListUsersResult.Users.member"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "More Pages",
+      "disabled": false,
+      "guid": "2f933444fdf386c06878a3e3c74b8af2",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "true",
+            "path": "<<get_iam_users_in_aws.body.ListUsersResponse.ListUsersResult.IsTruncated>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "All Users Retrieved",
+      "disabled": false,
+      "guid": "1edca6c666329092544cb5baa2c8d15d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "false",
+            "path": "<<get_iam_users_in_aws.body.ListUsersResponse.ListUsersResult.IsTruncated>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Compile Users",
+      "disabled": false,
+      "guid": "3a6ac818113bfcbdbc0ae863997e0460",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "array_of_users": "=CONCAT(compile_users.array_of_users, build_user_array.users)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get IAM Users in AWS",
+      "disabled": false,
+      "guid": "84276f1568eaded2c6370952c93f05b4",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "ListUsers",
+          "Version": "2010-05-08",
+          "Marker": "<<get_iam_users_in_aws.body.ListUsersResponse.ListUsersResult.Marker>>",
+          "MaxItems": "5"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Only 1 User",
+      "disabled": false,
+      "guid": "85000b0e352c0e1cbb9f0aa58627f7ae",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Hash",
+            "path": "<<TYPE(get_iam_users_in_aws.body.ListUsersResponse.ListUsersResult.Users.member)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "More Than 1 user",
+      "disabled": false,
+      "guid": "670265d1cc23ede36bc4578606dc4d5a",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "Array",
+            "path": "<<TYPE(get_iam_users_in_aws.body.ListUsersResponse.ListUsersResult.Users.member)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build User Array",
+      "disabled": false,
+      "guid": "d6659d03cd454e0de62fcf1bca0a138e",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "users": [
+            "=get_iam_users_in_aws.body.ListUsersResponse.ListUsersResult.Users.member"
+          ]
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Build User Array",
+      "disabled": false,
+      "guid": "66c6074fa6355bc5fe290608f6cbd863",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "users": "=get_iam_users_in_aws.body.ListUsersResponse.ListUsersResult.Users.member"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Created Over 30 Days Ago",
+      "disabled": false,
+      "guid": "45f6b9ef900bbe4fd48f94b95bb36d9f",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "2592000",
+            "path": "<<DATE(\"now\", \"%s\") |> MINUS(%, normalize_date.createDate_inEpoch)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "30 Days Since Last Account use",
+      "disabled": false,
+      "guid": "2319b403cab60f53e65a76045be33f9d",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "2592000",
+            "path": "<<DATE(\"now\", \"%s\") |> MINUS(%, normalize_date.PasswordLastUsed_inEpoch)>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Account Has Been Used",
+      "disabled": false,
+      "guid": "b8d4760f44ca5b0d23b22a75a2d5ba34",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<LIQUID_SIZE(get_last_authenticated_and_service, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "a2ec55c173bcb3b383bf94d68bd5375b",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "summary": "Inactive AWS User Alert - <<explode_users.user.UserName>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "List User Tags",
+      "disabled": false,
+      "guid": "9621211ce3b28a6413192cf6c1c5db23",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "ListUserTags",
+          "Version": "2010-05-08",
+          "UserName": "<<explode_users.user.UserName>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Attach DenyAll Policy to User",
+      "disabled": false,
+      "guid": "55d1ab0a4de73900125c2979783a5364",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "AttachUserPolicy",
+          "PolicyArn": "arn:aws:iam::aws:policy/AWSDenyAll",
+          "UserName": "<<explode_users.user.UserName>>",
+          "Version": "2010-05-08"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Deactivate User",
+      "disabled": false,
+      "guid": "1ded84ddcfc41d240f749bc192b95a5b",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "deactivate",
+            "path": "<<update_jira_ticket_description.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Normalize Date",
+      "disabled": false,
+      "guid": "dc380d2e5d6f740e489a6f1d132fa54e",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "createDate_inEpoch": "<<DATE(explode_users.user.CreateDate, \"%s\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Normalize Date",
+      "disabled": false,
+      "guid": "61ce13f9d3136cd9d4d5c04b14a5dd9c",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "PasswordLastUsed_inEpoch": "<<DATE(set_most_recent_login.most_recent_login, \"%s\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Reactivate Comment",
+      "disabled": false,
+      "guid": "6224da43449e084be2c849bdee123993",
+      "options": {
+        "url": "https://<<RESOURCE.jiradomain>>/rest/api/2/issue/<<create_issue_in_jira.body.id>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_service_user>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "<<explode_users.user.UserName>> has been deactivated as of <<DATE(\"now\", \"%Y-%m-%d %H:%M\")>>.  To undo this action and reinstate access click [here|<<PROMPT(\"reactivate\")>>].\n"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Detach DenyAll Policy to User",
+      "disabled": false,
+      "guid": "c5d85f71bc0b8001df3358b7c85738c7",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "DetachUserPolicy",
+          "PolicyArn": "arn:aws:iam::aws:policy/AWSDenyAll",
+          "UserName": "<<explode_users.user.UserName>>",
+          "Version": "2010-05-08"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Reactivate User",
+      "disabled": false,
+      "guid": "8a7512740f899a2086af00d3783aaf6c",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "reactivate",
+            "path": "<<add_reactivate_comment.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Jira Description",
+      "disabled": false,
+      "guid": "994d1a6b45643ad72f931936e1bae447",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "description": "The AWS User: <<explode_users.user.Path>><<explode_users.user.UserName>> has not been used and was created over 30 days ago.  \n\nThe ARN for this user is <<explode_users.user.Arn>>\n\nTags associated with this user are as follows: <<list_user_tags.body.ListUserTagsResponse.ListUserTagsResult.Tags>>\n"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Jira Description",
+      "disabled": false,
+      "guid": "b6dd39d4956048fa366c12bd5bab7fa1",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "description": "The AWS User: <<explode_users.user.Path>><<explode_users.user.UserName>> has not been used in the last 30 days.  \n\nThe ARN for this user is <<explode_users.user.Arn>>\n\nTags associated with this user are as follows: <<DEFAULT(list_user_tags.body.ListUserTagsResponse.ListUserTagsResult.Tags, \"No Tags Found\")>>\n\nHistoric access for this user is below:\n<%for service in get_last_authenticated_and_service%> \"Service Name: <<service.service_name>>, Last Authenticated: <<service.last_authenticated>>\n<%endfor%>\n"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Generate Service Use Report",
+      "disabled": false,
+      "guid": "2a15c7affd139bf27ee762ecf46aa4f3",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "GenerateServiceLastAccessedDetails",
+          "Arn": "<<explode_users.user.Arn>>",
+          "Version": "2010-05-08",
+          "Granularity": "SERVICE_LEVEL"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Service Last Accessed Details",
+      "disabled": false,
+      "guid": "748d6bf44d4822e362da070c62079e39",
+      "options": {
+        "url": "https://iam.amazonaws.com",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        },
+        "payload": {
+          "Action": "GetServiceLastAccessedDetails",
+          "JobId": "<<generate_service_use_report.body.GenerateServiceLastAccessedDetailsResponse.GenerateServiceLastAccessedDetailsResult.JobId>>",
+          "Version": "2010-05-08"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get Last Authenticated and Service",
+      "disabled": false,
+      "guid": "287ca58923bee2aabf5f7fa8ab975d5b",
+      "options": {
+        "mode": "message_only",
+        "loop": "=WHERE(get_service_last_accessed_details.body.GetServiceLastAccessedDetailsResponse.GetServiceLastAccessedDetailsResult.ServicesLastAccessed.member, \"LastAuthenticated\")",
+        "payload": {
+          "service_name": "<<LOOP.value.ServiceName>>",
+          "last_authenticated": "<<LOOP.value.LastAuthenticated>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Ticket Description",
+      "disabled": false,
+      "guid": "28d40c5facd07e1ae820d0a78930a569",
+      "options": {
+        "url": "https://<<RESOURCE.jiradomain>>/rest/api/2/issue/<<create_issue_in_jira.body.id>>/",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_service_user>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "description": "<<set_jira_description.description>>\n\nClick [here|<<PROMPT(\"deactivate\")>>] to deactivate this user."
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Get Service Job Completed",
+      "disabled": false,
+      "guid": "5bf8e7c0e8798d4df2d0a8facd334698",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "COMPLETED",
+            "path": "<<get_service_last_accessed_details.body.GetServiceLastAccessedDetailsResponse.GetServiceLastAccessedDetailsResult.JobStatus>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Get Service Job Not Completed",
+      "disabled": false,
+      "guid": "317ac7831f74a311e75411dfbb566372",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "IN_PROGRESS",
+            "path": "<<get_service_last_accessed_details.body.GetServiceLastAccessedDetailsResponse.GetServiceLastAccessedDetailsResult.JobStatus>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay",
+      "disabled": false,
+      "guid": "9c8a1de4c4d1045d0610a9292ccdc6bd",
+      "options": {
+        "mode": "delay",
+        "seconds": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Most Recent Login",
+      "disabled": false,
+      "guid": "851fbfa7c788b84e09ad0834021008d2",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "most_recent_login": "<<DATE(get_last_authenticated_and_service.first.last_authenticated, \"%s\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Index Counter",
+      "disabled": false,
+      "guid": "1cad8a62acdeaddb61ce075602c18a3b",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "index": 0
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Compare Times",
+      "disabled": false,
+      "guid": "d9133d41f573574898b2e893f8bbae05",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "diff": "<<DATE(get_last_authenticated_and_service[index_counter.index].last_authenticated, \"%s\") |> MINUS(%, set_most_recent_login.most_recent_login)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Current Index More Recent",
+      "disabled": false,
+      "guid": "60899343e57537a06a6fe4931b787706",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "0",
+            "path": "<<compare_times.diff>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Index Counter",
+      "disabled": false,
+      "guid": "ec5c7c2fe62ae7da71f75756aba71cda",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "index": "=PLUS(index_counter.index, 1)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set Most Recent Login",
+      "disabled": false,
+      "guid": "ebf0f91e1584f01d8d672aa3f1fd3c0a",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "most_recent_login": "<<get_last_authenticated_and_service[index_counter.index].last_authenticated>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "More Logins",
+      "disabled": false,
+      "guid": "1e7823630bdc3a34b563670b9bf6caf7",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "<<PLUS(index_counter.index, 1)>>",
+            "path": "<<LIQUID_SIZE(get_last_authenticated_and_service, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No More Logins",
+      "disabled": false,
+      "guid": "56f29289fb5ea9bf798bbb1d7199089f",
+      "options": {
+        "rules": [
+          {
+            "type": "field<value",
+            "value": "<<PLUS(index_counter.index, 1)>>",
+            "path": "<<LIQUID_SIZE(get_last_authenticated_and_service, \"dot_notation\")>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Current Index Not More Recent",
+      "disabled": false,
+      "guid": "e791fc07aaa1baa4021cc208e480c44f",
+      "options": {
+        "rules": [
+          {
+            "type": "field<=value",
+            "value": "0",
+            "path": "<<compare_times.diff>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Index Counter",
+      "disabled": false,
+      "guid": "30b58ce494a0b9ea8a30fc0013467df3",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "index": "=PLUS(index_counter.index, 1)"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Comment",
+      "disabled": false,
+      "guid": "a9df62ca90718dd7ac0ce6aacea652b2",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira.body.id>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "body": "<<explode_users.user.UserName>> was reactivated at <<DATE(\"now\", \"%Y-%m-%d %H:%M\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "Action based loop to find the highest number in an array.  This will find the most recent Authentication for the User in question ensuring we calculate inactivity from the most recent access date.",
+      "position": [
+        1117.0,
+        1817.0
+      ],
+      "guid": "e72773ce77ddecf8e6f6a5a13cbe89d9",
+      "width": null
+    },
+    {
+      "content": "![AWS](https://image-uploads.tines.com/aws_logo_smile_1200x630.png)\n\n\n[Jira](https://image-uploads.tines.com/Jira-Logo.png)\n\nWorkflow to search for inactive or unused AWS IAM Users, if any are found, a Jira ticket is opened with the pertinent details on the users. Additionally, a prompt is added to the Jira ticket which will allow the Analyst do deactivate the account by attaching the \"AWS Deny All\" policy.  \n\nAfter deactivating the account, a comment is added to the ticket with a prompt to reactivate the account in case there was unintended impact from deactivating. ",
+      "position": [
+        555.0,
+        330.0
+      ],
+      "guid": "a8a08e10fe1a0ffa30a275e4d7ed1da1",
+      "width": null
+    },
+    {
+      "content": "# Requirements\n\nAn AWS credential with access to view and manage IAM users\n\nA Jira user and API key with permissions to create and edit issues.\n\nA resource holding the Jira domain to construct the URL",
+      "position": [
+        555.0,
+        885.0
+      ],
+      "guid": "42e490a82af5a0e393cc9cb1428d7ecc",
+      "width": null
+    },
+    {
+      "content": "# Pagination Loop\n\nIf there are several users, this loop will iterate through the pages of the return and compile all users into a single array.  \n\nThis loop also has handling to account for AWS returning a single user as an object as opposed to an array of 1.",
+      "position": [
+        1552.0,
+        692.0
+      ],
+      "guid": "2840f12d42fa23aea64f4e91bffde0ec",
+      "width": null
+    },
+    {
+      "content": "# Generate Service Use Report\n\nHere we use the AWS REST API for generating a service use report.  This will return any services that a user has accessed and the date and time of last access.  These are the values we use to enrich the ticket opened in Jira and to calculate how long ago the last access took place\n\nThis call automatically filters out Users with \"AWS DenyAll\" policy attached, as it returns \"null\" for service last used.  This is purposeful so that the workflow does not open tickets for users that are already deactivated.",
+      "position": [
+        562.0,
+        1112.0
+      ],
+      "guid": "01ba536bc3785751402f211858d59002",
+      "width": null
+    },
+    {
+      "content": "Branching to separate inactive accounts from completely unused accounts so that we can report on them differently.",
+      "position": [
+        1117.0,
+        1457.0
+      ],
+      "guid": "d1296de430d35fecb34966e5c13a0c53",
+      "width": null
+    },
+    {
+      "content": "# Ticket Creation and Enrichment\n\nCreate the initial Jira ticket with a relevant description that was dynamically set in the \"Set Jira Description\" action.  We then utilize `prompts` to give analysts a one click interaction to perform remediation on the inactive or unused accounts.  \n\nIf the remediation is taken, a comment is added to the issue to give a quick path to reactivation in case deactivation was accidental or caused any issues.",
+      "position": [
+        547.0,
+        2597.0
+      ],
+      "guid": "614dcbcfe94b1004f34ce083be47c5b0",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 26
+    },
+    {
+      "source": 2,
+      "receiver": 19
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 1
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 6,
+      "receiver": 5
+    },
+    {
+      "source": 7,
+      "receiver": 9
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 10
+    },
+    {
+      "source": 9,
+      "receiver": 11
+    },
+    {
+      "source": 10,
+      "receiver": 6
+    },
+    {
+      "source": 11,
+      "receiver": 6
+    },
+    {
+      "source": 12,
+      "receiver": 24
+    },
+    {
+      "source": 13,
+      "receiver": 25
+    },
+    {
+      "source": 14,
+      "receiver": 33
+    },
+    {
+      "source": 15,
+      "receiver": 29
+    },
+    {
+      "source": 16,
+      "receiver": 15
+    },
+    {
+      "source": 17,
+      "receiver": 21
+    },
+    {
+      "source": 18,
+      "receiver": 17
+    },
+    {
+      "source": 19,
+      "receiver": 12
+    },
+    {
+      "source": 20,
+      "receiver": 13
+    },
+    {
+      "source": 21,
+      "receiver": 23
+    },
+    {
+      "source": 22,
+      "receiver": 43
+    },
+    {
+      "source": 23,
+      "receiver": 22
+    },
+    {
+      "source": 24,
+      "receiver": 16
+    },
+    {
+      "source": 25,
+      "receiver": 16
+    },
+    {
+      "source": 26,
+      "receiver": 27
+    },
+    {
+      "source": 27,
+      "receiver": 30
+    },
+    {
+      "source": 27,
+      "receiver": 31
+    },
+    {
+      "source": 28,
+      "receiver": 2
+    },
+    {
+      "source": 28,
+      "receiver": 14
+    },
+    {
+      "source": 29,
+      "receiver": 18
+    },
+    {
+      "source": 30,
+      "receiver": 28
+    },
+    {
+      "source": 31,
+      "receiver": 32
+    },
+    {
+      "source": 32,
+      "receiver": 26
+    },
+    {
+      "source": 33,
+      "receiver": 34
+    },
+    {
+      "source": 34,
+      "receiver": 39
+    },
+    {
+      "source": 34,
+      "receiver": 40
+    },
+    {
+      "source": 35,
+      "receiver": 41
+    },
+    {
+      "source": 35,
+      "receiver": 36
+    },
+    {
+      "source": 36,
+      "receiver": 38
+    },
+    {
+      "source": 37,
+      "receiver": 39
+    },
+    {
+      "source": 37,
+      "receiver": 40
+    },
+    {
+      "source": 38,
+      "receiver": 37
+    },
+    {
+      "source": 39,
+      "receiver": 35
+    },
+    {
+      "source": 40,
+      "receiver": 20
+    },
+    {
+      "source": 41,
+      "receiver": 42
+    },
+    {
+      "source": 42,
+      "receiver": 40
+    },
+    {
+      "source": 42,
+      "receiver": 39
+    }
+  ],
+  "diagram_layout": "{\"265f05fac04333a1906a38fb9f99761d\":[855,360],\"8ce29dec1c757cfd0b7989d151894902\":[855,1065],\"53fdb4b48304c222168c1c44f06cc839\":[1440,1575],\"7ea5da92e5af129d6e4a89203e4c1edc\":[855,450],\"2f933444fdf386c06878a3e3c74b8af2\":[1125,525],\"1edca6c666329092544cb5baa2c8d15d\":[855,960],\"3a6ac818113bfcbdbc0ae863997e0460\":[1125,885],\"84276f1568eaded2c6370952c93f05b4\":[1125,615],\"85000b0e352c0e1cbb9f0aa58627f7ae\":[1365,690],\"670265d1cc23ede36bc4578606dc4d5a\":[1125,690],\"d6659d03cd454e0de62fcf1bca0a138e\":[1365,810],\"66c6074fa6355bc5fe290608f6cbd863\":[1125,810],\"45f6b9ef900bbe4fd48f94b95bb36d9f\":[1440,2340],\"2319b403cab60f53e65a76045be33f9d\":[855,2340],\"b8d4760f44ca5b0d23b22a75a2d5ba34\":[855,1575],\"a2ec55c173bcb3b383bf94d68bd5375b\":[855,2595],\"9621211ce3b28a6413192cf6c1c5db23\":[855,2505],\"55d1ab0a4de73900125c2979783a5364\":[855,2850],\"1ded84ddcfc41d240f749bc192b95a5b\":[855,2775],\"dc380d2e5d6f740e489a6f1d132fa54e\":[1440,1650],\"61ce13f9d3136cd9d4d5c04b14a5dd9c\":[855,2250],\"6224da43449e084be2c849bdee123993\":[855,2925],\"c5d85f71bc0b8001df3358b7c85738c7\":[855,3090],\"8a7512740f899a2086af00d3783aaf6c\":[855,3015],\"994d1a6b45643ad72f931936e1bae447\":[1440,2430],\"b6dd39d4956048fa366c12bd5bab7fa1\":[855,2430],\"2a15c7affd139bf27ee762ecf46aa4f3\":[855,1140],\"748d6bf44d4822e362da070c62079e39\":[855,1275],\"287ca58923bee2aabf5f7fa8ab975d5b\":[855,1485],\"28d40c5facd07e1ae820d0a78930a569\":[855,2685],\"5bf8e7c0e8798d4df2d0a8facd334698\":[855,1365],\"317ac7831f74a311e75411dfbb566372\":[1140,1140],\"9c8a1de4c4d1045d0610a9292ccdc6bd\":[1140,1290],\"851fbfa7c788b84e09ad0834021008d2\":[855,1665],\"1cad8a62acdeaddb61ce075602c18a3b\":[855,1740],\"d9133d41f573574898b2e893f8bbae05\":[930,1875],\"60899343e57537a06a6fe4931b787706\":[1200,1950],\"ec5c7c2fe62ae7da71f75756aba71cda\":[1200,2100],\"ebf0f91e1584f01d8d672aa3f1fd3c0a\":[1200,2025],\"1e7823630bdc3a34b563670b9bf6caf7\":[930,1815],\"56f29289fb5ea9bf798bbb1d7199089f\":[855,2175],\"e791fc07aaa1baa4021cc208e480c44f\":[930,1950],\"30b58ce494a0b9ea8a30fc0013467df3\":[930,2025],\"a9df62ca90718dd7ac0ce6aacea652b2\":[855,3180]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Cleanup inactive users in AWS IAM Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

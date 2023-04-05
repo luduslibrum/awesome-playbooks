@@ -1,0 +1,607 @@
+{
+  "schema_version": 4,
+  "name": "Send push notifications in Duo Security",
+  "description": "Use Duo Security to send custom push notifications to users, providing a trusted and secure method to get feedback from users.\n\ntags: DuoSecurity, 2FA, IAM, Authentication, Intermediate\nicons: duosecurity,🚦,❗️\nvisibility: public ",
+  "guid": "317ce0349f2d91990b5d93bbff3a7aa5",
+  "slug": "send_push_notifications_in_duo_security",
+  "exported_at": "2022-07-11T17:32:22Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive STS",
+      "disabled": false,
+      "guid": "025ba97b3176f756bb02f6573e49a964",
+      "options": {
+        "secret": "1dcd5380cc3bc42834025ca9c1608294",
+        "verbs": "get,post",
+        "include_headers": "false",
+        "path": "c0a118babbde0aa5fd39001cad4db67c"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send API Request to Duo Security",
+      "disabled": false,
+      "guid": "c7777db3626f370653fddcc8659358e2",
+      "options": {
+        "placeholders": {
+          "params": "<<LOCAL.params>>"
+        },
+        "url": "https://<<RESOURCE.duo_api_hostname>><<receive_sts.path>>",
+        "content_type": "<%if LOCAL.method = \"POST\"%>form<%else%>json<%endif%>",
+        "method": "<<LOCAL.method>>",
+        "payload": "=receive_sts.params",
+        "headers": {
+          "Date": "<<LOCAL.date>>"
+        },
+        "basic_auth": [
+          "<%if INCLUDES(receive_sts.path, \"/admin/\")%><<RESOURCE.duo_admin_integration_key>><%else%><<RESOURCE.duo_auth_integration_key>><%endif%>",
+          "<<HMAC_SHA1(LOCAL.signature, LOCAL[\"duo-s-key\"])>>"
+        ],
+        "local": {
+          "date": "=DATE(\"now\", \"%a, %d %b %Y %T %z\")",
+          "method": "=receive_sts.method",
+          "host": "<<RESOURCE.duo_api_hostname>>",
+          "path": "=receive_sts.path",
+          "params": "<%if receive_sts.params%><%for key in receive_sts.params%><<key[0]>>=<<REPLACE(URL_ENCODE(GET(receive_sts.params, key[0])), \"+\", \"%20\")>><%if FORLOOP.last = FALSE%>&<%endif%><%endfor%><%else%><%endif%>",
+          "signature": "<<LOCAL.date>>\n<<LOCAL.method>>\n<<LOCAL.host>>\n<<LOCAL.path>>\n<<LOCAL.params>>",
+          "duo-s-key": "<%if INCLUDES(receive_sts.path, \"/admin/\")%><<CREDENTIAL.duo_admin_secret_key>><%else%><<CREDENTIAL.duo_auth_secret_key>><%endif%>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Get Users in Duo Security",
+      "disabled": false,
+      "guid": "56c40bdf580cbcb8b442460557c08349",
+      "options": {
+        "payload": {
+          "path": "/admin/v1/users",
+          "method": "GET"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "91bd29a534156a17d7a6d6f591ac5753",
+        "slug": null,
+        "exported_at": "2022-07-11T17:32:22Z",
+        "agents": [
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "d80893b3bedd7a06a0b2bbe8c08a5d4c",
+            "options": {
+              "payload": {
+                "data": "=send_api_request_to_duo_security"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "ac95a93189561b5835a688a2fb8b7bf9",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Send API Request to Duo Security",
+            "disabled": false,
+            "guid": "0a745581df652ebd372faf906d516911",
+            "options": {
+              "placeholders": {
+                "params": "<<LOCAL.params>>"
+              },
+              "url": "https://<<RESOURCE.duo_api_hostname>><<input.payload.path>>",
+              "content_type": "<%if LOCAL.method = \"POST\"%>form<%else%>json<%endif%>",
+              "method": "<<LOCAL.method>>",
+              "payload": "=input.payload.params",
+              "headers": {
+                "Date": "<<LOCAL.date>>"
+              },
+              "basic_auth": [
+                "<%if INCLUDES(input.payload.path, \"/admin/\")%><<RESOURCE.duo_admin_integration_key>><%else%><<RESOURCE.duo_auth_integration_key>><%endif%>",
+                "<<HMAC_SHA1(LOCAL.signature, LOCAL[\"duo-s-key\"])>>"
+              ],
+              "local": {
+                "date": "=DATE(\"now\", \"%a, %d %b %Y %T %z\")",
+                "method": "=input.payload.method",
+                "host": "<<RESOURCE.duo_api_hostname>>",
+                "path": "=input.payload.path",
+                "params": "<%if input.payload.params%><%for key in input.payload.params%><<key[0]>>=<<REPLACE(URL_ENCODE(GET(input.payload.params, key[0])), \"+\", \"%20\")>><%if FORLOOP.last = FALSE%>&<%endif%><%endfor%><%else%><%endif%>",
+                "signature": "<<LOCAL.date>>\n<<LOCAL.method>>\n<<LOCAL.host>>\n<<LOCAL.path>>\n<<LOCAL.params>>",
+                "duo-s-key": "<%if INCLUDES(input.payload.path, \"/admin/\")%><<CREDENTIAL.duo_admin_secret_key>><%else%><<CREDENTIAL.duo_auth_secret_key>><%endif%>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 1,
+            "receiver": 2
+          },
+          {
+            "source": 2,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"d80893b3bedd7a06a0b2bbe8c08a5d4c\":[-225,195],\"ac95a93189561b5835a688a2fb8b7bf9\":[-225,-105],\"0a745581df652ebd372faf906d516911\":[-225,45]}"
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Exit",
+      "disabled": false,
+      "guid": "5e3c8fbd2eaaa28767918c96527f56c3",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "result": "=send_api_request_to_duo_security.body"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Send Alert Verification Push Async in Duo Security",
+      "disabled": false,
+      "guid": "5b1a59fb25b8e24895d19d70492f9ec7",
+      "options": {
+        "story": "<<STORY.send_push_notifications_in_duo_security>>",
+        "payload": {
+          "path": "/auth/v2/auth",
+          "method": "POST",
+          "params": {
+            "async": "1",
+            "device": "auto",
+            "pushinfo": "Alert Name=Malware found&Country=North Korea&Bad?=Yes",
+            "factor": "push",
+            "type": "Alert Verification",
+            "username": "bobjones"
+          }
+        },
+        "send_payload_as_body": "false"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "26636fd7b1ac63e1e627eef45afffa3e",
+      "options": {
+        "mode": "delay",
+        "seconds": 10
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Allow",
+      "disabled": false,
+      "guid": "15c52a6d2e14bdd532f3c53eb5504e1e",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "allow",
+            "path": "<<get_alert_verification_push_status_in_duo_security.result.response.result>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Get Alert Verification Push Status in Duo Security",
+      "disabled": false,
+      "guid": "caa16497e461213bc0cb8e8dc18a054a",
+      "options": {
+        "story": "<<STORY.send_push_notifications_in_duo_security>>",
+        "payload": {
+          "path": "/auth/v2/auth_status",
+          "method": "GET",
+          "params": {
+            "txid": "<<send_alert_verification_push_async_in_duo_security.result.response.txid>>"
+          }
+        },
+        "send_payload_as_body": "false"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Deny",
+      "disabled": false,
+      "guid": "9374d1171872e615adf3a959dfe28d44",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "deny",
+            "path": "<<get_alert_verification_push_status_in_duo_security.result.response.result>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Waiting",
+      "disabled": false,
+      "guid": "60201773a4ab297ae87ff6b6593a749e",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "waiting",
+            "path": "<<get_alert_verification_push_status_in_duo_security.result.response.result>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Send Custom Push in Duo Security",
+      "disabled": false,
+      "guid": "dcd4a343de4d6cb2dc181b193c137926",
+      "options": {
+        "payload": {
+          "path": "/auth/v2/auth",
+          "method": "POST",
+          "params": {
+            "device": "auto",
+            "factor": "push",
+            "pushinfo": "Alert Name=Malware found&Country=North Korea&Bad?=Yes",
+            "type": "Alert Verification",
+            "username": "bobjones"
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "bbb29a0aea919c5b35869ae847f4d5d9",
+        "slug": null,
+        "exported_at": "2022-07-11T17:32:22Z",
+        "agents": [
+          {
+            "type": "Agents::HTTPRequestAgent",
+            "name": "Send API Request to Duo Security",
+            "disabled": false,
+            "guid": "83e711fdaf9467df6ff488de75d80a12",
+            "options": {
+              "placeholders": {
+                "params": "<<LOCAL.params>>"
+              },
+              "url": "https://<<RESOURCE.duo_api_hostname>><<input.payload.path>>",
+              "content_type": "<%if LOCAL.method = \"POST\"%>form<%else%>json<%endif%>",
+              "method": "<<LOCAL.method>>",
+              "payload": "=input.payload.params",
+              "headers": {
+                "Date": "<<LOCAL.date>>"
+              },
+              "basic_auth": [
+                "<%if INCLUDES(input.payload.path, \"/admin/\")%><<RESOURCE.duo_admin_integration_key>><%else%><<RESOURCE.duo_auth_integration_key>><%endif%>",
+                "<<HMAC_SHA1(LOCAL.signature, LOCAL[\"duo-s-key\"])>>"
+              ],
+              "local": {
+                "date": "=DATE(\"now\", \"%a, %d %b %Y %T %z\")",
+                "method": "=input.payload.method",
+                "host": "<<RESOURCE.duo_api_hostname>>",
+                "path": "=input.payload.path",
+                "params": "<%if input.payload.params%><%for key in input.payload.params%><<key[0]>>=<<REPLACE(URL_ENCODE(GET(input.payload.params, key[0])), \"+\", \"%20\")>><%if FORLOOP.last = FALSE%>&<%endif%><%endfor%><%else%><%endif%>",
+                "signature": "<<LOCAL.date>>\n<<LOCAL.method>>\n<<LOCAL.host>>\n<<LOCAL.path>>\n<<LOCAL.params>>",
+                "duo-s-key": "<%if INCLUDES(input.payload.path, \"/admin/\")%><<CREDENTIAL.duo_admin_secret_key>><%else%><<CREDENTIAL.duo_auth_secret_key>><%endif%>"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "dfede89241dcaeeb849f8dbc027d0d98",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "89d9c81f3ba6877328aca776e7f24975",
+            "options": {
+              "payload": {
+                "data": "=send_api_request_to_duo_security"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 2
+          },
+          {
+            "source": 1,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"83e711fdaf9467df6ff488de75d80a12\":[-225,45],\"dfede89241dcaeeb849f8dbc027d0d98\":[-225,-105],\"89d9c81f3ba6877328aca776e7f24975\":[-225,195]}"
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Example One: Send to Story & Polling\n\nWhen looking for a trusted channel to receive critical user feedback over, Duo provides a great opportunity. Send Push Requests to see if users will acknowledge activity and poll for their response.",
+      "position": [
+        1110.0,
+        -195.0
+      ],
+      "guid": "1a7b9221a92df576e7e6fea94628f32f",
+      "width": null
+    },
+    {
+      "content": "# Overview\n\nTines uses **Send to Story** or **Groups** features to abstract the handling of requests to the Duo Security API.\n\nDuo Security provides two primary API 'applications': the Auth API and the Admin API.\n\nEach of these applications contains a separate credential set. If a request needs to be made to an '/admin/' API endpoint a different set of credentials are utilized than those used to acccess the  '/auth/' API endpoint. If you are only utilizing one of these API sets, you may only need to create one set of credentials.",
+      "position": [
+        780.0,
+        -345.0
+      ],
+      "guid": "0d9da7b1ee936bbc6dcacb751b13659e",
+      "width": null
+    },
+    {
+      "content": "# Requirements\n\n- [ ] Create a Resource named `duo_api_hostname` and enter your Duo Security tenant name (example: `api-d59a1f14.duosecurity.com`)\n- [ ] Create a Resource named `duo_admin_integration_key` with the Duo application's integration key if you are using the Admin API\n- [ ] Create a Resource named `duo_auth_integration_key` with the Duo application's integration key if you are using the Auth API\n- [ ] Create a Credential named `duo_admin_secret_key` with the Duo application's secret key if you are using the Admin API\n- [ ] Create a Credential named `duo_auth_secret_key` with the Duo application's secret key if you are using the Auth API",
+      "position": [
+        480.0,
+        15.0
+      ],
+      "guid": "b8a6f3e52f0158b6ba86f22da95c0356",
+      "width": null
+    },
+    {
+      "content": "# Example Two: Use a Group\n\nInstead of using Send to Story, this example makes use of the [Groups](https://hub.tines.com/docs/stories/groups) feature which contains a small workflow within the below Action that interacts with the Duo Security API.",
+      "position": [
+        1455.0,
+        -195.0
+      ],
+      "guid": "bc9babedfa4130d95946cb612668bcd5",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/duo.png\n\n",
+      "position": [
+        480.0,
+        -135.0
+      ],
+      "guid": "afb57d52834173de9272cd3a4021ee74",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 7,
+      "receiver": 6
+    },
+    {
+      "source": 7,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 5
+    }
+  ],
+  "diagram_layout": "{\"025ba97b3176f756bb02f6573e49a964\":[780,15],\"c7777db3626f370653fddcc8659358e2\":[780,90],\"56c40bdf580cbcb8b442460557c08349\":[1455,0],\"5e3c8fbd2eaaa28767918c96527f56c3\":[780,180],\"5b1a59fb25b8e24895d19d70492f9ec7\":[1125,0],\"26636fd7b1ac63e1e627eef45afffa3e\":[1125,90],\"15c52a6d2e14bdd532f3c53eb5504e1e\":[990,255],\"caa16497e461213bc0cb8e8dc18a054a\":[1125,165],\"9374d1171872e615adf3a959dfe28d44\":[1275,255],\"60201773a4ab297ae87ff6b6593a749e\":[1125,255],\"dcd4a343de4d6cb2dc181b193c137926\":[1455,75]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "025ba97b3176f756bb02f6573e49a964",
+  "exit_agent_guids": [
+    "5e3c8fbd2eaaa28767918c96527f56c3"
+  ],
+  "exit_agent_guid": "5e3c8fbd2eaaa28767918c96527f56c3",
+  "send_to_stories": [],
+  "form": {
+    "name": "New story for tuckner329@gmail.com Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

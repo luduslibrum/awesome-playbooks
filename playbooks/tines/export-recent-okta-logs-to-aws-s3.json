@@ -1,0 +1,374 @@
+{
+  "schema_version": 4,
+  "name": "Export recent Okta logs to AWS S3",
+  "description": "Stay on top of what happens inside your operating system. Access and ingest Okta logs from the past 90 days, and store system events and user activity in AWS S3 with this Story. \n\ntags: AWS, Okta, Logs, Access, Intermediate\nicons: okta, 🕵️‍♂️, 🗄\nvisibility: public",
+  "guid": "9cc73d9c7b57363679cb487e723c3b3c",
+  "slug": "export_recent_okta_logs_to_aws_s3",
+  "exported_at": "2022-07-11T17:50:39Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Okta Logs",
+      "disabled": false,
+      "guid": "a13c5dc0203a20a4390e68dd17cc8d02",
+      "options": {
+        "url": "https://<<RESOURCE.okta_tenant>>/api/v1/logs",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "since": "2021-12-01T16:22:18Z",
+          "until": "<<DATE(\"now\", \"%s\") |> MINUS(%, 86400) |> DATE(%, \"%Y-%m-%dT%H:%M:%SZ\")>>"
+        },
+        "headers": {
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Next",
+      "disabled": false,
+      "guid": "c3a3f1ef89b4a194540d052682b5cfb7",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_okta_logs.headers.link",
+            "regexp": "(, )<(.*?)>; rel=\"next\"",
+            "to": "link"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If More Logs",
+      "disabled": false,
+      "guid": "8ce707347f9bfbc62aace1a931f2c860",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "next",
+            "path": "<<get_okta_logs.headers.link>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Okta Logs",
+      "disabled": false,
+      "guid": "3d9e832c0ae298b4d5a2be0bea29d381",
+      "options": {
+        "url": "<<extract_next.link.first.last>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add an Object to an S3 Bucket",
+      "disabled": false,
+      "guid": "51db32ad61bc846562e091d40f14c07f",
+      "options": {
+        "url": "https://<<\"okta-logs-jt\">>.s3.<<\"us-east-1\">>.amazonaws.com/okta-logs-<<extract_after.link.first.last>>.zip",
+        "content_type": "application/zip",
+        "method": "put",
+        "payload": "<<JSON(get_okta_logs.body) |> ZIP(%)>>",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "1d1538d01ad7e480beb13543a36af926",
+      "options": {
+        "mode": "delay",
+        "seconds": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract After",
+      "disabled": false,
+      "guid": "a8b649afd6eea238b0e8e9a69ece2886",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_okta_logs.headers.link",
+            "regexp": "after=(.*?)>",
+            "to": "link"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Next",
+      "disabled": false,
+      "guid": "9a66fee8c39463b84b727751eb4d0df7",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "(, )<(.*?)>; rel=\"next\"",
+            "path": "<<get_okta_logs.headers.link>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add an Object to an S3 Bucket",
+      "disabled": false,
+      "guid": "f7969c46e90daa9e761eec675cf386ba",
+      "options": {
+        "url": "https://<<\"okta-logs-example\">>.s3.<<\"us-east-1\">>.amazonaws.com/okta-logs-last.zip",
+        "content_type": "application/zip",
+        "method": "put",
+        "payload": "<<JSON(get_okta_logs.body) |> ZIP(%)>>",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No Next",
+      "disabled": false,
+      "guid": "c632a32a72100e9fb1fe1c37a0d2ec43",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "(, )<(.*?)>; rel=\"next\"",
+            "path": "<<get_okta_logs.headers.link>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "No More Logs",
+      "disabled": false,
+      "guid": "45f8af3238541a42a1827bb632462945",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "next",
+            "path": "<<get_okta_logs.headers.link>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/okta.png\n# Run Action\n\nRun the Action `Get Okta Logs` below to kickoff the workflow.",
+      "position": [
+        675.0,
+        225.0
+      ],
+      "guid": "8097acbc3183198de3dc59d82b438827",
+      "width": null
+    },
+    {
+      "content": "# Info Needed\n\n## Okta\n- Create a Resource named `okta_tenant` with the full URL of your Okta tenant\n- Create a Credential named `okta` with your [API token](https://developer.okta.com/docs/guides/create-an-api-token/main/).\n\n## AWS S3\n- Create a bucket in AWS\n- Fill in the bucket name in the Actions \"Add an Object to an S3 Bucket\" replacing the text 'okta-logs-example'\n- Fill in the region that the bucket is located in\n- Create a Credential named `aws` with an IAM key or role that has access to create bucket objects.\n",
+      "position": [
+        990.0,
+        225.0
+      ],
+      "guid": "1dcb5691c21bd269750400f5706177fd",
+      "width": null
+    },
+    {
+      "content": "# Storage Replacement\n\nOther storage providers can be used in place of AWS S3.",
+      "position": [
+        450.0,
+        885.0
+      ],
+      "guid": "b8c13b49154c6af5773ceb221f3707a7",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 2,
+      "receiver": 9
+    },
+    {
+      "source": 2,
+      "receiver": 7
+    },
+    {
+      "source": 3,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 10
+    },
+    {
+      "source": 5,
+      "receiver": 2
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 7,
+      "receiver": 6
+    },
+    {
+      "source": 9,
+      "receiver": 8
+    },
+    {
+      "source": 10,
+      "receiver": 9
+    }
+  ],
+  "diagram_layout": "{\"a13c5dc0203a20a4390e68dd17cc8d02\":[345,390],\"c3a3f1ef89b4a194540d052682b5cfb7\":[345,570],\"8ce707347f9bfbc62aace1a931f2c860\":[345,480],\"3d9e832c0ae298b4d5a2be0bea29d381\":[345,660],\"51db32ad61bc846562e091d40f14c07f\":[540,735],\"1d1538d01ad7e480beb13543a36af926\":[345,735],\"a8b649afd6eea238b0e8e9a69ece2886\":[540,660],\"9a66fee8c39463b84b727751eb4d0df7\":[540,570],\"f7969c46e90daa9e761eec675cf386ba\":[210,1020],\"c632a32a72100e9fb1fe1c37a0d2ec43\":[210,945],\"45f8af3238541a42a1827bb632462945\":[210,855]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Export recent Okta logs to AWS S3 Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

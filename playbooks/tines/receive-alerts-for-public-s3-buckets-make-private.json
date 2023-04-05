@@ -1,0 +1,427 @@
+{
+  "schema_version": 4,
+  "name": "Receive alerts for public S3 buckets & make private",
+  "description": "This Story takes in an event from AWS CloudTrail, looks explicitly for indications that an S3 bucket has been made public, and enables remediation via Slack.\n\ntags: AWS, S3, Intermediate, Slack\nemojis: AWS, 🪣, slack\nvisibility: public",
+  "guid": "8b8480befa73e52f27b698697ea601bf",
+  "slug": "receive_alerts_for_public_s3_buckets_make_private",
+  "exported_at": "2022-07-11T17:46:39Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "S3 Event",
+      "disabled": false,
+      "guid": "f2b54d381b621d70eece01c52923fc17",
+      "options": {
+        "path": "cd4a8639f16e475f4b18a17c8f766729",
+        "secret": "1dc5fba77bf2fffce7d643e93b758f27",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Subscribe to SNS",
+      "disabled": false,
+      "guid": "0b36315bbe8f3afd3835acc1cfec52e5",
+      "options": {
+        "url": "<<s3_event.body.SubscribeURL>>",
+        "method": "get"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "If Initial SNS Subscription",
+      "disabled": false,
+      "guid": "d3b8867b4e01cd481ef786de92f8fd8c",
+      "options": {
+        "rules": [
+          {
+            "type": "!regex",
+            "value": "^$",
+            "path": "<<s3_event.body.SubscribeURL>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Structure CloudTrail Message",
+      "disabled": false,
+      "guid": "ae8ff7ac0464283b3e1a85c1d69f4b5b",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "message": "<<s3_event.body.s3_event.body.Message.s3ObjectKey>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Individual Objects in an S3 Bucket",
+      "disabled": false,
+      "guid": "7e46f9312b2dd32ff380be94c9f9d087",
+      "options": {
+        "url": "https://<<aws_s3_bucket>>.s3.<<aws_region>>.amazonaws.com/<<structure_cloudtrail_message.message>>",
+        "content_type": "text",
+        "method": "get",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_role_tines>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode S3 Object Resources",
+      "disabled": false,
+      "guid": "88c5d5b45d364011b50ae3896e48fdf1",
+      "options": {
+        "mode": "explode",
+        "path": "=get_individual_objects_in_an_s3_bucket.body.Records",
+        "to": "s3_event"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Is PutBucketAcl",
+      "disabled": false,
+      "guid": "ded113013149a6884e3abb28271287bb",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "PutBucketPublicAccessBlock",
+            "path": "<<explode_s3_object_resources.s3_event.eventName>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Results Digest",
+      "disabled": false,
+      "guid": "5dd960f8db4475889b39a95fd2a15ecf",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "user": "<<explode_s3_object_resources.s3_event.userIdentity.userName>>",
+          "timestamp": "<<explode_s3_object_resources.s3_event.eventTime>>",
+          "region": "<<explode_s3_object_resources.s3_event.awsRegion>>",
+          "s3_bucket_exposed": "<<explode_s3_object_resources.s3_event.requestParameters.bucketName>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Apply AWS S3 Bucket Block Policy",
+      "disabled": false,
+      "guid": "68c868f3a153989a7a472f6744746250",
+      "options": {
+        "url": "https://<<aws_s3_bucket>>.s3.<<aws_region>>.amazonaws.com/?publicAccessBlock",
+        "method": "put",
+        "content_type": "application/xml",
+        "headers": {
+          "Authorization": "<<CREDENTIAL.aws_role_tines>>"
+        },
+        "payload": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<PublicAccessBlockConfiguration>\n      <BlockPublicAcls>TRUE</BlockPublicAcls>\n      <IgnorePublicAcls>TRUE</IgnorePublicAcls>\n      <BlockPublicPolicy>TRUE</BlockPublicPolicy>\n      <RestrictPublicBuckets>TRUE</RestrictPublicBuckets>\n</PublicAccessBlockConfiguration>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Post Message to a Slack Channel",
+      "disabled": false,
+      "guid": "33b05e1a6cc0499afc72d43017130634",
+      "options": {
+        "url": "https://<<CREDENTIAL.slack_webhook>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "text": "S3 Event for <<results_digest.s3_bucket_exposed>>",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "The <<results_digest.s3_bucket_exposed>> in the <<results_digest.region>> has been made public to the internet"
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*User that made change:* `<<results_digest.user>>`"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Time of Event:* `<<results_digest.timestamp>>`"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*S3 Bucket Changed:* `<<results_digest.s3_bucket_exposed>>`"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*AWS Region for the S3 Bucket:*\n`<<results_digest.region>>`"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Should restrict this S3 Bucket?*"
+              }
+            },
+            {
+              "type": "actions",
+              "elements": [
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Block Public Access"
+                  },
+                  "style": "primary",
+                  "url": "<<PROMPT(\"Yes\")>>"
+                },
+                {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Leave Open"
+                  },
+                  "style": "danger",
+                  "url": "<<PROMPT(\"No\")>>"
+                }
+              ]
+            }
+          ]
+        },
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Original S3 Notification",
+      "disabled": false,
+      "guid": "27f8431cc5642fa5eb06941d44caa4ec",
+      "options": {
+        "url": "https://demo.tines.com/webhook/cd4a8639f16e475f4b18a17c8f766729/1dc5fba77bf2fffce7d643e93b758f27",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "s3_event": {
+            "body": {
+              "Type": "Notification",
+              "MessageId": "3acbd092-c643-5595-8339-8aee1c585f2c",
+              "TopicArn": "arn:aws:sns:<<aws_region>>:<<aws_account_id>>:s3_publish_topic",
+              "Message": "{\"s3Bucket\":\"<<s3_bucket_name>>\",\"s3ObjectKey\":[\"AWSLogs/<<aws_account_id>>/CloudTrail/<<aws_region>>/2022/02/08/<<aws_account_id>>_CloudTrail_us-east-1_20220208T2050Z_5JnffWvd46p1Onoi.json.gz\"]}",
+              "Timestamp": "<<timestamp>>",
+              "SignatureVersion": "1"
+            }
+          }
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Example event from CloudTrail on the S3 bucket ACL changing.\n\n**AccountID has been changed in the below example**\n\n```{\n  \"get_individual_objects_in_an_s3_bucket\": {\n    \"body\": {\n      \"Records\": [\n        {\n          \"eventVersion\": \"1.08\",\n          \"userIdentity\": {\n            \"type\": \"IAMUser\",\n            \"principalId\": \"AIDA36VTP5SMGIWHDCQFF\",\n            \"arn\": \"arn:aws:iam::1111111111:user/IAMUser\",\n            \"accountId\": \"1111111111\",\n            \"accessKeyId\": \"ASIA36*************\",\n            \"userName\": \"IAMUser\",\n            \"sessionContext\": {\n              \"sessionIssuer\": {},\n              \"webIdFederationData\": {},\n              \"attributes\": {\n                \"creationDate\": \"2022-02-08T16:31:02Z\",\n                \"mfaAuthenticated\": \"false\"\n              }\n            }\n          },\n          \"eventTime\": \"2022-02-08T20:46:34Z\",\n          \"eventSource\": \"s3.amazonaws.com\",\n          \"eventName\": \"PutBucketPublicAccessBlock\",\n          \"awsRegion\": \"us-east-1\",\n          \"sourceIPAddress\": \"sourceIPAddress\",\n          \"userAgent\": \"[S3Console/0.4, aws-internal/3 aws-sdk-java/1.11.1030 Linux/5.4.172-100.336.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/25.302-b08 java/1.8.0_302 vendor/Oracle_Corporation cfg/retry-mode/standard]\",\n          \"requestParameters\": {\n            \"publicAccessBlock\": \"\",\n            \"bucketName\": \"S3 Bucket Name\",\n            \"PublicAccessBlockConfiguration\": {\n              \"xmlns\": \"http://s3.amazonaws.com/doc/2006-03-01/\",\n              \"RestrictPublicBuckets\": false,\n              \"BlockPublicPolicy\": false,\n              \"BlockPublicAcls\": false,\n              \"IgnorePublicAcls\": false\n            },\n            \"Host\": \"s3.amazonaws.com\"\n          },\n          \"responseElements\": null,\n          \"additionalEventData\": {\n            \"SignatureVersion\": \"SigV4\",\n            \"CipherSuite\": \"ECDHE-RSA-AES128-GCM-SHA256\",\n            \"bytesTransferredIn\": 291,\n            \"AuthenticationMethod\": \"AuthHeader\",\n            \"x-amz-id-2\": \"V+RpriZQxlQG7gF1z+z0lE+XKOknGc/7xc/4ixeyBfqv5pct2A9ppzFtOKOOgyoqzqDsWfnUcdA=\",\n            \"bytesTransferredOut\": 0\n          },\n          \"requestID\": \"4AB3RRGGX8BWYPCT\",\n          \"eventID\": \"f5bb741f-7728-44ff-948b-496b63db1ce0\",\n          \"readOnly\": false,\n          \"resources\": [\n            {\n              \"accountId\": \"1111111111\",\n              \"type\": \"AWS::S3::Bucket\",\n              \"ARN\": \"arn:aws:s3:::s3_bucket\"\n            }\n          ],\n          \"eventType\": \"AwsApiCall\",\n          \"managementEvent\": true,\n          \"recipientAccountId\": \"111111111111\",\n          \"vpcEndpointId\": \"vpce-f40dc59d\",\n          \"eventCategory\": \"Management\"\n        }\n      ]\n    }\n}",
+      "position": [
+        -315.0,
+        225.0
+      ],
+      "guid": "d80f86886e760316feae34de4eb801d5",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/framed-logo-aws.png\n\nThis example Story takes in an event from AWS CloudTrail and specifically looks for the eventName **PutBucketPublicAccessBlock** which indicates that an S3 bucket has been made public to the internet.  \n\nTines receives the event via a webhook that is subscribed to an SNS topic.  Once the event is received the we use an HTTP Request action to pull down the file to analyze the Raw CloudTrail event payload to capture the:\n\n- User that made the change\n- S3 bucket that is exposed\n- Region where the S3 bucket is deployed\n- Timestamp of the change",
+      "position": [
+        -315.0,
+        -360.0
+      ],
+      "guid": "a5fe96c9eed676c8f458279688b3da59",
+      "width": null
+    },
+    {
+      "content": "Kick-off Story by running the **Original S3 Notification action**\n\nCopy the URL from the `S3 Event` webhook",
+      "position": [
+        15.0,
+        -285.0
+      ],
+      "guid": "c3e583dbdd40d284e5f21dbc9c3b10dc",
+      "width": null
+    },
+    {
+      "content": "# Message posts to the *#tines-automation* slack channel in the *sales-engineering* slack account",
+      "position": [
+        285.0,
+        585.0
+      ],
+      "guid": "ca4db7711772a0ea587c4f43843076ae",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 8
+    }
+  ],
+  "diagram_layout": "{\"f2b54d381b621d70eece01c52923fc17\":[45,105],\"0b36315bbe8f3afd3835acc1cfec52e5\":[315,255],\"d3b8867b4e01cd481ef786de92f8fd8c\":[315,180],\"ae8ff7ac0464283b3e1a85c1d69f4b5b\":[45,180],\"7e46f9312b2dd32ff380be94c9f9d087\":[45,270],\"88c5d5b45d364011b50ae3896e48fdf1\":[45,360],\"ded113013149a6884e3abb28271287bb\":[45,450],\"5dd960f8db4475889b39a95fd2a15ecf\":[45,525],\"68c868f3a153989a7a472f6744746250\":[45,690],\"33b05e1a6cc0499afc72d43017130634\":[45,600],\"27f8431cc5642fa5eb06941d44caa4ec\":[45,-165]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Receive alerts for public S3 buckets & make private Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

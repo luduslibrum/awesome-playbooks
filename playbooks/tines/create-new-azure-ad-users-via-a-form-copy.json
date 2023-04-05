@@ -1,0 +1,467 @@
+{
+  "schema_version": 4,
+  "name": "Create new Azure AD users via a form copy",
+  "description": "Pull in information from a Tines Form to create a new user in Microsoft Azure Active Directory (Azure AD), and add the user to a specified security group.\n\ntags: AzureAD, Identify, UserAccess, IdentityandAccessManagement, Jira, Intermediate\nicons: 📝, microsoft, jira,  \nvisibility: public",
+  "guid": "89860834ef20fc6882e34a423796f8fc",
+  "slug": "create_new_azure_ad_users_via_a_form_copy",
+  "exported_at": "2022-07-11T17:23:39Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create user in Azure AD",
+      "disabled": false,
+      "guid": "4ddbf8402a03ccdc0b5dfe32366761dc",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/users/",
+        "method": "post",
+        "content_type": "json",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.azure_ad>>"
+        },
+        "payload": {
+          "accountEnabled": "true",
+          "displayName": "<<receive_new_azure_ad_user_information.body.first_name>><<receive_new_azure_ad_user_information.body.last_name>>",
+          "mailNickname": "<<receive_new_azure_ad_user_information.body.email_nickname>>",
+          "passwordProfile": {
+            "forceChangePasswordNextSignIn": "true",
+            "password": "EnterFirstTimePassword"
+          },
+          "userPrincipalName": "<<receive_new_azure_ad_user_information.body.first_name>><<receive_new_azure_ad_user_information.body.last_name>>@emaildomain"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive new Azure AD user information",
+      "disabled": false,
+      "guid": "898ce9795a9a0584504272b5fa487549",
+      "options": {
+        "path": "6dd9d092a2799d3fb6be23825e5117d2",
+        "secret": "6c13cad80fcc687634dfc0656cda7215",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create issue in Jira with tables",
+      "disabled": false,
+      "guid": "295b4e156a7f93d4a52460f7ec1229cc",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Unassigned"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "h2. Azure AD User Creation\n|*Employee Name*| <<receive_new_azure_ad_user_information.body.first_name>> <<receive_new_azure_ad_user_information.body.last_name>>|\n|*Department*| <<receive_new_azure_ad_user_information.body.ad_groups>> |\n|*Azure AD Group*| <<receive_new_azure_ad_user_information.body.ad_groups>>| \n|*Start Date*| <<DATE(\"now\", \"%Y-%m-%dT%l:%M:%S%z\")>> |\n|*Title*| Sr. Systems Engineer |\n|*Manager*| Shaun Finn |\n|*Team*| Quality Assurance\n|*Address*| 1 Test St, Testingville, MA 12345 |\n|*Location*| Boston |\n\n",
+            "summary": "Azure AD New User Confirmation"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_domain>>",
+          "<<CREDENTIAL.jira_user>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create group in Azure AD",
+      "disabled": false,
+      "guid": "571c6bbd962a3ec3cfdff4b346402679",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/groups/",
+        "method": "post",
+        "content_type": "json",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.azure_ad>>"
+        },
+        "payload": {
+          "displayName": "<<receive_new_azure_ad_user_information.body.ad_groups>>",
+          "mailNickname": "<<receive_new_azure_ad_user_information.body.ad_groups>>",
+          "securityEnabled": "true",
+          "mailEnabled": "false"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add user group in Azure AD",
+      "disabled": false,
+      "guid": "fba92fa45bfdb1234605bc69f3057234",
+      "options": {
+        "url": "https://graph.microsoft.com/v1.0/groups/<<create_group_in_azure_ad.body.id>>/members/$ref",
+        "method": "post",
+        "content_type": "json",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.azure_ad>>"
+        },
+        "payload": {
+          "@odata.id": "https://graph.microsoft.com/v1.0/directoryObjects/<<create_user_in_azure_ad.body.id>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send card to user",
+      "disabled": false,
+      "guid": "4e84380637ec582ce2dc7baeb30f6e22",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/<<start_conversation_with_user.body.id>>/activities",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "type": "message",
+          "from": {
+            "id": "<<RESOURCE.microsoft_teams_bot_id>>",
+            "name": "Tines Bot"
+          },
+          "recipient": {
+            "id": "<<get_member_information.id>>"
+          },
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.thumbnail",
+              "content": {
+                "title": "New Azure AD User Creation",
+                "subtitle": "A new user task has just been created in Jira",
+                "text": "A new user has been created for your team in Azure AD. To view the new user information please click the button below",
+                "images": [
+                  {
+                    "url": "https://logo.clearbit.com/tines.com",
+                    "alt": "Tines"
+                  }
+                ],
+                "buttons": [
+                  {
+                    "type": "openUrl",
+                    "title": "View Jira Task",
+                    "value": "https://tinesio.atlassian.net/browse/<<create_issue_in_jira_with_tables.body.key>>"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.msteams>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Start conversation with User",
+      "disabled": false,
+      "guid": "d462c45256e98414a53e7c55bd3eaadf",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "bot": {
+            "id": "<<RESOURCE.teams_bot_id>>",
+            "name": "Tines Bot"
+          },
+          "members": [
+            {
+              "id": "<<get_member_information.id>>"
+            }
+          ],
+          "channelData": {
+            "tenant": {
+              "id": "<<get_member_information.tenantID>>"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.botbot>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Fetch Team Roster",
+      "disabled": false,
+      "guid": "fae7f3def84c51a79546b825c0dba34d",
+      "options": {
+        "url": "https://<<RESOURCE.microsoft_serviceurl>>/v3/conversations/<<RESOURCE.teams_tines_team_id>>/members",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.msteams>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Get member information",
+      "disabled": false,
+      "guid": "d30fddfdf9cd2942c0f552517387afc4",
+      "options": {
+        "mode": "message_only",
+        "loop": false,
+        "payload": {
+          "id": "<<WHERE(fetch_team_roster.body, \"name\", users_name) |> GET(%, \"id\")>>",
+          "tenantID": "<<WHERE(fetch_team_roster.body, \"name\", user_name) |> GET(%, \"tenantId\")>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait 5 seconds",
+      "disabled": false,
+      "guid": "138c66e321d36c5df0bbebe0f27fb661",
+      "options": {
+        "mode": "delay",
+        "seconds": "5"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/Microsoft.png\n\n\nThis Story receives a form with information about a new user to create in Azure Active Directory. \n\nThe Story will then create the new user, and add the user to specified groups. Once completed the users manager can be notified via MS Teams of the user creation. \n\n**Resources**\n`jira_domain` - FQDN for Jira instance\n`jira_user` - Username with rights to create/update issues\n\n\n**Credentials & Resources**\n`jira_credentials` - Password for `jira_user`\n`azure_ad` - Azure AD Credential\n`msteams` - MS Teams Credential",
+      "position": [
+        45.0,
+        135.0
+      ],
+      "guid": "8301453c5bb2482bfad403faa4a4411c",
+      "width": null
+    },
+    {
+      "content": "# Azure App Creation\n\n1. Create a new App Registration in https://portal.azure.com\n2. Enter a name, set the Account Type to be `Single tenant`.\n3. Add the 'Redirect URL'. This can be found when creating an OAuth Credential in Tines. It's in the format of `https://<tinesdomain>/oauth2/callback`\n4. Hit 'Register' to create the app\n5. Select 'API Permissions' from the left bar, and choose 'Add Permission'.\n6. Select `Microsoft Graph` and `Application Permissions`.\n7. Search for and add `Directory.ReadWrite.All` & `User.ReadWrite.All` & `Group.ReadWrite.All` & `GroupMember.ReadWrite.All` . This permission is needed to create a user and add them to a group in Azure AD.\n8. Save these permissions, and select `Grant Admin Consent for <domain>`. \n9. Select `Certificates and Secrets` from the left bar, and select `New client secret`. Select the expiration time (max 24 months). The token will need to be regenerated after this time. Make a note of this value.\n10. Make a note of the Application ID found in 'Overview' on the left bar. \n",
+      "position": [
+        825.0,
+        150.0
+      ],
+      "guid": "dbdc9531ca584cbec0026e45862fb0fe",
+      "width": null
+    },
+    {
+      "content": "# OAuth Credential\n\nCreate a new Credential in Tines with the following values:\n\n1. Type `OAuth 2.0`\n2. Client ID: `Application ID` from Azure app registration\n3. Client Secret: ` Client Secret` from Azure app registration\n4. Scope: `https://graph.microsoft.com/.default`\n5. Grant Type: `Client credentials`\n6. OAuth URL: `https://login.microsoftonline.com/<O365_TENANT_ID>/oauth2/v2.0/authorize`\n7. OAuth token URL: `https://login.microsoftonline.com/<O365_TENANT_ID>/oauth2/v2.0/token`",
+      "position": [
+        1140.0,
+        150.0
+      ],
+      "guid": "f192106955f94425539eb10216462c94",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 0
+    },
+    {
+      "source": 2,
+      "receiver": 7
+    },
+    {
+      "source": 3,
+      "receiver": 9
+    },
+    {
+      "source": 4,
+      "receiver": 2
+    },
+    {
+      "source": 6,
+      "receiver": 5
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 6
+    },
+    {
+      "source": 9,
+      "receiver": 4
+    }
+  ],
+  "diagram_layout": "{\"4ddbf8402a03ccdc0b5dfe32366761dc\":[420,240],\"898ce9795a9a0584504272b5fa487549\":[420,150],\"295b4e156a7f93d4a52460f7ec1229cc\":[420,555],\"571c6bbd962a3ec3cfdff4b346402679\":[420,330],\"fba92fa45bfdb1234605bc69f3057234\":[420,480],\"4e84380637ec582ce2dc7baeb30f6e22\":[420,900],\"d462c45256e98414a53e7c55bd3eaadf\":[420,795],\"fae7f3def84c51a79546b825c0dba34d\":[420,645],\"d30fddfdf9cd2942c0f552517387afc4\":[420,720],\"138c66e321d36c5df0bbebe0f27fb661\":[420,405]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Create new Azure AD users via a form Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "First Name",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Last Name",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Email Nickname",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "AD Groups",
+        "description": "",
+        "required": false,
+        "type": "OPTION",
+        "multi_select": true,
+        "options": [
+          "IT Team",
+          "SecOps"
+        ],
+        "ranking": 1879048192,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "898ce9795a9a0584504272b5fa487549",
+    "success_message": "Thank you for your submission"
+  }
+}

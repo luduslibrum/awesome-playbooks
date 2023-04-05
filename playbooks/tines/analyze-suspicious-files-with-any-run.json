@@ -1,0 +1,489 @@
+{
+  "schema_version": 4,
+  "name": "Analyze suspicious files with Any.run",
+  "description": "Analyze suspicious files with Any.Run and receive an email with a summary of results, including a link to the full report once complete.\n\ntags: AnyRun, Intermediate, Investigate, \nicons: 🔬,🗃, 📧\nvisibility: public",
+  "guid": "1aef7617bc6cc08652b5293d04a2a8d2",
+  "slug": "analyze_suspicious_files_with_any_run",
+  "exported_at": "2022-07-11T17:37:03Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Submit File to Any.Run for Analysis",
+      "disabled": false,
+      "guid": "3ec6efadcd75604415ec9ee8b2982b91",
+      "options": {
+        "url": "https://api.any.run/v1/analysis",
+        "content_type": "data",
+        "method": "post",
+        "payload": {
+          "file": {
+            "filename": "<<form.body.file.name>>",
+            "contents": "<<form.body.file.contents>>"
+          },
+          "env_os": "windows",
+          "env_bitness": "64",
+          "env_version": "10",
+          "env_type": "complete",
+          "opt_timeout": "360"
+        },
+        "headers": {
+          "Authorization": "API-Key <<CREDENTIAL.anyrun>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger Successful Submission",
+      "disabled": false,
+      "guid": "3a6f36a1f1c452fe691aded69fe383ff",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<submit_file_to_any_run_for_analysis.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Form",
+      "disabled": false,
+      "guid": "da3d37887f2a392d853f5755b9022b17",
+      "options": {
+        "path": "6286328fd37296a9f6e51e2882dccbdf",
+        "secret": "c4913e6d794dc36b6494698ff48d6b40"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Analysis Results",
+      "disabled": false,
+      "guid": "4eed6e79f704fa28701d3b92cac7962e",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "Any.run File Analysis Results - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "<body style=\"margin: 0;background-color: #FCF9F5;\">\n  \n  <center class=\"wrapper\" style=\"width: 100%;table-layout: fixed;background-color: #FCF9F5;padding-bottom: 40px;\">\n    <table class=\"main\" align=\"center\" style=\"border-spacing: 0px;margin: 0 auto;width: 100%;max-width: 600px;background-color: #FFFFFF;font-family: sans-serif;color: #4a4a4a;\">\n      <!-- HEADER -->\n      <tr>\n        <td style=\"padding: 0;\">\n          <table width=\"100%\" style=\"border-spacing: 0;\">\n            <tr>\n              <td style=\"text-align: center; padding: 8px 0 4px; border-top: 2px; border-bottom: 3px solid;\">\n                <a href=\"#\"><img src=\"https://ci6.googleusercontent.com/proxy/nPFmlOl5u2tp9Og0HFrQEkCT2L2vaxxB--579Tp8GS4bvNHJR35InJt8XNXpMdI_FuElqu-m85JZAWn7nKQxNkbolPLRzHDUmruQVIGr-t-pYv92=s0-d-e1-ft#https://www.tines.com/logos/logo-tines-with-backdrop-light@2x.png\" width=\"100\" alt=\"\" style=\"border: 0;\"></a>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <!-- COLUMN SECTION -->\n      <tr>\n        <td style=\"padding: 0;\">\n          <table width=\"100%\" style=\"border-spacing: 0;\">\n            <tr>\n              <td class=\"two-columns\" style=\"padding: 35px 0 40px;font-size: 0;text-align: center;\">\n                <!-- Col 1-->\n                <table class=\"column\" style=\"border-spacing: 0;width: 100%;max-width: 300px;display: inline-block;vertical-align: top;\">\n                  <tr>\n                    <td class=\"padding\" style=\"padding: 20px;\">\n                      <table class=\"content\" style=\"border-spacing: 0;font-size: 15px;text-align: center;line-height: 20px;\">\n                        <tr>\n                          <td style=\"padding: 0;\">\n                            <a href=\"#\">\n                              <img src=\"https://www.datocms-assets.com/55802/1635420776-illustration-security-gate.png?dpr=1&fm=png&w=824\" alt=\"\" width=\"260\" style=\"max-width: 260px;border-radius: 8px;border: 0;\">\n                            </a>\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:10px;\">\n                            <p style=\"font-size: 17px;font-weight: bold;\">ANY.RUN - Interactive Sandbox</p>\n                            <p style=\"padding-bottom: 15px; font-family: 'Courier New', Courier, monospace; text-align: center;\">\n                              <strong>Filename: </strong><<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.body.analysis.content.mainObject.filename>><br>\n                              <strong>Type: </strong><<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.body.analysis.content.mainObject.type>><br>\n                              <strong>Threat: </strong><<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.body.analysis.scores.verdict.threatLevelText>><br>\n                              <strong>Threat Level: </strong><<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.body.analysis.scores.verdict.threatLevel>><br>\n                            </p>\n                            <a href=\"<<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.body.analysis.permanentUrl>>\" class=\"button\" style=\"background-color: #2C9469;color: #ffffff;text-decoration: none;padding: 12px 20px;border-radius: 8px;font-weight: bold;letter-spacing: .5px;\">Full Results</a>\n                          </td>\n                        </tr>\n                      </table>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n      <!-- EMAIL LOGOS -->\n      <tr>\n        <td style=\"padding: 0;\">\n          <table style=\"border-spacing: 0;\">\n\n          </table>\n        </td>\n      </tr>\n      <!-- FOOTER SECTION -->\n      <tr>\n        <td style=\"padding: 0;\">\n          <table width=\"100%\" style=\"border-spacing: 0;\">\n            <tr>\n              <td style=\"text-align: center; padding: 8px 0 4px; border-top: 2px; border-bottom: 3px solid;\">\n                <a href=\"#\"><img src=\"https://ci4.googleusercontent.com/proxy/Nu-KkbA1FI6A_6Vr064Q-PftJ6lv4BBas9_GToS_lZUOFGS4Ye2-bw-rJlnEG_UGF3iP0brWs9H5W2mWt9DBOjHI9sGxIMtp1wXfXGg=s0-d-e1-ft#https://www.tines.com/logos/tines-icon-light-circle@2x.png\" width=\"50\" alt=\"\" style=\"border: 0;\"></a>\n              </td>\n            </tr>\n          </table>\n          </td>\n      </tr>\n      <tr>\n        <td style=\"padding: 0;\">\n          <table width=\"100%\" style=\"border-spacing: 0;\">\n          <tr>\n            <td style=\"text-align: center; padding: 8px 0 4px; border-top: 2px; border-bottom: 3px;\">\n              <a href=\"https://hub.tines.com/\" style=\"text-decoration:none\">Help Center</a> · \n              <a href=\"https://tines.com/blog\" style=\"text-decoration:none\">Blog</a> · \n              <a href=\"https://www.linkedin.com/company/tines-io/\" style=\"text-decoration:none\">LinkedIn</a> · \n              <a href=\"https://twitter.com/tines_io\" style=\"text-decoration:none\">Twitter</a> · \n              <a href=\"https://hq.tines.io/forms/6f8b122ccba3cb7e8e0d3531d1b70eb2\" style=\"text-decoration:none\">Slack Community</a> · \n              <a href=\"https://tines.com/careers\" style=\"text-decoration:none\">Careers</a> · \n              <a href=\"https://tines.com/terms\" style=\"text-decoration:none\">Terms</a> · \n              <a href=\"https://tines.com/privacy\" style=\"text-decoration:none\">Privacy</a>\n            </td>\n          </tr>\n        </table></td>\n      </tr>\n    </table>\n  </center>\n</body>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay",
+      "disabled": false,
+      "guid": "98e76eb3dd0cf5f2715786e6660790df",
+      "options": {
+        "mode": "delay",
+        "seconds": "60"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Retrieve detailed report of a recent any.run analysis by TaskId",
+      "disabled": false,
+      "guid": "a0d0b2c00351c75620c98135fd3efd5d",
+      "options": {
+        "url": "https://api.any.run/report/<<submit_file_to_any_run_for_analysis.body.data.taskid>>/summary/json",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "API-Key <<CREDENTIAL.anyrun>>"
+        },
+        "timeout": 30
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Analysis Complete",
+      "disabled": false,
+      "guid": "29fcfbdc71ead793d34056cf6b05cc3f",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "200",
+            "path": "<<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Analysis Not Complete",
+      "disabled": false,
+      "guid": "c8b05e2858cc1a6f3804752ef6b07d4b",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "200",
+            "path": "<<retrieve_detailed_report_of_a_recent_any_run_analysis_by_taskid.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Increment Counter",
+      "disabled": false,
+      "guid": "d583b403cf76b3b4da448c0d3665f720",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "counter": "<<PLUS(increment_counter.counter, 1)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Counter Less Than 10",
+      "disabled": false,
+      "guid": "6061c56b565f7d15981e4d0e59f971ff",
+      "options": {
+        "rules": [
+          {
+            "type": "field<=value",
+            "value": "10",
+            "path": "<<increment_counter.counter>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "97969906b7ec36af78e16bd29df36bf6",
+      "options": {
+        "mode": "delay",
+        "seconds": "<<TIMES(5, 60)>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Counter Greater than 10",
+      "disabled": false,
+      "guid": "43329dc718ea1f38667d4ea70d71cc31",
+      "options": {
+        "rules": [
+          {
+            "type": "field>value",
+            "value": "10",
+            "path": "<<increment_counter.counter>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send Error Email",
+      "disabled": false,
+      "guid": "f2858367d753990c81be8188e33b2e89",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "ERROR Any.run File Analysis Results - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "An error has occurred when attempting to pull results from Any.run.<br>\nPlease check story: <a href=\"<<APPEND(META.tenant.domain, \"/stories/\") |> APPEND(%, META.story.id)>>\"><<META.story.name>></a>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger unsuccessful Submission",
+      "disabled": false,
+      "guid": "ef67050f3a1d5d9091a0646b0e9bab05",
+      "options": {
+        "rules": [
+          {
+            "type": "field!=value",
+            "value": "200",
+            "path": "<<submit_file_to_any_run_for_analysis.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Error",
+      "disabled": false,
+      "guid": "9ea89299a2cf96f17e49f8119b091442",
+      "options": {
+        "recipients": [
+          "<<form.body.email>>"
+        ],
+        "subject": "Any.run File Analysis Error - <<DATE(\"now\", \"%Y-%m-%d\")>>",
+        "body": "An error has occurred when submitting file to Any.Run<br>\n\nPlease check story: <a href=\"<<APPEND(META.tenant.domain, \"/stories/\") |> APPEND(%, META.story.id)>>\"><<META.story.name>></a>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Any.Run file analysis\n\n---- \n\nThis story will take input from a form with an email and a file to analyse. \n\nIt will upload the file to a sandbox VM in Any.run and run an analysis. \n\nThe story will incrementally check if the analysis has completed, once completed the full analysis will be emailed to the recipient set in the form\n\n\n",
+      "position": [
+        -45.0,
+        450.0
+      ],
+      "guid": "d47cf6176bc422fba888407dbefb0bec",
+      "width": null
+    },
+    {
+      "content": "[](https://image-uploads.tines.com/anyrun.png)",
+      "position": [
+        -45.0,
+        165.0
+      ],
+      "guid": "1f056a8fba276fe6d0e8a517bc2c8470",
+      "width": 270
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 13
+    },
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 2,
+      "receiver": 0
+    },
+    {
+      "source": 4,
+      "receiver": 5
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 3
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 11
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 5
+    },
+    {
+      "source": 11,
+      "receiver": 12
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    }
+  ],
+  "diagram_layout": "{\"3ec6efadcd75604415ec9ee8b2982b91\":[300,240],\"3a6f36a1f1c452fe691aded69fe383ff\":[300,330],\"da3d37887f2a392d853f5755b9022b17\":[300,165],\"4eed6e79f704fa28701d3b92cac7962e\":[555,675],\"98e76eb3dd0cf5f2715786e6660790df\":[300,420],\"a0d0b2c00351c75620c98135fd3efd5d\":[300,495],\"29fcfbdc71ead793d34056cf6b05cc3f\":[555,600],\"c8b05e2858cc1a6f3804752ef6b07d4b\":[300,600],\"d583b403cf76b3b4da448c0d3665f720\":[300,675],\"6061c56b565f7d15981e4d0e59f971ff\":[300,750],\"97969906b7ec36af78e16bd29df36bf6\":[300,825],\"43329dc718ea1f38667d4ea70d71cc31\":[75,750],\"f2858367d753990c81be8188e33b2e89\":[75,825],\"ef67050f3a1d5d9091a0646b0e9bab05\":[555,330],\"9ea89299a2cf96f17e49f8119b091442\":[555,420]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Analyze suspicious files with Any.run Form",
+    "description": "Submit a file for analysis on Any.run",
+    "fields": [
+      {
+        "name": "Email",
+        "description": "",
+        "required": true,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "File",
+        "description": "Upload file to analyse in Any.run",
+        "required": true,
+        "type": "FILE_UPLOAD",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "da3d37887f2a392d853f5755b9022b17",
+    "success_message": "Thank you for your submission"
+  }
+}

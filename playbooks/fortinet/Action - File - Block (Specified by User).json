@@ -1,0 +1,235 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action - File - Block (Specified by User)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Creates indicators for the file specified by the user, blocks the file on the firewall and also marks the status of the indicator as blocked. The indicator is also linked to the record on which the playbook is triggered.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/e134acd2-19df-433b-ae6e-7f94b2b96a4e",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Link Indicator On Triggered Record",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{vars.input.records[0]['@id']}}",
+                    "body": "{\"__link\":{\"indicators\":[\"{{vars.result['@id']}}\"]}}"
+                },
+                "version": "3.0.4",
+                "connector": "cyops_utilities",
+                "operation": "update_cyops_resource",
+                "operationTitle": "CyOPs: Update Record",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "4bd9330d-7c46-48b5-a34c-1a0f75a3b52f"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block Email Address",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params.reasonsToBlock}}",
+                    "inputIndicatorValue": "{{vars.input.params.fileName}}",
+                    "inputIndicatorRecordIRI": "{{vars.steps.Create_Domain_Indicator___Deduplicated['@id']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/8ae6240e-17de-4796-8190-c5f9ff450c82"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "0b62fd31-4499-4117-8a99-0a50d0b3066c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "e20cd20b-3dcc-42fe-aa36-35a0198d95d3",
+                "title": "Block Specified File",
+                "resources": [
+                    "incidents"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "filePath",
+                        "type": "string",
+                        "label": "File",
+                        "title": "File Field",
+                        "usable": true,
+                        "tooltip": "Given File will also be created as indicator, and linked to this record",
+                        "dataType": "file",
+                        "formType": "file",
+                        "required": true,
+                        "_expanded": true,
+                        "mmdUpdate": true,
+                        "collection": false,
+                        "dataSource": {
+                            "model": "files"
+                        },
+                        "searchable": false,
+                        "templateUrl": "app\/components\/form\/fields\/file.html",
+                        "_nameTouched": true,
+                        "defaultValue": null,
+                        "lengthConstraint": true,
+                        "allowedEncryption": false,
+                        "allowedGridColumn": true,
+                        "useRecordFieldDefault": false
+                    },
+                    {
+                        "name": "fileName",
+                        "type": "string",
+                        "label": "File Name",
+                        "tooltip": "",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": true,
+                        "_expanded": true,
+                        "useRecordFieldDefault": false
+                    },
+                    {
+                        "name": "reasonsToBlock",
+                        "type": "string",
+                        "label": "Reasons to block",
+                        "tooltip": "Specify reasons for unblocking the File indicator. The reason would be added in Indicator Record for future reference",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "defaultValue": "Asked by User:",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "fileName": "{{vars.request.data[\"fileName\"]}}",
+                            "filePath": "{{vars.request.data[\"filePath\"]}}",
+                            "reasonsToBlock": "{{vars.request.data[\"reasonsToBlock\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "assets": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "incidents": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Block",
+                "noRecordExecution": false,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "e134acd2-19df-433b-ae6e-7f94b2b96a4e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Domain Indicator _ Deduplicated",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "file": "{{vars.input.params.filePath}}",
+                    "value": "{{vars.input.params.fileName}}",
+                    "__replace": "true",
+                    "typeofindicator": {
+                        "id": 73,
+                        "@id": "\/api\/3\/picklists\/0162241b-f5bf-4917-a150-00e920be47bd",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "File",
+                        "listName": "\/api\/3\/picklist_names\/50ee5bfa-e18f-49ba-8af9-dcca25b0f9c0",
+                        "itemValue": "File",
+                        "orderIndex": 3
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/upsert\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "b18c830d-f789-4f2c-b302-1418c0c9edbf"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Create IP Indicator _ Deduplicated",
+            "targetStep": "\/api\/3\/workflow_steps\/b18c830d-f789-4f2c-b302-1418c0c9edbf",
+            "sourceStep": "\/api\/3\/workflow_steps\/e134acd2-19df-433b-ae6e-7f94b2b96a4e",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "cca1fb46-c042-4691-b261-bdec9f790b6e"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create IP Indicator _ Deduplicated -> Unblock IP Address",
+            "targetStep": "\/api\/3\/workflow_steps\/0b62fd31-4499-4117-8a99-0a50d0b3066c",
+            "sourceStep": "\/api\/3\/workflow_steps\/b18c830d-f789-4f2c-b302-1418c0c9edbf",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "a0164a97-dc6a-416f-b7fd-b168571d9150"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Block IP Address -> Link Indicator On Triggered Record",
+            "targetStep": "\/api\/3\/workflow_steps\/4bd9330d-7c46-48b5-a34c-1a0f75a3b52f",
+            "sourceStep": "\/api\/3\/workflow_steps\/0b62fd31-4499-4117-8a99-0a50d0b3066c",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ec26f0d6-7950-486b-aa4e-ff226ba6362b"
+        }
+    ],
+    "priority": null,
+    "uuid": "448be7f4-1d08-4721-9da9-eb1bc5ead158",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Mitigation"
+    ]
+}

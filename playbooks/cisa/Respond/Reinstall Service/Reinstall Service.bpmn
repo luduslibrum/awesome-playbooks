@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1e9fe65" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.7.2">
+  <bpmn:process id="ReinstllSrvc" name="Reinstall Service" isExecutable="true" camunda:versionTag="Shareable_Workflow">
+    <bpmn:startEvent id="StartEvent_1" name="Select Heartbeat Failure COAs">
+      <bpmn:outgoing>Flow_1j5lrwp</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0g98gmw" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1j5lrwp" sourceRef="StartEvent_1" targetRef="Activity_0vd7v9a" />
+    <bpmn:serviceTask id="Activity_0vd7v9a" name="SOAR Gathers Service and Alert Details from Case">
+      <bpmn:incoming>Flow_1j5lrwp</bpmn:incoming>
+      <bpmn:outgoing>Flow_15yqgcv</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_01chxm8" name="Policy met for automated service re-install?">
+      <bpmn:incoming>Flow_15yqgcv</bpmn:incoming>
+      <bpmn:outgoing>Flow_04m8x2g</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0qggmki</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_15yqgcv" sourceRef="Activity_0vd7v9a" targetRef="Gateway_01chxm8" />
+    <bpmn:sequenceFlow id="Flow_04m8x2g" name="Yes" sourceRef="Gateway_01chxm8" targetRef="Activity_1ar8p90" />
+    <bpmn:sequenceFlow id="Flow_0qggmki" name="No" sourceRef="Gateway_01chxm8" targetRef="Activity_1kzqzj9" />
+    <bpmn:serviceTask id="Activity_1kzqzj9" name="SOAR Identifies Service Owner from Directory">
+      <bpmn:incoming>Flow_0qggmki</bpmn:incoming>
+      <bpmn:outgoing>Flow_16db169</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_16db169" sourceRef="Activity_1kzqzj9" targetRef="Activity_12miv1r" />
+    <bpmn:sendTask id="Activity_12miv1r" name="SOAR &#10;Notifies Service Owner of Reinstall Request">
+      <bpmn:incoming>Flow_16db169</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ab1hrd</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="Flow_0ab1hrd" sourceRef="Activity_12miv1r" targetRef="Activity_0hr600e" />
+    <bpmn:userTask id="Activity_0hr600e" name="Service Owner Approves Reinstall">
+      <bpmn:incoming>Flow_0ab1hrd</bpmn:incoming>
+      <bpmn:outgoing>Flow_18q1hd1</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_18q1hd1" sourceRef="Activity_0hr600e" targetRef="Activity_1ar8p90" />
+    <bpmn:serviceTask id="Activity_1ar8p90" name="SOAR Re-Installs Service via Config Mgmt">
+      <bpmn:incoming>Flow_04m8x2g</bpmn:incoming>
+      <bpmn:incoming>Flow_18q1hd1</bpmn:incoming>
+      <bpmn:outgoing>Flow_0gidiye</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_0n3x7k7" name="Service available?">
+      <bpmn:incoming>Flow_0gidiye</bpmn:incoming>
+      <bpmn:outgoing>Flow_16wehbs</bpmn:outgoing>
+      <bpmn:outgoing>Flow_11vyewl</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0gidiye" sourceRef="Activity_1ar8p90" targetRef="Gateway_0n3x7k7" />
+    <bpmn:sequenceFlow id="Flow_16wehbs" name="Yes" sourceRef="Gateway_0n3x7k7" targetRef="Activity_0cglcub" />
+    <bpmn:sendTask id="Activity_0cglcub" name="SOAR &#10;Notifies SOC and Service Owner of Restoration">
+      <bpmn:incoming>Flow_16wehbs</bpmn:incoming>
+      <bpmn:outgoing>Flow_0342iht</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:exclusiveGateway id="Gateway_0rulr1j" name="Policy met for server rebuild?">
+      <bpmn:incoming>Flow_11vyewl</bpmn:incoming>
+      <bpmn:outgoing>Flow_0vbqjoe</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0tjrpmv</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_11vyewl" name="No" sourceRef="Gateway_0n3x7k7" targetRef="Gateway_0rulr1j" />
+    <bpmn:sequenceFlow id="Flow_0vbqjoe" name="Yes" sourceRef="Gateway_0rulr1j" targetRef="Event_1r7l48u" />
+    <bpmn:endEvent id="Event_1r7l48u" name="Rebuild Server">
+      <bpmn:incoming>Flow_0vbqjoe</bpmn:incoming>
+      <bpmn:incoming>Flow_1lkvrjv</bpmn:incoming>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0wyssq4" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0tjrpmv" name="No" sourceRef="Gateway_0rulr1j" targetRef="Activity_0pxxun8" />
+    <bpmn:sendTask id="Activity_0pxxun8" name="SOAR &#10;Notifies SOC and Service Owner of Failed Re-Install">
+      <bpmn:incoming>Flow_0tjrpmv</bpmn:incoming>
+      <bpmn:outgoing>Flow_1sik4tu</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="Flow_1sik4tu" sourceRef="Activity_0pxxun8" targetRef="Activity_14e6lnj" />
+    <bpmn:userTask id="Activity_14e6lnj" name="SOC and Service Owner Select COA">
+      <bpmn:incoming>Flow_1sik4tu</bpmn:incoming>
+      <bpmn:outgoing>Flow_0itugvn</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_1yu1z6i" name="Rebuild server?">
+      <bpmn:incoming>Flow_0itugvn</bpmn:incoming>
+      <bpmn:outgoing>Flow_0mr9hyq</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1lkvrjv</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0itugvn" sourceRef="Activity_14e6lnj" targetRef="Gateway_1yu1z6i" />
+    <bpmn:sequenceFlow id="Flow_0mr9hyq" name="No" sourceRef="Gateway_1yu1z6i" targetRef="Activity_10b5z7v" />
+    <bpmn:userTask id="Activity_10b5z7v" name="SOC and Service Owner Resolve Issue">
+      <bpmn:incoming>Flow_0mr9hyq</bpmn:incoming>
+      <bpmn:outgoing>Flow_1y3k7e4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1lkvrjv" name="Yes" sourceRef="Gateway_1yu1z6i" targetRef="Event_1r7l48u" />
+    <bpmn:sequenceFlow id="Flow_0342iht" sourceRef="Activity_0cglcub" targetRef="Activity_0o2c5se" />
+    <bpmn:serviceTask id="Activity_0o2c5se" name="SOAR Closes Ticket">
+      <bpmn:incoming>Flow_0342iht</bpmn:incoming>
+      <bpmn:outgoing>Flow_10gdr4o</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1y3k7e4" sourceRef="Activity_10b5z7v" targetRef="Activity_0nljvcl" />
+    <bpmn:userTask id="Activity_0nljvcl" name="Operator Closes Ticket">
+      <bpmn:incoming>Flow_1y3k7e4</bpmn:incoming>
+      <bpmn:outgoing>Flow_0xcjl4n</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_1bks0sy" name="End">
+      <bpmn:incoming>Flow_10gdr4o</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_10gdr4o" sourceRef="Activity_0o2c5se" targetRef="Event_1bks0sy" />
+    <bpmn:endEvent id="Event_0kaqf1z" name="End">
+      <bpmn:incoming>Flow_0xcjl4n</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0xcjl4n" sourceRef="Activity_0nljvcl" targetRef="Event_0kaqf1z" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ReinstllSrvc">
+      <bpmndi:BPMNEdge id="Flow_1lkvrjv_di" bpmnElement="Flow_1lkvrjv">
+        <di:waypoint x="1215" y="400" />
+        <di:waypoint x="1460" y="400" />
+        <di:waypoint x="1460" y="308" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1329" y="382" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mr9hyq_di" bpmnElement="Flow_0mr9hyq">
+        <di:waypoint x="1190" y="425" />
+        <di:waypoint x="1190" y="470" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1198" y="433" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0itugvn_di" bpmnElement="Flow_0itugvn">
+        <di:waypoint x="1110" y="400" />
+        <di:waypoint x="1165" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1sik4tu_di" bpmnElement="Flow_1sik4tu">
+        <di:waypoint x="960" y="400" />
+        <di:waypoint x="1010" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tjrpmv_di" bpmnElement="Flow_0tjrpmv">
+        <di:waypoint x="910" y="315" />
+        <di:waypoint x="910" y="360" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="918" y="315" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vbqjoe_di" bpmnElement="Flow_0vbqjoe">
+        <di:waypoint x="935" y="290" />
+        <di:waypoint x="1442" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="962" y="272" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11vyewl_di" bpmnElement="Flow_11vyewl">
+        <di:waypoint x="910" y="202" />
+        <di:waypoint x="910" y="265" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="918" y="202" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16wehbs_di" bpmnElement="Flow_16wehbs">
+        <di:waypoint x="935" y="177" />
+        <di:waypoint x="1010" y="177" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="946" y="159" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gidiye_di" bpmnElement="Flow_0gidiye">
+        <di:waypoint x="800" y="177" />
+        <di:waypoint x="885" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18q1hd1_di" bpmnElement="Flow_18q1hd1">
+        <di:waypoint x="750" y="260" />
+        <di:waypoint x="750" y="217" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ab1hrd_di" bpmnElement="Flow_0ab1hrd">
+        <di:waypoint x="650" y="300" />
+        <di:waypoint x="700" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16db169_di" bpmnElement="Flow_16db169">
+        <di:waypoint x="500" y="300" />
+        <di:waypoint x="550" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qggmki_di" bpmnElement="Flow_0qggmki">
+        <di:waypoint x="450" y="202" />
+        <di:waypoint x="450" y="260" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="458" y="209" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04m8x2g_di" bpmnElement="Flow_04m8x2g">
+        <di:waypoint x="475" y="177" />
+        <di:waypoint x="700" y="177" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="491" y="159" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15yqgcv_di" bpmnElement="Flow_15yqgcv">
+        <di:waypoint x="370" y="177" />
+        <di:waypoint x="425" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1j5lrwp_di" bpmnElement="Flow_1j5lrwp">
+        <di:waypoint x="215" y="177" />
+        <di:waypoint x="270" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0342iht_di" bpmnElement="Flow_0342iht">
+        <di:waypoint x="1110" y="177" />
+        <di:waypoint x="1220" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1y3k7e4_di" bpmnElement="Flow_1y3k7e4">
+        <di:waypoint x="1240" y="510" />
+        <di:waypoint x="1290" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10gdr4o_di" bpmnElement="Flow_10gdr4o">
+        <di:waypoint x="1320" y="177" />
+        <di:waypoint x="1442" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xcjl4n_di" bpmnElement="Flow_0xcjl4n">
+        <di:waypoint x="1390" y="510" />
+        <di:waypoint x="1442" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1gcxt5y_di" bpmnElement="StartEvent_1" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="179" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="156" y="202" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0cxggyj_di" bpmnElement="Activity_0vd7v9a">
+        <dc:Bounds x="270" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_01chxm8_di" bpmnElement="Gateway_01chxm8" isMarkerVisible="true">
+        <dc:Bounds x="425" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="405" y="102" width="90" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_145clt6_di" bpmnElement="Activity_1kzqzj9">
+        <dc:Bounds x="400" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0fwnasm_di" bpmnElement="Activity_12miv1r">
+        <dc:Bounds x="550" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0if00xw_di" bpmnElement="Activity_0hr600e">
+        <dc:Bounds x="700" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0n7341w_di" bpmnElement="Activity_1ar8p90">
+        <dc:Bounds x="700" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0n3x7k7_di" bpmnElement="Gateway_0n3x7k7" isMarkerVisible="true">
+        <dc:Bounds x="885" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="865" y="115" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0rulr1j_di" bpmnElement="Gateway_0rulr1j" isMarkerVisible="true">
+        <dc:Bounds x="885" y="265" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="823" y="236" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0d1fv4y_di" bpmnElement="Activity_0pxxun8">
+        <dc:Bounds x="860" y="360" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_117c77b_di" bpmnElement="Activity_14e6lnj">
+        <dc:Bounds x="1010" y="360" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1yu1z6i_di" bpmnElement="Gateway_1yu1z6i" isMarkerVisible="true">
+        <dc:Bounds x="1165" y="375" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1151" y="351" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_13fdg7g_di" bpmnElement="Activity_10b5z7v">
+        <dc:Bounds x="1140" y="470" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_167yqgl_di" bpmnElement="Activity_0nljvcl">
+        <dc:Bounds x="1290" y="470" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0kaqf1z_di" bpmnElement="Event_0kaqf1z" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="1442" y="492" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1450" y="535" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1bks0sy_di" bpmnElement="Event_1bks0sy" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="1442" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1450" y="202" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0gxx6uj_di" bpmnElement="Event_1r7l48u" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="1442" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1423" y="248" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0hq9t7f_di" bpmnElement="Activity_0cglcub">
+        <dc:Bounds x="1010" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1q5mxvt_di" bpmnElement="Activity_0o2c5se">
+        <dc:Bounds x="1220" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

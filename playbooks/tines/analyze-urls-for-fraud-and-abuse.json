@@ -1,0 +1,309 @@
+{
+  "schema_version": 4,
+  "name": "Analyze URLS for fraud and abuse",
+  "description": "Mitigate fraud risk by extracting URL images found on a public page, e.g. a Pinterest board, and analyzing each one for fraud and abuse using the OCR API. Then create a Zendesk ticket where an analyst can automatically flag content deemed as malicious.\n\ntags: Zendesk, Fraud, Abuse, Pinterest, Analyze, Beginner\nicons: 🔗,🔬,zendesk\nvisibility: public",
+  "guid": "3a0e56b54502ee4af9ba6e9c43159e50",
+  "slug": "analyze_urls_for_fraud_and_abuse",
+  "exported_at": "2022-07-11T17:26:11Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "OCR an Image using OCR.Space",
+      "disabled": false,
+      "guid": "d13cd104199c4cea67af06393392df1f",
+      "options": {
+        "url": "https://api.ocr.space/parse/imageurl",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "apikey": "<<CREDENTIAL.ocr_space>>",
+          "url": "<<explode_image_urls.individual_image_url>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Agent",
+      "disabled": false,
+      "guid": "31419eb60a264877b32ec587399f13af",
+      "options": {
+        "secret": "60f795f88dadf7b0bcdd1df97d0c939f",
+        "verbs": "get,post",
+        "path": "56f481e828c3681448b7a55e73c794b1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get URL",
+      "disabled": false,
+      "guid": "2724a6b1d03cf3fb9045648c0f4232e6",
+      "options": {
+        "url": "<<webhook_agent.body.url>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Extract Images",
+      "disabled": false,
+      "guid": "f1e76ee0601da2aa6b7e4aacea570206",
+      "options": {
+        "mode": "extract",
+        "matchers": [
+          {
+            "path": "=get_url.body",
+            "regexp": "https://i.pinimg.com/originals/[A-Za-z0-9\\-_:%&;\\?\\#\\/.=]+",
+            "to": "urls"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Image URLs",
+      "disabled": false,
+      "guid": "96fe9088196dd0a75dff84fb7a446deb",
+      "options": {
+        "mode": "explode",
+        "path": "=extract_images.urls",
+        "to": "individual_image_url"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create a Zendesk Ticket",
+      "disabled": false,
+      "guid": "01921c353be3a4a99582044b1efe26bd",
+      "options": {
+        "url": "https://<<RESOURCE.zendesk_domain>>/api/v2/tickets.json",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "ticket": {
+            "subject": "New Pinterest Board Report",
+            "comment": {
+              "body": "New Board Reported\n\nBoard URL: <<webhook_agent.body.url>>\nReported By: <<webhook_agent.headers.email>>\n\nImage Text Output\n<%for image in implode_images%><<explode_image_urls.individual_image_url>>:\n\n```\n\n<<image.ocr_an_image_using_ocr_space.body.ParsedResults.first.ParsedText>>\n\n```\n<%endfor%>\n\nTo Remove these Images click [here](<<PROMPT(\"remove\")>>)\nTo Disable the account click [here](<<PROMPT(\"disable\")>>)"
+            }
+          }
+        },
+        "basic_auth": [
+          "<<user_email>>/token",
+          "<<CREDENTIAL.zendesk>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Implode Images",
+      "disabled": false,
+      "guid": "b8311b1f1b24450c0e91fc6041230fff",
+      "options": {
+        "mode": "implode",
+        "guid_path": "=explode_image_urls.guid",
+        "size_path": "=LIQUID_SIZE(explode_image_urls, \"dot_notation\")"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Remove Content Clicked",
+      "disabled": false,
+      "guid": "a219b208b7eeb09378a8dc5ca185a1e0",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "remove",
+            "path": "<<create_a_zendesk_ticket.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Action",
+      "disabled": false,
+      "guid": "5377c73339199524567f16d7dab06016",
+      "options": {
+        "recipients": [
+          "<<support_email>>"
+        ],
+        "subject": "Fraudulent Content Found",
+        "body": "New Board Reported<br><br>\n\nBoard URL: <<webhook_agent.body.url>>\nReported By: <<webhook_agent.headers.email>>\n"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/fraud-illustration.png\n\n# Description\n\nEnter a URL at using the [form](./form)\n\nA sample Story that analyses URLs images found on a page for fraud abuse. This is not looking for phishing, rather account takeovers on sites capable of hosting content.\n\nThis Story uses a Pinterest board as an example - it will extract all images, analyze all of them using an OCR API, and create a Zendesk ticket where a fraud analyst can automatically flag content deemed as malicious",
+      "position": [
+        555.0,
+        30.0
+      ],
+      "guid": "315086de803ee199bee0f8a75a1728ce",
+      "width": null
+    },
+    {
+      "content": "# Requirements\n\nThis story uses a free API key from [ocr.space](https://ocr.space/) - this should be added as a credential `ocr_space`\n\nIt also creates tickets in Zendesk for review - if this is needed you should add a `zendesk` credential too",
+      "position": [
+        555.0,
+        525.0
+      ],
+      "guid": "5a78603ad1dd08e32263974396c4df92",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 6
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 3
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 0
+    },
+    {
+      "source": 5,
+      "receiver": 7
+    },
+    {
+      "source": 6,
+      "receiver": 5
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    }
+  ],
+  "diagram_layout": "{\"d13cd104199c4cea67af06393392df1f\":[285,375],\"31419eb60a264877b32ec587399f13af\":[285,30],\"2724a6b1d03cf3fb9045648c0f4232e6\":[285,120],\"f1e76ee0601da2aa6b7e4aacea570206\":[285,195],\"96fe9088196dd0a75dff84fb7a446deb\":[285,285],\"01921c353be3a4a99582044b1efe26bd\":[285,600],\"b8311b1f1b24450c0e91fc6041230fff\":[285,495],\"a219b208b7eeb09378a8dc5ca185a1e0\":[285,720],\"5377c73339199524567f16d7dab06016\":[285,825]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Submit Pinterest Board",
+    "description": "",
+    "fields": [
+      {
+        "name": "URL",
+        "description": "Enter the pinterest board url e.g.\n\nhttps://www.pinterest.ie/hollowelldavey67/netflix-gift-code/",
+        "required": false,
+        "type": "URL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "31419eb60a264877b32ec587399f13af",
+    "success_message": "Thank you for your submission"
+  }
+}

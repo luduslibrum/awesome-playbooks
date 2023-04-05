@@ -1,0 +1,209 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action - URL - Unblock (Specified by User)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Creates indicators for the specified 'URL', unblocks the URL on the firewall, and marks the indicator as unblocked. The indicator is also linked to the record on which the playbook is triggered.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/0f135daa-50e5-4f37-9419-d542974914df",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Create URL Indicator _ Deduplicated",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "value": "{{vars.input.params.url}}",
+                    "__replace": "true",
+                    "typeofindicator": {
+                        "id": 80,
+                        "@id": "\/api\/3\/picklists\/353a37b4-3eeb-43ee-aac6-64806422cfec",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "URL",
+                        "listName": "\/api\/3\/picklist_names\/50ee5bfa-e18f-49ba-8af9-dcca25b0f9c0",
+                        "itemValue": "URL",
+                        "orderIndex": 10
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/upsert\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "cf3874f9-7c0c-4405-8a2a-3fe6b0b9b370"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Unblock URL",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "inputActionReasons": "{{vars.input.params.reasonsToUnblock}}",
+                    "inputIndicatorValue": "{{vars.input.params.url}}",
+                    "inputIndicatorRecordIRI": "{{vars.steps.Create_URL_Indicator___Deduplicated['@id']}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/ab2eddaf-a28a-4b3a-8107-8f15544c4905"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "e4ad24ce-649b-49e2-9089-5879d8b98fd3"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Link Indicator On Triggered Record",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "{{vars.input.records[0]['@id']}}",
+                    "body": "{\"__link\":{\"indicators\":[\"{{vars.result['@id']}}\"]}}"
+                },
+                "version": "3.0.4",
+                "connector": "cyops_utilities",
+                "operation": "update_cyops_resource",
+                "operationTitle": "CyOPs: Update Record",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "51b26baa-38d9-4123-a796-5ee3925d24e2"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "4a9c3e61-56ec-46ca-8c4b-0abe19e13b4a",
+                "title": "Unblock Specified URL",
+                "resources": [
+                    "incidents"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "url",
+                        "type": "string",
+                        "label": "Url",
+                        "tooltip": "Given URL will also be created as indicator, and linked to this record",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": true,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "useRecordFieldDefault": false
+                    },
+                    {
+                        "name": "reasonsToUnblock",
+                        "type": "string",
+                        "label": "Reasons to unblock",
+                        "tooltip": "Specify reasons for unblocking the URL. The reason would be added in Indicator Record for future reference",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "defaultValue": "Asked by User:",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "url": "{{vars.request.data[\"url\"]}}",
+                            "reasonsToUnblock": "{{vars.request.data[\"reasonsToUnblock\"]}}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "assets": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    },
+                    "incidents": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Unblock",
+                "noRecordExecution": false,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "0f135daa-50e5-4f37-9419-d542974914df"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create IP Indicator _ Deduplicated -> Unblock IP Address",
+            "targetStep": "\/api\/3\/workflow_steps\/e4ad24ce-649b-49e2-9089-5879d8b98fd3",
+            "sourceStep": "\/api\/3\/workflow_steps\/cf3874f9-7c0c-4405-8a2a-3fe6b0b9b370",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "69065769-f62f-4b59-8be9-5fb9bf078605"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Create IP Indicator _ Deduplicated",
+            "targetStep": "\/api\/3\/workflow_steps\/cf3874f9-7c0c-4405-8a2a-3fe6b0b9b370",
+            "sourceStep": "\/api\/3\/workflow_steps\/0f135daa-50e5-4f37-9419-d542974914df",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "cb82c60a-4c3b-4fed-b578-1c63ef232be5"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Block IP Address -> Link Indicator On Triggered Record",
+            "targetStep": "\/api\/3\/workflow_steps\/51b26baa-38d9-4123-a796-5ee3925d24e2",
+            "sourceStep": "\/api\/3\/workflow_steps\/e4ad24ce-649b-49e2-9089-5879d8b98fd3",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e2f291a3-9c06-4816-82b2-026e27281da5"
+        }
+    ],
+    "priority": null,
+    "uuid": "68d0cd50-9549-4ba5-8954-a9912908cd20",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Mitigation"
+    ]
+}

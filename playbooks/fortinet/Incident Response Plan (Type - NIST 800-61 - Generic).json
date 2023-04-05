@@ -1,0 +1,147 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Incident Response Plan (Type - NIST 800-61 - Generic)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Creates tasks for incident response and handling as per the guidelines provided in NIST 800-61.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/85f015e5-a252-4b5a-b55a-b885665056ec",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/01f1dfae-4d31-4582-9aac-ac66e2621189",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "taskDetails": "[   {     \"taskName\": \"Determine if an Incident has occurred\",     \"description\": \"\",     \"phase\": \"Detection\"   },   {     \"taskName\": \"Analyze precursors and indicators\",     \"description\": \"\",     \"phase\": \"Detection\"   },   {     \"taskName\": \"Look from correlation information\",     \"description\": \"\",     \"phase\": \"Detection\"   },   {     \"taskName\": \"Perform research\",     \"description\": \"Use search engines, knowledge bases etc.\",     \"phase\": \"Detection\"   },   {     \"taskName\": \"Confirmed incident\",     \"description\": \"Confirmed incident - document the investigation and gather evidence. Attach all relevant information from detection steps to the case\",     \"phase\": \"Detection\"   },   {     \"taskName\": \"Determine functional impact\",     \"description\": \"Suggested categories: None, Low, Medium, High\",     \"phase\": \"Analysis\"   },   {     \"taskName\": \"Determine information impact\",     \"description\": \"Suggested Categories: None, Privacy breach, Proprietary breach, Integrity loss\",     \"phase\": \"Analysis\"   },   {     \"taskName\": \"Determine recoverability effort\",     \"description\": \"Suggested categories: Regular, Supplemented, Extended, Not Recoverable\",     \"phase\": \"Analysis\"   },   {     \"taskName\": \"Prioritize incident\",     \"description\": \"Prioritize handling the incident based on the relevant factors\",     \"phase\": \"Containment\"   },   {     \"taskName\": \"Report incident\",     \"description\": \"Report the incident to the the appropriate internal personnel and external organizations\",     \"phase\": \"Containment\"   },   {     \"taskName\": \"Contain incident\",     \"description\": \"Report the incident to the appropriate internal personnel and external organizations\",     \"phase\": \"Containment\"   },   {     \"taskName\": \"Identify and mitigate all vulnerabilities\",     \"description\": \"Identify and mitigate all vulnerabilities that were exploited\",     \"phase\": \"Eradication\"   },   {     \"taskName\": \"Removal of malicious content\",     \"description\": \"Removed malware, inappropriate materials and other components\",     \"phase\": \"Eradication\"   },   {     \"taskName\": \"Verify no other hosts are affected\",     \"description\": \"If more affected hosts are discovered, repeat the Detection and Analysis Steps\",     \"phase\": \"Eradication\"   },   {     \"taskName\": \"Restore affected systems\",     \"description\": \"Return affected systems to an operationally ready state\",     \"phase\": \"Recovery\"   },   {     \"taskName\": \"Validate restoration\",     \"description\": \"Confirm that the affected systems are functioning normally\",     \"phase\": \"Recovery\"   },   {     \"taskName\": \"Implement additional monitoring\",     \"description\": \"If necessary, implement additional monitoring to look for future activity\",     \"phase\": \"Recovery\"   },   {     \"taskName\": \"Create a follow up report\",     \"description\": \"If necessary, implement additional monitoring to look for future activity\",     \"phase\": \"Post Incident Activity\"   },   {     \"taskName\": \"Lessons learned\",     \"description\": \"Hold a lesson learned meeting (mandatory for major incidents, optional otherwise)\",     \"phase\": \"Post Incident Activity\"   } ]"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "0d0f610e-4c2c-41f0-8c79-fdc07a919e8c"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "d0a8880a-0cac-413c-94a5-0e9c05030e23",
+                "title": "Incident Response Plan (Generic)",
+                "resources": [
+                    "incidents"
+                ],
+                "inputVariables": [],
+                "step_variables": {
+                    "input": {
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "incidents": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": [
+                            {
+                                "type": "object",
+                                "field": "phase",
+                                "value": "\/api\/3\/picklists\/bb740542-f699-11e7-8c3f-9a214cf093ae",
+                                "_value": {
+                                    "display": "Detection",
+                                    "itemValue": "Detection"
+                                },
+                                "operator": "eq"
+                            }
+                        ]
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "01f1dfae-4d31-4582-9aac-ac66e2621189"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Create Tasks",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "<p>Tasks are created and linked to incident<\/p>",
+                    "records": "{{vars.input.records[0]['@id']}}"
+                },
+                "for_each": {
+                    "item": "{{vars.taskDetails}}",
+                    "__bulk": true,
+                    "condition": "",
+                    "batch_size": 100
+                },
+                "resource": {
+                    "name": "{{vars.item.taskName}}",
+                    "type": "{{(\"TaskType\" | picklist(\"Incident Response\"))[\"@id\"]}}",
+                    "__replace": "",
+                    "incidents": "{{vars.input.records[0]['@id']}}",
+                    "description": "<p>{{vars.item.description}}<\/p>"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/tasks",
+                "__recommend": [],
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "120",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "2babe1b7-0d63-4d7a-bb33-7065c8accb60"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configurations",
+            "targetStep": "\/api\/3\/workflow_steps\/0d0f610e-4c2c-41f0-8c79-fdc07a919e8c",
+            "sourceStep": "\/api\/3\/workflow_steps\/01f1dfae-4d31-4582-9aac-ac66e2621189",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "330549f3-7f1b-4f68-92d2-ba8268a66564"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configurations -> Create Task",
+            "targetStep": "\/api\/3\/workflow_steps\/2babe1b7-0d63-4d7a-bb33-7065c8accb60",
+            "sourceStep": "\/api\/3\/workflow_steps\/0d0f610e-4c2c-41f0-8c79-fdc07a919e8c",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9796a5bb-bba9-45f9-914f-cf852b3af14d"
+        }
+    ],
+    "priority": null,
+    "uuid": "b9a09208-3014-4a0b-9ca6-d14ddc966028",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Incidents"
+    ]
+}

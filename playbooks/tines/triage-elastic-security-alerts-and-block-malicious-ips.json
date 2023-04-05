@@ -1,0 +1,1182 @@
+{
+  "schema_version": 4,
+  "name": "Triage Elastic Security alerts and block malicious IPs",
+  "description": "Analyze Elastic Security alerts using GreyNoise and block malicious IP addresses. Check which patches were installed and build a case with all of the results, while keeping key stakeholders informed.\n\ntags: ElasticSecurity, Intermediate, GreyNoise, Google, Analyze, Block, Remediate, Notify\nicons: elastic, 🧱, 🗄\nvisibility: public",
+  "guid": "e3e9291612ab3b6001ef3951a7edcee5",
+  "slug": "triage_elastic_security_alerts_and_block_malicious_ips",
+  "exported_at": "2022-07-11T17:31:11Z",
+  "agents": [
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Elastic Security - GCP IP Block",
+      "disabled": false,
+      "guid": "80023d11dd04710c645f55510f9befd5",
+      "options": {
+        "path": "f86a3bec685e4ff3cf6360b5d0868046",
+        "secret": "28889b24375b280b29a39e7faa290f2a"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Elastic SIEM Case",
+      "disabled": false,
+      "guid": "60f3b1e1e1052fa3ee1e986f82815e86",
+      "options": {
+        "url": "<<RESOURCE.kibana_url>>/api/cases",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "title": "Case opened by Tines - <<STORY_RUN_GUID()>>",
+          "tags": [
+            "automation",
+            "tines"
+          ],
+          "description": "This case was created by [Tines](<<STORY_RUN_LINK()>>) as a result of a following critical alert triggering. It can be found attached to this case. ",
+          "connector": {
+            "id": "none",
+            "name": "none",
+            "type": ".none",
+            "fields": null
+          },
+          "settings": {
+            "syncAlerts": true
+          },
+          "owner": "securitySolution"
+        },
+        "headers": {
+          "kbn-xsrf": "true"
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "For Each IP",
+      "disabled": false,
+      "guid": "12af9456adce7d1af48e982b395e34f7",
+      "options": {
+        "mode": "explode",
+        "path": "=parse_and_deduplicate_alerts.dedupe_csv.destination",
+        "to": "individual_ip"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Dedupe Event ID",
+      "disabled": false,
+      "guid": "d486608e260bc3bf998a9d6a6572eaba",
+      "options": {
+        "mode": "explode",
+        "path": "=parse_and_deduplicate_alerts.dedupe_csv.event_id",
+        "to": "individual_events"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Lookup IP in GreyNoise Community",
+      "disabled": false,
+      "guid": "218037515b09f15dfe8e20c85df3ad88",
+      "options": {
+        "url": "https://api.greynoise.io/v3/community/<<for_each_ip.individual_ip>>",
+        "content_type": "json",
+        "method": "get",
+        "payload": {},
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Agent ID",
+      "disabled": false,
+      "guid": "ae0941f70dc1e224aef9ad22f3f52ae5",
+      "options": {
+        "mode": "explode",
+        "path": "=parse_and_deduplicate_alerts.dedupe_csv.agent",
+        "to": "individual_agent"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Run OSQuery - Patches",
+      "disabled": false,
+      "guid": "a29bf2f9770b4872f7d77efedab69b20",
+      "options": {
+        "url": "<<RESOURCE.kibana_url>>/internal/osquery/action",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "agentSelection": {
+            "agents": [
+              "<<explode_agent_id.individual_agent>>"
+            ],
+            "allAgentsSelected": false,
+            "platformsSelected": [],
+            "policiesSelected": []
+          },
+          "query": "select * from patches"
+        },
+        "headers": {
+          "kbn-xsrf": "kibana"
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode OSQuery Actions ID",
+      "disabled": false,
+      "guid": "dab318d3eb35f48defcad45147f66e9e",
+      "options": {
+        "mode": "explode",
+        "path": "=run_osquery_patches.body.actions",
+        "to": "individual_actions"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Wait 5 seconds",
+      "disabled": false,
+      "guid": "80bc8ed156b27b1ea604e618924a6962",
+      "options": {
+        "mode": "delay",
+        "seconds": 5
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Comment to Case",
+      "disabled": false,
+      "guid": "7d68f99815efd13c03220f23a1360466",
+      "options": {
+        "url": "<<RESOURCE.kibana_url>>/api/cases/<<create_elastic_siem_case.body.id>>/comments",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "type": "user",
+          "comment": "The following patches are installed on agent **[<<explode_agent_id.individual_agent>>](<<RESOURCE.sec_demos_kibana_url>>/app/fleet/agents/<<explode_agent_id.individual_agent>>)**:\n\n!{lens{\"timeRange\":{\"from\":\"now-90\",\"to\":\"now/d\",\"mode\":\"relative\"},\"attributes\":{\"title\":\"\",\"visualizationType\":\"lnsDatatable\",\"type\":\"lens\",\"references\":[{\"type\":\"index-pattern\",\"id\":\"logs-*\",\"name\":\"indexpattern-datasource-current-indexpattern\"},{\"type\":\"index-pattern\",\"id\":\"logs-*\",\"name\":\"indexpattern-datasource-layer-1d40a11b-5986-4d62-92f2-9018e9923ee8\"}],\"state\":{\"visualization\":{\"columns\":[{\"isTransposed\":false,\"columnId\":\"cad9ea32-b9c5-4324-8d11-580f7eacf137\"},{\"isTransposed\":false,\"columnId\":\"d578875b-2a85-43a0-b569-9cf90e117e71\"},{\"isTransposed\":false,\"columnId\":\"08961893-c146-420c-b01b-75c1a2aafa21\"},{\"isTransposed\":false,\"columnId\":\"848f12dd-9516-44a1-b0ec-112750c228ac\"},{\"isTransposed\":false,\"columnId\":\"e346ec60-fcc8-4b80-9279-bed12dc78b90\",\"hidden\":true}],\"layerId\":\"1d40a11b-5986-4d62-92f2-9018e9923ee8\",\"layerType\":\"data\"},\"query\":{\"query\":\"action_id:<<explode_osquery_actions_id.individual_actions.action_id>>\",\"language\":\"kuery\"},\"filters\":[],\"datasourceStates\":{\"indexpattern\":{\"layers\":{\"1d40a11b-5986-4d62-92f2-9018e9923ee8\":{\"columns\":{\"cad9ea32-b9c5-4324-8d11-580f7eacf137\":{\"label\":\"Hotfix\",\"dataType\":\"string\",\"operationType\":\"terms\",\"scale\":\"ordinal\",\"sourceField\":\"osquery.hotfix_id\",\"isBucketed\":true,\"params\":{\"size\":50,\"orderBy\":{\"type\":\"column\",\"columnId\":\"e346ec60-fcc8-4b80-9279-bed12dc78b90\"},\"orderDirection\":\"desc\",\"otherBucket\":true,\"missingBucket\":false},\"customLabel\":true},\"d578875b-2a85-43a0-b569-9cf90e117e71\":{\"label\":\"Installed On\",\"dataType\":\"string\",\"operationType\":\"terms\",\"scale\":\"ordinal\",\"sourceField\":\"osquery.installed_on\",\"isBucketed\":true,\"params\":{\"size\":50,\"orderBy\":{\"type\":\"column\",\"columnId\":\"e346ec60-fcc8-4b80-9279-bed12dc78b90\"},\"orderDirection\":\"desc\",\"otherBucket\":true,\"missingBucket\":false},\"customLabel\":true},\"08961893-c146-420c-b01b-75c1a2aafa21\":{\"label\":\"Patch Type\",\"dataType\":\"string\",\"operationType\":\"terms\",\"scale\":\"ordinal\",\"sourceField\":\"osquery.description\",\"isBucketed\":true,\"params\":{\"size\":3,\"orderBy\":{\"type\":\"column\",\"columnId\":\"e346ec60-fcc8-4b80-9279-bed12dc78b90\"},\"orderDirection\":\"desc\",\"otherBucket\":true,\"missingBucket\":false},\"customLabel\":true},\"848f12dd-9516-44a1-b0ec-112750c228ac\":{\"label\":\"Installed By\",\"dataType\":\"string\",\"operationType\":\"terms\",\"scale\":\"ordinal\",\"sourceField\":\"osquery.installed_by\",\"isBucketed\":true,\"params\":{\"size\":50,\"orderBy\":{\"type\":\"column\",\"columnId\":\"e346ec60-fcc8-4b80-9279-bed12dc78b90\"},\"orderDirection\":\"desc\",\"otherBucket\":true,\"missingBucket\":false},\"customLabel\":true},\"e346ec60-fcc8-4b80-9279-bed12dc78b90\":{\"label\":\"Count of records\",\"dataType\":\"number\",\"operationType\":\"count\",\"isBucketed\":false,\"scale\":\"ratio\",\"sourceField\":\"Records\"}},\"columnOrder\":[\"cad9ea32-b9c5-4324-8d11-580f7eacf137\",\"d578875b-2a85-43a0-b569-9cf90e117e71\",\"08961893-c146-420c-b01b-75c1a2aafa21\",\"848f12dd-9516-44a1-b0ec-112750c228ac\",\"e346ec60-fcc8-4b80-9279-bed12dc78b90\"],\"incompleteColumns\":{}}}}}}}}}",
+          "owner": "securitySolution"
+        },
+        "headers": {
+          "kbn-xsrf": "true"
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Malicious?",
+      "disabled": false,
+      "guid": "874dd186435d1b4d3cfa2bf63cf917be",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "malicious",
+            "path": "<<lookup_ip_in_greynoise_community.body.classification>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Alert Comment to Case",
+      "disabled": false,
+      "guid": "b2302bae2875994527b043a7eb4be7ac",
+      "options": {
+        "url": "<<RESOURCE.kibana_url>>/api/cases/<<create_elastic_siem_case.body.id>>/comments",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "type": "alert",
+          "alertId": "<<dedupe_event_id.individual_events>>",
+          "index": "<<JOIN(parse_and_deduplicate_alerts.dedupe_csv.index, \", \") |> REGEX_REPLACE(%, \", $\")>>",
+          "rule": {
+            "id": "<<parse_and_deduplicate_alerts.dedupe_csv.alert_id>>",
+            "name": "<<parse_and_deduplicate_alerts.dedupe_csv.rule_name>>"
+          },
+          "owner": "securitySolution"
+        },
+        "headers": {
+          "kbn-xsrf": "true"
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get GCP Bearer",
+      "disabled": false,
+      "guid": "3b18d4e5b742dfb266bec30d442c4081",
+      "options": {
+        "url": "https://oauth2.googleapis.com/token",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "client_id": "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com",
+          "client_secret": "<<CREDENTIAL.gcp_secret>>",
+          "quota_project_id": "elastic-product",
+          "refresh_token": "<<CREDENTIAL.gcp_refresh_token>>",
+          "grant_type": "refresh_token"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Block On GCP Firewall",
+      "disabled": false,
+      "guid": "270b0fbf07289d094310ffde47c21cac",
+      "options": {
+        "url": "https://www.googleapis.com/compute/v1/projects/elastic-product/global/firewalls",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "kind": "compute#firewall",
+          "name": "automated-by-tines-on-<<DATE(\"now\", \"%Y-%m-%dt%H%M\")>>",
+          "selfLink": "projects/elastic-product/global/firewalls/automated-by-tineson-<<DATE(\"now\", \"%Y-%m-%dt%H%M%S\")>>",
+          "network": "projects/elastic-product/global/networks/default",
+          "direction": "EGRESS",
+          "priority": 100,
+          "denied": [
+            {
+              "IPProtocol": "all"
+            }
+          ],
+          "logConfig": {
+            "enable": true
+          },
+          "destinationRanges": [
+            "<<for_each_ip.individual_ip>>/32"
+          ]
+        },
+        "headers": {
+          "Authorization": "Bearer <<get_gcp_bearer.body.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Comment to Case",
+      "disabled": false,
+      "guid": "88d8bec9f7d83ca01cf38715858b4a81",
+      "options": {
+        "url": "<<RESOURCE.kibana_url>>/api/cases/<<create_elastic_siem_case.body.id>>/comments",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "type": "user",
+          "comment": "`<<for_each_ip.individual_ip>>` was **<%if block_on_gcp_firewall.status = 200%> successfully <%else%> unsuccessfully <%endif%> ** blocked on the firewall after being determined as **<<lookup_ip_in_greynoise_community.body.classification>>** by [Greynoise](https://www.greynoise.io/viz/ip/<<for_each_ip.individual_ip>>). The response to the request can be found below:\n```\n<<NEAT_JSON(block_on_gcp_firewall.body)>>\n```\n\nClick [here](https://console.cloud.google.com/networking/firewalls/details/automated-by-tines-on-<<DATE(\"now\", \"%Y-%m-%dt%H%M\")>>?project=elastic-product) to view this new rule in the GCP Console.",
+          "owner": "securitySolution"
+        },
+        "headers": {
+          "kbn-xsrf": "true"
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Action",
+      "disabled": false,
+      "guid": "1ce8ede3b093ffa5cd8d2ef4be930f52",
+      "options": {
+        "recipients": [
+          "<<email>>"
+        ],
+        "subject": "Case created in Elastic Security",
+        "body": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" style=\"font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\">\n<head>\n<meta name=\"viewport\" content=\"width=device-width\" />\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n\n\n<style type=\"text/css\">\nimg {\nmax-width: 100%;\n}\nbody {\n-webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none; width: 100% !important; height: 100%; line-height: 1.6em;\n}\nbody {\nbackground-color: #f6f6f6;\n}\n@media only screen and (max-width: 640px) {\n  body {\n    padding: 0 !important;\n  }\n  h1 {\n    font-weight: 800 !important; margin: 20px 0 5px !important;\n  }\n  h2 {\n    font-weight: 800 !important; margin: 20px 0 5px !important;\n  }\n  h3 {\n    font-weight: 800 !important; margin: 20px 0 5px !important;\n  }\n  h4 {\n    font-weight: 800 !important; margin: 20px 0 5px !important;\n  }\n  h1 {\n    font-size: 22px !important;\n  }\n  h2 {\n    font-size: 18px !important;\n  }\n  h3 {\n    font-size: 16px !important;\n  }\n  .container {\n    padding: 0 !important; width: 100% !important;\n  }\n  .content {\n    padding: 0 !important;\n  }\n  .content-wrap {\n    padding: 10px !important;\n  }\n  .invoice {\n    width: 100% !important;\n  }\n}\n</style>\n</head>\n\n<body itemscope itemtype=\"http://schema.org/EmailMessage\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none; width: 100% !important; height: 100%; line-height: 1.6em; background-color: #f6f6f6; margin: 0;\" bgcolor=\"#f6f6f6\">\n\n<table class=\"body-wrap\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; background-color: #f6f6f6; margin: 0;\" bgcolor=\"#f6f6f6\"><tr style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><td style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0;\" valign=\"top\"></td>\n\t\t<td class=\"container\" width=\"600\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; display: block !important; max-width: 600px !important; clear: both !important; margin: 0 auto;\" valign=\"top\">\n\t\t\t<div class=\"content\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; max-width: 600px; display: block; margin: 0 auto; padding: 20px;\">\n\t\t\t\t<table class=\"main\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; border-radius: 3px; background-color: #fff; margin: 0; border: 1px solid #e9e9e9;\" bgcolor=\"#fff\"><tr style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><td class=\"alert alert-warning\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color: #FF9F00; margin: 0; padding: 20px;\" align=\"center\" bgcolor=\"#FF9F00\" valign=\"top\">\n\t\t\t\t\t\t\tNew Case Created in Elastic Security.\n\t\t\t\t\t\t</td>\n\t\t\t\t\t</tr><tr style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><td class=\"content-wrap\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 20px;\" valign=\"top\">\n\t\t\t\t\t\t\t<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><tr style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><td class=\"content-block\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;\" valign=\"top\">\n\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t</tr><tr style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><td class=\"content-block\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;\" valign=\"top\">\n\t\t\t\t\t\t\t\t\t\tA new case has been created that requires your attention. Click on the link below to view.\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t</tr><tr style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><td class=\"content-block\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;\" valign=\"top\">\n\t\t\t\t\t\t\t\t\t\t<a href=\"<<RESOURCE.sec_demos_kibana_url>>/app/security/cases/<<create_elastic_siem_case.body.id>>\" class=\"btn-primary\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; color: #FFF; text-decoration: none; line-height: 2em; font-weight: bold; text-align: center; cursor: pointer; display: inline-block; border-radius: 5px; text-transform: capitalize; background-color: #348eda; margin: 0; border-color: #348eda; border-style: solid; border-width: 10px 20px;\">Go to case</a>\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t</tr><tr style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><td class=\"content-block\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;\" valign=\"top\">\n\t\t\t\t\t\t\t\t\t\tSent via Tines automation <<STORY_RUN_GUID()>>\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t</tr></table></td>\n\t\t\t\t\t</tr></table><div class=\"footer\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; width: 100%; clear: both; color: #999; margin: 0; padding: 20px;\">\n\t\t\t\t\t<table width=\"100%\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><tr style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;\"><td class=\"aligncenter content-block\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; vertical-align: top; color: #999; text-align: center; margin: 0; padding: 0 0 20px;\" align=\"center\" valign=\"top\"><a href=\"<<STORY_RUN_LINK()>>\" style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 12px; color: #999; text-decoration: underline; margin: 0;\">View</a> Tines story run.</td>\n\t\t\t\t\t\t</tr></table></div></div>\n\t\t</td>\n\t\t<td style=\"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0;\" valign=\"top\"></td>\n\t</tr></table></body>\n</html>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Add Comment to Case",
+      "disabled": false,
+      "guid": "0567284493fbefea9ccc4f749bb9e6fe",
+      "options": {
+        "url": "<<RESOURCE.kibana_url>>/api/cases/<<create_elastic_siem_case.body.id>>/comments",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "type": "user",
+          "comment": "`<<for_each_ip.individual_ip>>` was found present **<<query_elasticsearch_for_ip_hits.body.hits.total.value>>** times within our last 90 days of logs. \n\nThere were also **<<query_elasticsearch_for_ip_detection_hits.body.hits.total.value>>** alerts triggered for the same IP.\n\nPlease view the automatically created [timeline](<<RESOURCE.sec_demos_kibana_url>>/app/security/timelines?timeline=(id:%27<<create_timeline_with_ip_search.body.data.persistTimeline.timeline.savedObjectId>>%27,isOpen:!t)) below to find out more.\n",
+          "owner": "securitySolution"
+        },
+        "headers": {
+          "kbn-xsrf": "true"
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Timeline With IP Search",
+      "disabled": false,
+      "guid": "580007a81a4cc71e7624a492080c91b8",
+      "options": {
+        "url": "<<RESOURCE.kibana_url>>/api/timeline",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "timeline": {
+            "columns": [
+              {
+                "id": "@timestamp"
+              },
+              {
+                "id": "user.name"
+              },
+              {
+                "id": "source.ip"
+              },
+              {
+                "id": "destination.ip"
+              },
+              {
+                "id": "host.name"
+              },
+              {
+                "id": "event.dataset"
+              }
+            ],
+            "dataProviders": [
+              {
+                "name": "destination.ip",
+                "enabled": true,
+                "excluded": false,
+                "id": "timeline-2-914beb92-86ab-471c-a00b-25b7e20c2d11",
+                "queryMatch": {
+                  "field": "destination.ip",
+                  "value": "<<for_each_ip.individual_ip>>",
+                  "operator": ":"
+                },
+                "and": []
+              },
+              {
+                "name": "source.ip",
+                "enabled": true,
+                "excluded": false,
+                "id": "timeline-1-914beb92-86ab-471c-a00b-25b7e20c2d11",
+                "queryMatch": {
+                  "field": "source.ip",
+                  "value": "<<for_each_ip.individual_ip>>",
+                  "operator": ":"
+                },
+                "and": []
+              }
+            ],
+            "dateRange": {
+              "start": "<<DATE(\"now\", \"%s\") |> MINUS(%, 7776000) |> DATE(%, \"%Y-%m-%dT%H:%M:%S.000Z\")>>",
+              "end": "<<DATE(\"now\", \"%s\") |> DATE(%, \"%Y-%m-%dT%H:%M:%S.000Z\")>>"
+            },
+            "description": "This timeline was automatically created via tines.",
+            "title": "Created with Tines - <<STORY_RUN_GUID()>>"
+          }
+        },
+        "headers": {
+          "kbn-xsrf": "kibana"
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Query Elasticsearch for IP Detection Hits",
+      "disabled": false,
+      "guid": "233e6b21c6d262a9d68fa4a4db9a2a77",
+      "options": {
+        "url": "<<RESOURCE.elasticsearch_url>>/.siem-signals-default*/_search",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "aggs": {},
+          "size": 0,
+          "_source": {
+            "excludes": []
+          },
+          "query": {
+            "bool": {
+              "must": [],
+              "filter": [
+                {
+                  "bool": {
+                    "should": [
+                      {
+                        "bool": {
+                          "should": [
+                            {
+                              "match_phrase": {
+                                "source.ip": "<<for_each_ip.individual_ip>>"
+                              }
+                            }
+                          ],
+                          "minimum_should_match": 1
+                        }
+                      },
+                      {
+                        "bool": {
+                          "should": [
+                            {
+                              "match_phrase": {
+                                "destination.ip": "<<for_each_ip.individual_ip>>"
+                              }
+                            }
+                          ],
+                          "minimum_should_match": 1
+                        }
+                      }
+                    ],
+                    "minimum_should_match": 1
+                  }
+                },
+                {
+                  "range": {
+                    "@timestamp": {
+                      "gte": "now-90d"
+                    }
+                  }
+                }
+              ],
+              "should": [],
+              "must_not": []
+            }
+          }
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Query Elasticsearch for IP Hits",
+      "disabled": false,
+      "guid": "4ddf9fcb9afd44085f2c1349f52aae95",
+      "options": {
+        "url": "<<RESOURCE.elasticsearch_url>>/logs-*,filebeat-*,packetbeat-*/_search",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "aggs": {},
+          "size": 0,
+          "_source": {
+            "excludes": []
+          },
+          "query": {
+            "bool": {
+              "must": [],
+              "filter": [
+                {
+                  "bool": {
+                    "should": [
+                      {
+                        "bool": {
+                          "should": [
+                            {
+                              "match_phrase": {
+                                "source.ip": "<<for_each_ip.individual_ip>>"
+                              }
+                            }
+                          ],
+                          "minimum_should_match": 1
+                        }
+                      },
+                      {
+                        "bool": {
+                          "should": [
+                            {
+                              "match_phrase": {
+                                "destination.ip": "<<for_each_ip.individual_ip>>"
+                              }
+                            }
+                          ],
+                          "minimum_should_match": 1
+                        }
+                      }
+                    ],
+                    "minimum_should_match": 1
+                  }
+                },
+                {
+                  "range": {
+                    "@timestamp": {
+                      "gte": "now-90d"
+                    }
+                  }
+                }
+              ],
+              "should": [],
+              "must_not": []
+            }
+          }
+        },
+        "basic_auth": [
+          "<<CREDENTIAL.elastic_user>>",
+          "<<CREDENTIAL.elastic_password>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::GroupAgent",
+      "name": "Parse and Deduplicate Alerts",
+      "disabled": false,
+      "guid": "6742ade957c9a3749a216cbf766f5e2a",
+      "options": {
+        "payload": {
+          "elastic_security_gcp_ip_block": "=elastic_security_gcp_ip_block"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null,
+      "group": {
+        "schema_version": 4,
+        "name": "",
+        "description": null,
+        "guid": "b824456e7d7517fd061a48e4ab5bf250",
+        "slug": null,
+        "exported_at": "2022-07-11T17:31:11Z",
+        "agents": [
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "JSON Clean",
+            "disabled": false,
+            "guid": "7db9a1ef59b1b37d264eb924e562c226",
+            "options": {
+              "mode": "message_only",
+              "loop": false,
+              "payload": {
+                "message": "[<<REPLACE(input.payload.elastic_security_gcp_ip_block.body, \"}}{\", \"}},{\") |> STRIP_NEWLINES(%)>>]"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Single Line",
+            "disabled": false,
+            "guid": "d4296750b61572201444a7a41112fcc4",
+            "options": {
+              "mode": "message_only",
+              "loop": false,
+              "payload": {
+                "message": "=REPLACE(json_clean.message, \",\\\",\", \"\\\",\") |> STRIP(%)"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Explode",
+            "disabled": false,
+            "guid": "02af8850bcdca8fc43d082d8d248c74c",
+            "options": {
+              "mode": "explode",
+              "path": "=single_line.message",
+              "to": "individual_item"
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::EventTransformationAgent",
+            "name": "Dedupe CSV",
+            "disabled": false,
+            "guid": "4399365756fa9f06dcbf3ccaaaba6d9c",
+            "options": {
+              "mode": "message_only",
+              "loop": "",
+              "payload": {
+                "hostname": "=REGEX_REPLACE(explode.individual_item.hostname, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "command": "=REGEX_REPLACE(explode.individual_item.command, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "username": "=REGEX_REPLACE(explode.individual_item.username, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "agent": "=REGEX_REPLACE(explode.individual_item.agent, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "event_id": "=REGEX_REPLACE(explode.individual_item.event_id, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "alert_id": "=REGEX_REPLACE(explode.individual_item.alert_id, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "index": "=REGEX_REPLACE(explode.individual_item.index, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "rule_name": "=REGEX_REPLACE(explode.individual_item.name, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "time": "=REGEX_REPLACE(explode.individual_item.time, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "occurances": "=REGEX_REPLACE(explode.individual_item.occurances, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "destination": "=REGEX_REPLACE(explode.individual_item.destination, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "destination_port": "=REGEX_REPLACE(explode.individual_item.destination_port, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)",
+                "source": "=REGEX_REPLACE(explode.individual_item.source, \",\\\"\") |> CSV_PARSE(%) |> UNIQ(%)"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            },
+            "schedule": null
+          },
+          {
+            "type": "Agents::GroupInputAgent",
+            "name": "Input",
+            "disabled": false,
+            "guid": "63ab154f36d70a974d0b1e1180d50aae",
+            "options": {
+              "options": [
+                {
+                  "name": "Payload",
+                  "type": "OBJECT",
+                  "description": "The payload to send to the group"
+                }
+              ]
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          },
+          {
+            "type": "Agents::GroupOutputAgent",
+            "name": "Output",
+            "disabled": false,
+            "guid": "118a342eafbb66a7dd28b947aef49639",
+            "options": {
+              "payload": {
+                "dedupe_csv": "=dedupe_csv"
+              }
+            },
+            "reporting": {
+              "time_saved_value": 0,
+              "time_saved_unit": "minutes"
+            },
+            "monitoring": {
+              "monitor_all_events": false,
+              "monitor_failures": false,
+              "monitor_no_events_emitted": null
+            }
+          }
+        ],
+        "diagram_notes": [
+          {
+            "content": "The group will format the data and deduplicate any entries. You shouldn't need to edit/change these whilst using the webhook payload sent to it.",
+            "position": [
+              1356.0,
+              600.0
+            ],
+            "guid": "243338511619e711617b733dc3dd9d0e",
+            "width": null
+          }
+        ],
+        "links": [
+          {
+            "source": 0,
+            "receiver": 1
+          },
+          {
+            "source": 1,
+            "receiver": 2
+          },
+          {
+            "source": 2,
+            "receiver": 3
+          },
+          {
+            "source": 3,
+            "receiver": 5
+          },
+          {
+            "source": 4,
+            "receiver": 0
+          }
+        ],
+        "diagram_layout": "{\"7db9a1ef59b1b37d264eb924e562c226\":[1110,465],\"d4296750b61572201444a7a41112fcc4\":[1110,555],\"02af8850bcdca8fc43d082d8d248c74c\":[1110,645],\"4399365756fa9f06dcbf3ccaaaba6d9c\":[1110,735],\"63ab154f36d70a974d0b1e1180d50aae\":[1110,315],\"118a342eafbb66a7dd28b947aef49639\":[1110,885]}"
+      }
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# Initial alert triage and firewall automation\n\nThis Story was created to facilitate with the following tasks for any alerts in Elastic Security that might contain **IP Addresses**. It assumes users are using **Google Cloud and its firewall functionality**, and hosts are running the Elastic [osquery manager](https://docs.elastic.co/en/integrations/osquery_manager) integration. \n\n- Create a case, and attach the alert in question to it.\n- Grab the IP address/addresses in question and check their reputation using GreyNoise community.\n- If they are deemed to be malicious, their egress traffic will be blocked at the firewall level in a Google Cloud project. At the same time, some initial investigation is performed within Elastic to check for any previous events containing the IP addresses. All findings and results are added to the initial case.\n- An email is sent out to notify users of the actions performed, and a link to the case is provided.\n- At the same time, for each host in question involved in the alert, we check which patches are installed and add them to the case.\n\nThe rule used as an example for this playbook can be found [here](https://github.com/elastic/tines-demo-story-screenshots/blob/main/rules_export-13.ndjson).",
+      "position": [
+        735.0,
+        345.0
+      ],
+      "guid": "572451ff017f300be3ce0b1be985a9b7",
+      "width": null
+    },
+    {
+      "content": "![](https://)This is a webhook Action, which, when called, will initiate this Story. The URL of the webhook is what is configured in Elastic Security. You can copy and paste the code below to use in the webhook Action for your detection rule.\n\n```\n{\n\"name\":\"{{#context.alerts}}{{signal.rule.name}},{{/context.alerts}}\", \n\"hostname\":\"{{#context.alerts}}{{host.name}},{{/context.alerts}}\",\n\"username\":\"{{#context.alerts}}{{user.name}},{{/context.alerts}}\",\n\"command\":\"{{#context.alerts}}{{process.executable}},{{/context.alerts}}\",\n\"agent\":\"{{#context.alerts}}{{agent.id}},{{/context.alerts}}\",\n\"event_id\":\"{{#context.alerts}}{{_id}},{{/context.alerts}}\",\n\"source\":\"{{#context.alerts}}{{source.ip}},{{/context.alerts}}\",\n\"destination\":\"{{#context.alerts}}{{destination.ip}},{{/context.alerts}}\",\n\"destination_port\":\"{{#context.alerts}}{{destination.port}},{{/context.alerts}}\",\n\"alert_id\":\"{{alert.id}}\",\n\"index\":\"{{#context.alerts}}{{_index}},{{/context.alerts}}\",\n\"time\":\"{{date}}\",\n\"occurances\":\"{{state.signals_count}}\"\n}\n```\n\nThe group will format the data and deduplicate any entries. You shouldn't need to edit/change these whilst using the webhook payload above.",
+      "position": [
+        1350.0,
+        345.0
+      ],
+      "guid": "03c69a302db2af532ae72f593ffa3fcc",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/elastic-rule-action.png",
+      "position": [
+        1920.0,
+        390.0
+      ],
+      "guid": "64d66ccd78cc5b7d876f826850c830e3",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/elastic-webhook.png",
+      "position": [
+        1635.0,
+        390.0
+      ],
+      "guid": "4716f95f0a914486027c7e202b77de1f",
+      "width": null
+    },
+    {
+      "content": "This HTTP Request Action creates a case in Elastic Security. Be sure to create credentials in Tines accordingly to be able to use the appropriate Kibana APIs",
+      "position": [
+        1350.0,
+        900.0
+      ],
+      "guid": "67caa65b7df6193aed78e4d9ecb67aee",
+      "width": null
+    },
+    {
+      "content": "For every agent involved in the alert, these Actions will run an osquery query on the machines in question to list the currently installed windows patches. After 5 seconds, they will be added to the case as a lens visualisation.\n\nThe query used is `select * from patches`. Feel free to change this to something else if you prefer.",
+      "position": [
+        2655.0,
+        1215.0
+      ],
+      "guid": "7dca25eca4ba788aeacc01fa97ff8278",
+      "width": null
+    },
+    {
+      "content": "This HTTP Request Action adds the alert(s) involved to the case as an alert embeddable.",
+      "position": [
+        735.0,
+        1470.0
+      ],
+      "guid": "6d4a0022d47d20c61a679ccdd7b5e485",
+      "width": null
+    },
+    {
+      "content": "**If the story worked successfully, your Elastic Security case should look like the attached example:**\n\nhttps://image-uploads.tines.com/elastic-case-example.gif",
+      "position": [
+        735.0,
+        1095.0
+      ],
+      "guid": "7e8de652e31a9ec0577516951735906d",
+      "width": null
+    },
+    {
+      "content": "This e-mail action will send a formatted email with a link to the Tines story run, and the newly created case in Elastic Security. It should look something like this.\n\nhttps://image-uploads.tines.com/elastic-email.png",
+      "position": [
+        1380.0,
+        1755.0
+      ],
+      "guid": "46f19b61f8b78e11c02d05375c2b7db3",
+      "width": null
+    },
+    {
+      "content": "These four HTTP Request Actions will perform some initial triage relating to the IP address observed, and add the results to the case. \n\nA timeline is also created for a more extensive search, and added to the case.\n\nThese require credentials to Elasticsearch to be set up in Tines.",
+      "position": [
+        2160.0,
+        1530.0
+      ],
+      "guid": "9fadf46b048fbc981f94c846d5e9de4c",
+      "width": null
+    },
+    {
+      "content": "The IP address observed is queried against [GreyNoise Community,](https://www.greynoise.io/plans/community) to check if it is known to be malicious. ",
+      "position": [
+        1635.0,
+        1230.0
+      ],
+      "guid": "353896bfa63bd82c4cf25a0285dd81cd",
+      "width": null
+    },
+    {
+      "content": "These two HTTP Requests will authenticate against a Google Cloud project and add an egress firewall rule to block traffic to the IP address that was deemed to be malicious. You will need to update these to make sure they contain the correct GCP project name and credentials.\n\nIn production this should be set up with a JWT Token as documented [here](https://www.tines.com/blog/tines-and-gsuite)",
+      "position": [
+        1605.0,
+        1410.0
+      ],
+      "guid": "0d4fbcc145f37642fb60a51903c9ab21",
+      "width": null
+    },
+    {
+      "content": "A comment is then added to the case with the results of the rule creation request to Google Cloud.",
+      "position": [
+        1605.0,
+        1620.0
+      ],
+      "guid": "fc8c6bf40c777b86de60e13b14bf3b6b",
+      "width": null
+    },
+    {
+      "content": "For any questions or issues encountered with this Tines Story, please feel free to reach out on the [Elastic](https://ela.st/slack) or [Tines](https://join.slack.com/t/tines-community/shared_invite/zt-dkq20rhz-Lc5LQaqr1nBUrBdfiEJSLw) community Slack.",
+      "position": [
+        735.0,
+        225.0
+      ],
+      "guid": "94385fee53641a1d00a2d0109eed2c48",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/elastic-blue.png",
+      "position": [
+        1350.0,
+        150.0
+      ],
+      "guid": "3d44104f242d23902aacaa0e7bdb013d",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 20
+    },
+    {
+      "source": 1,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 5
+    },
+    {
+      "source": 2,
+      "receiver": 4
+    },
+    {
+      "source": 3,
+      "receiver": 11
+    },
+    {
+      "source": 4,
+      "receiver": 10
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 10,
+      "receiver": 12
+    },
+    {
+      "source": 10,
+      "receiver": 19
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 17,
+      "receiver": 16
+    },
+    {
+      "source": 18,
+      "receiver": 17
+    },
+    {
+      "source": 19,
+      "receiver": 18
+    },
+    {
+      "source": 20,
+      "receiver": 1
+    }
+  ],
+  "diagram_layout": "{\"80023d11dd04710c645f55510f9befd5\":[1110,360],\"60f3b1e1e1052fa3ee1e986f82815e86\":[1110,930],\"12af9456adce7d1af48e982b395e34f7\":[1380,1140],\"d486608e260bc3bf998a9d6a6572eaba\":[1110,1245],\"218037515b09f15dfe8e20c85df3ad88\":[1380,1230],\"ae0941f70dc1e224aef9ad22f3f52ae5\":[1635,1125],\"a29bf2f9770b4872f7d77efedab69b20\":[2400,1200],\"dab318d3eb35f48defcad45147f66e9e\":[2400,1275],\"80bc8ed156b27b1ea604e618924a6962\":[2400,1350],\"7d68f99815efd13c03220f23a1360466\":[2400,1425],\"874dd186435d1b4d3cfa2bf63cf917be\":[1380,1320],\"b2302bae2875994527b043a7eb4be7ac\":[1110,1485],\"3b18d4e5b742dfb266bec30d442c4081\":[1380,1410],\"270b0fbf07289d094310ffde47c21cac\":[1380,1485],\"88d8bec9f7d83ca01cf38715858b4a81\":[1380,1560],\"1ce8ede3b093ffa5cd8d2ef4be930f52\":[1380,1650],\"0567284493fbefea9ccc4f749bb9e6fe\":[1905,1665],\"580007a81a4cc71e7624a492080c91b8\":[1905,1575],\"233e6b21c6d262a9d68fa4a4db9a2a77\":[1905,1485],\"4ddf9fcb9afd44085f2c1349f52aae95\":[1905,1395],\"6742ade957c9a3749a216cbf766f5e2a\":[1110,600]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Triage Elastic Security alerts and block malicious IPs Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

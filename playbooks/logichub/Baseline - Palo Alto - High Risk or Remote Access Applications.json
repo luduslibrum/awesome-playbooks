@@ -1,0 +1,241 @@
+{
+  "flows": [
+    {
+      "name": "Baseline - Palo Alto - High Risk or Remote Access Applications",
+      "nodes": [
+        {
+          "id": "4ed30bca-9693-4b64-8fd0-d0f80b467eb1",
+          "name": "Load_List_Palo_Alto_Applications",
+          "kind": "augmentation",
+          "lql": "loadList(\"Palo_Alto_Applications\")",
+          "operator": "loadList",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 13,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "CustomListContentKind",
+            "id": "loadList"
+          },
+          "categoryKind": "LogicHub",
+          "linkToTrigger": true,
+          "iconTitle": "Logichub: Load List",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "f2630e85-bca4-4a9a-9c95-0ce63503d534",
+          "name": "high_risk_or_remote_access_sessions",
+          "kind": "augmentation",
+          "lql": "`select source_ip,destination_ip,source_user,action,_count,application,category,subcategory,risk from Join_connections_to_risk where (risk>4 or subcategory=\"remote-access\")`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 310,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": true,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "2d353f85-a762-4710-8202-ffa8838ff694",
+          "name": "Palo_Alto_Allowed_External_Communications",
+          "kind": "eventType",
+          "isLeaf": false,
+          "eventType": "eventType-40",
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 0,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "EventTypeContentKind",
+            "id": "eventType-40"
+          },
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data: Palo_Alto_Allowed_External_Communications",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "e192734e-08d3-42c4-bef9-e5f86f717194",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "f2630e85-bca4-4a9a-9c95-0ce63503d534"
+          ],
+          "isExplainable": true,
+          "x": 150,
+          "y": 465,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "0885e30e-f989-48b1-8c0c-6c548a86bf42",
+          "name": "Join_connections_to_risk",
+          "kind": "augmentation",
+          "lql": "autoJoinTables([Palo_Alto_Allowed_External_Communications,Load_List_Palo_Alto_Applications])",
+          "operator": "autoJoinTables",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 180,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "autoJoinTables"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Auto Join Tables",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1048",
+      "listNames": [
+        "Palo_Alto_Applications"
+      ],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [
+    {
+      "id": "eventType-40",
+      "data": {
+        "name": "Palo_Alto_Allowed_External_Communications",
+        "query": "(_sourceCategory=syslog) \",TRAFFIC,\" NOT \",url,\" NOT \",dns,\" NOT \",not-applicable,\" NOT \",ntp,\" NOT \",ssl,\" NOT \",incomplete,\" NOT \",ping,\" NOT \",snmpv3,\" NOT \",outlook-web-online,\" NOT \",ldap,\" NOT \",msrpc-base,\" NOT \",insufficient-data,\" NOT \",print-over-ms-smb,\" NOT \",kerberos,\" NOT \",sharepoint-online,\" NOT \",net.tcp,\" NOT \",snmp-base,\" NOT \",cygnet-scada,\" NOT \",ms-ds-smbv3,\" NOT \",google-base,\" NOT \",snmpv2,\" NOT \",stun,\" NOT \",netbios-ns,\" | csv _raw extract FUTURE_USE_1, Receive_Time, Serial_Number, Type, Threat_Content_Type, FUTURE_USE_2, Generated_Time, Source_IP, Destination_IP, NAT_Source_IP, NAT_Destination_IP, Rule_Name, Source_User, Destination_User, Application, Virtual_System, Source_Zone, Destination_Zone, Inbound_Interface, Outbound_Interface, Log_Action, FUTURE_USE_3, Session_ID, Repeat_Count, Source_Port, Destination_Port, NAT_Source_Port, NAT_Destination_Port, Flags, Protocol, Action, Bytes, Bytes_Sent, Bytes_Received, Packets, Start_Time, Elapsed_Time, Category, FUTURE_USE_4, Sequence_Number, Action_Flags, Source_Location, Destination_Location, FUTURE_USE_5, Packets_Sent, Packets_Received, Session_End_Reason, Device_Group_Hierarchy_Level_1, Device_Group_Hierarchy_Level_2, Device_Group_Hierarchy_Level_3, Device_Group_Hierarchy_Level_4, Virtual_System_Name, Device_Name, Action_Source, Source_VM_UUID, Destination_VM_UUID, Tunnel_ID_IMSI, Monitor_Tag_IMEI, Parent_Session_ID, Parent_Start_Time, Tunnel_Type, SCTP_Association_ID, SCTP_Chunks, SCTP_Chunks_Sent, SCTP_Chunks_Received|count by Application, source_ip, destination_ip, source_user, Action |where !(source_ip matches \"10.*\"AND destination_ip matches \"10.*\") AND Action=\"allow\"",
+        "keyColumns": "application,source_ip,destination_ip,source_user,action,_count",
+        "connection": "connection-7",
+        "connectionTypeEntities": {
+          "entities": [
+            {
+              "connectionType": {
+                "connectionType": "sumologic",
+                "value": "query"
+              },
+              "connectionTypeDetail": {
+                "query": "(_sourceCategory=syslog) \",TRAFFIC,\" NOT \",url,\" NOT \",dns,\" NOT \",not-applicable,\" NOT \",ntp,\" NOT \",ssl,\" NOT \",incomplete,\" NOT \",ping,\" NOT \",snmpv3,\" NOT \",outlook-web-online,\" NOT \",ldap,\" NOT \",msrpc-base,\" NOT \",insufficient-data,\" NOT \",print-over-ms-smb,\" NOT \",kerberos,\" NOT \",sharepoint-online,\" NOT \",net.tcp,\" NOT \",snmp-base,\" NOT \",cygnet-scada,\" NOT \",ms-ds-smbv3,\" NOT \",google-base,\" NOT \",snmpv2,\" NOT \",stun,\" NOT \",netbios-ns,\" | csv _raw extract FUTURE_USE_1, Receive_Time, Serial_Number, Type, Threat_Content_Type, FUTURE_USE_2, Generated_Time, Source_IP, Destination_IP, NAT_Source_IP, NAT_Destination_IP, Rule_Name, Source_User, Destination_User, Application, Virtual_System, Source_Zone, Destination_Zone, Inbound_Interface, Outbound_Interface, Log_Action, FUTURE_USE_3, Session_ID, Repeat_Count, Source_Port, Destination_Port, NAT_Source_Port, NAT_Destination_Port, Flags, Protocol, Action, Bytes, Bytes_Sent, Bytes_Received, Packets, Start_Time, Elapsed_Time, Category, FUTURE_USE_4, Sequence_Number, Action_Flags, Source_Location, Destination_Location, FUTURE_USE_5, Packets_Sent, Packets_Received, Session_End_Reason, Device_Group_Hierarchy_Level_1, Device_Group_Hierarchy_Level_2, Device_Group_Hierarchy_Level_3, Device_Group_Hierarchy_Level_4, Virtual_System_Name, Device_Name, Action_Source, Source_VM_UUID, Destination_VM_UUID, Tunnel_ID_IMSI, Monitor_Tag_IMEI, Parent_Session_ID, Parent_Start_Time, Tunnel_Type, SCTP_Association_ID, SCTP_Chunks, SCTP_Chunks_Sent, SCTP_Chunks_Received|count by Application, source_ip, destination_ip, source_user, Action |where !(source_ip matches \"10.*\"AND destination_ip matches \"10.*\") AND Action=\"allow\"",
+                "connection": "connection-7"
+              }
+            }
+          ]
+        },
+        "defaultConnectionType": {
+          "connectionType": "sumologic",
+          "value": "query"
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "connection-7",
+      "data": {
+        "connectionType": "sumologic",
+        "name": "sumologic-mdr",
+        "isActive": false,
+        "account": "",
+        "secret": "",
+        "url": "https://api.us2.sumologic.com/api/v1"
+      }
+    }
+  ],
+  "modules": [],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [],
+  "customLists": [
+    {
+      "id": "4",
+      "name": "Palo_Alto_Applications",
+      "overflowBehavior": "DeleteOldest",
+      "deduplicate": true,
+      "table": "list_data_OY334ihi72",
+      "schema": {
+        "columns": [
+          {
+            "name": "application",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          },
+          {
+            "name": "category",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          },
+          {
+            "name": "subcategory",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          },
+          {
+            "name": "risk",
+            "dataType": "integer",
+            "visible": true,
+            "semanticType": "other"
+          },
+          {
+            "name": "update_date",
+            "dataType": "string",
+            "visible": true,
+            "semanticType": "other"
+          }
+        ]
+      }
+    }
+  ],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

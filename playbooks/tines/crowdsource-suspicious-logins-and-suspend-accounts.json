@@ -1,0 +1,653 @@
+{
+  "schema_version": 4,
+  "name": "Crowdsource suspicious logins and suspend accounts",
+  "description": "Retrieve, deduplicate, and enrich alerts from a SIEM, then contact a user via Slack or email to check if they performed an unusual activity. If it appears suspicious, create an incident in PagerDuty and suspend the user's account with this Story.\n\ntags: GreyNoise, SIEM, SuspiciousLogin, Deduplicate, Enrich, Slack, PagerDuty, Jira, OneLogin, CaseManagement, Intermediate\nicons: 🚨, 🤨, 🔐\nvisibility: public\n",
+  "guid": "6f00b44991e9f665090afeebcdebd93c",
+  "slug": "crowdsource_suspicious_logins_and_suspend_accounts",
+  "exported_at": "2022-07-11T17:35:45Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Lock User Account in OneLogin",
+      "disabled": false,
+      "guid": "9f16cb130bd8932ea3f4a0432083e156",
+      "options": {
+        "url": "http://www.onelogin.com/api/v2/lock",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "key": "<<webhook_agent.body.user_email_address>>",
+          "action": "disable_account"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.onelogin>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Prompt Clicked - Legit",
+      "disabled": false,
+      "guid": "adb831c9eff1fd26ef5c80e584c62d69",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "recognized",
+            "path": "<<send_user_email.prompt.status>><<send_slack_message_by_dm.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Ticket",
+      "disabled": false,
+      "guid": "ed3b4418528d3f06f5eb5aad01e1699b",
+      "options": {
+        "url": "https://tinesio.atlassian.net/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "body": "Account <<webhook_agent.body.user_email>> did not recognize this login - Account locked, IP blocked"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Ticket",
+      "disabled": false,
+      "guid": "6a1f60f49b0dae0dba5b98dd93b60905",
+      "options": {
+        "url": "https://tinesio.atlassian.net/rest/api/2/issue/<<create_issue_in_jira.body.key>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Slack Users by Email",
+      "disabled": false,
+      "guid": "7b392a616d77b5792f13a93bbb871715",
+      "options": {
+        "url": "https://slack.com/api/users.lookupByEmail",
+        "content_type": "json",
+        "method": "get",
+        "payload": {
+          "email": "<<webhook_agent.body.user_email_address>>"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Agent",
+      "disabled": false,
+      "guid": "2fba9034e0f124efd3d36fecaa9cd089",
+      "options": {
+        "secret": "a8cd435b6644d3ce0ce561e54bc3979b",
+        "verbs": "get,post",
+        "path": "08259cb411b216222283435152c8f3fe"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira",
+      "disabled": false,
+      "guid": "4bbd2a90dd3dbb5b0b51deeb97034586",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "description": "We detected a new suspicious login for user <<webhook_agent.body.user_email_address>> \n\n\nIP Address Details:\n||*Field*||*Value*||\n|Email|<<webhook_agent.body.user_email_address>>|\n|User Agent|<<webhook_agent.body.device>>|\n|Login Date|<<webhook_agent.body.date>>|\n|User IP|<<webhook_agent.body.ip_address>>|\n|IP Location|<<lookup_ip_in_ip_api.body.city>>, <<lookup_ip_in_ip_api.body.country>> |\n|Greynoise Reputation|<<quick_check_ip_in_greynoise.body.classification>>|\n",
+            "summary": "New Suspicious Login Detected for <<webhook_agent.body.user_email_address>>"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Send Slack Message by DM",
+      "disabled": false,
+      "guid": "fbc293e6c0b815f89ae0110fc33a7b80",
+      "options": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "channel": "<<search_slack_users_by_email.body.user.id>>",
+          "attachments": [
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Location:*\n<<lookup_ip_in_ip_api.body.city>>, <<lookup_ip_in_ip_api.body.country>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Login Date:*\n<<webhook_agent.body.date>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Greynoise Reputation:*\n<<quick_check_ip_in_greynoise.body.classification>>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*IP Address:*\n<<webhook_agent.body.ip_address>>"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "This Was Me"
+                      },
+                      "style": "primary",
+                      "url": "<<PROMPT(\"recognized\")>>"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "emoji": true,
+                        "text": "I don't recognize this"
+                      },
+                      "style": "danger",
+                      "url": "<<PROMPT(\"unknown\")>>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "text": "We detected an unusual login to your account:"
+        },
+        "headers": {
+          "Authorization": "Bearer <<CREDENTIAL.slack>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Prompt Clicked - Compromised",
+      "disabled": false,
+      "guid": "0ad13998d827a0caa6baab4d5837f303",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "unknown",
+            "path": "<<send_user_email.prompt.status>><<send_slack_message_by_dm.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create an Incident in PagerDuty",
+      "disabled": false,
+      "guid": "fde07ab81440392c1bb98e7b3dbbe096",
+      "options": {
+        "url": "https://api.pagerduty.com/incidents",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "incident": {
+            "type": "incident",
+            "title": "Unknown Login to account",
+            "urgency": "high",
+            "body": {
+              "type": "serious incident",
+              "details": "A suspicious login was confirmed as unknown on account <<webhook_agent.body.email_address>>. See Jira ticket <<create_issue_in_jira.body.key>> for more information"
+            }
+          }
+        },
+        "headers": {
+          "Authorization": "Token token=<<CREDENTIAL.pagerduty>>",
+          "From": "<<RESOURCE.pagerduty_email>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira Ticket",
+      "disabled": false,
+      "guid": "48e5fb969c09106f4aa2163fe365231a",
+      "options": {
+        "url": "https://tinesio.atlassian.net/rest/api/2/issue/<<create_issue_in_jira.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "body": "This is legit - User Has confirmed on Slack that they recognize this Activity. This ticket will be closed automatically"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Send User Email",
+      "disabled": false,
+      "guid": "a209aebc9f7f1b39d92bc76f71d1b198",
+      "options": {
+        "recipients": [
+          "<<webhook_agent.body.user_email_address>>"
+        ],
+        "subject": "Suspicious Login Detected",
+        "body": "Hi There, <br><br>\n\nWe detected a suspicious login to your account. We'd like to validate this behaviour with you for security purposes. The login details are below. \n\n<br /><br><b>User:</b> <<webhook_agent.body.user_email_address>><br /><b>IP: </b>  <<webhook_agent.body.ip_address>><br /><b>IP Location: </b>  <<lookup_ip_in_ip_api.body.city>>, <<lookup_ip_in_ip_api.body.country>> <br /><b>IP Reputation: </b>  <<quick_check_ip_in_greynoise.body.classification>> <br /><b>Device: </b>  <<webhook_agent.body.device>><br /><b>Date: </b>  <<webhook_agent.body.date>><br /><br><br>\n\n\nIf you recognize this activity please <a href=\"<<PROMPT(\"recognized\")>>\">click here</a><br>\n\nIf you <b>do not</b> recognize activity please <a href=\"<<PROMPT(\"unknown\")>>\">click here</a><br>\n\n<br>Thank you for your attention to this matter\n\n\n<br><br>The Tines Team"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Events for One Day",
+      "disabled": false,
+      "guid": "f20598c816b45bd122cec043fde302ae",
+      "options": {
+        "mode": "deduplicate",
+        "period": "3600",
+        "path": "<<webhook_agent.body.user_email_address>><<webhook_agent.body.ip_address>><<webhook_agent.body.device>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Quick Check IP in GreyNoise",
+      "disabled": false,
+      "guid": "9acc54a88dc489dca92757d43bd51553",
+      "options": {
+        "url": "https://api.greynoise.io/v3/community/<<webhook_agent.body.ip_address>>",
+        "content_type": "json",
+        "method": "get"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Lookup IP in IP-API",
+      "disabled": false,
+      "guid": "8e28c6e017659338aeed5c779b921e71",
+      "options": {
+        "url": "http://ip-api.com/json/<<webhook_agent.body.ip_address>>",
+        "content_type": "json",
+        "method": "post",
+        "payload": {},
+        "headers": {}
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "# ⬅️ ⬅️. Receive the Event\n\nThe webhook action will receive the event from the form",
+      "position": [
+        735.0,
+        -75.0
+      ],
+      "guid": "2c97023aa4649baa89cce0737613b80e",
+      "width": null
+    },
+    {
+      "content": "# Enrich the IP\n\nWe'll enrich the IP in GreyNoise and IP API\n\nNeither of these tools require an API Key",
+      "position": [
+        120.0,
+        135.0
+      ],
+      "guid": "d8dc0a3ffdf97609ba6329685519ccf8",
+      "width": null
+    },
+    {
+      "content": "# Create Ticket\n\nCreate a ticket in JIRA with some basic information about the alert",
+      "position": [
+        120.0,
+        300.0
+      ],
+      "guid": "7d09de00447403d6f9f37d0aa2a53c04",
+      "width": null
+    },
+    {
+      "content": "https://d34u8crftukxnk.cloudfront.net/slackpress/prod/sites/6/2019-01_BrandRefresh_slack-brand-refresh_unfurl-1.png\n\n# Crowdsource Activity\n\nReceive an alert from a SIEM, enrich it, and contact a user on Slack or via Email asking them if they performed the activity. \n\nThese requests use [Prompt Widgets](https://docs.tines.io/tines_actions_widgets.html) to Capture the response of the users.\n\nNote, for Slack you'll need to add an API Key. You can follow the guide here: \nhttps://www.tines.com/blog/chatbots-for-security-and-it-teams-part-3-creating-a-slack-chatbot",
+      "position": [
+        120.0,
+        -270.0
+      ],
+      "guid": "35c30c978887e455a662a811bbd58807",
+      "width": null
+    },
+    {
+      "content": "# Take Remediation Action\n\nDepending on the response of the user, Tines can either close out the ticket, or alert on call in a tool like PagerDuty & lock the account",
+      "position": [
+        450.0,
+        855.0
+      ],
+      "guid": "38add8ccd18caebaec5b5f33eec4816c",
+      "width": null
+    },
+    {
+      "content": "# ⬆ ⬆    Kick off the Story ⬆ ⬆\n\nUse a [Form](./form) to kick off this story. We're simulating an alert from our SIEM for a suspicious login",
+      "position": [
+        735.0,
+        -195.0
+      ],
+      "guid": "68ba2efdb6934cb2efb9347be030f6e7",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 1,
+      "receiver": 10
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 12
+    },
+    {
+      "source": 6,
+      "receiver": 11
+    },
+    {
+      "source": 6,
+      "receiver": 4
+    },
+    {
+      "source": 7,
+      "receiver": 8
+    },
+    {
+      "source": 7,
+      "receiver": 1
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 8,
+      "receiver": 2
+    },
+    {
+      "source": 9,
+      "receiver": 0
+    },
+    {
+      "source": 10,
+      "receiver": 3
+    },
+    {
+      "source": 11,
+      "receiver": 8
+    },
+    {
+      "source": 11,
+      "receiver": 1
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 14
+    },
+    {
+      "source": 14,
+      "receiver": 6
+    }
+  ],
+  "diagram_layout": "{\"9f16cb130bd8932ea3f4a0432083e156\":[480,765],\"adb831c9eff1fd26ef5c80e584c62d69\":[750,570],\"ed3b4418528d3f06f5eb5aad01e1699b\":[225,690],\"6a1f60f49b0dae0dba5b98dd93b60905\":[750,765],\"7b392a616d77b5792f13a93bbb871715\":[750,375],\"2fba9034e0f124efd3d36fecaa9cd089\":[480,-120],\"4bbd2a90dd3dbb5b0b51deeb97034586\":[480,285],\"fbc293e6c0b815f89ae0110fc33a7b80\":[750,465],\"0ad13998d827a0caa6baab4d5837f303\":[480,570],\"fde07ab81440392c1bb98e7b3dbbe096\":[480,675],\"48e5fb969c09106f4aa2163fe365231a\":[750,675],\"a209aebc9f7f1b39d92bc76f71d1b198\":[480,375],\"f20598c816b45bd122cec043fde302ae\":[480,-30],\"9acc54a88dc489dca92757d43bd51553\":[480,90],\"8e28c6e017659338aeed5c779b921e71\":[480,195]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Send Notification to Slack on Suspicious Login",
+    "description": "Simulate a Suspicious Login or Action from Okta",
+    "fields": [
+      {
+        "name": "User Email Address",
+        "description": "",
+        "required": false,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Date",
+        "description": "",
+        "required": false,
+        "type": "DATE",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Device",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1879048192,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "IP Address",
+        "description": "e.g. 98.249.227.120",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "2fba9034e0f124efd3d36fecaa9cd089",
+    "success_message": "Thank you for your submission"
+  }
+}

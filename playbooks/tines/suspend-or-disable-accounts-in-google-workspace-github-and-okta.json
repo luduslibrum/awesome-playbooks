@@ -1,0 +1,868 @@
+{
+  "schema_version": 4,
+  "name": "Suspend or disable accounts in Google Workspace, GitHub, and Okta",
+  "description": "Suspend or disable user accounts in Google Workspace, GitHub, and Okta after securing approval via Jira or email, and track the process through Jira tickets.\ntags: Google, GitHub, Okta, Jira, Offboarding, Intermediate, CaseManagement\nicons: 🏘, 🔐, jira\nvisibility: public",
+  "guid": "8ede8b3098169377344199a895f4f311",
+  "slug": "suspend_or_disable_accounts_in_google_workspace_github_and_okta",
+  "exported_at": "2022-07-11T17:34:46Z",
+  "agents": [
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Action",
+      "disabled": false,
+      "guid": "9af2fbea81045eedd696458b7bf5ec72",
+      "options": {
+        "recipients": [
+          "<<receive_user_information.body.approver_email>>"
+        ],
+        "subject": "Request to disable employee from GSuite, Okta and Github",
+        "body": "Employee to be disabled: <br>\n<<get_user_from_google_workspace_directory.body.name.fullName>><br><br>\nView Jira with information:<br>\nhttps://tinesio.atlassian.net/browse/<<create_issue_in_jira_with_tables.body.key>>\n<br><br>Click here to approve:<br> <<PROMPT(\"approve\")>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger Action",
+      "disabled": false,
+      "guid": "89b190924198723d8867f9c223518225",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "approve",
+            "path": "<<email_action.prompt.status>>"
+          }
+        ],
+        "must_match": 1
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Issue in Jira with Tables",
+      "disabled": false,
+      "guid": "712ed788fd4784f0370fc9673a3fd9e2",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "DEMO"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "assignee": {
+              "name": "Unassigned"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "description": "h2. Employee Off-boarding\n|*Employee Name*| <<get_user_from_google_workspace_directory.body.name.fullName>> |\n|*Email Address (UPN)*| <<get_user_from_google_workspace_directory.body.primaryEmail>> |\n|*Termination Reason*| <%for reason in receive_user_information.body.termination_reason%><<reason>>; <%endfor%>|\n|*Additional Information*| <<receive_user_information.body.additional_information_on_termination>> |\n|*Manager Email*| <<get_user_from_google_workspace_directory.body.relations[0].value>> |\n|*Job Title*|<<get_user_from_google_workspace_directory.body.organizations[0].title>> |\n|*GSuite Suspended Status*|<<get_user_from_google_workspace_directory.body.suspended>> |\n|*Okta Status*|<<get_user_from_okta.body.status>> |\n|*Github Status*|<%if check_github_block_status.status = 404%>Not Blocked <%elseif check_github_block_status.status = 204%>Blocked <%endif%> |",
+            "summary": "Employee Off-boarding"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EmailAgent",
+      "name": "Email Action",
+      "disabled": false,
+      "guid": "1ba5138383643bc6e16c783472e8fcdb",
+      "options": {
+        "recipients": [
+          "<<get_user_from_google_workspace_directory.body.relations.first.value>>",
+          "<<receive_user_information.body.approver_email>>"
+        ],
+        "subject": "User was disabled from GSuite, Okta and Github",
+        "body": "Employee \n<<get_user_from_google_workspace_directory.body.name.fullName>> was disabled.<br><br>\nView Jira with information:<br>\nhttps://tinesio.atlassian.net/browse/<<create_issue_in_jira_with_tables.body.key>>\n"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Close Jira Ticket",
+      "disabled": false,
+      "guid": "ddba0605bc3b471958050c921d81d9b3",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/3/issue/<<create_issue_in_jira_with_tables.body.key>>/transitions",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "transition": {
+            "id": "31"
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "log_error_on_status": []
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get a Google Bearer token.",
+      "disabled": false,
+      "guid": "525f937e170334ffb82d9460a70f835a",
+      "options": {
+        "url": "https://www.googleapis.com/oauth2/v4/token",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+          "assertion": "<<CREDENTIAL.googlejwt>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get user from Google Workspace directory",
+      "disabled": false,
+      "guid": "3eb7902f93e53217a16c1660d6d631d2",
+      "options": {
+        "url": "https://www.googleapis.com/admin/directory/v1/users/<<receive_user_information.body.user_email_address_upn>>",
+        "method": "get",
+        "payload": {},
+        "headers": {
+          "Authorization": "Bearer <<get_a_google_bearer_token.body.access_token>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get User from Okta",
+      "disabled": false,
+      "guid": "641c81bb4c26374b347cdacecd98e24f",
+      "options": {
+        "url": "https://<<RESOURCE.okta_domain>>/api/v1/users/<<receive_user_information.body.user_email_address_upn>>",
+        "method": "get",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Receive User Information",
+      "disabled": false,
+      "guid": "9ed13db377c02c7c33283479b02510dc",
+      "options": {
+        "path": "af6977856a3ba0c78d42b4f59fe2e84f",
+        "secret": "89d36b7c29e1210bfc0cf13d5d157392",
+        "verbs": "get,post"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Suspend User in Google",
+      "disabled": false,
+      "guid": "61179918097341380348751c8d230e44",
+      "options": {
+        "url": "https://admin.googleapis.com/admin/directory/v1/users/<<receive_user_information.body.user_email_address_upn>>?access_token=<<get_a_google_bearer_token.body.access_token>>",
+        "method": "put",
+        "content_type": "json",
+        "payload": {
+          "suspended": true
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Suspend an Account in Okta",
+      "disabled": false,
+      "guid": "5761f5a1ef0b0791b939a8c2c9ddd6e5",
+      "options": {
+        "url": "https://<<RESOURCE.okta_domain>>/api/v1/users/<<get_user_from_okta.body.id>>/lifecycle/suspend",
+        "content_type": "json",
+        "method": "post",
+        "headers": {
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira",
+      "disabled": false,
+      "guid": "be8fd300bf47bf829093b975cf721da0",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira_with_tables.body.key>>/comment/",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "body": "User has been updated in Google and Okta:\n\n||*Google Suspended Status*|<<suspend_user_in_google.body.suspended>> |\n||*Okta Status*|<<get_updated_user_from_okta.body.status>>|\n||*Github Status*|<%if check_updated_github_block_status.status = 404%>Not Blocked <%elseif check_updated_github_block_status.status = 204%>Blocked <%endif%> |"
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Updated User from Okta",
+      "disabled": false,
+      "guid": "5e9f79f78f1d7058d61d5a643dc60d11",
+      "options": {
+        "url": "https://<<RESOURCE.okta_domain>>/api/v1/users/<<receive_user_information.body.user_email_address_upn>>",
+        "method": "get",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "SSWS <<CREDENTIAL.okta>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Block a user in Github",
+      "disabled": false,
+      "guid": "77108e77258e5209cc79d91debfc0898",
+      "options": {
+        "url": "https://api.github.com/user/blocks/<<get_github_user.body.items.first.login>>",
+        "content_type": "json",
+        "method": "put",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Github user",
+      "disabled": false,
+      "guid": "4fa0fc1b8544dce844777fa09d0a1a34",
+      "options": {
+        "url": "https://api.github.com/search/users?q=<<receive_user_information.body.user_email_address_upn>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check Github Block Status",
+      "disabled": false,
+      "guid": "1d7a12dccc45875faa67b11c6649ba52",
+      "options": {
+        "url": "https://api.github.com/user/blocks/<<get_github_user.body.items.first.login>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Check Updated Github Block Status",
+      "disabled": false,
+      "guid": "603e564f7a68b2e1d2c7e5631c21d26a",
+      "options": {
+        "url": "https://api.github.com/user/blocks/<<get_github_user.body.items.first.login>>",
+        "content_type": "json",
+        "method": "get",
+        "headers": {
+          "Authorization": "token <<CREDENTIAL.github>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Skip email if approval link is clicked on in Jira",
+      "disabled": false,
+      "guid": "d2a4c839d7a9c5b7a42300bb3a6f5d9d",
+      "options": {
+        "rules": [
+          {
+            "type": "field==value",
+            "value": "approve",
+            "path": "<<update_jira_with_approval_link.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Send email if approval has not occurred",
+      "disabled": false,
+      "guid": "52740e92179d2f5bb3c475085969bb46",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "^$",
+            "path": "<<update_jira_with_approval_link.prompt.status>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Jira Issue",
+      "disabled": false,
+      "guid": "fca604370e105a5c450992c9a0c3b3b4",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira_with_tables.body.key>>/",
+        "content_type": "json",
+        "method": "get",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "retry_on_status": [
+          "400-499"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Update Jira with approval link",
+      "disabled": false,
+      "guid": "3b329dbac1c41681cfb548fb4d709e2d",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue/<<create_issue_in_jira_with_tables.body.key>>/",
+        "content_type": "json",
+        "method": "put",
+        "basic_auth": [
+          "<<RESOURCE.jira_username>>",
+          "<<CREDENTIAL.jira>>"
+        ],
+        "payload": {
+          "fields": {
+            "description": "<<get_jira_issue.body.fields.description>>\n\nApprove: <<PROMPT(\"approve\")>>"
+          }
+        },
+        "manual_time": "600"
+      },
+      "reporting": {
+        "time_saved_value": 600,
+        "time_saved_unit": "seconds"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "Webhook to capture information from form",
+      "position": [
+        795.0,
+        -45.0
+      ],
+      "guid": "fad253e429bb6453e7832202bb74cbc0",
+      "width": null
+    },
+    {
+      "content": "Fetch a Bearer Token from Google using a JWT.  Information on how to do this can be found [here](https://www.tines.com/blog/tines-and-gsuite).",
+      "position": [
+        795.0,
+        75.0
+      ],
+      "guid": "158e262792fd482d41bdf4326b5da011",
+      "width": null
+    },
+    {
+      "content": "Open up a Jira ticket for offboarding user with information collected from Okta, Google Workspace, and Github.  Link included in Jira ticket for approval.",
+      "position": [
+        795.0,
+        465.0
+      ],
+      "guid": "80ee72a1c754e72774d41a7525c4ae04",
+      "width": null
+    },
+    {
+      "content": "Send email to approver asking for permission to disable user accounts",
+      "position": [
+        795.0,
+        855.0
+      ],
+      "guid": "ed7f815731b58009ad18d52999d4370d",
+      "width": null
+    },
+    {
+      "content": "If approved proceed",
+      "position": [
+        795.0,
+        930.0
+      ],
+      "guid": "6a8a89e4f517c2e7898c16c26bcbc51b",
+      "width": null
+    },
+    {
+      "content": "Disable accounts in Okta, Google Workspace, and Github",
+      "position": [
+        795.0,
+        1020.0
+      ],
+      "guid": "e449c2760643bc259811c0d97e3ad9fb",
+      "width": null
+    },
+    {
+      "content": "After suspending account in Google Workspace a response gets returned with an updated user profile automatically.\n\nFor Okta, the updated profile needs to be re-fetched.\n\nFor Github a 204 status suggest blocked and a 404 suggests unblocked. ",
+      "position": [
+        795.0,
+        1125.0
+      ],
+      "guid": "e8bdf8dc3d180dbb27c9787bca8a37c6",
+      "width": null
+    },
+    {
+      "content": "Update Jira with account status and close the ticket",
+      "position": [
+        795.0,
+        1410.0
+      ],
+      "guid": "ebcc8845ea2c93bf21f4c890da177960",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/logo-Google-1.png",
+      "position": [
+        105.0,
+        -285.0
+      ],
+      "guid": "faf6f167b49911d1ff1ce93f4bb2f25a",
+      "width": null
+    },
+    {
+      "content": "Obtain User Profiles from Okta, Google Workspace, and Github",
+      "position": [
+        795.0,
+        270.0
+      ],
+      "guid": "97112dbdb6e6bada4b3fdf5f60d0f32f",
+      "width": null
+    },
+    {
+      "content": "Email the manager and the approver confirming accounts have been disabled.",
+      "position": [
+        795.0,
+        1530.0
+      ],
+      "guid": "5803f423a181d9f1770b1d41240c0590",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/okta.png",
+      "position": [
+        495.0,
+        -360.0
+      ],
+      "guid": "e12b7fe2b6224f6c30ac15e4b4e836ee",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/github.png",
+      "position": [
+        795.0,
+        -360.0
+      ],
+      "guid": "770ca0e8b65008be50b6a08a4b3f4680",
+      "width": 270
+    },
+    {
+      "content": "Use the attached [form](https://demo.tines.com/forms/72080948fa3bad9767a62ab3305b6b98) to enter information on a user whose Google Workspace, Github, and Okta accounts should be suspended.  The user will be looked up in Google, Github, and Okta based on their UPN.  Once the accounts are fetched an approval email will be sent to an approver specified on the form.  The approver can approve disabling the accounts from a link on email or in a Jira ticket. Upon approval accounts will be suspended/disabled within Google, Github, and Okta and a follow-up email will be sent to the manager and approver confirming the accounts were disabled. The manager's email address is captured from Google Workspace. A Jira ticket is created and updated with the account status for tracking purposes.\n\nCredentials needed:\n- `jira` - Jira Service Account Credential\n- `googlejwt` - Google JWT - Information [here](https://www.tines.com/blog/tines-and-gsuite)\n- `okta` - Okta [API Key](https://developer.okta.com/docs/guides/create-an-api-token/main/#privilege-level)\n- `github` - Github [API Key](https://docs.github.com/en/rest/guides/getting-started-with-the-rest-api#authentication)\n\nResources needed:\n`okta_domain` - Okta Tenant\n`jira_domain` - Jira Tenant\n`jira_username` - Jira Service Account Username\n\n",
+      "position": [
+        105.0,
+        -45.0
+      ],
+      "guid": "ee8690d7a9b9a3b4fc42747176f15456",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 1
+    },
+    {
+      "source": 1,
+      "receiver": 9
+    },
+    {
+      "source": 2,
+      "receiver": 19
+    },
+    {
+      "source": 4,
+      "receiver": 3
+    },
+    {
+      "source": 5,
+      "receiver": 6
+    },
+    {
+      "source": 6,
+      "receiver": 7
+    },
+    {
+      "source": 7,
+      "receiver": 14
+    },
+    {
+      "source": 8,
+      "receiver": 5
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    },
+    {
+      "source": 10,
+      "receiver": 12
+    },
+    {
+      "source": 11,
+      "receiver": 4
+    },
+    {
+      "source": 12,
+      "receiver": 13
+    },
+    {
+      "source": 13,
+      "receiver": 16
+    },
+    {
+      "source": 14,
+      "receiver": 15
+    },
+    {
+      "source": 15,
+      "receiver": 2
+    },
+    {
+      "source": 16,
+      "receiver": 11
+    },
+    {
+      "source": 17,
+      "receiver": 9
+    },
+    {
+      "source": 18,
+      "receiver": 0
+    },
+    {
+      "source": 19,
+      "receiver": 20
+    },
+    {
+      "source": 20,
+      "receiver": 18
+    },
+    {
+      "source": 20,
+      "receiver": 17
+    }
+  ],
+  "diagram_layout": "{\"9af2fbea81045eedd696458b7bf5ec72\":[495,855],\"89b190924198723d8867f9c223518225\":[495,930],\"712ed788fd4784f0370fc9673a3fd9e2\":[495,495],\"1ba5138383643bc6e16c783472e8fcdb\":[495,1545],\"ddba0605bc3b471958050c921d81d9b3\":[495,1470],\"525f937e170334ffb82d9460a70f835a\":[495,90],\"3eb7902f93e53217a16c1660d6d631d2\":[495,165],\"641c81bb4c26374b347cdacecd98e24f\":[495,270],\"9ed13db377c02c7c33283479b02510dc\":[495,-30],\"61179918097341380348751c8d230e44\":[495,1005],\"5761f5a1ef0b0791b939a8c2c9ddd6e5\":[495,1080],\"be8fd300bf47bf829093b975cf721da0\":[495,1395],\"5e9f79f78f1d7058d61d5a643dc60d11\":[495,1155],\"77108e77258e5209cc79d91debfc0898\":[495,1230],\"4fa0fc1b8544dce844777fa09d0a1a34\":[495,345],\"1d7a12dccc45875faa67b11c6649ba52\":[495,420],\"603e564f7a68b2e1d2c7e5631c21d26a\":[495,1305],\"d2a4c839d7a9c5b7a42300bb3a6f5d9d\":[210,780],\"52740e92179d2f5bb3c475085969bb46\":[495,765],\"fca604370e105a5c450992c9a0c3b3b4\":[495,600],\"3b329dbac1c41681cfb548fb4d709e2d\":[495,675]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Offboarding User Demo Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "Termination Reason",
+        "description": "",
+        "required": false,
+        "type": "OPTION",
+        "multi_select": true,
+        "options": [
+          "Attendance",
+          "Performance",
+          "Contract Expiration"
+        ],
+        "ranking": 2013265920,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Additional Information on Termination",
+        "description": "",
+        "required": false,
+        "type": "LONG_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 2080374784,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "Approver Email",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1879048192,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "User Email Address (UPN)",
+        "description": "",
+        "required": true,
+        "type": "EMAIL",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "User First Name",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 0,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "User Last Name",
+        "description": "",
+        "required": true,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": "9ed13db377c02c7c33283479b02510dc",
+    "success_message": "Thank you for your submission"
+  }
+}

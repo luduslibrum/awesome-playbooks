@@ -1,0 +1,418 @@
+{
+  "schema_version": 4,
+  "name": "Run provided searches in Splunk",
+  "description": "This story is Send to Story that runs the provided search in Splunk, waits for the search to complete, and returns the results to the calling Story.\n\ntags: Splunk, Search, Beginner\nicons: tines, ↔️, splunk, \nvisibility: public",
+  "guid": "449c4025843d642bd9674d8dbaab2ad8",
+  "slug": "run_provided_searches_in_splunk",
+  "exported_at": "2022-07-11T17:36:43Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Search Status",
+      "disabled": false,
+      "guid": "6e06c13041a551eaeb0b1e0a3d5078ed",
+      "options": {
+        "url": "https://<<RESOURCE.splunk_domain>>:8089/services/search/jobs/<<search_splunk.body.sid>>?output_mode=json",
+        "content_type": "json",
+        "method": "get",
+        "disable_ssl_verification": "true",
+        "headers": {
+          "Authorization": "Basic <<CREDENTIAL.splunk>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Search Still in Progress",
+      "disabled": false,
+      "guid": "c5c4ed9b7e0bafbbd7ece3a29761e585",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "RUNNING|FINALIZING|PARSING",
+            "path": "<<get_search_status.body.entry[0].content.dispatchState>>"
+          },
+          {
+            "type": "field<value",
+            "value": "20",
+            "path": "<<set_counter.count>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Delay Event",
+      "disabled": false,
+      "guid": "3199b771d8307a1255acf897d9cccbfc",
+      "options": {
+        "mode": "delay",
+        "seconds": "3"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if Done",
+      "disabled": false,
+      "guid": "30fd200403faca296b2c0448ce1157b9",
+      "options": {
+        "rules": [
+          {
+            "type": "regex",
+            "value": "DONE",
+            "path": "<<get_search_status.body.entry[0].content.dispatchState>>"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Splunk Results",
+      "disabled": false,
+      "guid": "e271c6192be66820856ef9afb8a79a76",
+      "options": {
+        "url": "https://<<RESOURCE.splunk_domain>>:8089/services/search/jobs/<<search_splunk.body.sid>>/results?output_mode=json&count=1000",
+        "content_type": "json",
+        "method": "get",
+        "disable_ssl_verification": "true",
+        "headers": {
+          "Authorization": "Basic <<CREDENTIAL.splunk>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Search Splunk",
+      "disabled": false,
+      "guid": "ce29022e4493f94d599a3b41c6f91e7e",
+      "options": {
+        "url": "https://<<RESOURCE.splunk_domain>>:8089/services/search/jobs",
+        "content_type": "form",
+        "method": "post",
+        "payload": {
+          "search": "<<webhook_action.body.search>>",
+          "output_mode": "json"
+        },
+        "headers": {
+          "Authorization": "Basic <<CREDENTIAL.splunk>>"
+        },
+        "disable_ssl_verification": true
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::WebhookAgent",
+      "name": "Webhook Action",
+      "disabled": false,
+      "guid": "c9e3c87a20eae3f63a8ccf2efe45ecc1",
+      "options": {
+        "secret": "8e6d2742ae737127888d1564e98f3ef1",
+        "verbs": "get,post",
+        "include_headers": "false",
+        "path": "cae645c89a0152412e9f5823ee3b0bfb"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Return Results",
+      "disabled": false,
+      "guid": "e86224920f1e3252e3e6e7f0574b85ed",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "results": "=get_splunk_results.body.results"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Set counter",
+      "disabled": false,
+      "guid": "566ed30b098e366587874b5ebd40d2e6",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "count": "<<PLUS(set_counter.count, 1)>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Trigger if TimeOut",
+      "disabled": false,
+      "guid": "4cb363e4119b2eb7f3ea19f0d1635f0c",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "20",
+            "path": "<<set_counter.count>>"
+          }
+        ],
+        "must_match": "1"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Return Results",
+      "disabled": false,
+      "guid": "be8a979da2584dc67582c85ab07628a7",
+      "options": {
+        "mode": "message_only",
+        "payload": {
+          "results": "=get_splunk_results.body.results",
+          "error": "splunk search timed out"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::SendToStoryAgent",
+      "name": "Kick off Search in Splunk",
+      "disabled": false,
+      "guid": "3f1dd948df576375edc91e620d12b063",
+      "options": {
+        "story": "<<STORY.run_provided_searches_in_splunk>>",
+        "payload": {
+          "search": "search source=proxy host=webproxy sourcetype=Bluecoat s_ip=* <<receive_form.body.domain>> | table s_ip _time c_ip cs_host cs_method cs_uri_path sc_status cs_Referer cs_User_Agent _raw"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "https://image-uploads.tines.com/splunk.png\n\nA Send to Story that runs the provided search in Splunk, waits for the search to complete and returns the results to the calling Story.\n\n# Receiving the Search\n\nThe Splunk Search will be sent to this `Webhook Action` from the Send To Story Action in another Story.\n\nUsing the Splunk API, this search will be sent to Splunk and be queued to run.",
+      "position": [
+        -375.0,
+        120.0
+      ],
+      "guid": "3115727c33e19a42f23279755a9bb2e7",
+      "width": null
+    },
+    {
+      "content": "# Waiting\n\nOnce the Search is queued, it may take a minute to finish running. To cope with this, an Actions Loop can be used. `set counter` will keep track of how many times the Search Status has been checked.\n\nWhile `Search Still in Progress` will check to see if the search hasn't finished.\n\nFinally the Delay Action provides a break of a few seconds to give the search a chance to complete.",
+      "position": [
+        195.0,
+        75.0
+      ],
+      "guid": "2fdb1cb0fab8f8285fd12f1063a7150d",
+      "width": null
+    },
+    {
+      "content": "# Finishing the Search\n\nThis Story will end on one of two conditions:\n\n1. The Search completes - in this case, the search has finished successfully. Here, Tines will retrieve the results (in json format) and summarize the results in `Return Results`.\n\n2. The Search fails - in this case, the search has either failed outright, or has not completed in 20 trips around the loop indicating that there may be an issue. Here, Tines will return an error message in `Return Results`.",
+      "position": [
+        615.0,
+        345.0
+      ],
+      "guid": "381ce04ab94c65ee150f80c494239b4f",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 8
+    },
+    {
+      "source": 1,
+      "receiver": 2
+    },
+    {
+      "source": 2,
+      "receiver": 0
+    },
+    {
+      "source": 3,
+      "receiver": 4
+    },
+    {
+      "source": 4,
+      "receiver": 7
+    },
+    {
+      "source": 5,
+      "receiver": 0
+    },
+    {
+      "source": 6,
+      "receiver": 5
+    },
+    {
+      "source": 8,
+      "receiver": 9
+    },
+    {
+      "source": 8,
+      "receiver": 3
+    },
+    {
+      "source": 8,
+      "receiver": 1
+    },
+    {
+      "source": 9,
+      "receiver": 10
+    }
+  ],
+  "diagram_layout": "{\"6e06c13041a551eaeb0b1e0a3d5078ed\":[-60,195],\"c5c4ed9b7e0bafbbd7ece3a29761e585\":[-60,375],\"3199b771d8307a1255acf897d9cccbfc\":[-60,495],\"30fd200403faca296b2c0448ce1157b9\":[165,375],\"e271c6192be66820856ef9afb8a79a76\":[165,495],\"ce29022e4493f94d599a3b41c6f91e7e\":[-60,105],\"c9e3c87a20eae3f63a8ccf2efe45ecc1\":[-60,15],\"e86224920f1e3252e3e6e7f0574b85ed\":[165,585],\"566ed30b098e366587874b5ebd40d2e6\":[-60,270],\"4cb363e4119b2eb7f3ea19f0d1635f0c\":[360,375],\"be8a979da2584dc67582c85ab07628a7\":[360,585],\"3f1dd948df576375edc91e620d12b063\":[-345,30]}",
+  "send_to_story_enabled": true,
+  "entry_agent_guid": "c9e3c87a20eae3f63a8ccf2efe45ecc1",
+  "exit_agent_guids": [
+    "e86224920f1e3252e3e6e7f0574b85ed"
+  ],
+  "exit_agent_guid": "e86224920f1e3252e3e6e7f0574b85ed",
+  "send_to_stories": [],
+  "form": {
+    "name": "Run provided searches in Splunk Form",
+    "description": "",
+    "fields": [
+      {
+        "name": "domain",
+        "description": "",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1073741824,
+        "max_characters": null,
+        "tenant_id": 8687
+      },
+      {
+        "name": "thehive ticket id",
+        "description": "ticket id of the hive to update",
+        "required": false,
+        "type": "SHORT_TEXT",
+        "multi_select": false,
+        "options": [
+          "Option 1",
+          "Option 2"
+        ],
+        "ranking": 1610612736,
+        "max_characters": null,
+        "tenant_id": 8687
+      }
+    ],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

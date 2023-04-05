@@ -1,0 +1,559 @@
+{
+  "name" : "Github Activity Monitor",
+  "type" : "Standard",
+  "panX" : 481.0,
+  "panY" : 192.0,
+  "logLevel" : "WARN",
+  "description" : "Periodically check to see if a github account has had any activity.",
+  "jobList" : [ {
+    "id" : 24294,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "Set Variables",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"slackMessagePrefix\",\"value\":\"[Github Activity Monitor]\"},{\"key\":\"slackChannel\",\"value\":\"ADD SLACK CHANNEL HERE...\"},{\"key\":\"githubUserName\",\"value\":\"ADD THE GITHUB USERNAME YOU WOULD LIKE TO MONITOR HERE...\"}]"
+    } ],
+    "locationLeft" : -180.0,
+    "locationTop" : 30.0
+  }, {
+    "id" : 24295,
+    "appCatalogItem" : {
+      "programName" : "Http Client",
+      "displayName" : "HTTP Client",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "HTTP Client Request to Website",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "parameters"
+      },
+      "value" : "[]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "ignore_ssl_trust"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "httpclient_proxy"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "url"
+      },
+      "value" : "#App:24310:website!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "body"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "action"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "headers"
+      },
+      "value" : "[]"
+    } ],
+    "locationLeft" : 50.0,
+    "locationTop" : 210.0,
+    "outputVariables" : "[{\"name\":\"http_client.response.output_content\",\"type\":\"String\"}]"
+  }, {
+    "id" : 24296,
+    "appCatalogItem" : {
+      "programName" : "Hash Encoding",
+      "displayName" : "Encode Hash",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Hash Response Content",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "input"
+      },
+      "value" : "#App:24295:http_client.response.output_content!String"
+    } ],
+    "locationLeft" : 290.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"hash.encode.md5\",\"type\":\"String\"}]"
+  }, {
+    "id" : 24297,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Slack Messaging v1.0",
+      "displayName" : "Send Slack Message",
+      "programVersion" : "1.0.1"
+    },
+    "name" : "Slack Unsuccessful Request",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_recipient"
+      },
+      "value" : "#App:24294:slackChannel!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_api_token"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "message"
+      },
+      "value" : "#App:24294:slackMessagePrefix!String  Bad response when requesting #App:24310:website!String ."
+    } ],
+    "locationLeft" : 290.0,
+    "locationTop" : 280.0
+  }, {
+    "id" : 24298,
+    "appCatalogItem" : {
+      "programName" : "DataStore",
+      "displayName" : "DataStore",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Check Datastore for Previous Hash",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "organization_name"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "domain_type"
+      },
+      "value" : "Local"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "db_method"
+      },
+      "value" : "GET"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "path"
+      },
+      "value" : ""
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "type_name"
+      },
+      "value" : "githubActivity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "request_entity"
+      },
+      "value" : ""
+    } ],
+    "locationLeft" : 510.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"datastore.response\",\"type\":\"String\"}]"
+  }, {
+    "id" : 24299,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.6"
+    },
+    "name" : "Find Previous Hash",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:24298:datastore.response!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"existHash\",\"value\":\"hits.hits[0]._source.hash\"}]"
+    } ],
+    "locationLeft" : 740.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"existHash\",\"type\":\"StringArray\"}]"
+  }, {
+    "id" : 24300,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "No Previous Hash",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"nonExistHash\",\"value\":\"0\"}]"
+    } ],
+    "locationLeft" : 740.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"name\":\"nonExistHash\",\"type\":\"String\"}]"
+  }, {
+    "id" : 24301,
+    "appCatalogItem" : {
+      "programName" : "If / Else",
+      "displayName" : "If / Else",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "New Hash?",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "match_case"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operator"
+      },
+      "value" : "not equals"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_2"
+      },
+      "value" : "#App:24296:hash.encode.md5!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "operand_1"
+      },
+      "value" : "#App:24305:previousHash!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "as_numeric"
+      },
+      "value" : "false"
+    } ],
+    "locationLeft" : 90.0,
+    "locationTop" : 450.0
+  }, {
+    "id" : 24302,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Slack Messaging v1.0",
+      "displayName" : "Send Slack Message",
+      "programVersion" : "1.0.1"
+    },
+    "name" : "Slack Alert",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "message"
+      },
+      "value" : "#App:24294:slackMessagePrefix!String The content of #App:24310:website!String has changed."
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_recipient"
+      },
+      "value" : "#App:24294:slackChannel!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_api_token"
+      }
+    } ],
+    "locationLeft" : 280.0,
+    "locationTop" : 430.0
+  }, {
+    "id" : 24303,
+    "appCatalogItem" : {
+      "programName" : "Logger",
+      "displayName" : "Logger",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Log No Change",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "log_message"
+      },
+      "value" : "The content of #App:24310:website!String has not changed."
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "logging"
+      },
+      "value" : "INFO"
+    } ],
+    "locationLeft" : 290.0,
+    "locationTop" : 550.0
+  }, {
+    "id" : 24304,
+    "appCatalogItem" : {
+      "programName" : "DataStore",
+      "displayName" : "DataStore",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Update Datastore w/ New Hash",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "path"
+      },
+      "value" : "#App:24309:databaseID!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "db_method"
+      },
+      "value" : "POST"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "domain_type"
+      },
+      "value" : "Local"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "type_name"
+      },
+      "value" : "githubActivity"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "request_entity"
+      },
+      "value" : "{\"hash\": \"#App:24296:hash.encode.md5!String\"}"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "organization_name"
+      },
+      "value" : ""
+    } ],
+    "locationLeft" : 510.0,
+    "locationTop" : 420.0,
+    "outputVariables" : "[{\"name\":\"datastore.response\",\"type\":\"String\"}]"
+  }, {
+    "id" : 24305,
+    "appCatalogItem" : {
+      "programName" : "Merge",
+      "displayName" : "Merge",
+      "programVersion" : "1.0.0"
+    },
+    "name" : "Merge Hashes",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "output_array"
+      },
+      "value" : "[{\"key\":\"previousHash\",\"value\":\"#App:24300:nonExistHash!String\"},{\"key\":\"previousHash\",\"value\":\"#App:24306:hashString!String\"}]"
+    } ],
+    "locationLeft" : 1700.0,
+    "locationTop" : 240.0,
+    "outputVariables" : "[{\"name\":\"previousHash\",\"type\":\"String\"}]"
+  }, {
+    "id" : 24306,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "Join Array 1",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : " "
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"hashString\",\"value\":\"#App:24299:existHash!StringArray\"}]"
+    } ],
+    "locationLeft" : 970.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"hashString\",\"type\":\"String\"}]"
+  }, {
+    "id" : 24307,
+    "appCatalogItem" : {
+      "programName" : "TCPB - Slack Messaging v1.0",
+      "displayName" : "Send Slack Message",
+      "programVersion" : "1.0.1"
+    },
+    "name" : "Slack Error Updating Datastore",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_recipient"
+      },
+      "value" : "#App:24294:slackChannel!String"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "slack_api_token"
+      }
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "message"
+      },
+      "value" : "#App:24294:slackMessagePrefix!String  Error writing to the datastore:  .#App:24304:datastore.response!String ."
+    } ],
+    "locationLeft" : 740.0,
+    "locationTop" : 470.0
+  }, {
+    "id" : 24308,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JsonPath v1.0",
+      "displayName" : "Json Path",
+      "programVersion" : "2.0.6"
+    },
+    "name" : "Find ID of Datastore Entry",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "null_missing_leaf"
+      },
+      "value" : "false"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "column_mapping"
+      },
+      "value" : "[{\"key\":\"databaseID\",\"value\":\"hits.hits[0]._id\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "json_content"
+      },
+      "value" : "#App:24298:datastore.response!String"
+    } ],
+    "locationLeft" : 1190.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"databaseID\",\"type\":\"StringArray\"}]"
+  }, {
+    "id" : 24309,
+    "appCatalogItem" : {
+      "programName" : "TCPB - JoinArray v1.0",
+      "displayName" : "Join Array",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "Join Array 2",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "array_mapping"
+      },
+      "value" : "[{\"key\":\"databaseID\",\"value\":\"#App:24308:databaseID!StringArray\"}]"
+    }, {
+      "appCatalogItemParameter" : {
+        "paramName" : "delimiter"
+      },
+      "value" : ","
+    } ],
+    "locationLeft" : 1410.0,
+    "locationTop" : 150.0,
+    "outputVariables" : "[{\"name\":\"databaseID\",\"type\":\"String\"}]"
+  }, {
+    "id" : 24310,
+    "appCatalogItem" : {
+      "programName" : "TCPB - SetVariable v1.0",
+      "displayName" : "Set Variable",
+      "programVersion" : "1.0.12"
+    },
+    "name" : "Set Github API URL Variable",
+    "jobParameterList" : [ {
+      "appCatalogItemParameter" : {
+        "paramName" : "variable_mapping"
+      },
+      "value" : "[{\"key\":\"website\",\"value\":\"https://api.github.com/users/#App:24294:githubUserName!String/events/public\"}]"
+    } ],
+    "locationLeft" : 40.0,
+    "locationTop" : 30.0,
+    "outputVariables" : "[{\"name\":\"website\",\"type\":\"String\"}]"
+  } ],
+  "playbookConnectionList" : [ {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24296,
+    "targetJobId" : 24298
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24300,
+    "targetJobId" : 24305
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24305,
+    "targetJobId" : 24301
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24295,
+    "targetJobId" : 24296
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24295,
+    "targetJobId" : 24297
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24299,
+    "targetJobId" : 24306
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24301,
+    "targetJobId" : 24302
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24301,
+    "targetJobId" : 24303
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24304,
+    "targetJobId" : 24307
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24302,
+    "targetJobId" : 24304
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24306,
+    "targetJobId" : 24308
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24308,
+    "targetJobId" : 24309
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24309,
+    "targetJobId" : 24305
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24298,
+    "targetJobId" : 24299
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24294,
+    "targetJobId" : 24310
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24310,
+    "targetJobId" : 24295
+  }, {
+    "type" : "Fail",
+    "isCircularOnTarget" : false,
+    "sourceJobId" : 24298,
+    "targetJobId" : 24300
+  }, {
+    "type" : "Pass",
+    "isCircularOnTarget" : false,
+    "targetJobId" : 24294,
+    "sourceTriggerId" : 2459
+  } ],
+  "playbookTriggerList" : [ {
+    "id" : 2459,
+    "name" : "Timer Trigger 1",
+    "type" : "Timer",
+    "eventType" : "Create",
+    "locationLeft" : -420.0,
+    "locationTop" : 30.0,
+    "scheduleType" : "Weekly",
+    "scheduleCronFormat" : "00 07 17 ? * 2 *",
+    "anyOrg" : true,
+    "playbookTriggerFilterList" : [ ]
+  } ],
+  "playbookLabels" : [ ],
+  "exportablePipes" : [ ]
+}

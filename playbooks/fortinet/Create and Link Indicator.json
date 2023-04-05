@@ -1,0 +1,270 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Create and Link Indicator",
+    "aliasName": null,
+    "tag": "#Subroutine #DeDuplicate #Relate  #system",
+    "description": "Create an indicator (if it doesn't exist already), and links it to the specified email, alert, or incident record.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "indicatorType",
+        "indicatorValue",
+        "alertRecordIRI",
+        "emailRecordIRI",
+        "incidentRecordIRI",
+        "assetIRI",
+        "indicatorFileIri",
+        "description"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/20289298-cdd6-4052-8fa0-11e2603dca00",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/efbae715-ca6d-4307-86ed-5d090f5d0259",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Create New Indicator",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "file": "{{ vars.input.params.indicatorFileIri or None }}",
+                    "tags": null,
+                    "hunts": null,
+                    "notes": null,
+                    "value": "{{vars.indicatorValue}}",
+                    "alerts": "{% if vars.input.params.alertRecordIRI != \"\" %}[\"{{vars.input.params.alertRecordIRI}}\"] {% endif %}",
+                    "assets": "{% if vars.input.params.assetIRI != \"\" %}[\"{{vars.input.params.assetIRI}}\"] {% endif %}",
+                    "emails": "{% if vars.input.params.emailRecordIRI != \"\" %}[\"{{vars.input.params.emailRecordIRI}}\"] {% endif %}",
+                    "events": null,
+                    "owners": null,
+                    "persons": null,
+                    "sources": null,
+                    "comments": null,
+                    "__replace": "true",
+                    "campaigns": null,
+                    "companies": null,
+                    "evidences": null,
+                    "incidents": "{% if vars.input.params.incidentRecordIRI != \"\" %}[\"{{vars.input.params.incidentRecordIRI}}\"] {% endif %}",
+                    "reputation": {
+                        "id": 6435,
+                        "@id": "\/api\/3\/picklists\/ae98ebc6-beef-4882-9980-1d88fc6d87cd",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": "#696969",
+                        "display": "TBD",
+                        "listName": "\/api\/3\/picklist_names\/e75ed3c3-9f23-4a43-832b-0daf236209ba",
+                        "itemValue": "TBD",
+                        "orderIndex": 3
+                    },
+                    "attachments": null,
+                    "description": null,
+                    "indicatorStatus": {
+                        "id": 346,
+                        "@id": "\/api\/3\/picklists\/2f5cff61-fbff-4bb3-96be-302b78a9fb47",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "TBD",
+                        "listName": "\/api\/3\/picklist_names\/e6639d57-94a9-432f-a46f-b2b530402077",
+                        "itemValue": "TBD",
+                        "orderIndex": 2
+                    },
+                    "typeofindicator": "{{vars.indicatorType}}",
+                    "vulnerabilities": null,
+                    "correlationGraph": null
+                },
+                "_showJson": false,
+                "collection": "\/api\/3\/upsert\/indicators",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "560",
+            "left": "480",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "aec1334b-4ead-4eb3-b04f-6875ae705b02"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": [],
+            "status": null,
+            "top": "165",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "b46357dd-5705-4bdf-9f1b-e247b668dca8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Enrich Indicator",
+            "description": null,
+            "arguments": {
+                "arguments": {
+                    "indicator_IRI": "{{vars.steps.Create_New_Indicator['@id']}}",
+                    "indicator_type": "{{vars.steps.Create_New_Indicator.typeofindicator.itemValue}}",
+                    "indicator_value": "{{vars.steps.Create_New_Indicator.value}}",
+                    "indicator_file_IRI": "{{vars.input.params.indicatorFileIri}}",
+                    "indicator_file_name": ""
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/cd29411a-5588-4800-abf1-56ccf1cb7c35"
+            },
+            "status": null,
+            "top": "560",
+            "left": "120",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "aad5d903-9153-4740-ab27-033c4e5e4756"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "assetIRI": "{{ vars.assetIRI }}",
+                            "description": "{{ vars.description }}",
+                            "indicatorType": "{{ vars.indicatorType }}",
+                            "alertRecordIRI": "{{ vars.alertRecordIRI }}",
+                            "emailRecordIRI": "{{ vars.emailRecordIRI }}",
+                            "indicatorValue": "{{ vars.indicatorValue }}",
+                            "indicatorFileIri": "{{ vars.indicatorFileIri }}",
+                            "incidentRecordIRI": "{{ vars.incidentRecordIRI }}"
+                        }
+                    }
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "efbae715-ca6d-4307-86ed-5d090f5d0259"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Is Indicator Exist",
+            "description": null,
+            "arguments": {
+                "query": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": [
+                        {
+                            "type": "primitive",
+                            "field": "value",
+                            "value": "{{vars.indicatorValue}}",
+                            "operator": "eq",
+                            "_operator": "eq"
+                        }
+                    ]
+                },
+                "module": "indicators?$limit=30",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928770",
+            "uuid": "993e8428-89a4-47ea-b760-2b11fc9a1dcd"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Is indicator Found",
+            "description": null,
+            "arguments": {
+                "conditions": [
+                    {
+                        "option": "Yes",
+                        "step_iri": "\/api\/3\/workflow_steps\/aad5d903-9153-4740-ab27-033c4e5e4756",
+                        "condition": "{{ vars.steps.Is_Indicator_Exist | length > 0 }}",
+                        "step_name": "Enrich Indicator"
+                    },
+                    {
+                        "option": "No",
+                        "default": true,
+                        "step_iri": "\/api\/3\/workflow_steps\/aec1334b-4ead-4eb3-b04f-6875ae705b02",
+                        "step_name": "Create New Indicator"
+                    }
+                ]
+            },
+            "status": null,
+            "top": "435",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+            "uuid": "01211331-9958-4df3-8786-31de4bae5117"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/b46357dd-5705-4bdf-9f1b-e247b668dca8",
+            "sourceStep": "\/api\/3\/workflow_steps\/efbae715-ca6d-4307-86ed-5d090f5d0259",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "ec2bfcf5-80eb-462d-8e42-a643ca80b651"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Is Indicator Exist",
+            "targetStep": "\/api\/3\/workflow_steps\/993e8428-89a4-47ea-b760-2b11fc9a1dcd",
+            "sourceStep": "\/api\/3\/workflow_steps\/b46357dd-5705-4bdf-9f1b-e247b668dca8",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d7c5b17d-d4fd-4d11-ad64-e52e0e0530aa"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is Indicator Exist -> Is indicator Found",
+            "targetStep": "\/api\/3\/workflow_steps\/01211331-9958-4df3-8786-31de4bae5117",
+            "sourceStep": "\/api\/3\/workflow_steps\/993e8428-89a4-47ea-b760-2b11fc9a1dcd",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b23a855d-8217-4dfb-ae51-a7adc254a1b4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is indicator Found -> Enrich Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/aad5d903-9153-4740-ab27-033c4e5e4756",
+            "sourceStep": "\/api\/3\/workflow_steps\/01211331-9958-4df3-8786-31de4bae5117",
+            "label": "Yes",
+            "isExecuted": false,
+            "uuid": "e9780448-138b-476c-ac90-0fe440ddd6e0"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Is indicator Found -> Create New Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/aec1334b-4ead-4eb3-b04f-6875ae705b02",
+            "sourceStep": "\/api\/3\/workflow_steps\/01211331-9958-4df3-8786-31de4bae5117",
+            "label": "No",
+            "isExecuted": false,
+            "uuid": "bfa9f806-9567-4535-aade-856348e84c4a"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Create New Indicator -> Enrich Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/aad5d903-9153-4740-ab27-033c4e5e4756",
+            "sourceStep": "\/api\/3\/workflow_steps\/aec1334b-4ead-4eb3-b04f-6875ae705b02",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "71b9868c-b7b0-4006-9a45-836297362acc"
+        }
+    ],
+    "priority": null,
+    "uuid": "69af07bb-0ce0-4c27-add3-a30a1818d421",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system",
+        "Subroutine",
+        "DeDuplicate",
+        "Relate"
+    ]
+}

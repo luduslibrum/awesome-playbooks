@@ -1,0 +1,338 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Alert - Escalate To Incident (No Trigger)",
+    "aliasName": null,
+    "tag": "#system",
+    "description": "Creates a new incident with the given inputs and links the alert(s) to the newly created Incident.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "records",
+        "incidentName",
+        "severity",
+        "escalationReason",
+        "incidentLead",
+        "incidentOwners",
+        "incidentType"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/3c3b049e-5ecb-464a-83f6-5af6a230c0ed",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/62f2b52b-dc65-4655-b821-e32ff6012cc9",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Related Records",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{ vars.input.params.records | json_query('[*].\"@id\"[]') }}",
+                    "__bulk": false,
+                    "parallel": true,
+                    "condition": ""
+                },
+                "arguments": {
+                    "alert_iri": "{{vars.item}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "workflowReference": "\/api\/3\/workflows\/f35b7874-4a53-45e1-a686-86a605ea7dcf"
+            },
+            "status": null,
+            "top": "165",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+            "uuid": "d977e192-19b2-415d-a42f-fc1f0be03f57"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "records": "{{ vars.records }}",
+                            "severity": "{{ vars.severity }}",
+                            "incidentLead": "{{ vars.incidentLead }}",
+                            "incidentName": "{{ vars.incidentName }}",
+                            "incidentType": "{{ vars.incidentType }}",
+                            "incidentOwners": "{{ vars.incidentOwners }}",
+                            "escalationReason": "{{ vars.escalationReason }}"
+                        }
+                    },
+                    "asset_list": "[]",
+                    "indicator_list": "[]"
+                }
+            },
+            "status": null,
+            "top": "30",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+            "uuid": "62f2b52b-dc65-4655-b821-e32ff6012cc9"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Insert Comment",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "content": "",
+                    "records": "{{vars.input.params.records | json_query('[*][\"@id\"][]') }}"
+                },
+                "resource": {
+                    "alerts": "{{vars.input.params.records | json_query('[*][\"@id\"][]') }}",
+                    "content": "<p>This alert has been escalated to an <a href=\"\/modules\/incidents\/{{vars.incident['@id'].split('\/')[-1]}}\" target=\"_blank\" rel=\"noopener noreferrer\">incident #{{ vars.incident.id }}<\/a><\/p>"
+                },
+                "_showJson": false,
+                "collection": "\/api\/3\/comments",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "840",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "b600dcb0-3476-477e-a108-4426b8e9e092"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set Escalate Status on Alert",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.input.params.records}}",
+                    "condition": ""
+                },
+                "resource": {
+                    "escalationReason": "<p>{{vars.input.params.escalationReason}}<\/p>",
+                    "escalatedtoincident": {
+                        "id": 6807,
+                        "@id": "\/api\/3\/picklists\/fa12313b-66af-4a2e-864e-a5f19241b734",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": "#bf0a0a",
+                        "display": "Yes",
+                        "listName": "\/api\/3\/picklist_names\/e131cc54-9ae4-43c9-b830-af6e331fe024",
+                        "itemValue": "Yes",
+                        "orderIndex": 0
+                    }
+                },
+                "_showJson": false,
+                "operation": "Create New",
+                "collection": "{{vars.item[\"@id\"]}}",
+                "collectionType": "\/api\/3\/alerts",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "705",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "4cdab544-2e40-43d7-bc54-143b883cb670"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Set Playbook Result",
+            "description": null,
+            "arguments": {
+                "@id": "{{vars.steps.Insert_One_Incident_Many_to_One['@id']}}"
+            },
+            "status": null,
+            "top": "975",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "65912abe-1c15-4e9d-b260-5913951b10b8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Unique Related Records",
+            "description": null,
+            "arguments": {
+                "sorted_assets_list": "{{vars.asset_list | flatten | unique }}",
+                "sorted_indicator_list": "{{vars.indicator_list | flatten | unique }}"
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "9b02c44d-ed11-47d8-b94a-42798700613e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Consolidate Related Records",
+            "description": null,
+            "arguments": {
+                "for_each": {
+                    "item": "{{vars.steps.Get_Related_Records}}",
+                    "condition": ""
+                },
+                "temp_var1": "{% for val in vars.item.assets_record_list %}{{vars.asset_list.append(val)}}{%endfor%}",
+                "temp_var2": "{% for val in vars.item.indicators_record_list %}{{vars.indicator_list.append(val)}}{%endfor%}"
+            },
+            "status": null,
+            "top": "300",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "6cc1b871-b390-464e-9b8d-66ad85054039"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Insert One Incident_Many_to_One",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "name": "{{vars.input.params.incidentName}}",
+                    "phase": {
+                        "id": 136,
+                        "@id": "\/api\/3\/picklists\/bb740542-f699-11e7-8c3f-9a214cf093ae",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Detection",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/b862eb1f-b385-40ca-baa7-5a1b1f91a651",
+                        "itemValue": "Detection",
+                        "orderIndex": 0
+                    },
+                    "alerts": "{{ vars.input.params.records | json_query('[*].\"@id\"[]') }}",
+                    "assets": "{{vars.sorted_assets_list or None}}",
+                    "owners": "{{vars.input.params.incidentOwners}}",
+                    "resSla": {
+                        "id": 7,
+                        "@id": "\/api\/3\/picklists\/090115d7-90fc-4dc6-97ca-27950fc30c1c",
+                        "icon": null,
+                        "uuid": "090115d7-90fc-4dc6-97ca-27950fc30c1c",
+                        "@type": "Picklist",
+                        "color": "#14b341",
+                        "display": "Met",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/fe36a8f2-fcba-4221-b4ab-1081f596b153",
+                        "itemValue": "Met",
+                        "orderIndex": 0
+                    },
+                    "status": {
+                        "id": 109,
+                        "@id": "\/api\/3\/picklists\/bb73fe9e-f699-11e7-8c3f-9a214cf093ae",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Open",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/a549e41c-31ca-406d-89ae-eab3de5c06c4",
+                        "itemValue": "Open",
+                        "orderIndex": 0
+                    },
+                    "category": "{{vars.input.params.incidentType or None}}",
+                    "severity": "{{vars.input.params.severity or None}}",
+                    "slaState": {
+                        "id": 7,
+                        "@id": "\/api\/3\/picklists\/090115d7-90fc-4dc6-97ca-27950fc30c1c",
+                        "icon": null,
+                        "uuid": "090115d7-90fc-4dc6-97ca-27950fc30c1c",
+                        "@type": "Picklist",
+                        "color": "#14b341",
+                        "display": "Met",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/fe36a8f2-fcba-4221-b4ab-1081f596b153",
+                        "itemValue": "Met",
+                        "orderIndex": 0
+                    },
+                    "__replace": "",
+                    "indicators": "{{vars.sorted_indicator_list or None}}",
+                    "incidentLead": "{{vars.input.params.incidentLead or None}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/incidents",
+                "__recommend": [],
+                "tagsOperation": "OverwriteTags",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": {
+                    "incident": "{{ vars.result }}"
+                }
+            },
+            "status": null,
+            "top": "560",
+            "left": "120",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "86b78abf-9efc-4c75-811c-329128019f23"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Insert One Incident_Many_to_One -> Set Escalate Status on Alert",
+            "targetStep": "\/api\/3\/workflow_steps\/4cdab544-2e40-43d7-bc54-143b883cb670",
+            "sourceStep": "\/api\/3\/workflow_steps\/86b78abf-9efc-4c75-811c-329128019f23",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "3a27a30f-ae41-43c0-bce2-3b3a2d5bdade"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Insert Comment -> Set Playbook Result",
+            "targetStep": "\/api\/3\/workflow_steps\/65912abe-1c15-4e9d-b260-5913951b10b8",
+            "sourceStep": "\/api\/3\/workflow_steps\/b600dcb0-3476-477e-a108-4426b8e9e092",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "16f121a1-f5c6-41ea-961b-0781989bf8ca"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set Escalate Status on Alert -> Insert Comment",
+            "targetStep": "\/api\/3\/workflow_steps\/b600dcb0-3476-477e-a108-4426b8e9e092",
+            "sourceStep": "\/api\/3\/workflow_steps\/4cdab544-2e40-43d7-bc54-143b883cb670",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "bd1cb0b9-39ad-42d2-a633-d3f5cbc4311b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Get Related Records",
+            "targetStep": "\/api\/3\/workflow_steps\/d977e192-19b2-415d-a42f-fc1f0be03f57",
+            "sourceStep": "\/api\/3\/workflow_steps\/62f2b52b-dc65-4655-b821-e32ff6012cc9",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "175880fe-22f2-4c92-9d8c-e54c53e4a3bb"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Related Records -> Set Related Records",
+            "targetStep": "\/api\/3\/workflow_steps\/6cc1b871-b390-464e-9b8d-66ad85054039",
+            "sourceStep": "\/api\/3\/workflow_steps\/d977e192-19b2-415d-a42f-fc1f0be03f57",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "4fa15cd6-1550-4541-93ec-d212d511b3e9"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Set Related Assets Records -> fg",
+            "targetStep": "\/api\/3\/workflow_steps\/9b02c44d-ed11-47d8-b94a-42798700613e",
+            "sourceStep": "\/api\/3\/workflow_steps\/6cc1b871-b390-464e-9b8d-66ad85054039",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "06956366-416d-47df-881b-37c067efd4d5"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Unique Related Records -> Insert One Incident_Many_to_One",
+            "targetStep": "\/api\/3\/workflow_steps\/86b78abf-9efc-4c75-811c-329128019f23",
+            "sourceStep": "\/api\/3\/workflow_steps\/9b02c44d-ed11-47d8-b94a-42798700613e",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "8eed5159-0707-486e-9a3b-1047607cfbba"
+        }
+    ],
+    "priority": null,
+    "uuid": "49160df7-9694-4451-9a15-41e79fdd3aa3",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "system"
+    ]
+}

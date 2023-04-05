@@ -1,0 +1,3582 @@
+{
+  "kom": {
+    "komandVersion": "1.111.4-0-gb43d1",
+    "komFileVersion": "2.0.0",
+    "exportedAt": "2022-09-03T13:00:01.184028023Z",
+    "workflowVersions": [
+      {
+        "name": "Drivers License Success",
+        "type": "runnable",
+        "version": "",
+        "description": "# Description\r\n\r\nThis Workflow automates part of an onboarding process utilizing Proofpoint's Security Awareness Training (formerly Wombat Training). When a user passes a specific set of modules, the employee is removed from an AD group which was limiting their ability to send or receive external emails (Primarily for New Hires).\r\n\r\n# Key Features\r\n\r\n* Receives an 'Alert' in the form of an email from \"Proofpoint Security Awareness Training\" (formely Wombat Training) when a user has passed their required courses\r\n* Extracts the user information from the alert and makes sure that the user can be found in AD\r\n* Removes the user from the 'Restricting Group', allowing them to send/receive emails, syncs AD and Azure, and then notifies the user and IT that the process is complete\r\n\r\n# Requirements\r\n\r\n* Alert from Proofpoint Security Awareness Training that triggers the Workflow (In this case, it is an email)\r\n* AD Group setup to restrict user capabilities for Inbound/Outbound emails with External Users\r\n\r\n# Documentation\r\n\r\n## Setup\r\n\r\nImport the workflow from the Rapid7 Extension Library and proceed through the Import Workflow wizard in InsightConnect. Import plugins, create or select connections, and rename the workflow as a part of the Import Workflow wizard as necessary.\r\n\r\nOnce imported, you will need to determine if you are going to receive the 'Alert' from \"Proofpoint Security Awareness Training\" via email or by another method.  If it is done by email, you may or may not need the 'Strip HTML' Plugin.\r\n\r\nWithin the workflow there are several 'MS Teams' and SMTP notfications in order to alert to various groups across the organization (thus the redundancy of the steps).  If multiple groups are not needed, you can remove the redundant modules.\r\n\r\nMake sure you add the \"re\" python module to your python3 Connector.  This is NOT part of the base modules installed by python3.\r\n\r\nIn the LDAP Lookup Modules, make sure you use the proper DN for your AD and Query Attribute as needed; per your event source.\r\n\r\n## Technical Details\r\n\r\nPlugins utilized by workflow:\r\n\r\n|Plugin|Version|Count|\r\n|----|----|--------|\r\n|microsoft_office365_email|5.0.3|1|\r\n|active_directory_ldap|5.2.1|2|\r\n|microsoft_teams|3.1.2|7|\r\n|smtp|2.0.5|1|\r\n|html|1.2.2|1|\r\n|python_3_script|2.0.2||\r\n|powershell|2.1.3|2|\r\n\r\n## Troubleshooting\r\n\r\n* For any Powershell failures, make sure you setup WinRM on the Server that ICON needs to connect to.\r\n\r\n# Version History\r\n\r\n* 1.0.0 - Initial workflow\r\n\r\n# Links\r\n\r\n## References\r\n\r\n* [Proofpoint Security Awareness Training](https://www.proofpoint.com/us/products/security-awareness-training)\r\n",
+        "graph": {
+          "edges": {
+            "16c7b1a4-7b2b-4d2b-ac43-650dde0c7eb6": {
+              "id": "16c7b1a4-7b2b-4d2b-ac43-650dde0c7eb6",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "c3a86454-4862-4cd1-82af-57d92ccca223",
+              "toNodeId": "da5899d3-2f58-4e1d-9bb0-6d2457f08c6e"
+            },
+            "19b43af0-e258-4080-a04f-aa37cea4f7f7": {
+              "id": "19b43af0-e258-4080-a04f-aa37cea4f7f7",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "5c39bc50-2e46-4806-8565-211ee77cbe0a",
+              "toNodeId": "91b084c4-77fd-4407-8adb-4818135b502b"
+            },
+            "21950220-9053-4f88-82d6-f5b779a68647": {
+              "id": "21950220-9053-4f88-82d6-f5b779a68647",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "7a27df71-0253-4bf8-9291-c188e6deb335",
+              "toNodeId": ""
+            },
+            "2b163db6-78d9-4dd9-b1d0-1c84d66266f4": {
+              "id": "2b163db6-78d9-4dd9-b1d0-1c84d66266f4",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "d32ed622-54a4-4d70-9a39-f468d84daa7c",
+              "toNodeId": "340060dd-0a55-44ed-975c-ffd6d115c4b0"
+            },
+            "3d9f4fe9-ca84-4f04-a74f-99ea0f61c4fc": {
+              "id": "3d9f4fe9-ca84-4f04-a74f-99ea0f61c4fc",
+              "name": "Removal Failed",
+              "description": "The removal of the user from the Group Failed",
+              "parentNodeId": "",
+              "fromNodeId": "da5899d3-2f58-4e1d-9bb0-6d2457f08c6e",
+              "toNodeId": "a5a26503-cd30-4e79-a97f-abd568802792"
+            },
+            "51226e67-d6e4-48f2-ad86-1ab852dfbb29": {
+              "id": "51226e67-d6e4-48f2-ad86-1ab852dfbb29",
+              "name": "LDAP Failed",
+              "description": "If the LDAP query module fails or has no results returned",
+              "parentNodeId": "",
+              "fromNodeId": "ab83324c-ada7-47ea-acf2-d2072c91e892",
+              "toNodeId": "665d83c3-36af-4001-a9c1-487dbb27716c"
+            },
+            "56aef7f6-dd43-4cd4-873f-253b4c0f68d9": {
+              "id": "56aef7f6-dd43-4cd4-873f-253b4c0f68d9",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "2bd9a1cf-7272-4806-9359-34e55bab7f24",
+              "toNodeId": "ab83324c-ada7-47ea-acf2-d2072c91e892"
+            },
+            "6b8cd935-bbdb-4c37-9712-8bb3c90b0de7": {
+              "id": "6b8cd935-bbdb-4c37-9712-8bb3c90b0de7",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "cdf6e0ca-3396-419e-818b-80511fce29ad",
+              "toNodeId": "7a27df71-0253-4bf8-9291-c188e6deb335"
+            },
+            "8c47f341-c3ee-4519-acbc-a4a59058bbf9": {
+              "id": "8c47f341-c3ee-4519-acbc-a4a59058bbf9",
+              "name": "Removal was Successful",
+              "description": "The Removal of the group from the user was successful",
+              "parentNodeId": "",
+              "fromNodeId": "da5899d3-2f58-4e1d-9bb0-6d2457f08c6e",
+              "toNodeId": "d32ed622-54a4-4d70-9a39-f468d84daa7c"
+            },
+            "92de031a-b171-4757-bf5e-d06b9b92cc18": {
+              "id": "92de031a-b171-4757-bf5e-d06b9b92cc18",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "340060dd-0a55-44ed-975c-ffd6d115c4b0",
+              "toNodeId": "ebb41558-04b0-4ed7-bf1c-20cf2447ec13"
+            },
+            "9a60a964-2cec-412f-92cd-d1188813b539": {
+              "id": "9a60a964-2cec-412f-92cd-d1188813b539",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "72085d9e-18c5-4d5c-8be8-80a69523bcd6",
+              "toNodeId": "f1cbf342-56ed-4a1f-bac1-bb006738e70e"
+            },
+            "a4342843-2fb6-4c9c-9cd3-a4020c1214b5": {
+              "id": "a4342843-2fb6-4c9c-9cd3-a4020c1214b5",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "5365d268-4d91-4517-b0f0-3cf17a3b6ca9",
+              "toNodeId": "71886035-6e8b-4f69-a657-b56f9002ac25"
+            },
+            "afc5411d-a801-40af-b66d-de6c1b1c2dfd": {
+              "id": "afc5411d-a801-40af-b66d-de6c1b1c2dfd",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "f1cbf342-56ed-4a1f-bac1-bb006738e70e",
+              "toNodeId": ""
+            },
+            "b56e0dcf-d000-48ac-9b60-522760980cf9": {
+              "id": "b56e0dcf-d000-48ac-9b60-522760980cf9",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "b5f109e7-12b5-4fa4-8c66-3c813a969ae7",
+              "toNodeId": ""
+            },
+            "b61af727-31bd-4002-868a-02d238fc87ee": {
+              "id": "b61af727-31bd-4002-868a-02d238fc87ee",
+              "name": "Forward-Reply Email",
+              "description": "If the email starts with FW: or RE:",
+              "parentNodeId": "",
+              "fromNodeId": "91b084c4-77fd-4407-8adb-4818135b502b",
+              "toNodeId": "b5f109e7-12b5-4fa4-8c66-3c813a969ae7"
+            },
+            "bee5567c-8e73-4d17-81fb-ab2c870472aa": {
+              "id": "bee5567c-8e73-4d17-81fb-ab2c870472aa",
+              "name": "Original Email",
+              "description": "If the email does start with FW: or RE: then it is the original email",
+              "parentNodeId": "",
+              "fromNodeId": "91b084c4-77fd-4407-8adb-4818135b502b",
+              "toNodeId": "5d32658d-345d-4278-8e31-7ef8f90475dc"
+            },
+            "cb463183-390f-453b-b7b7-511f752c2ec6": {
+              "id": "cb463183-390f-453b-b7b7-511f752c2ec6",
+              "name": "LDAP Succeeded",
+              "description": "If the LDAP Query succeeds with no issues",
+              "parentNodeId": "",
+              "fromNodeId": "ab83324c-ada7-47ea-acf2-d2072c91e892",
+              "toNodeId": "c3a86454-4862-4cd1-82af-57d92ccca223"
+            },
+            "d0add1ea-90d4-4029-8135-db98b922e55f": {
+              "id": "d0add1ea-90d4-4029-8135-db98b922e55f",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "6db28ddd-592c-40ce-81d6-f3dd1794730e",
+              "toNodeId": "2bd9a1cf-7272-4806-9359-34e55bab7f24"
+            },
+            "d12d99aa-1c32-4e10-901c-25fbabaec114": {
+              "id": "d12d99aa-1c32-4e10-901c-25fbabaec114",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "ebb41558-04b0-4ed7-bf1c-20cf2447ec13",
+              "toNodeId": "5365d268-4d91-4517-b0f0-3cf17a3b6ca9"
+            },
+            "d297486e-f97c-473a-b792-6ca107db33ce": {
+              "id": "d297486e-f97c-473a-b792-6ca107db33ce",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "71886035-6e8b-4f69-a657-b56f9002ac25",
+              "toNodeId": ""
+            },
+            "ddf6b654-0c45-404c-903b-4ea4c8b4a3a2": {
+              "id": "ddf6b654-0c45-404c-903b-4ea4c8b4a3a2",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "665d83c3-36af-4001-a9c1-487dbb27716c",
+              "toNodeId": "cdf6e0ca-3396-419e-818b-80511fce29ad"
+            },
+            "e28c8536-3dce-4dab-b813-1711b8f799db": {
+              "id": "e28c8536-3dce-4dab-b813-1711b8f799db",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "89722a10-acef-4ce8-8781-258327d22c09",
+              "toNodeId": "6db28ddd-592c-40ce-81d6-f3dd1794730e"
+            },
+            "eb4def52-6eff-4abd-a151-8b4050f7f184": {
+              "id": "eb4def52-6eff-4abd-a151-8b4050f7f184",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "a5a26503-cd30-4e79-a97f-abd568802792",
+              "toNodeId": "72085d9e-18c5-4d5c-8be8-80a69523bcd6"
+            },
+            "f85cc038-6447-46ee-a4a9-68618b1e9e30": {
+              "id": "f85cc038-6447-46ee-a4a9-68618b1e9e30",
+              "name": "",
+              "description": "",
+              "parentNodeId": "",
+              "fromNodeId": "5d32658d-345d-4278-8e31-7ef8f90475dc",
+              "toNodeId": "89722a10-acef-4ce8-8781-258327d22c09"
+            }
+          },
+          "nodes": {
+            "2bd9a1cf-7272-4806-9359-34e55bab7f24": {
+              "id": "2bd9a1cf-7272-4806-9359-34e55bab7f24",
+              "parentNodeId": ""
+            },
+            "340060dd-0a55-44ed-975c-ffd6d115c4b0": {
+              "id": "340060dd-0a55-44ed-975c-ffd6d115c4b0",
+              "parentNodeId": ""
+            },
+            "5365d268-4d91-4517-b0f0-3cf17a3b6ca9": {
+              "id": "5365d268-4d91-4517-b0f0-3cf17a3b6ca9",
+              "parentNodeId": ""
+            },
+            "5c39bc50-2e46-4806-8565-211ee77cbe0a": {
+              "id": "5c39bc50-2e46-4806-8565-211ee77cbe0a",
+              "parentNodeId": ""
+            },
+            "5d32658d-345d-4278-8e31-7ef8f90475dc": {
+              "id": "5d32658d-345d-4278-8e31-7ef8f90475dc",
+              "parentNodeId": ""
+            },
+            "665d83c3-36af-4001-a9c1-487dbb27716c": {
+              "id": "665d83c3-36af-4001-a9c1-487dbb27716c",
+              "parentNodeId": ""
+            },
+            "6db28ddd-592c-40ce-81d6-f3dd1794730e": {
+              "id": "6db28ddd-592c-40ce-81d6-f3dd1794730e",
+              "parentNodeId": ""
+            },
+            "71886035-6e8b-4f69-a657-b56f9002ac25": {
+              "id": "71886035-6e8b-4f69-a657-b56f9002ac25",
+              "parentNodeId": ""
+            },
+            "72085d9e-18c5-4d5c-8be8-80a69523bcd6": {
+              "id": "72085d9e-18c5-4d5c-8be8-80a69523bcd6",
+              "parentNodeId": ""
+            },
+            "7a27df71-0253-4bf8-9291-c188e6deb335": {
+              "id": "7a27df71-0253-4bf8-9291-c188e6deb335",
+              "parentNodeId": ""
+            },
+            "89722a10-acef-4ce8-8781-258327d22c09": {
+              "id": "89722a10-acef-4ce8-8781-258327d22c09",
+              "parentNodeId": ""
+            },
+            "91b084c4-77fd-4407-8adb-4818135b502b": {
+              "id": "91b084c4-77fd-4407-8adb-4818135b502b",
+              "parentNodeId": ""
+            },
+            "a5a26503-cd30-4e79-a97f-abd568802792": {
+              "id": "a5a26503-cd30-4e79-a97f-abd568802792",
+              "parentNodeId": ""
+            },
+            "ab83324c-ada7-47ea-acf2-d2072c91e892": {
+              "id": "ab83324c-ada7-47ea-acf2-d2072c91e892",
+              "parentNodeId": ""
+            },
+            "b5f109e7-12b5-4fa4-8c66-3c813a969ae7": {
+              "id": "b5f109e7-12b5-4fa4-8c66-3c813a969ae7",
+              "parentNodeId": ""
+            },
+            "c3a86454-4862-4cd1-82af-57d92ccca223": {
+              "id": "c3a86454-4862-4cd1-82af-57d92ccca223",
+              "parentNodeId": ""
+            },
+            "cdf6e0ca-3396-419e-818b-80511fce29ad": {
+              "id": "cdf6e0ca-3396-419e-818b-80511fce29ad",
+              "parentNodeId": ""
+            },
+            "d32ed622-54a4-4d70-9a39-f468d84daa7c": {
+              "id": "d32ed622-54a4-4d70-9a39-f468d84daa7c",
+              "parentNodeId": ""
+            },
+            "da5899d3-2f58-4e1d-9bb0-6d2457f08c6e": {
+              "id": "da5899d3-2f58-4e1d-9bb0-6d2457f08c6e",
+              "parentNodeId": ""
+            },
+            "ebb41558-04b0-4ed7-bf1c-20cf2447ec13": {
+              "id": "ebb41558-04b0-4ed7-bf1c-20cf2447ec13",
+              "parentNodeId": ""
+            },
+            "f1cbf342-56ed-4a1f-bac1-bb006738e70e": {
+              "id": "f1cbf342-56ed-4a1f-bac1-bb006738e70e",
+              "parentNodeId": ""
+            }
+          }
+        },
+        "steps": {
+          "2bd9a1cf-7272-4806-9359-34e55bab7f24": {
+            "nodeId": "2bd9a1cf-7272-4806-9359-34e55bab7f24",
+            "name": "You have passed your Proofpoint CyberSecurity Training",
+            "type": "action",
+            "plugin": {
+              "name": "Active Directory LDAP",
+              "slugVendor": "rapid7",
+              "slugName": "active_directory_ldap",
+              "slugVersion": "5.2.1",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/active_directory_ldap/5.2.1/icon.png"
+            },
+            "identifier": "query",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "attributes": [],
+                "search_base": "AD-ROOT",
+                "search_filter": "(distinguishedName={{[6db28ddd-592c-40ce-81d6-f3dd1794730e].[stdout]}})"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "attributes": {
+                  "description": "Attributes to search. If empty return all attributes",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 3,
+                  "title": "Attributes",
+                  "type": "array"
+                },
+                "search_base": {
+                  "description": "The base of the search request",
+                  "order": 2,
+                  "title": "Search Base",
+                  "type": "string"
+                },
+                "search_filter": {
+                  "description": "The filter of the search request. It must conform to the LDAP filter syntax specified in RFC4515",
+                  "order": 1,
+                  "title": "Search Filter",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "search_filter",
+                "search_base"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "result": {
+                  "properties": {
+                    "attributes": {
+                      "order": 1,
+                      "title": "Attributes",
+                      "type": "object"
+                    },
+                    "dn": {
+                      "order": 2,
+                      "title": "Dn",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Result",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "count": {
+                  "description": "Number of results",
+                  "order": 2,
+                  "title": "Count",
+                  "type": "integer"
+                },
+                "results": {
+                  "description": "Results returned",
+                  "items": {
+                    "$ref": "#/definitions/result"
+                  },
+                  "order": 1,
+                  "title": "Results",
+                  "type": "array"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "340060dd-0a55-44ed-975c-ffd6d115c4b0": {
+            "nodeId": "340060dd-0a55-44ed-975c-ffd6d115c4b0",
+            "name": "MS-TEAMS - Task Succeeded",
+            "type": "action",
+            "plugin": {
+              "name": "Microsoft Teams",
+              "slugVendor": "rapid7",
+              "slugName": "microsoft_teams",
+              "slugVersion": "3.1.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_teams/3.1.2/icon.png"
+            },
+            "identifier": "send_html_message",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "channel_name": "{{$workflow.[MS-TEAMS - Security Channel]}}",
+                "message_content": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>USER REMOVED</strong></div>\n<div>The user {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}} was removed from the group <groupname> with the status:</div>\n<div>Step Success:  {{[c3a86454-4862-4cd1-82af-57d92ccca223].[success]}}</div>\n</body>\n</html>",
+                "team_name": "{{$workflow.[MS-TEAMS - Security Team]}}",
+                "thread_id": ""
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "channel_name": {
+                  "description": "Channel name",
+                  "order": 2,
+                  "title": "Channel Name",
+                  "type": "string"
+                },
+                "message_content": {
+                  "description": "HTML content to send",
+                  "order": 4,
+                  "title": "Message Content",
+                  "type": "string"
+                },
+                "team_name": {
+                  "description": "Team name",
+                  "order": 1,
+                  "title": "Team Name",
+                  "type": "string"
+                },
+                "thread_id": {
+                  "description": "To post in a thread, select parent message ID",
+                  "order": 3,
+                  "title": "Thread ID",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "team_name",
+                "channel_name",
+                "message_content"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "body": {
+                  "properties": {
+                    "content": {
+                      "description": "Content",
+                      "order": 1,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "description": "Content type",
+                      "order": 2,
+                      "title": "Content Type",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Body",
+                  "type": "object"
+                },
+                "from": {
+                  "properties": {
+                    "user": {
+                      "$ref": "#/definitions/user",
+                      "description": "User",
+                      "order": 1,
+                      "title": "User"
+                    }
+                  },
+                  "title": "From",
+                  "type": "object"
+                },
+                "message": {
+                  "properties": {
+                    "body": {
+                      "$ref": "#/definitions/body",
+                      "description": "Body",
+                      "order": 1,
+                      "title": "Body"
+                    },
+                    "createdDateTime": {
+                      "description": "Created date time",
+                      "order": 3,
+                      "title": "Created Date Time",
+                      "type": "string"
+                    },
+                    "first_word": {
+                      "description": "Extracted first word from message (easy way to obtain a chat command)",
+                      "order": 9,
+                      "title": "First Word",
+                      "type": "string"
+                    },
+                    "from": {
+                      "$ref": "#/definitions/from",
+                      "description": "From",
+                      "order": 2,
+                      "title": "From"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 8,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "importance": {
+                      "description": "Importance",
+                      "order": 5,
+                      "title": "Importance",
+                      "type": "string"
+                    },
+                    "locale": {
+                      "description": "Locale",
+                      "order": 7,
+                      "title": "Locale",
+                      "type": "string"
+                    },
+                    "messageType": {
+                      "description": "Message type",
+                      "order": 6,
+                      "title": "Message Type",
+                      "type": "string"
+                    },
+                    "webUrl": {
+                      "description": "Web URL",
+                      "order": 4,
+                      "title": "Web URL",
+                      "type": "string"
+                    },
+                    "words": {
+                      "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Words",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "words",
+                    "first_word"
+                  ],
+                  "title": "Message",
+                  "type": "object"
+                },
+                "user": {
+                  "properties": {
+                    "displayName": {
+                      "description": "Display name",
+                      "order": 1,
+                      "title": "Display name",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 2,
+                      "title": "ID",
+                      "type": "string"
+                    }
+                  },
+                  "title": "User",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "message": {
+                  "$ref": "#/definitions/message",
+                  "description": "The message object that was created",
+                  "order": 1,
+                  "title": "Message"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "5365d268-4d91-4517-b0f0-3cf17a3b6ca9": {
+            "nodeId": "5365d268-4d91-4517-b0f0-3cf17a3b6ca9",
+            "name": "Email - Success To End User",
+            "type": "action",
+            "plugin": {
+              "name": "SMTP",
+              "slugVendor": "rapid7",
+              "slugName": "smtp",
+              "slugVersion": "2.0.5",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/smtp/2.0.5/icon.png"
+            },
+            "identifier": "send",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "attachment": {
+                  "content": "e3tbRXh0cmFjdCBEaXNwbGF5TmFtZV0uW2Rpc3BsYXluYW1lXX19DQoNClRoYW5rIHlvdSBmb3IgdGFraW5nIGFuZCBwYXNzaW5nIG91ciBTZWN1cml0eSBBd2FyZW5lc3MgVHJhaW5pbmcuICBJbiBkb2luZyBzbyB5b3UgY2FuIG5vdyBzZW5kIGFuZCByZWNlaXZlIGVtYWlscyBvdXRzaWRlIG9mIHRoZSBjb21wYW55Lg0KDQpJZiB5b3UgaGF2ZSBhbnkgcXVlc3Rpb24sIHBsZWFzZSBjb250YWN0IFBhdGhmaW5kZXIgYXQgMjE0LTMwMy0zMzMzIG9yIGVtYWlsIHRoZW0gYXQgSVRTdXBwb3J0QGhpbGx3b29kLmNvbS4NCg0KVGhhbmsgeW91DQoNCkJFIFRIRSBTSElFTEQh",
+                  "filename": "Message.txt"
+                },
+                "bcc": [
+                  "<email>"
+                ],
+                "cc": [],
+                "email_from": "<email>",
+                "email_to": "{{[2bd9a1cf-7272-4806-9359-34e55bab7f24].[results].[0].[attributes].[mail]}}",
+                "html": false,
+                "message": "{{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}}\n\nThank you for passing our Security Awareness Training. You will be able to send and receive emails outside of the company within 60 minutes of the course completion.\nIn some cases, it may take longer. So, just be patient.\n\nIf you have any questions, please contact...",
+                "subject": "You have access to External Email"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "definitions": {
+                "file": {
+                  "description": "File Object",
+                  "properties": {
+                    "content": {
+                      "description": "File contents",
+                      "format": "bytes",
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "filename": {
+                      "description": "Name of file",
+                      "title": "Filename",
+                      "type": "string"
+                    }
+                  },
+                  "title": "File",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "attachment": {
+                  "$ref": "#/definitions/file",
+                  "description": "Attachment",
+                  "order": 8,
+                  "title": "Attachment"
+                },
+                "bcc": {
+                  "description": "BCC email",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 6,
+                  "title": "Bcc",
+                  "type": "array"
+                },
+                "cc": {
+                  "description": "CC emails",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 7,
+                  "title": "Cc",
+                  "type": "array"
+                },
+                "email_from": {
+                  "description": "Email to use as FROM",
+                  "order": 1,
+                  "title": "Email From",
+                  "type": "string"
+                },
+                "email_to": {
+                  "description": "Email to send TO",
+                  "order": 2,
+                  "title": "Email To",
+                  "type": "string"
+                },
+                "html": {
+                  "description": "Message contains HTML",
+                  "order": 5,
+                  "title": "Html",
+                  "type": "boolean"
+                },
+                "message": {
+                  "description": "Message to send on the email",
+                  "order": 4,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "subject": {
+                  "description": "Subject of the email",
+                  "order": 3,
+                  "title": "Subject",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email_from",
+                "email_to",
+                "subject",
+                "message",
+                "html"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "result": {
+                  "description": "Result",
+                  "order": 1,
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "5c39bc50-2e46-4806-8565-211ee77cbe0a": {
+            "nodeId": "5c39bc50-2e46-4806-8565-211ee77cbe0a",
+            "name": "Receive Email",
+            "description": "Receives the 'Drivers License' Successful email from Wombat",
+            "type": "trigger",
+            "plugin": {
+              "name": "Microsoft Office 365 Email",
+              "slugVendor": "rapid7",
+              "slugName": "microsoft_office365_email",
+              "slugVersion": "5.0.3",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_office365_email/5.0.3/icon.png"
+            },
+            "identifier": "email_received",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "flatten_attachments": false,
+                "folder_name": "Inbox",
+                "interval": 15,
+                "mailbox_id": "<email>",
+                "subject_query": "You have passed your Driver's License CyberSecurity Training"
+              }
+            },
+            "triggerId": "c6ea8f6c-db2b-4ff8-ab8a-95967dcfe065",
+            "defaultInputJSONSchema": {
+              "properties": {
+                "flatten_attachments": {
+                  "default": false,
+                  "description": "Will return all attachments as flat lists instead of nested emails",
+                  "order": 5,
+                  "title": "Flatten Attachments",
+                  "type": "boolean"
+                },
+                "folder_name": {
+                  "description": "Common values are Calendar, Trash, Drafts, Inbox, Outbox, Sent, Junk, Tasks, Contacts. You can also use a completely custom value, for example python_mailing_list. Mailbox names are case-sensitive. Folder GUID may be specified as well",
+                  "order": 2,
+                  "title": "Folder Name",
+                  "type": "string"
+                },
+                "interval": {
+                  "default": 15,
+                  "description": "How often to poll for new email in seconds",
+                  "order": 3,
+                  "title": "Interval",
+                  "type": "integer"
+                },
+                "mailbox_id": {
+                  "description": "The mailbox to monitor for incoming email",
+                  "order": 1,
+                  "title": "Mailbox ID",
+                  "type": "string"
+                },
+                "subject_query": {
+                  "default": "",
+                  "description": "Query to search for in subject (regex capable). Only these email will activate this trigger",
+                  "order": 4,
+                  "title": "Subject Query",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "flatten_attachments",
+                "mailbox_id"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "attachment_email": {
+                  "properties": {
+                    "account": {
+                      "order": 9,
+                      "title": "Account",
+                      "type": "string"
+                    },
+                    "attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email_nested"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 4,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 5,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "has_attachments": {
+                      "order": 11,
+                      "title": "Has Attachments",
+                      "type": "boolean"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 6,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "recipients": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Recipients",
+                      "type": "array"
+                    },
+                    "sender": {
+                      "order": 2,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 3,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment Email",
+                  "type": "object"
+                },
+                "attachment_email_nested": {
+                  "properties": {
+                    "account": {
+                      "order": 9,
+                      "title": "Account",
+                      "type": "string"
+                    },
+                    "attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email_nested_two"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 4,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 5,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "has_attachments": {
+                      "order": 11,
+                      "title": "Has Attachments",
+                      "type": "boolean"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 6,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "recipients": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Recipients",
+                      "type": "array"
+                    },
+                    "sender": {
+                      "order": 2,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 3,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment Email Nested",
+                  "type": "object"
+                },
+                "attachment_email_nested_two": {
+                  "properties": {
+                    "account": {
+                      "order": 9,
+                      "title": "Account",
+                      "type": "string"
+                    },
+                    "attached_emails": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 4,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 5,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "has_attachments": {
+                      "order": 11,
+                      "title": "Has Attachments",
+                      "type": "boolean"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 6,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "recipients": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Recipients",
+                      "type": "array"
+                    },
+                    "sender": {
+                      "order": 2,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 3,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment Email Nested Two",
+                  "type": "object"
+                },
+                "attachment_file": {
+                  "properties": {
+                    "content": {
+                      "order": 2,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "content_type": {
+                      "order": 3,
+                      "title": "Content Type",
+                      "type": "string"
+                    },
+                    "file_name": {
+                      "order": 1,
+                      "title": "File Name",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Attachment File",
+                  "type": "object"
+                },
+                "header": {
+                  "properties": {
+                    "name": {
+                      "order": 1,
+                      "title": "Name",
+                      "type": "string"
+                    },
+                    "value": {
+                      "order": 2,
+                      "title": "Value",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Header",
+                  "type": "object"
+                },
+                "icon_email": {
+                  "properties": {
+                    "account": {
+                      "description": "Account for which the email was found on",
+                      "order": 2,
+                      "title": "Account",
+                      "type": "string"
+                    },
+                    "attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email"
+                      },
+                      "order": 8,
+                      "title": "Attached Emails",
+                      "type": "array"
+                    },
+                    "attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 7,
+                      "title": "Attached Files",
+                      "type": "array"
+                    },
+                    "body": {
+                      "order": 6,
+                      "title": "Body",
+                      "type": "string"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 11,
+                      "title": "Categories",
+                      "type": "array"
+                    },
+                    "flattened_attached_emails": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_email"
+                      },
+                      "order": 9,
+                      "title": "Flattened Attached Emails",
+                      "type": "array"
+                    },
+                    "flattened_attached_files": {
+                      "items": {
+                        "$ref": "#/definitions/attachment_file"
+                      },
+                      "order": 10,
+                      "title": "Flattened Attached Files",
+                      "type": "array"
+                    },
+                    "has_attachments": {
+                      "order": 14,
+                      "title": "Has Attachments",
+                      "type": "boolean"
+                    },
+                    "headers": {
+                      "items": {
+                        "$ref": "#/definitions/header"
+                      },
+                      "order": 12,
+                      "title": "Headers",
+                      "type": "array"
+                    },
+                    "id": {
+                      "order": 1,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "is_read": {
+                      "description": "Whether or not the email has been read",
+                      "order": 3,
+                      "title": "Is Read",
+                      "type": "boolean"
+                    },
+                    "recipients": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 13,
+                      "title": "Recipients",
+                      "type": "array"
+                    },
+                    "sender": {
+                      "order": 4,
+                      "title": "Sender",
+                      "type": "string"
+                    },
+                    "subject": {
+                      "order": 5,
+                      "title": "Subject",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Icon Email",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "icon_email": {
+                  "$ref": "#/definitions/icon_email",
+                  "description": "Email",
+                  "order": 1,
+                  "title": "Email"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/default.svg",
+            "connectionType": "CONNECTION"
+          },
+          "5d32658d-345d-4278-8e31-7ef8f90475dc": {
+            "nodeId": "5d32658d-345d-4278-8e31-7ef8f90475dc",
+            "name": "Strip HTML",
+            "type": "action",
+            "plugin": {
+              "name": "HTML",
+              "slugVendor": "rapid7",
+              "slugName": "html",
+              "slugVersion": "1.2.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/html/1.2.2/icon.png"
+            },
+            "identifier": "text",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "doc": "{{[5c39bc50-2e46-4806-8565-211ee77cbe0a].[icon_email].[body]}}",
+                "remove_scripts": true
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "doc": {
+                  "description": "Document to transform",
+                  "order": 1,
+                  "title": "Document",
+                  "type": "string"
+                },
+                "remove_scripts": {
+                  "description": "Remove non-HTML scripts from the document",
+                  "order": 2,
+                  "title": "Remove Scripts",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "doc"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "text": {
+                  "description": "String without HTML tags",
+                  "order": 1,
+                  "title": "Text",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "ORCHESTRATOR"
+          },
+          "665d83c3-36af-4001-a9c1-487dbb27716c": {
+            "nodeId": "665d83c3-36af-4001-a9c1-487dbb27716c",
+            "name": "MS-TEAMS - LDAP Query Unsuccessful",
+            "type": "action",
+            "plugin": {
+              "name": "Microsoft Teams",
+              "slugVendor": "rapid7",
+              "slugName": "microsoft_teams",
+              "slugVersion": "3.1.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_teams/3.1.2/icon.png"
+            },
+            "identifier": "send_html_message",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "channel_name": "{{$workflow.[MS-TEAMS - EUS Channel]}}",
+                "message_content": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>USER REMOVED</strong></div>\n<div>The LDAP Query for the user {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}} failed.:</div>\n<div>Please remove the user manually from  the <groupname> group</div>\n</body>\n</html>",
+                "team_name": "{{$workflow.[MS-TEAMS - EUS Team]}}",
+                "thread_id": ""
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "channel_name": {
+                  "description": "Channel name",
+                  "order": 2,
+                  "title": "Channel Name",
+                  "type": "string"
+                },
+                "message_content": {
+                  "description": "HTML content to send",
+                  "order": 4,
+                  "title": "Message Content",
+                  "type": "string"
+                },
+                "team_name": {
+                  "description": "Team name",
+                  "order": 1,
+                  "title": "Team Name",
+                  "type": "string"
+                },
+                "thread_id": {
+                  "description": "To post in a thread, select parent message ID",
+                  "order": 3,
+                  "title": "Thread ID",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "team_name",
+                "channel_name",
+                "message_content"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "body": {
+                  "properties": {
+                    "content": {
+                      "description": "Content",
+                      "order": 1,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "description": "Content type",
+                      "order": 2,
+                      "title": "Content Type",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Body",
+                  "type": "object"
+                },
+                "from": {
+                  "properties": {
+                    "user": {
+                      "$ref": "#/definitions/user",
+                      "description": "User",
+                      "order": 1,
+                      "title": "User"
+                    }
+                  },
+                  "title": "From",
+                  "type": "object"
+                },
+                "message": {
+                  "properties": {
+                    "body": {
+                      "$ref": "#/definitions/body",
+                      "description": "Body",
+                      "order": 1,
+                      "title": "Body"
+                    },
+                    "createdDateTime": {
+                      "description": "Created date time",
+                      "order": 3,
+                      "title": "Created Date Time",
+                      "type": "string"
+                    },
+                    "first_word": {
+                      "description": "Extracted first word from message (easy way to obtain a chat command)",
+                      "order": 9,
+                      "title": "First Word",
+                      "type": "string"
+                    },
+                    "from": {
+                      "$ref": "#/definitions/from",
+                      "description": "From",
+                      "order": 2,
+                      "title": "From"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 8,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "importance": {
+                      "description": "Importance",
+                      "order": 5,
+                      "title": "Importance",
+                      "type": "string"
+                    },
+                    "locale": {
+                      "description": "Locale",
+                      "order": 7,
+                      "title": "Locale",
+                      "type": "string"
+                    },
+                    "messageType": {
+                      "description": "Message type",
+                      "order": 6,
+                      "title": "Message Type",
+                      "type": "string"
+                    },
+                    "webUrl": {
+                      "description": "Web URL",
+                      "order": 4,
+                      "title": "Web URL",
+                      "type": "string"
+                    },
+                    "words": {
+                      "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Words",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "words",
+                    "first_word"
+                  ],
+                  "title": "Message",
+                  "type": "object"
+                },
+                "user": {
+                  "properties": {
+                    "displayName": {
+                      "description": "Display name",
+                      "order": 1,
+                      "title": "Display name",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 2,
+                      "title": "ID",
+                      "type": "string"
+                    }
+                  },
+                  "title": "User",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "message": {
+                  "$ref": "#/definitions/message",
+                  "description": "The message object that was created",
+                  "order": 1,
+                  "title": "Message"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "6db28ddd-592c-40ce-81d6-f3dd1794730e": {
+            "nodeId": "6db28ddd-592c-40ce-81d6-f3dd1794730e",
+            "name": "LDAP-Query User Information",
+            "type": "action",
+            "plugin": {
+              "name": "PowerShell",
+              "slugVendor": "rapid7",
+              "slugName": "powershell",
+              "slugVersion": "2.1.3",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/powershell/2.1.3/icon.png"
+            },
+            "identifier": "powershell_string",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "address": "192.168.105.191",
+                "host_name": "PTCDC902.PEROT.INT",
+                "script": "Import-Module ActiveDirectory\n\n$user = Get-ADUser -LDAPFilter '(&(displayName={{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}}))'\n\n$user.DistinguishedName"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "address": {
+                  "description": "IP address of the remote host e.g. 192.168.1.1. If address is left blank PowerShell will run locally",
+                  "order": 2,
+                  "title": "Address",
+                  "type": "string"
+                },
+                "host_name": {
+                  "description": "Case-sensitive name of the remote host, eg. MyComputer for Kerberos connection only",
+                  "order": 3,
+                  "title": "Host Name",
+                  "type": "string"
+                },
+                "script": {
+                  "description": "PowerShell script as a string",
+                  "order": 1,
+                  "title": "Script",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "script"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "stderr": {
+                  "description": "PowerShell standard error",
+                  "order": 2,
+                  "title": "PowerShell Standard Error",
+                  "type": "string"
+                },
+                "stdout": {
+                  "description": "PowerShell standard output",
+                  "order": 1,
+                  "title": "PowerShell Standard Output",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "71886035-6e8b-4f69-a657-b56f9002ac25": {
+            "nodeId": "71886035-6e8b-4f69-a657-b56f9002ac25",
+            "name": "Testing Email Variables",
+            "type": "artifact",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "input": {
+                "content": "**USER**\n>{{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}}\n\n\n**GROUP REMOVAL**\n>{{[c3a86454-4862-4cd1-82af-57d92ccca223].[$success]}}"
+              },
+              "type": "markdown"
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/artifact.svg",
+            "connectionType": "NONE"
+          },
+          "72085d9e-18c5-4d5c-8be8-80a69523bcd6": {
+            "nodeId": "72085d9e-18c5-4d5c-8be8-80a69523bcd6",
+            "name": "MS-TEAMS - Group Removal Failed - SEC",
+            "type": "action",
+            "plugin": {
+              "name": "Microsoft Teams",
+              "slugVendor": "rapid7",
+              "slugName": "microsoft_teams",
+              "slugVersion": "3.1.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_teams/3.1.2/icon.png"
+            },
+            "identifier": "send_html_message",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "channel_name": "{{$workflow.[MS-TEAMS - Security Channel]}}",
+                "message_content": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>USER REMOVED</strong></div>\n<div>The LDAP removal of the group '<groupname>' failed for the user {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}}.:</div>\n<div>Please remove the user manually from  the <groupname> group</div>\n</body>\n</html>",
+                "team_name": "{{$workflow.[MS-TEAMS - Security Team]}}",
+                "thread_id": ""
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "channel_name": {
+                  "description": "Channel name",
+                  "order": 2,
+                  "title": "Channel Name",
+                  "type": "string"
+                },
+                "message_content": {
+                  "description": "HTML content to send",
+                  "order": 4,
+                  "title": "Message Content",
+                  "type": "string"
+                },
+                "team_name": {
+                  "description": "Team name",
+                  "order": 1,
+                  "title": "Team Name",
+                  "type": "string"
+                },
+                "thread_id": {
+                  "description": "To post in a thread, select parent message ID",
+                  "order": 3,
+                  "title": "Thread ID",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "team_name",
+                "channel_name",
+                "message_content"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "body": {
+                  "properties": {
+                    "content": {
+                      "description": "Content",
+                      "order": 1,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "description": "Content type",
+                      "order": 2,
+                      "title": "Content Type",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Body",
+                  "type": "object"
+                },
+                "from": {
+                  "properties": {
+                    "user": {
+                      "$ref": "#/definitions/user",
+                      "description": "User",
+                      "order": 1,
+                      "title": "User"
+                    }
+                  },
+                  "title": "From",
+                  "type": "object"
+                },
+                "message": {
+                  "properties": {
+                    "body": {
+                      "$ref": "#/definitions/body",
+                      "description": "Body",
+                      "order": 1,
+                      "title": "Body"
+                    },
+                    "createdDateTime": {
+                      "description": "Created date time",
+                      "order": 3,
+                      "title": "Created Date Time",
+                      "type": "string"
+                    },
+                    "first_word": {
+                      "description": "Extracted first word from message (easy way to obtain a chat command)",
+                      "order": 9,
+                      "title": "First Word",
+                      "type": "string"
+                    },
+                    "from": {
+                      "$ref": "#/definitions/from",
+                      "description": "From",
+                      "order": 2,
+                      "title": "From"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 8,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "importance": {
+                      "description": "Importance",
+                      "order": 5,
+                      "title": "Importance",
+                      "type": "string"
+                    },
+                    "locale": {
+                      "description": "Locale",
+                      "order": 7,
+                      "title": "Locale",
+                      "type": "string"
+                    },
+                    "messageType": {
+                      "description": "Message type",
+                      "order": 6,
+                      "title": "Message Type",
+                      "type": "string"
+                    },
+                    "webUrl": {
+                      "description": "Web URL",
+                      "order": 4,
+                      "title": "Web URL",
+                      "type": "string"
+                    },
+                    "words": {
+                      "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Words",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "words",
+                    "first_word"
+                  ],
+                  "title": "Message",
+                  "type": "object"
+                },
+                "user": {
+                  "properties": {
+                    "displayName": {
+                      "description": "Display name",
+                      "order": 1,
+                      "title": "Display name",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 2,
+                      "title": "ID",
+                      "type": "string"
+                    }
+                  },
+                  "title": "User",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "message": {
+                  "$ref": "#/definitions/message",
+                  "description": "The message object that was created",
+                  "order": 1,
+                  "title": "Message"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "7a27df71-0253-4bf8-9291-c188e6deb335": {
+            "nodeId": "7a27df71-0253-4bf8-9291-c188e6deb335",
+            "name": "Email - Failed LDAP Lookup Notification",
+            "type": "action",
+            "plugin": {
+              "name": "SMTP",
+              "slugVendor": "rapid7",
+              "slugName": "smtp",
+              "slugVersion": "2.0.5",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/smtp/2.0.5/icon.png"
+            },
+            "identifier": "send",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "attachment": {
+                  "content": "",
+                  "filename": ""
+                },
+                "bcc": [],
+                "cc": [
+                  "Sam.Reid@hillwood.com",
+                  "Aaron.Harrison@hillwood.com"
+                ],
+                "email_from": "SVC-InsightConnect@hillwood.com",
+                "email_to": "Chris.Utchell@hillwood.com",
+                "html": true,
+                "message": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>USER REMOVED</strong></div>\n<div>The LDAP Query for the user {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}} failed.:</div>\n<div>Please remove the user manually from  the <groupname> group</div>\n</body>\n</html>",
+                "subject": "The User {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}} was NOT removed from the <groupname>"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "definitions": {
+                "file": {
+                  "description": "File Object",
+                  "properties": {
+                    "content": {
+                      "description": "File contents",
+                      "format": "bytes",
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "filename": {
+                      "description": "Name of file",
+                      "title": "Filename",
+                      "type": "string"
+                    }
+                  },
+                  "title": "File",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "attachment": {
+                  "$ref": "#/definitions/file",
+                  "description": "Attachment",
+                  "order": 8,
+                  "title": "Attachment"
+                },
+                "bcc": {
+                  "description": "BCC email",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 6,
+                  "title": "Bcc",
+                  "type": "array"
+                },
+                "cc": {
+                  "description": "CC emails",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 7,
+                  "title": "Cc",
+                  "type": "array"
+                },
+                "email_from": {
+                  "description": "Email to use as FROM",
+                  "order": 1,
+                  "title": "Email From",
+                  "type": "string"
+                },
+                "email_to": {
+                  "description": "Email to send TO",
+                  "order": 2,
+                  "title": "Email To",
+                  "type": "string"
+                },
+                "html": {
+                  "description": "Message contains HTML",
+                  "order": 5,
+                  "title": "Html",
+                  "type": "boolean"
+                },
+                "message": {
+                  "description": "Message to send on the email",
+                  "order": 4,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "subject": {
+                  "description": "Subject of the email",
+                  "order": 3,
+                  "title": "Subject",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email_from",
+                "email_to",
+                "subject",
+                "message",
+                "html"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "result": {
+                  "description": "Result",
+                  "order": 1,
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "89722a10-acef-4ce8-8781-258327d22c09": {
+            "nodeId": "89722a10-acef-4ce8-8781-258327d22c09",
+            "name": "Extract DisplayName",
+            "type": "action",
+            "plugin": {
+              "name": "Python 3 Script",
+              "slugVendor": "rapid7",
+              "slugName": "python_3_script",
+              "slugVersion": "2.0.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/python_3_script/2.0.2/icon.png"
+            },
+            "identifier": "run",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "function": "def run(params={}):\n  import re\n\n  regex1 = r'^.*Dear\\s\\w+\\,\\s(?P<lastname>\\w+\\,\\s\\w+)Congratulations'\n\n  body = params.get('body')\n\n  matches1 = re.finditer(regex1, body, re.MULTILINE)\n\n  for matchNum1, match1 in enumerate(matches1):\n    matchNum1 = matchNum1 + 1\n\n    for groupNum1 in range(0, len(match1.groups())):\n      groupNum1 = groupNum1 + 1\n\n  displayname = match1.group(1)\n\n  return { 'displayname': displayname }",
+                "input": {
+                  "body": "{{[5d32658d-345d-4278-8e31-7ef8f90475dc].[text]}}"
+                }
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "function": {
+                  "default": "def run(params={}):\\n    return {}",
+                  "description": "Function definition. Must be named `run`. Accepts the `input` object as params. Returns the dict as output",
+                  "displayType": "python",
+                  "format": "python",
+                  "order": 1,
+                  "title": "Function",
+                  "type": "string"
+                },
+                "input": {
+                  "description": "Input object to be passed as `params={}` to the `run` function",
+                  "order": 2,
+                  "title": "Input",
+                  "type": "object"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "result1": {
+                  "description": "Sample output result1 (delete or edit)",
+                  "order": 1,
+                  "title": "Result1",
+                  "type": "string"
+                },
+                "result2": {
+                  "description": "Sample output result2 (delete or edit)",
+                  "order": 2,
+                  "title": "Result2",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "91b084c4-77fd-4407-8adb-4818135b502b": {
+            "nodeId": "91b084c4-77fd-4407-8adb-4818135b502b",
+            "name": "Forward or Reply Check",
+            "type": "automated_decision",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "defaultEdgeId": "bee5567c-8e73-4d17-81fb-ab2c870472aa",
+              "stepControlParams": [
+                {
+                  "edgeId": "b61af727-31bd-4002-868a-02d238fc87ee",
+                  "expression": {
+                    "left": {
+                      "left": {
+                        "name": "5c39bc50-2e46-4806-8565-211ee77cbe0a.icon_email.subject",
+                        "type": "variable"
+                      },
+                      "op": "starts_with",
+                      "right": {
+                        "type": "literal",
+                        "value": "RE:"
+                      },
+                      "type": "binary"
+                    },
+                    "op": "OR",
+                    "right": {
+                      "left": {
+                        "name": "5c39bc50-2e46-4806-8565-211ee77cbe0a.icon_email.subject",
+                        "type": "variable"
+                      },
+                      "op": "starts_with",
+                      "right": {
+                        "type": "literal",
+                        "value": "FW:"
+                      },
+                      "type": "binary"
+                    },
+                    "type": "binary"
+                  },
+                  "expressionText": "({{[5c39bc50-2e46-4806-8565-211ee77cbe0a].[icon_email].[subject]}} starts_with \"RE:\") OR ({{[5c39bc50-2e46-4806-8565-211ee77cbe0a].[icon_email].[subject]}} starts_with \"FW:\")"
+                },
+                {
+                  "edgeId": "bee5567c-8e73-4d17-81fb-ab2c870472aa",
+                  "expression": {},
+                  "expressionText": ""
+                }
+              ]
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/automated-decision.svg",
+            "connectionType": "NONE"
+          },
+          "a5a26503-cd30-4e79-a97f-abd568802792": {
+            "nodeId": "a5a26503-cd30-4e79-a97f-abd568802792",
+            "name": "MS-TEAMS - Group Removal Failed",
+            "type": "action",
+            "plugin": {
+              "name": "Microsoft Teams",
+              "slugVendor": "rapid7",
+              "slugName": "microsoft_teams",
+              "slugVersion": "3.1.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_teams/3.1.2/icon.png"
+            },
+            "identifier": "send_html_message",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "channel_name": "{{$workflow.[MS-TEAMS - EUS Channel]}}",
+                "message_content": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>USER REMOVED</strong></div>\n<div>The LDAP removal of the group '<groupname>' failed for the user {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}}.:</div>\n<div>Please remove the user manually from  the <groupname> group</div>\n</body>\n</html>",
+                "team_name": "{{$workflow.[MS-TEAMS - EUS Team]}}",
+                "thread_id": ""
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "channel_name": {
+                  "description": "Channel name",
+                  "order": 2,
+                  "title": "Channel Name",
+                  "type": "string"
+                },
+                "message_content": {
+                  "description": "HTML content to send",
+                  "order": 4,
+                  "title": "Message Content",
+                  "type": "string"
+                },
+                "team_name": {
+                  "description": "Team name",
+                  "order": 1,
+                  "title": "Team Name",
+                  "type": "string"
+                },
+                "thread_id": {
+                  "description": "To post in a thread, select parent message ID",
+                  "order": 3,
+                  "title": "Thread ID",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "team_name",
+                "channel_name",
+                "message_content"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "body": {
+                  "properties": {
+                    "content": {
+                      "description": "Content",
+                      "order": 1,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "description": "Content type",
+                      "order": 2,
+                      "title": "Content Type",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Body",
+                  "type": "object"
+                },
+                "from": {
+                  "properties": {
+                    "user": {
+                      "$ref": "#/definitions/user",
+                      "description": "User",
+                      "order": 1,
+                      "title": "User"
+                    }
+                  },
+                  "title": "From",
+                  "type": "object"
+                },
+                "message": {
+                  "properties": {
+                    "body": {
+                      "$ref": "#/definitions/body",
+                      "description": "Body",
+                      "order": 1,
+                      "title": "Body"
+                    },
+                    "createdDateTime": {
+                      "description": "Created date time",
+                      "order": 3,
+                      "title": "Created Date Time",
+                      "type": "string"
+                    },
+                    "first_word": {
+                      "description": "Extracted first word from message (easy way to obtain a chat command)",
+                      "order": 9,
+                      "title": "First Word",
+                      "type": "string"
+                    },
+                    "from": {
+                      "$ref": "#/definitions/from",
+                      "description": "From",
+                      "order": 2,
+                      "title": "From"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 8,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "importance": {
+                      "description": "Importance",
+                      "order": 5,
+                      "title": "Importance",
+                      "type": "string"
+                    },
+                    "locale": {
+                      "description": "Locale",
+                      "order": 7,
+                      "title": "Locale",
+                      "type": "string"
+                    },
+                    "messageType": {
+                      "description": "Message type",
+                      "order": 6,
+                      "title": "Message Type",
+                      "type": "string"
+                    },
+                    "webUrl": {
+                      "description": "Web URL",
+                      "order": 4,
+                      "title": "Web URL",
+                      "type": "string"
+                    },
+                    "words": {
+                      "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Words",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "words",
+                    "first_word"
+                  ],
+                  "title": "Message",
+                  "type": "object"
+                },
+                "user": {
+                  "properties": {
+                    "displayName": {
+                      "description": "Display name",
+                      "order": 1,
+                      "title": "Display name",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 2,
+                      "title": "ID",
+                      "type": "string"
+                    }
+                  },
+                  "title": "User",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "message": {
+                  "$ref": "#/definitions/message",
+                  "description": "The message object that was created",
+                  "order": 1,
+                  "title": "Message"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "ab83324c-ada7-47ea-acf2-d2072c91e892": {
+            "nodeId": "ab83324c-ada7-47ea-acf2-d2072c91e892",
+            "name": "LDAP Query Failure",
+            "type": "automated_decision",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "defaultEdgeId": "cb463183-390f-453b-b7b7-511f752c2ec6",
+              "stepControlParams": [
+                {
+                  "edgeId": "51226e67-d6e4-48f2-ad86-1ab852dfbb29",
+                  "expression": {
+                    "expr": {
+                      "name": "2bd9a1cf-7272-4806-9359-34e55bab7f24.$success",
+                      "type": "variable"
+                    },
+                    "op": "NOT",
+                    "type": "unary"
+                  },
+                  "expressionText": "(NOT {{[2bd9a1cf-7272-4806-9359-34e55bab7f24].[$success]}})"
+                },
+                {
+                  "edgeId": "cb463183-390f-453b-b7b7-511f752c2ec6",
+                  "expression": {},
+                  "expressionText": ""
+                }
+              ]
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/automated-decision.svg",
+            "connectionType": "NONE"
+          },
+          "b5f109e7-12b5-4fa4-8c66-3c813a969ae7": {
+            "nodeId": "b5f109e7-12b5-4fa4-8c66-3c813a969ae7",
+            "name": "MS-TEAMS - Job Canceled",
+            "type": "action",
+            "plugin": {
+              "name": "Microsoft Teams",
+              "slugVendor": "rapid7",
+              "slugName": "microsoft_teams",
+              "slugVersion": "3.1.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_teams/3.1.2/icon.png"
+            },
+            "identifier": "send_html_message",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "channel_name": "{{$workflow.[MS-TEAMS - Security Channel]}}",
+                "message_content": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>UN-NEEDED WORKFLOW</strong></div>\n<div>This was a Reply or Forward from the original Driver's License email and did not need to have a Workflow ran.</div>\n</body>\n</html>",
+                "team_name": "{{$workflow.[MS-TEAMS - Security Team]}}",
+                "thread_id": ""
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "channel_name": {
+                  "description": "Channel name",
+                  "order": 2,
+                  "title": "Channel Name",
+                  "type": "string"
+                },
+                "message_content": {
+                  "description": "HTML content to send",
+                  "order": 4,
+                  "title": "Message Content",
+                  "type": "string"
+                },
+                "team_name": {
+                  "description": "Team name",
+                  "order": 1,
+                  "title": "Team Name",
+                  "type": "string"
+                },
+                "thread_id": {
+                  "description": "To post in a thread, select parent message ID",
+                  "order": 3,
+                  "title": "Thread ID",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "team_name",
+                "channel_name",
+                "message_content"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "body": {
+                  "properties": {
+                    "content": {
+                      "description": "Content",
+                      "order": 1,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "description": "Content type",
+                      "order": 2,
+                      "title": "Content Type",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Body",
+                  "type": "object"
+                },
+                "from": {
+                  "properties": {
+                    "user": {
+                      "$ref": "#/definitions/user",
+                      "description": "User",
+                      "order": 1,
+                      "title": "User"
+                    }
+                  },
+                  "title": "From",
+                  "type": "object"
+                },
+                "message": {
+                  "properties": {
+                    "body": {
+                      "$ref": "#/definitions/body",
+                      "description": "Body",
+                      "order": 1,
+                      "title": "Body"
+                    },
+                    "createdDateTime": {
+                      "description": "Created date time",
+                      "order": 3,
+                      "title": "Created Date Time",
+                      "type": "string"
+                    },
+                    "first_word": {
+                      "description": "Extracted first word from message (easy way to obtain a chat command)",
+                      "order": 9,
+                      "title": "First Word",
+                      "type": "string"
+                    },
+                    "from": {
+                      "$ref": "#/definitions/from",
+                      "description": "From",
+                      "order": 2,
+                      "title": "From"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 8,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "importance": {
+                      "description": "Importance",
+                      "order": 5,
+                      "title": "Importance",
+                      "type": "string"
+                    },
+                    "locale": {
+                      "description": "Locale",
+                      "order": 7,
+                      "title": "Locale",
+                      "type": "string"
+                    },
+                    "messageType": {
+                      "description": "Message type",
+                      "order": 6,
+                      "title": "Message Type",
+                      "type": "string"
+                    },
+                    "webUrl": {
+                      "description": "Web URL",
+                      "order": 4,
+                      "title": "Web URL",
+                      "type": "string"
+                    },
+                    "words": {
+                      "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Words",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "words",
+                    "first_word"
+                  ],
+                  "title": "Message",
+                  "type": "object"
+                },
+                "user": {
+                  "properties": {
+                    "displayName": {
+                      "description": "Display name",
+                      "order": 1,
+                      "title": "Display name",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 2,
+                      "title": "ID",
+                      "type": "string"
+                    }
+                  },
+                  "title": "User",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "message": {
+                  "$ref": "#/definitions/message",
+                  "description": "The message object that was created",
+                  "order": 1,
+                  "title": "Message"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "c3a86454-4862-4cd1-82af-57d92ccca223": {
+            "nodeId": "c3a86454-4862-4cd1-82af-57d92ccca223",
+            "name": "LDAP-Remove Group",
+            "type": "action",
+            "plugin": {
+              "name": "Active Directory LDAP",
+              "slugVendor": "rapid7",
+              "slugName": "active_directory_ldap",
+              "slugVersion": "5.2.1",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/active_directory_ldap/5.2.1/icon.png"
+            },
+            "identifier": "modify_groups",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "add_remove": "remove",
+                "distinguished_name": "{{[2bd9a1cf-7272-4806-9359-34e55bab7f24].[results].[0].[dn]}}",
+                "group_dn": "CN=<groupname>,OU=Security Groups,OU=Enterprise Resources,AD-ROOT"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "add_remove": {
+                  "description": "Add or remove the group",
+                  "enum": [
+                    "add",
+                    "remove"
+                  ],
+                  "order": 3,
+                  "title": "Add or Remove",
+                  "type": "string"
+                },
+                "distinguished_name": {
+                  "description": "The distinguished name of the object whose membership will be modified",
+                  "order": 1,
+                  "title": "Distinguished Name",
+                  "type": "string"
+                },
+                "group_dn": {
+                  "description": "The Distinguished Name of the group to add or remove",
+                  "order": 2,
+                  "title": "Group DN",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "distinguished_name",
+                "group_dn",
+                "add_remove"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "success": {
+                  "description": "Operation status",
+                  "order": 1,
+                  "title": "Success",
+                  "type": "boolean"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "cdf6e0ca-3396-419e-818b-80511fce29ad": {
+            "nodeId": "cdf6e0ca-3396-419e-818b-80511fce29ad",
+            "name": "MS-TEAMS - LDAP Query Unsuccessful - SEC",
+            "type": "action",
+            "plugin": {
+              "name": "Microsoft Teams",
+              "slugVendor": "rapid7",
+              "slugName": "microsoft_teams",
+              "slugVersion": "3.1.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_teams/3.1.2/icon.png"
+            },
+            "identifier": "send_html_message",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "channel_name": "{{$workflow.[MS-TEAMS - Security Channel]}}",
+                "message_content": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>USER REMOVED</strong></div>\n<div>The LDAP Query for the user {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}} failed.:</div>\n<div>Please remove the user manually from  the <groupname> group</div>\n</body>\n</html>",
+                "team_name": "{{$workflow.[MS-TEAMS - Security Team]}}",
+                "thread_id": ""
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "channel_name": {
+                  "description": "Channel name",
+                  "order": 2,
+                  "title": "Channel Name",
+                  "type": "string"
+                },
+                "message_content": {
+                  "description": "HTML content to send",
+                  "order": 4,
+                  "title": "Message Content",
+                  "type": "string"
+                },
+                "team_name": {
+                  "description": "Team name",
+                  "order": 1,
+                  "title": "Team Name",
+                  "type": "string"
+                },
+                "thread_id": {
+                  "description": "To post in a thread, select parent message ID",
+                  "order": 3,
+                  "title": "Thread ID",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "team_name",
+                "channel_name",
+                "message_content"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "body": {
+                  "properties": {
+                    "content": {
+                      "description": "Content",
+                      "order": 1,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "description": "Content type",
+                      "order": 2,
+                      "title": "Content Type",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Body",
+                  "type": "object"
+                },
+                "from": {
+                  "properties": {
+                    "user": {
+                      "$ref": "#/definitions/user",
+                      "description": "User",
+                      "order": 1,
+                      "title": "User"
+                    }
+                  },
+                  "title": "From",
+                  "type": "object"
+                },
+                "message": {
+                  "properties": {
+                    "body": {
+                      "$ref": "#/definitions/body",
+                      "description": "Body",
+                      "order": 1,
+                      "title": "Body"
+                    },
+                    "createdDateTime": {
+                      "description": "Created date time",
+                      "order": 3,
+                      "title": "Created Date Time",
+                      "type": "string"
+                    },
+                    "first_word": {
+                      "description": "Extracted first word from message (easy way to obtain a chat command)",
+                      "order": 9,
+                      "title": "First Word",
+                      "type": "string"
+                    },
+                    "from": {
+                      "$ref": "#/definitions/from",
+                      "description": "From",
+                      "order": 2,
+                      "title": "From"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 8,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "importance": {
+                      "description": "Importance",
+                      "order": 5,
+                      "title": "Importance",
+                      "type": "string"
+                    },
+                    "locale": {
+                      "description": "Locale",
+                      "order": 7,
+                      "title": "Locale",
+                      "type": "string"
+                    },
+                    "messageType": {
+                      "description": "Message type",
+                      "order": 6,
+                      "title": "Message Type",
+                      "type": "string"
+                    },
+                    "webUrl": {
+                      "description": "Web URL",
+                      "order": 4,
+                      "title": "Web URL",
+                      "type": "string"
+                    },
+                    "words": {
+                      "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Words",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "words",
+                    "first_word"
+                  ],
+                  "title": "Message",
+                  "type": "object"
+                },
+                "user": {
+                  "properties": {
+                    "displayName": {
+                      "description": "Display name",
+                      "order": 1,
+                      "title": "Display name",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 2,
+                      "title": "ID",
+                      "type": "string"
+                    }
+                  },
+                  "title": "User",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "message": {
+                  "$ref": "#/definitions/message",
+                  "description": "The message object that was created",
+                  "order": 1,
+                  "title": "Message"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "d32ed622-54a4-4d70-9a39-f468d84daa7c": {
+            "nodeId": "d32ed622-54a4-4d70-9a39-f468d84daa7c",
+            "name": "Sync AD and Azure",
+            "type": "action",
+            "plugin": {
+              "name": "PowerShell",
+              "slugVendor": "rapid7",
+              "slugName": "powershell",
+              "slugVersion": "2.1.3",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/powershell/2.1.3/icon.png"
+            },
+            "identifier": "powershell_string",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "address": "<ip>",
+                "host_name": "<ip>",
+                "script": "Import-Module ADSync\n\n& repadmin /syncall /AdeP > $null\nStart-Sleep 30\n\nStart-ADSyncSyncCycle -PolicyType Delta > $null\nStart-Sleep 5"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "address": {
+                  "description": "IP address of the remote host e.g. 192.168.1.1. If address is left blank PowerShell will run locally",
+                  "order": 2,
+                  "title": "Address",
+                  "type": "string"
+                },
+                "host_name": {
+                  "description": "Case-sensitive name of the remote host, eg. MyComputer for Kerberos connection only",
+                  "order": 3,
+                  "title": "Host Name",
+                  "type": "string"
+                },
+                "script": {
+                  "description": "PowerShell script as a string",
+                  "order": 1,
+                  "title": "Script",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "script"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "stderr": {
+                  "description": "PowerShell standard error",
+                  "order": 2,
+                  "title": "PowerShell Standard Error",
+                  "type": "string"
+                },
+                "stdout": {
+                  "description": "PowerShell standard output",
+                  "order": 1,
+                  "title": "PowerShell Standard Output",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "da5899d3-2f58-4e1d-9bb0-6d2457f08c6e": {
+            "nodeId": "da5899d3-2f58-4e1d-9bb0-6d2457f08c6e",
+            "name": "LDAP Group Removal Failure",
+            "type": "automated_decision",
+            "continueOnFailure": false,
+            "isDisabled": false,
+            "parameters": {
+              "defaultEdgeId": "8c47f341-c3ee-4519-acbc-a4a59058bbf9",
+              "stepControlParams": [
+                {
+                  "edgeId": "8c47f341-c3ee-4519-acbc-a4a59058bbf9",
+                  "expression": {},
+                  "expressionText": ""
+                },
+                {
+                  "edgeId": "3d9f4fe9-ca84-4f04-a74f-99ea0f61c4fc",
+                  "expression": {
+                    "expr": {
+                      "name": "c3a86454-4862-4cd1-82af-57d92ccca223.$success",
+                      "type": "variable"
+                    },
+                    "op": "NOT",
+                    "type": "unary"
+                  },
+                  "expressionText": "NOT {{[c3a86454-4862-4cd1-82af-57d92ccca223].[$success]}}"
+                }
+              ]
+            },
+            "defaultInputJSONSchema": null,
+            "defaultOutputJSONSchema": null,
+            "outputJSONSchema": null,
+            "defaultImageData": "https://eu.cdn-assets.connect.insight.rapid7.com/step-type-icons/automated-decision.svg",
+            "connectionType": "NONE"
+          },
+          "ebb41558-04b0-4ed7-bf1c-20cf2447ec13": {
+            "nodeId": "ebb41558-04b0-4ed7-bf1c-20cf2447ec13",
+            "name": "MS-TEAMS - Send Completion to EUC",
+            "type": "action",
+            "plugin": {
+              "name": "Microsoft Teams",
+              "slugVendor": "rapid7",
+              "slugName": "microsoft_teams",
+              "slugVersion": "3.1.2",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_teams/3.1.2/icon.png"
+            },
+            "identifier": "send_html_message",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "channel_name": "{{$workflow.[MS-TEAMS - EUS Channel]}}",
+                "message_content": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>USER REMOVED</strong></div>\n<div>The user {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}} was removed from the group <groupname> with the status:</div>\n<div>Step Success:  {{[c3a86454-4862-4cd1-82af-57d92ccca223].[success]}}</div>\n</body>\n</html>",
+                "team_name": "{{$workflow.[MS-TEAMS - EUS Team]}}",
+                "thread_id": ""
+              }
+            },
+            "defaultInputJSONSchema": {
+              "properties": {
+                "channel_name": {
+                  "description": "Channel name",
+                  "order": 2,
+                  "title": "Channel Name",
+                  "type": "string"
+                },
+                "message_content": {
+                  "description": "HTML content to send",
+                  "order": 4,
+                  "title": "Message Content",
+                  "type": "string"
+                },
+                "team_name": {
+                  "description": "Team name",
+                  "order": 1,
+                  "title": "Team Name",
+                  "type": "string"
+                },
+                "thread_id": {
+                  "description": "To post in a thread, select parent message ID",
+                  "order": 3,
+                  "title": "Thread ID",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "team_name",
+                "channel_name",
+                "message_content"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "definitions": {
+                "body": {
+                  "properties": {
+                    "content": {
+                      "description": "Content",
+                      "order": 1,
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "description": "Content type",
+                      "order": 2,
+                      "title": "Content Type",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Body",
+                  "type": "object"
+                },
+                "from": {
+                  "properties": {
+                    "user": {
+                      "$ref": "#/definitions/user",
+                      "description": "User",
+                      "order": 1,
+                      "title": "User"
+                    }
+                  },
+                  "title": "From",
+                  "type": "object"
+                },
+                "message": {
+                  "properties": {
+                    "body": {
+                      "$ref": "#/definitions/body",
+                      "description": "Body",
+                      "order": 1,
+                      "title": "Body"
+                    },
+                    "createdDateTime": {
+                      "description": "Created date time",
+                      "order": 3,
+                      "title": "Created Date Time",
+                      "type": "string"
+                    },
+                    "first_word": {
+                      "description": "Extracted first word from message (easy way to obtain a chat command)",
+                      "order": 9,
+                      "title": "First Word",
+                      "type": "string"
+                    },
+                    "from": {
+                      "$ref": "#/definitions/from",
+                      "description": "From",
+                      "order": 2,
+                      "title": "From"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 8,
+                      "title": "ID",
+                      "type": "string"
+                    },
+                    "importance": {
+                      "description": "Importance",
+                      "order": 5,
+                      "title": "Importance",
+                      "type": "string"
+                    },
+                    "locale": {
+                      "description": "Locale",
+                      "order": 7,
+                      "title": "Locale",
+                      "type": "string"
+                    },
+                    "messageType": {
+                      "description": "Message type",
+                      "order": 6,
+                      "title": "Message Type",
+                      "type": "string"
+                    },
+                    "webUrl": {
+                      "description": "Web URL",
+                      "order": 4,
+                      "title": "Web URL",
+                      "type": "string"
+                    },
+                    "words": {
+                      "description": "The message split by spaces into a list of words. This list makes finding and using parameters in chat commands easier",
+                      "items": {
+                        "type": "string"
+                      },
+                      "order": 10,
+                      "title": "Words",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "words",
+                    "first_word"
+                  ],
+                  "title": "Message",
+                  "type": "object"
+                },
+                "user": {
+                  "properties": {
+                    "displayName": {
+                      "description": "Display name",
+                      "order": 1,
+                      "title": "Display name",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "ID",
+                      "order": 2,
+                      "title": "ID",
+                      "type": "string"
+                    }
+                  },
+                  "title": "User",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "message": {
+                  "$ref": "#/definitions/message",
+                  "description": "The message object that was created",
+                  "order": 1,
+                  "title": "Message"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          },
+          "f1cbf342-56ed-4a1f-bac1-bb006738e70e": {
+            "nodeId": "f1cbf342-56ed-4a1f-bac1-bb006738e70e",
+            "name": "Email - Failed Group Removal Notification",
+            "type": "action",
+            "plugin": {
+              "name": "SMTP",
+              "slugVendor": "rapid7",
+              "slugName": "smtp",
+              "slugVersion": "2.0.5",
+              "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/smtp/2.0.5/icon.png"
+            },
+            "identifier": "send",
+            "continueOnFailure": true,
+            "isDisabled": false,
+            "isCloud": false,
+            "parameters": {
+              "input": {
+                "attachment": {},
+                "bcc": [],
+                "cc": [
+                  "<email>",
+                  "<email>"
+                ],
+                "email_from": "<email>",
+                "email_to": "<email>",
+                "html": true,
+                "message": "<!DOCTYPE html>\n<html>\n<body>\n<div><strong>USER REMOVED</strong></div>\n<div>The LDAP Query for the user {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}} failed.:</div>\n<div>Please remove the user manually from  the <groupname> group</div>\n</body>\n</html>",
+                "subject": "The User {{[89722a10-acef-4ce8-8781-258327d22c09].[displayname]}} was NOT removed from the <groupname>"
+              }
+            },
+            "defaultInputJSONSchema": {
+              "definitions": {
+                "file": {
+                  "description": "File Object",
+                  "properties": {
+                    "content": {
+                      "description": "File contents",
+                      "format": "bytes",
+                      "title": "Content",
+                      "type": "string"
+                    },
+                    "filename": {
+                      "description": "Name of file",
+                      "title": "Filename",
+                      "type": "string"
+                    }
+                  },
+                  "title": "File",
+                  "type": "object"
+                }
+              },
+              "properties": {
+                "attachment": {
+                  "$ref": "#/definitions/file",
+                  "description": "Attachment",
+                  "order": 8,
+                  "title": "Attachment"
+                },
+                "bcc": {
+                  "description": "BCC email",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 6,
+                  "title": "Bcc",
+                  "type": "array"
+                },
+                "cc": {
+                  "description": "CC emails",
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 7,
+                  "title": "Cc",
+                  "type": "array"
+                },
+                "email_from": {
+                  "description": "Email to use as FROM",
+                  "order": 1,
+                  "title": "Email From",
+                  "type": "string"
+                },
+                "email_to": {
+                  "description": "Email to send TO",
+                  "order": 2,
+                  "title": "Email To",
+                  "type": "string"
+                },
+                "html": {
+                  "description": "Message contains HTML",
+                  "order": 5,
+                  "title": "Html",
+                  "type": "boolean"
+                },
+                "message": {
+                  "description": "Message to send on the email",
+                  "order": 4,
+                  "title": "Message",
+                  "type": "string"
+                },
+                "subject": {
+                  "description": "Subject of the email",
+                  "order": 3,
+                  "title": "Subject",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email_from",
+                "email_to",
+                "subject",
+                "message",
+                "html"
+              ],
+              "title": "Variables",
+              "type": "object"
+            },
+            "defaultOutputJSONSchema": {
+              "properties": {
+                "result": {
+                  "description": "Result",
+                  "order": 1,
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "title": "Variables",
+              "type": "object"
+            },
+            "outputJSONSchema": null,
+            "defaultImageData": "",
+            "connectionType": "CONNECTION"
+          }
+        },
+        "tags": [
+          "Alerting & Notifications",
+          "Identity & Access Management"
+        ],
+        "humanCostSeconds": 1800,
+        "humanCostDisplayUnit": "minutes",
+        "parameters": {
+          "definitionSchema": {
+            "type": "object",
+            "required": [],
+            "properties": {
+              "MS-TEAMS - EUS Team": {
+                "type": "string",
+                "description": ""
+              },
+              "MS-TEAMS - EUS Channel": {
+                "type": "string",
+                "description": ""
+              },
+              "MS-TEAMS - Security Team": {
+                "type": "string",
+                "description": ""
+              },
+              "MS-TEAMS - Security Channel": {
+                "type": "string",
+                "description": ""
+              }
+            },
+            "definitions": {}
+          }
+        },
+        "summary": ""
+      }
+    ],
+    "triggers": [
+      {
+        "id": "c6ea8f6c-db2b-4ff8-ab8a-95967dcfe065",
+        "identifier": "email_received",
+        "name": "Receive Email",
+        "description": "Receives the 'Drivers License' Successful email from Wombat",
+        "input": {
+          "flatten_attachments": false,
+          "folder_name": "Inbox",
+          "interval": 15,
+          "mailbox_id": "<emailaddress>",
+          "subject_query": "You have passed your Driver's License CyberSecurity Training"
+        },
+        "inputJsonSchema": {
+          "properties": {
+            "flatten_attachments": {
+              "default": false,
+              "description": "Will return all attachments as flat lists instead of nested emails",
+              "order": 5,
+              "title": "Flatten Attachments",
+              "type": "boolean"
+            },
+            "folder_name": {
+              "description": "Common values are Calendar, Trash, Drafts, Inbox, Outbox, Sent, Junk, Tasks, Contacts. You can also use a completely custom value, for example python_mailing_list. Mailbox names are case-sensitive. Folder GUID may be specified as well",
+              "order": 2,
+              "title": "Folder Name",
+              "type": "string"
+            },
+            "interval": {
+              "default": 15,
+              "description": "How often to poll for new email in seconds",
+              "order": 3,
+              "title": "Interval",
+              "type": "integer"
+            },
+            "mailbox_id": {
+              "description": "The mailbox to monitor for incoming email",
+              "order": 1,
+              "title": "Mailbox ID",
+              "type": "string"
+            },
+            "subject_query": {
+              "default": "",
+              "description": "Query to search for in subject (regex capable). Only these email will activate this trigger",
+              "order": 4,
+              "title": "Subject Query",
+              "type": "string"
+            }
+          },
+          "required": [
+            "flatten_attachments",
+            "mailbox_id"
+          ],
+          "title": "Variables",
+          "type": "object"
+        },
+        "outputJsonSchema": {
+          "definitions": {
+            "attachment_email": {
+              "properties": {
+                "account": {
+                  "order": 9,
+                  "title": "Account",
+                  "type": "string"
+                },
+                "attached_emails": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_email_nested"
+                  },
+                  "order": 8,
+                  "title": "Attached Emails",
+                  "type": "array"
+                },
+                "attached_files": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_file"
+                  },
+                  "order": 7,
+                  "title": "Attached Files",
+                  "type": "array"
+                },
+                "body": {
+                  "order": 4,
+                  "title": "Body",
+                  "type": "string"
+                },
+                "categories": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 5,
+                  "title": "Categories",
+                  "type": "array"
+                },
+                "has_attachments": {
+                  "order": 11,
+                  "title": "Has Attachments",
+                  "type": "boolean"
+                },
+                "headers": {
+                  "items": {
+                    "$ref": "#/definitions/header"
+                  },
+                  "order": 6,
+                  "title": "Headers",
+                  "type": "array"
+                },
+                "id": {
+                  "order": 1,
+                  "title": "ID",
+                  "type": "string"
+                },
+                "recipients": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 10,
+                  "title": "Recipients",
+                  "type": "array"
+                },
+                "sender": {
+                  "order": 2,
+                  "title": "Sender",
+                  "type": "string"
+                },
+                "subject": {
+                  "order": 3,
+                  "title": "Subject",
+                  "type": "string"
+                }
+              },
+              "title": "Attachment Email",
+              "type": "object"
+            },
+            "attachment_email_nested": {
+              "properties": {
+                "account": {
+                  "order": 9,
+                  "title": "Account",
+                  "type": "string"
+                },
+                "attached_emails": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_email_nested_two"
+                  },
+                  "order": 8,
+                  "title": "Attached Emails",
+                  "type": "array"
+                },
+                "attached_files": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_file"
+                  },
+                  "order": 7,
+                  "title": "Attached Files",
+                  "type": "array"
+                },
+                "body": {
+                  "order": 4,
+                  "title": "Body",
+                  "type": "string"
+                },
+                "categories": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 5,
+                  "title": "Categories",
+                  "type": "array"
+                },
+                "has_attachments": {
+                  "order": 11,
+                  "title": "Has Attachments",
+                  "type": "boolean"
+                },
+                "headers": {
+                  "items": {
+                    "$ref": "#/definitions/header"
+                  },
+                  "order": 6,
+                  "title": "Headers",
+                  "type": "array"
+                },
+                "id": {
+                  "order": 1,
+                  "title": "ID",
+                  "type": "string"
+                },
+                "recipients": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 10,
+                  "title": "Recipients",
+                  "type": "array"
+                },
+                "sender": {
+                  "order": 2,
+                  "title": "Sender",
+                  "type": "string"
+                },
+                "subject": {
+                  "order": 3,
+                  "title": "Subject",
+                  "type": "string"
+                }
+              },
+              "title": "Attachment Email Nested",
+              "type": "object"
+            },
+            "attachment_email_nested_two": {
+              "properties": {
+                "account": {
+                  "order": 9,
+                  "title": "Account",
+                  "type": "string"
+                },
+                "attached_emails": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "order": 8,
+                  "title": "Attached Emails",
+                  "type": "array"
+                },
+                "attached_files": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_file"
+                  },
+                  "order": 7,
+                  "title": "Attached Files",
+                  "type": "array"
+                },
+                "body": {
+                  "order": 4,
+                  "title": "Body",
+                  "type": "string"
+                },
+                "categories": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 5,
+                  "title": "Categories",
+                  "type": "array"
+                },
+                "has_attachments": {
+                  "order": 11,
+                  "title": "Has Attachments",
+                  "type": "boolean"
+                },
+                "headers": {
+                  "items": {
+                    "$ref": "#/definitions/header"
+                  },
+                  "order": 6,
+                  "title": "Headers",
+                  "type": "array"
+                },
+                "id": {
+                  "order": 1,
+                  "title": "ID",
+                  "type": "string"
+                },
+                "recipients": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 10,
+                  "title": "Recipients",
+                  "type": "array"
+                },
+                "sender": {
+                  "order": 2,
+                  "title": "Sender",
+                  "type": "string"
+                },
+                "subject": {
+                  "order": 3,
+                  "title": "Subject",
+                  "type": "string"
+                }
+              },
+              "title": "Attachment Email Nested Two",
+              "type": "object"
+            },
+            "attachment_file": {
+              "properties": {
+                "content": {
+                  "order": 2,
+                  "title": "Content",
+                  "type": "string"
+                },
+                "content_type": {
+                  "order": 3,
+                  "title": "Content Type",
+                  "type": "string"
+                },
+                "file_name": {
+                  "order": 1,
+                  "title": "File Name",
+                  "type": "string"
+                }
+              },
+              "title": "Attachment File",
+              "type": "object"
+            },
+            "header": {
+              "properties": {
+                "name": {
+                  "order": 1,
+                  "title": "Name",
+                  "type": "string"
+                },
+                "value": {
+                  "order": 2,
+                  "title": "Value",
+                  "type": "string"
+                }
+              },
+              "title": "Header",
+              "type": "object"
+            },
+            "icon_email": {
+              "properties": {
+                "account": {
+                  "description": "Account for which the email was found on",
+                  "order": 2,
+                  "title": "Account",
+                  "type": "string"
+                },
+                "attached_emails": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_email"
+                  },
+                  "order": 8,
+                  "title": "Attached Emails",
+                  "type": "array"
+                },
+                "attached_files": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_file"
+                  },
+                  "order": 7,
+                  "title": "Attached Files",
+                  "type": "array"
+                },
+                "body": {
+                  "order": 6,
+                  "title": "Body",
+                  "type": "string"
+                },
+                "categories": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 11,
+                  "title": "Categories",
+                  "type": "array"
+                },
+                "flattened_attached_emails": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_email"
+                  },
+                  "order": 9,
+                  "title": "Flattened Attached Emails",
+                  "type": "array"
+                },
+                "flattened_attached_files": {
+                  "items": {
+                    "$ref": "#/definitions/attachment_file"
+                  },
+                  "order": 10,
+                  "title": "Flattened Attached Files",
+                  "type": "array"
+                },
+                "has_attachments": {
+                  "order": 14,
+                  "title": "Has Attachments",
+                  "type": "boolean"
+                },
+                "headers": {
+                  "items": {
+                    "$ref": "#/definitions/header"
+                  },
+                  "order": 12,
+                  "title": "Headers",
+                  "type": "array"
+                },
+                "id": {
+                  "order": 1,
+                  "title": "ID",
+                  "type": "string"
+                },
+                "is_read": {
+                  "description": "Whether or not the email has been read",
+                  "order": 3,
+                  "title": "Is Read",
+                  "type": "boolean"
+                },
+                "recipients": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "order": 13,
+                  "title": "Recipients",
+                  "type": "array"
+                },
+                "sender": {
+                  "order": 4,
+                  "title": "Sender",
+                  "type": "string"
+                },
+                "subject": {
+                  "order": 5,
+                  "title": "Subject",
+                  "type": "string"
+                }
+              },
+              "title": "Icon Email",
+              "type": "object"
+            }
+          },
+          "properties": {
+            "icon_email": {
+              "$ref": "#/definitions/icon_email",
+              "description": "Email",
+              "order": 1,
+              "title": "Email"
+            }
+          },
+          "title": "Variables",
+          "type": "object"
+        },
+        "tags": [],
+        "type": "trigger_plugin",
+        "plugin": {
+          "name": "Microsoft Office 365 Email",
+          "slugVendor": "rapid7",
+          "slugName": "microsoft_office365_email",
+          "slugVersion": "5.0.3",
+          "imageData": "https://eu.cdn-assets.connect.insight.rapid7.com/icons/rapid7/microsoft_office365_email/5.0.3/icon.png"
+        }
+      }
+    ]
+  }
+}

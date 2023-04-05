@@ -1,0 +1,435 @@
+{
+  "flows": [
+    {
+      "name": "yyy_a_Detection - Palo_Alto_Untrusted_Inbound_Connections",
+      "nodes": [
+        {
+          "id": "f8846615-4658-4603-a64e-c61540fb823e",
+          "name": "Output",
+          "kind": "output",
+          "warnings": [],
+          "description": "",
+          "nodes": [
+            "debba0b5-8516-41e0-b7c6-d16b0fd396e2"
+          ],
+          "isExplainable": true,
+          "x": 150,
+          "y": 922,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "categoryKind": "Unknown",
+          "iconTitle": "Unknown",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "fec7f797-b0c9-46bc-8518-3eac8d53e78b",
+          "name": "INDICATOR_Possible_Port_Knocking",
+          "kind": "augmentation",
+          "lql": "`select last_allowed_reserved AS alert_time, \n\"LH00273\" AS alert_id, \n\"Possible Port Knocking\" AS alert_title, \n\"Command and Control\" AS technique, \n\"Port Knocking\" AS tactic, \n1.0 as fidelity_score,\n1.0 as risk_score,\n1.0 as lhub_score,\nTO_JSON(STRUCT(connection_history)) AS additional_data, \n'' as  src_user, \nsource_ip AS src_ip, \ndestination_ip AS dest_ip, \n'' AS src_machine_name, \n'' AS dest_machine_name\nFROM Possible_Port_Knocking`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 508,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "dda150bb-fc8f-49b4-b0dc-471378d02645",
+          "name": "Group_by_source_and_dest_address",
+          "kind": "augmentation",
+          "lql": "`SELECT source_ip, destination_ip, MIN(allowed_ephemeral) AS first_allowed_ephemeral, MAX(allowed_reserved) AS last_allowed_reserved, collect_set(concat('Connected to port ',destination_port,' at ',first_seen)) AS connection_history\nFROM Timing_of_allowed_connections GROUP BY source_ip, destination_ip`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 264,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "debba0b5-8516-41e0-b7c6-d16b0fd396e2",
+          "name": "LogicHub_MDR_Format_Alert_for_Sumo",
+          "kind": "step",
+          "inputs": [
+            "65943ea1-27c1-4a40-8893-dde1486891e6"
+          ],
+          "isLeaf": false,
+          "warnings": [],
+          "description": "Format event output to send to SumoLogic destination",
+          "isExplainable": true,
+          "x": 150,
+          "y": 752,
+          "vertices": [],
+          "title": "LogicHub MDR: Format Alert for Sumo",
+          "moduleId": "logichub.mdr.format_alert_for_sumo",
+          "moduleVersion": {
+            "majorVersion": 1,
+            "minorVersion": 31,
+            "patchVersion": 0,
+            "contentResourceVersionBranch": "Local"
+          },
+          "moduleParameters": {
+            "parent0": "Join_all_indicators"
+          },
+          "stepParams": {
+            "kind": "module",
+            "title": "LogicHub MDR: Format Alert for Sumo"
+          },
+          "isEditable": true,
+          "isStepImplementable": false,
+          "executionDependsOn": [],
+          "contentMetadata": {
+            "id": "logichub.mdr.format_alert_for_sumo",
+            "name": "LogicHub MDR: Format Alert for Sumo",
+            "latestAvailableVersion": {
+              "majorVersion": 1,
+              "minorVersion": 31,
+              "patchVersion": 0,
+              "contentResourceVersionBranch": "Local"
+            }
+          },
+          "outputtedNode": true,
+          "contentItemIdentifier": {
+            "kind": "ModuleContentKind",
+            "id": "logichub.mdr.format_alert_for_sumo"
+          },
+          "categoryKind": "Module",
+          "iconTitle": "Module: LogicHub MDR: Format Alert for Sumo",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "65943ea1-27c1-4a40-8893-dde1486891e6",
+          "name": "Join_all_indicators",
+          "kind": "augmentation",
+          "lql": "unionAll(INDICATOR_Possible_Port_Knocking, INDICATOR_Ports_are_exposed_that_should_be_protected)",
+          "operator": "unionAll",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 640,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "OperatorForm",
+          "contentItemIdentifier": {
+            "kind": "OperatorContentKind",
+            "id": "unionAll"
+          },
+          "categoryKind": "Transform",
+          "iconTitle": "Transform: Union All",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "fb16b082-933b-44e1-bc74-94ac1fe1a1cc",
+          "name": "Palo_Alto_Untrusted_Inbound_Connections",
+          "kind": "eventType",
+          "isLeaf": false,
+          "eventType": "eventType-37",
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 150,
+          "y": 0,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "contentItemIdentifier": {
+            "kind": "EventTypeContentKind",
+            "id": "eventType-37"
+          },
+          "categoryKind": "FetchData",
+          "linkToTrigger": true,
+          "iconTitle": "Fetch Data: Palo_Alto_Untrusted_Inbound_Connections",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "b1919dc7-6acf-4377-9f42-f73930da1df3",
+          "name": "Possible_Port_Knocking",
+          "kind": "augmentation",
+          "lql": "`SELECT * FROM Group_by_source_and_dest_address\nWHERE first_allowed_ephemeral > last_allowed_reserved`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 396,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "51c94e24-8665-4a90-9386-95a831ad7d67",
+          "name": "Aggregate_Destinations",
+          "kind": "augmentation",
+          "lql": "`select min(first_seen) AS first_seen, collect_set(concat(source_ip,'(',country_name,')')) AS sources from Ports_that_Should_Be_Protected GROUP BY destination_ip, destination_port`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 396,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "a7d2786e-a787-4324-a004-17396e4d442a",
+          "name": "Timing_of_allowed_connections",
+          "kind": "augmentation",
+          "lql": "`SELECT source_ip, destination_ip, action, first_seen, last_seen, destination_port,\nCASE WHEN (action = \"allow\" AND destination_port>1024) THEN first_seen END AS allowed_ephemeral,\nCASE WHEN (action = \"allow\" AND destination_port<1025) THEN last_seen END AS allowed_reserved\nFROM Palo_Alto_Untrusted_Inbound_Connections where action='allow'`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 300,
+          "y": 132,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "0bff9ecf-e7e4-4efb-a410-cd5174fd43d2",
+          "name": "INDICATOR_Ports_are_exposed_that_should_be_protected",
+          "kind": "augmentation",
+          "lql": "`select first_seen AS alert_time, \n\"LH00274\" AS alert_id, \n\"Ports are exposed that should be protected\" AS alert_title, \n\"Exploit Public Facing Application\" AS technique, \n\"Initial Access\" AS tactic, \n2.0 as fidelity_score,\n3.0 as risk_score,\n6.0 as lhub_score,\nTO_JSON(STRUCT(sources)) AS additional_data, \n'' as  src_user, \n'' AS src_ip, \ndestination_ip AS dest_ip, \n'' AS src_machine_name, \n'' AS dest_machine_name\nFROM Aggregate_Destinations`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 508,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        },
+        {
+          "id": "bd04ad17-6ef5-47a8-9cff-23fcaaac6cc6",
+          "name": "Ports_that_Should_Be_Protected",
+          "kind": "augmentation",
+          "lql": "`select * from Palo_Alto_Untrusted_Inbound_Connections where action='allow' AND destination_port in('21','23','445','1433','1434','3306','3389','5900')`",
+          "operator": "SELECT",
+          "isLeaf": false,
+          "warnings": [],
+          "description": "",
+          "isExplainable": true,
+          "x": 0,
+          "y": 264,
+          "vertices": [],
+          "isEditable": false,
+          "isStepImplementable": true,
+          "executionDependsOn": [],
+          "outputtedNode": false,
+          "formType": "LQLEditor",
+          "categoryKind": "Code",
+          "iconTitle": "Code: SQL",
+          "usedByEventTypes": []
+        }
+      ],
+      "oldId": "flow-1045",
+      "listNames": [],
+      "dependentCommands": [],
+      "resourceFormatVersion": 2,
+      "fileDataSeq": []
+    }
+  ],
+  "baselines": [],
+  "eventTypes": [
+    {
+      "id": "eventType-37",
+      "data": {
+        "name": "Palo_Alto_Untrusted_Inbound_Connections",
+        "query": "(_sourceCategory=security/ngfw/*) \",TRAFFIC,\"| csv _raw extract FUTURE_USE_1, Receive_Time, Serial_Number, Type, Threat_Content_Type, FUTURE_USE_2, Generated_Time, Source_IP, Destination_IP, NAT_Source_IP, NAT_Destination_IP, Rule_Name, Source_User, Destination_User, Application, Virtual_System, Source_Zone, Destination_Zone, Inbound_Interface, Outbound_Interface, Log_Action, FUTURE_USE_3, Session_ID, Repeat_Count, Source_Port, Destination_Port, NAT_Source_Port, NAT_Destination_Port, Flags, Protocol, Action, Bytes, Bytes_Sent, Bytes_Received, Packets, Start_Time, Elapsed_Time, Category, FUTURE_USE_4, Sequence_Number, Action_Flags, Source_Location, Destination_Location, FUTURE_USE_5, Packets_Sent, Packets_Received, Session_End_Reason, Device_Group_Hierarchy_Level_1, Device_Group_Hierarchy_Level_2, Device_Group_Hierarchy_Level_3, Device_Group_Hierarchy_Level_4, Virtual_System_Name, Device_Name, Action_Source, Source_VM_UUID, Destination_VM_UUID, Tunnel_ID_IMSI, Monitor_Tag_IMEI, Parent_Session_ID, Parent_Start_Time, Tunnel_Type, SCTP_Association_ID, SCTP_Chunks, SCTP_Chunks_Sent, SCTP_Chunks_Received|where !(isPrivateIP(Source_IP)) AND Source_Zone=\"untrust\"|count, min(_messagetime) AS first_seen, max(_messagetime) as last_seen by Source_IP, Destination_IP,Destination_Port,action| toLong(first_seen) | toLong(last_seen)\n| lookup latitude, longitude, country_code, country_name, state, city from geo://location on ip=Source_IP",
+        "keyColumns": "source_ip,destination_ip,destination_port,action,first_seen,last_seen,country_code,country_name,state,city",
+        "connection": "connection-2",
+        "connectionTypeEntities": {
+          "entities": [
+            {
+              "connectionType": {
+                "connectionType": "sumologic",
+                "value": "query"
+              },
+              "connectionTypeDetail": {
+                "query": "(_sourceCategory=security/ngfw/*) \",TRAFFIC,\"| csv _raw extract FUTURE_USE_1, Receive_Time, Serial_Number, Type, Threat_Content_Type, FUTURE_USE_2, Generated_Time, Source_IP, Destination_IP, NAT_Source_IP, NAT_Destination_IP, Rule_Name, Source_User, Destination_User, Application, Virtual_System, Source_Zone, Destination_Zone, Inbound_Interface, Outbound_Interface, Log_Action, FUTURE_USE_3, Session_ID, Repeat_Count, Source_Port, Destination_Port, NAT_Source_Port, NAT_Destination_Port, Flags, Protocol, Action, Bytes, Bytes_Sent, Bytes_Received, Packets, Start_Time, Elapsed_Time, Category, FUTURE_USE_4, Sequence_Number, Action_Flags, Source_Location, Destination_Location, FUTURE_USE_5, Packets_Sent, Packets_Received, Session_End_Reason, Device_Group_Hierarchy_Level_1, Device_Group_Hierarchy_Level_2, Device_Group_Hierarchy_Level_3, Device_Group_Hierarchy_Level_4, Virtual_System_Name, Device_Name, Action_Source, Source_VM_UUID, Destination_VM_UUID, Tunnel_ID_IMSI, Monitor_Tag_IMEI, Parent_Session_ID, Parent_Start_Time, Tunnel_Type, SCTP_Association_ID, SCTP_Chunks, SCTP_Chunks_Sent, SCTP_Chunks_Received|where !(isPrivateIP(Source_IP)) AND Source_Zone=\"untrust\"|count, min(_messagetime) AS first_seen, max(_messagetime) as last_seen by Source_IP, Destination_IP,Destination_Port,action| toLong(first_seen) | toLong(last_seen)\n| lookup latitude, longitude, country_code, country_name, state, city from geo://location on ip=Source_IP",
+                "connection": "connection-2"
+              }
+            }
+          ]
+        },
+        "defaultConnectionType": {
+          "connectionType": "sumologic",
+          "value": "query"
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "connection-2",
+      "data": {
+        "connectionType": "sumologic",
+        "name": "SumoLogic",
+        "isActive": false,
+        "account": "",
+        "secret": "",
+        "url": "https://api.us2.sumologic.com/api/v1"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "logichub.mdr.format_alert_for_sumo",
+      "name": "LogicHub MDR: Format Alert for Sumo",
+      "description": "Format event output to send to a SumoLogic destination",
+      "templateNodes": [
+        {
+          "name": "alert_output_for_sumo",
+          "templateLQL": "`SELECT \n/* always include lhub_score in the final output */\nlhub_score,\n\n/* format the final JSON output */\nTO_JSON(STRUCT(\n\n/* Required/Standard fields first */\nlhub_score, alert_time,\nlh_batch_end, lh_batch_id, lh_hostname, lh_alert_id,\nalert_id, alert_type, technique, tactic, risk_score, fidelity_score,\n\n/* All other fields EXCEPT additional_data */\nattack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user,\n\n/* place additional_data last so it will be at the bottom of the JSON formatted output */\nadditional_data)) AS alert_output\nFROM validate_required_input`",
+          "isOutput": true
+        },
+        {
+          "name": "ensure_defined_fields_exist",
+          "templateLQL": "ensureTableHasColumns(comment_ensure_table_has_columns, \"lhub_score, lhub_ts, alert_title, alert_time, alert_id, alert_type, technique, tactic, risk_score, fidelity_score, additional_data, attack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user\")",
+          "isOutput": false
+        },
+        {
+          "name": "final_columns",
+          "templateLQL": "`SELECT \n/* Required/standard fields first */\nlh__new_score AS lhub_score,\nlh__new_ts AS lhub_ts,\nlh__new_ts AS alert_time,\nlh_batch_end, lh_batch_id, lh_hostname, lh_alert_id,\nalert_id,\n\n/* Legacy support for \"alert_title\" which is now called \"alert_type\" */\nCOALESCEEMPTY(alert_type, alert_title) AS alert_type,\n\ntechnique, tactic, risk_score, fidelity_score,\n\n/* All other supported fields */\nadditional_data, attack_chain, dest_ip, dest_machine_name, dest_machine_fqdn, dest_nt_domain, dest_port, dest_user, src_ip, src_machine_name, src_machine_fqdn, src_nt_domain, src_port, src_user\n\nFROM calculate_new_score_and_time`",
+          "isOutput": false
+        },
+        {
+          "name": "add_batch_metadata",
+          "templateLQL": "addExecutionMetadata(ensure_defined_fields_exist)",
+          "isOutput": false
+        },
+        {
+          "name": "calculate_new_score_and_time",
+          "templateLQL": "`SELECT \n/* If lhub_score = 0, keep it 0, otherwise use the greater of the original value or risk times fidelity */\nCASE DOUBLE(lhub_score) WHEN 0 THEN DOUBLE(lhub_score) ELSE GREATEST(risk_score * fidelity_score, DOUBLE(lhub_score)) END AS lh__new_score,\n\n/* For timestamp, look first for alert_time, then lhub_ts, then batch end time */\nCASE\n  WHEN BIGINT(alert_time) IS NOT NULL THEN BIGINT(alert_time)\n  WHEN BIGINT(lhub_ts) IS NOT NULL THEN BIGINT(lhub_ts) ELSE BIGINT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.interval_end_millis\"))\nEND AS lh__new_ts,\n\nREGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), '://(.*?)/') AS lh_hostname,\nREGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), '(batch-\\\\d+)$') AS lh_batch_id,\nBIGINT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.interval_end_millis\")) AS lh_batch_end,\n\n/* Generate a unique (mostly) event ID from the batch number + lhub_id */\nBIGINT(PRINTF('%s%s', REGEXP_EXTRACT(GET_JSON_OBJECT(lhub_execution_metadata, \"$.batch_url\"), 'batch-(\\\\d+)$'), lhub_id)) AS lh_alert_id,\n*\nFROM add_batch_metadata`",
+          "isOutput": false
+        },
+        {
+          "name": "comment_ensure_table_has_columns",
+          "templateLQL": "`\n/* Since some columns are only conditionally required, there has to be a step to explicitly check for values in those fields anyway, so to keep it simple, all possible fields are protected in ensureTableHasColumns, and some are validated later to ensure that they have a value.\n\nFields supported but not part of the final JSON schema:\n- lhub_score - can be used to override final score\n- lhub_ts - when available, used to calculate alert_time\n- alert_title - legacy support, but since renamed to alert_type\n\nNot expected from input but allowed when available:\n- alert_time: calculated from lhub_ts or batch time, but if this is available then we'll accept it as truth\n\nAfter that, ALL SUPPORTED FIELDS from supported schema\nhttps://logichub.atlassian.net/wiki/spaces/CON/pages/797671425/Output+Schema+for+LogicHub+Content\n*/\n\nselect * from %%%parent0%%%`",
+          "isOutput": false
+        },
+        {
+          "name": "check_for_required_fields",
+          "templateLQL": "`/*\nOnce all calculations are done, verify that all the required fields have values.\nNote that some fields allow empty strings for the time being, as long as they aren't null. This is just to allow us to transition into this new alert schema while we figure it all out.\n*/\n\nSELECT *,\nCASE\n    /* array_sort will put nulls at the end, so this is a quick way to check all required inputs at once */\n    WHEN ELEMENT_AT(ARRAY_SORT(ARRAY(alert_id, alert_type, technique, tactic, risk_score, fidelity_score)), -1) IS NULL THEN 'One or more required inputs is missing or null. Required fields: alert_id, alert_type, technique, tactic, risk_score, fidelity_score'\n    WHEN TRIM(alert_id) = '' THEN 'alert_id cannot be empty'\n    WHEN TRIM(alert_type) = '' THEN 'alert_type cannot be empty'\n    WHEN risk_score NOT IN (1, 2, 3) THEN PRINTF('Invalid value for risk_score (%s). Acceptable values are from 1 (low), 2 (medium) and 3 (high).', risk_score)\n    WHEN fidelity_score NOT IN (1, 2, 3) THEN PRINTF('Invalid value for fidelity_score (%s). Acceptable values are from 1 (low), 2 (medium) and 3 (high).', fidelity_score)\n    WHEN FLOAT(lhub_score) IS NULL THEN 'Unable to calculate lhub_score from provided columns'\n    WHEN lhub_score > 10 OR lhub_score < 0 THEN PRINTF('Invalid value for lhub_score (%s). Acceptable values are from 0-10.', lhub_score)\nEND AS error\n\nFROM final_columns`",
+          "isOutput": false
+        },
+        {
+          "name": "validate_required_input",
+          "templateLQL": "forceFail(check_for_required_fields, \"error\")",
+          "isOutput": false
+        }
+      ],
+      "steps": [
+        {
+          "name": "Module Parameters",
+          "description": "",
+          "inputs": [
+            {
+              "id": "parent0",
+              "description": "Parent node",
+              "label": "Parent Node",
+              "dataType": "node",
+              "inputType": "columnSelect",
+              "dependsOn": "",
+              "columnTemplating": false
+            }
+          ],
+          "isVariadic": false
+        }
+      ],
+      "isPublished": true,
+      "author": "chad@logichub.com",
+      "categories": [],
+      "isEditable": true,
+      "integrations": [],
+      "innerModules": [],
+      "tags": [],
+      "moduleVersion": {
+        "majorVersion": 1,
+        "minorVersion": 31,
+        "patchVersion": 0,
+        "contentResourceVersionBranch": "Local"
+      },
+      "isDataSource": "No",
+      "resourceFormatVersion": 3,
+      "weight": 0
+    }
+  ],
+  "annotations": [],
+  "filters": [],
+  "ruleSets": [],
+  "integrationInstances": [],
+  "customLists": [],
+  "streams": [],
+  "dashboards": [],
+  "images": [],
+  "codeBlobs": {},
+  "customListsData": {},
+  "executionScripts": [],
+  "userForms": [],
+  "flowNodeReferences": [],
+  "destinations": [],
+  "fileResources": [],
+  "fileDataSeq": [],
+  "eventModels": [],
+  "version": 1
+}

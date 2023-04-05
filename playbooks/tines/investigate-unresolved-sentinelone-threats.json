@@ -1,0 +1,216 @@
+{
+  "schema_version": 4,
+  "name": "Investigate unresolved SentinelOne threats",
+  "description": "Carry out a simple threat investigation by pulling in unresolved SentinelOne threats. Analyze each alert individually, deduplicate incidents, then create a case in Jira.\n\ntags: SentinelOne, Jira, Analyze, Beginner, Investigate\nicons: sentinelone, 🕵️, jira\nvisibility: public",
+  "guid": "7bb5a9e7cde44b336146c6b4fb9ac73d",
+  "slug": "investigate_unresolved_sentinelone_threats",
+  "exported_at": "2022-07-11T17:50:46Z",
+  "agents": [
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Get Unresolved S1 Threats",
+      "disabled": false,
+      "guid": "a02b94926de74d48f4c84b12aa127816",
+      "options": {
+        "url": "https://<<RESOURCE.sentinelone_server>>/web/api/v2.0/threats",
+        "content_type": "json",
+        "payload": {
+          "limit": "10",
+          "resolved": "false",
+          "createdAt__gt": "<<DATE(\"now\", \"%s\") |> MINUS(%, 86400) |> DATE(%, \"%Y-%m-%dT%H:%M:%SZ\")>>"
+        },
+        "method": "get",
+        "headers": {
+          "accept": "application/json",
+          "Authorization": "APIToken <<CREDENTIAL.sentinelone>>"
+        }
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": []
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Deduplicate Incidents",
+      "disabled": false,
+      "guid": "643ccb9feccede57604681d0213ed4ec",
+      "options": {
+        "mode": "deduplicate",
+        "lookback": "2000",
+        "path": "<<explode_individual_s1_alerts.individual_alert>><<explode_individual_s1_alerts.individual_alert.createdAt>><<explode_individual_s1_alerts.individual_alert.agentId>><<explode_individual_s1_alerts.individual_alert.filepath>><<explode_individual_s1_alerts.individual_alert.fileContentHash>><<explode_individual_s1_alerts.individual_alert.threatName>>"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::EventTransformationAgent",
+      "name": "Explode Individual S1 Alerts",
+      "disabled": false,
+      "guid": "b66f519358137d4ef59d4fc0eb2ce7d2",
+      "options": {
+        "mode": "explode",
+        "path": "=get_unresolved_s1_threats.body.data",
+        "to": "individual_alert"
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    },
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check if there is a Threat",
+      "disabled": false,
+      "guid": "915dc31435df49679f7ffd7c6395f0ab",
+      "options": {
+        "rules": [
+          {
+            "type": "field>=value",
+            "value": "1",
+            "path": "<<get_unresolved_s1_threats.body.pagination.totalItems>>"
+          }
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      }
+    },
+    {
+      "type": "Agents::HTTPRequestAgent",
+      "name": "Create Jira Ticket",
+      "disabled": false,
+      "guid": "2e4e673abb0b42aa1b61da6067da032c",
+      "options": {
+        "url": "https://<<RESOURCE.jira_domain>>/rest/api/2/issue",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "fields": {
+            "project": {
+              "key": "SEC"
+            },
+            "issuetype": {
+              "name": "Task"
+            },
+            "summary": "S1 Agent - <<SLICE(explode_individual_s1_alerts.individual_alert.agentComputerName, 0, 30)>>",
+            "description": "h1.{color:red}*S1 Agent Incident*{color}  \n ---- \n h3.{color:red}(!)  +Threat Information+  (!){color} \n|*Classification:*| *{color:orange}<<explode_individual_s1_alerts.individual_alert.classification>>{color}*|\n|*Agent Infected:*| <<explode_individual_s1_alerts.individual_alert.agentInfected>>|\n|*Display Name:*| <<explode_individual_s1_alerts.individual_alert.threatName>>|\n|*Description:*| <<explode_individual_s1_alerts.individual_alert.description>>|\n|*File Path:*| <<explode_individual_s1_alerts.individual_alert.filePath>>|\n|*File Hash:*| <<explode_individual_s1_alerts.individual_alert.fileContentHash>>|\n\n ---- \n h3.{color:red}(!)  +Agent Information+  (!){color} \n|*Computer Name:*| <<explode_individual_s1_alerts.individual_alert.agentComputerName>>|\n|*Agent Id:*| <<explode_individual_s1_alerts.individual_alert.agentId>>|\n*Account Id:*| <<explode_individual_s1_alerts.individual_alert.accountId>>|\n|*Agent Version:*| <<explode_individual_s1_alerts.individual_alert.agentVersion>>|\n|*OS Type:*| <<explode_individual_s1_alerts.individual_alert.agentOsType>>|\n|*Machine Type:*| <<explode_individual_s1_alerts.individual_alert.agentMachineType>>|\n|*Username:*| <<explode_individual_s1_alerts.individual_alert.username>>|\n\n ---- Story Run Link: <<STORY_RUN_LINK()>> ",
+            "labels": [
+              "Tines_S1_Incident_Ticket"
+            ]
+          }
+        },
+        "basic_auth": [
+          "<<RESOURCE.jira_user>>",
+          "<<CREDENTIAL.jira>>"
+        ]
+      },
+      "reporting": {
+        "time_saved_value": 0,
+        "time_saved_unit": "minutes"
+      },
+      "monitoring": {
+        "monitor_all_events": false,
+        "monitor_failures": false,
+        "monitor_no_events_emitted": null
+      },
+      "schedule": null
+    }
+  ],
+  "diagram_notes": [
+    {
+      "content": "Start by pulling in recent unresolved SentinelOne threats into Tines. Limit is set to 10\n\n",
+      "position": [
+        585.0,
+        135.0
+      ],
+      "guid": "d1c9ed284a435561e856b3b4223a9ddf",
+      "width": null
+    },
+    {
+      "content": "[Explode](https://hub.tines.com/docs/actions/types/event-transformation#explode-mode) each alert out for further analysis.",
+      "position": [
+        585.0,
+        330.0
+      ],
+      "guid": "e375e8d7f0b49a408304e7086f320507",
+      "width": null
+    },
+    {
+      "content": "Deduplicate the incidents:\nHere, 250 past events are [examined for uniqueness](https://hub.tines.com/docs/actions/types/event-transformation#configuration-options). You can edit this if you so choose, up to a max of 1000.",
+      "position": [
+        585.0,
+        435.0
+      ],
+      "guid": "0d73bfb7d17c32a1af67eeaffd664d2b",
+      "width": null
+    },
+    {
+      "content": "https://image-uploads.tines.com/sentinelone.png\nA Simple SentinelOne Story\n1. Pull SentinelOne threats into Tines\n2. Get information about each threat\n3. Create a new Jira ticket \n\nThis story is set to run on a daily schedule, each day at 9 AM. You can modify this to better suit your company's needs.\n\n# Requirements\n- [ ] sentinelone API Key\n- [ ] Jira API Key ",
+      "position": [
+        30.0,
+        135.0
+      ],
+      "guid": "755b4607f2e3e6b67318d6f2fa9352b9",
+      "width": null
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 3
+    },
+    {
+      "source": 1,
+      "receiver": 4
+    },
+    {
+      "source": 2,
+      "receiver": 1
+    },
+    {
+      "source": 3,
+      "receiver": 2
+    }
+  ],
+  "diagram_layout": "{\"a02b94926de74d48f4c84b12aa127816\":[330,120],\"643ccb9feccede57604681d0213ed4ec\":[330,450],\"b66f519358137d4ef59d4fc0eb2ce7d2\":[330,330],\"915dc31435df49679f7ffd7c6395f0ab\":[330,240],\"2e4e673abb0b42aa1b61da6067da032c\":[330,555]}",
+  "send_to_story_enabled": false,
+  "entry_agent_guid": null,
+  "exit_agent_guids": [],
+  "exit_agent_guid": null,
+  "send_to_stories": [],
+  "form": {
+    "name": "Investigate unresolved SentinelOne threats Form",
+    "description": "",
+    "fields": [],
+    "visibility": "tenant",
+    "agent_guid": null,
+    "success_message": "Thank you for your submission"
+  }
+}

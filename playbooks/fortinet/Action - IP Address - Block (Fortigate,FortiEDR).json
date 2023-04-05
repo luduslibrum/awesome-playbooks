@@ -1,0 +1,501 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Action - IP Address - Block (Fortigate,FortiEDR)",
+    "aliasName": null,
+    "tag": null,
+    "description": "Isolates and blocks specified IP addresses using FortiGate and FortiEDR.",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [
+        "inputIndicatorRecordIRI",
+        "inputIndicatorValue",
+        "inputActionReasons",
+        "inputAssetHostname",
+        "inputAlertRecordIRI"
+    ],
+    "synchronous": false,
+    "collection": "\/api\/3\/workflow_collections\/2d150b7b-ee6b-4686-a249-3c2cfa99f657",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/efe5c249-b32b-4c1e-92e9-44ceda5b3de8",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "actionReason": "{{\nvars.input.params.inputActionReasons\nif vars.input.params.inputActionReasons\nelse vars.input.params.actionReason\n}}",
+                "indicatorIRI": "{{\nvars.input.params.inputIndicatorRecordIRI \nif vars.input.params.inputIndicatorRecordIRI \nelse  \nvars.input.records[0]['@id'] \n}}",
+                "indicatorValue": "{{\nvars.input.params.inputIndicatorValue\nif vars.input.params.inputIndicatorValue\nelse \nvars.input.records[0].value\n}}",
+                "loggedInUserName": "{{vars.loggedInUser.firstname}} {{vars.loggedInUser.lastname}}"
+            },
+            "status": null,
+            "top": "165",
+            "left": "650",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "99c59504-ad70-4ea7-84d5-bd90f849c5c7"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Mark as Blocked",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "{{vars.indicatorValue}} has been Marked **TBD** as confirmed by {{vars.loggedInUserName}}",
+                    "records": "{{vars.indicatorIRI}}"
+                },
+                "resource": {
+                    "alerts": "{{vars.input.params.inputAlertRecordIRI}}",
+                    "reputation": {
+                        "id": 109,
+                        "@id": "\/api\/3\/picklists\/7074e547-7785-4979-be32-c6d0c863e4bd",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": "#c42323",
+                        "display": "Malicious",
+                        "listName": "\/api\/3\/picklist_names\/e75ed3c3-9f23-4a43-832b-0daf236209ba",
+                        "itemValue": "Malicious",
+                        "orderIndex": 1
+                    },
+                    "indicatorStatus": {
+                        "id": 367,
+                        "@id": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Blocked",
+                        "listName": "\/api\/3\/picklist_names\/e6639d57-94a9-432f-a46f-b2b530402077",
+                        "itemValue": "Blocked",
+                        "orderIndex": 0
+                    }
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.indicatorIRI}}",
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "475",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "9fac58ab-5b66-4f49-b779-1c877133bdc6"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "ab4ba1f7-dd7c-444b-b0b6-f5c44addbb2a",
+                "title": "Block Attacker IP Address",
+                "resources": [
+                    "indicators"
+                ],
+                "inputVariables": [
+                    {
+                        "name": "actionReason",
+                        "type": "string",
+                        "label": "Reason",
+                        "tooltip": "Specify Reason for the action",
+                        "dataType": "text",
+                        "formType": "text",
+                        "required": false,
+                        "_expanded": true,
+                        "_nameTouched": true,
+                        "defaultValue": "Found malicious during investigation",
+                        "useRecordFieldDefault": false
+                    }
+                ],
+                "step_variables": {
+                    "input": {
+                        "params": {
+                            "actionReason": "{{vars.request.data[\"actionReason\"]}}",
+                            "inputActionReasons": "{{ vars.inputActionReasons }}",
+                            "inputAssetHostname": "{{ vars.inputAssetHostname }}",
+                            "inputAlertRecordIRI": "{{ vars.inputAlertRecordIRI }}",
+                            "inputIndicatorValue": "{{ vars.inputIndicatorValue }}",
+                            "inputIndicatorRecordIRI": "{{ vars.inputIndicatorRecordIRI }}"
+                        },
+                        "records": "{{vars.input.records}}"
+                    },
+                    "loggedInUser": "{{vars.currentUser | fromIRI }}"
+                },
+                "_promptexpanded": true,
+                "displayConditions": {
+                    "indicators": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": [
+                            {
+                                "type": "object",
+                                "field": "indicatorStatus",
+                                "value": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/fa29fe48-f01e-476f-bb33-c910f5795b57",
+                                    "itemValue": "Blocked"
+                                },
+                                "operator": "neq"
+                            },
+                            {
+                                "type": "object",
+                                "field": "typeofindicator",
+                                "value": "\/api\/3\/picklists\/c0beeda4-2c7a-4214-b7e5-53ba1649539c",
+                                "_value": {
+                                    "@id": "\/api\/3\/picklists\/c0beeda4-2c7a-4214-b7e5-53ba1649539c",
+                                    "itemValue": "IP Address"
+                                },
+                                "operator": "eq"
+                            }
+                        ]
+                    }
+                },
+                "executeButtonText": "Block",
+                "noRecordExecution": false,
+                "singleRecordExecution": true
+            },
+            "status": null,
+            "top": "40",
+            "left": "640",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "efe5c249-b32b-4c1e-92e9-44ceda5b3de8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add note to Indicator",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "content": "<p>{{vars.loggedInUserName}} initiated block of {{vars.indicatorValue}} with the following reasons: {{vars.actionReason}}<\/p>",
+                    "__replace": "",
+                    "indicators": "{{vars.indicatorIRI}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "300",
+            "left": "650",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "1193e8ed-c722-4f1e-abce-cb454419c367"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block IP Address",
+            "description": null,
+            "arguments": {
+                "name": "Fortinet FortiGate",
+                "config": "79146b07-92ac-404c-8bd5-20cd97966dcd",
+                "params": {
+                    "vdom": "",
+                    "method": "Quarantine Based",
+                    "ip_addresses": "{{vars.indicatorValue}}",
+                    "time_to_live": "12 Hour"
+                },
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "Blocking this Malicious IP {{vars.indicatorValue}} on FortiGate Firewall",
+                    "records": "{{vars.indicatorIRI}}"
+                },
+                "version": "4.0.1",
+                "connector": "fortigate-firewall",
+                "operation": "block_ip",
+                "mock_result": "{\n  \"data\": {\n    \"newly_blocked\": [\n      \"1.1.1.1\"\n    ],\n    \"vdom_not_exist\": [],\n    \"already_blocked\": [],\n    \"error_with_block\": []\n  },\n  \"status\": \"Success\",\n  \"_status\": true,\n  \"message\": \"\",\n  \"operation\": null,\n  \"request_id\": null\n}",
+                "ignore_errors": true,
+                "operationTitle": "Block IP Address",
+                "pickFromTenant": false,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "d9cb6e40-58e9-4da8-b968-806bfc78e7ef"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Block IP",
+            "description": null,
+            "arguments": {
+                "type": "DecisionBased",
+                "input": {
+                    "schema": {
+                        "title": "\u26a0\ufe0f Block {{vars.indicatorValue}}",
+                        "description": "Send this to FortiNAC block {{vars.indicatorValue}} and Click \"**Block Completed**\" to confirm the status.\n\n*Consider changing this step to automation using a connector. That would accelerate your response time and allow you to focus on advanced threats.*",
+                        "inputVariables": []
+                    }
+                },
+                "record": "{{ vars.input.records[0][\"@id\"] }}",
+                "owner_detail": {
+                    "isAssigned": false
+                },
+                "step_variables": [],
+                "response_mapping": {
+                    "options": [
+                        {
+                            "option": "Block Completed",
+                            "step_iri": "\/api\/3\/workflow_steps\/9fac58ab-5b66-4f49-b779-1c877133bdc6"
+                        },
+                        {
+                            "option": "Unable to Block",
+                            "step_iri": "\/api\/3\/workflow_steps\/36572c63-2b65-45de-9266-d0bd6e1d5ae8"
+                        }
+                    ],
+                    "duplicateOption": false
+                },
+                "email_notification": {
+                    "enabled": false,
+                    "smtpParameters": []
+                }
+            },
+            "status": null,
+            "top": "435",
+            "left": "650",
+            "stepType": "\/api\/3\/workflow_step_types\/fc04082a-d7dc-4299-96fb-6837b1baa0fe",
+            "uuid": "64a594f7-de26-4019-a82d-293390713a5e"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Isolate Host",
+            "description": null,
+            "arguments": {
+                "name": "Fortinet FortiEDR",
+                "config": "750dc07d-1162-4d63-bf13-40dec895a759",
+                "params": {
+                    "type": "Name",
+                    "devices": "{{vars.input.params.inputAssetHostname}}",
+                    "organization": ""
+                },
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "Isolating this Host {{vars.input.params.inputAssetHostname}} on FortiEDR",
+                    "records": "{{vars.indicatorIRI}}"
+                },
+                "version": "1.2.0",
+                "connector": "fortinet-fortiedr",
+                "operation": "isolate_collector",
+                "mock_result": "{\n  \"data\": {\n    \"result\": \"Successfully executed isolate_collector\"\n  },\n  \"status\": \"Success\",\n  \"_status\": true,\n  \"message\": \"\",\n  \"operation\": null,\n  \"request_id\": null\n}",
+                "ignore_errors": true,
+                "operationTitle": "Isolate Collector",
+                "pickFromTenant": false,
+                "step_variables": []
+            },
+            "status": null,
+            "top": "435",
+            "left": "1175",
+            "stepType": "\/api\/3\/workflow_step_types\/0bfed618-0316-11e7-93ae-92361f002671",
+            "uuid": "b7022552-a550-4709-bf80-d01a3ccd2ec3"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Update Record",
+            "description": null,
+            "arguments": {
+                "message": {
+                    "tags": [],
+                    "type": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                    "tenant": "",
+                    "content": "No Action Taken for {{vars.indicatorValue}} as confirmed by \n{{vars.loggedInUserName}}",
+                    "records": "{{vars.indicatorIRI}}"
+                },
+                "resource": {
+                    "alerts": "{{vars.input.params.inputAlertRecordIRI}}"
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "{{vars.indicatorIRI}}",
+                "collectionType": "\/api\/3\/indicators",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "825",
+            "stepType": "\/api\/3\/workflow_step_types\/b593663d-7d13-40ce-a3a3-96dece928722",
+            "uuid": "36572c63-2b65-45de-9266-d0bd6e1d5ae8"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add Note to Alert",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "type": {
+                        "id": 248,
+                        "@id": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Comment",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/0841c1eb-a0a3-4abd-b29c-9f68e4d9b14f",
+                        "itemValue": "Comment",
+                        "orderIndex": 1
+                    },
+                    "alerts": "{{vars.input.params.inputAlertRecordIRI}}",
+                    "content": "{{vars.indicatorValue}} IP is Successfully Blocked on FortiGate Firewall",
+                    "__replace": ""
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "125",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "b725762f-f4cd-4db4-b114-df11816454ca"
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Add note to Alerts",
+            "description": null,
+            "arguments": {
+                "resource": {
+                    "type": {
+                        "id": 248,
+                        "@id": "\/api\/3\/picklists\/ff599189-3eeb-4c86-acb0-a7915e85ac3b",
+                        "icon": null,
+                        "@type": "Picklist",
+                        "color": null,
+                        "display": "Comment",
+                        "@context": "\/api\/3\/contexts\/Picklist",
+                        "listName": "\/api\/3\/picklist_names\/0841c1eb-a0a3-4abd-b29c-9f68e4d9b14f",
+                        "itemValue": "Comment",
+                        "orderIndex": 1
+                    },
+                    "alerts": "{{vars.input.params.inputAlertRecordIRI}}",
+                    "content": "{{vars.indicatorValue}} IP is Successfully Isolated on FortiEDR",
+                    "__replace": ""
+                },
+                "_showJson": false,
+                "operation": "Overwrite",
+                "collection": "\/api\/3\/comments",
+                "fieldOperation": {
+                    "recordTags": "Overwrite"
+                },
+                "step_variables": []
+            },
+            "status": null,
+            "top": "570",
+            "left": "1175",
+            "stepType": "\/api\/3\/workflow_step_types\/2597053c-e718-44b4-8394-4d40fe26d357",
+            "uuid": "b468283b-ce8c-4e89-be47-7edcfe37335b"
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/99c59504-ad70-4ea7-84d5-bd90f849c5c7",
+            "sourceStep": "\/api\/3\/workflow_steps\/efe5c249-b32b-4c1e-92e9-44ceda5b3de8",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d0117826-6f3a-4f4d-83bf-838ae0a1106e"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Add note to Indicator -> Send Malicious IP to FortiEDR",
+            "targetStep": "\/api\/3\/workflow_steps\/b7022552-a550-4709-bf80-d01a3ccd2ec3",
+            "sourceStep": "\/api\/3\/workflow_steps\/1193e8ed-c722-4f1e-abce-cb454419c367",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b28b0a3a-74cc-4298-927c-8149fde96704"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Add note to Indicator",
+            "targetStep": "\/api\/3\/workflow_steps\/1193e8ed-c722-4f1e-abce-cb454419c367",
+            "sourceStep": "\/api\/3\/workflow_steps\/99c59504-ad70-4ea7-84d5-bd90f849c5c7",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "061b9a99-6b15-4f6e-979b-641411e97a1c"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Isolate Host -> Add note to Alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/b468283b-ce8c-4e89-be47-7edcfe37335b",
+            "sourceStep": "\/api\/3\/workflow_steps\/b7022552-a550-4709-bf80-d01a3ccd2ec3",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "9807048e-afa0-42ca-b4f5-a9b68f83a46f"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Block IP -> Copy  of Mark as Blocked",
+            "targetStep": "\/api\/3\/workflow_steps\/36572c63-2b65-45de-9266-d0bd6e1d5ae8",
+            "sourceStep": "\/api\/3\/workflow_steps\/64a594f7-de26-4019-a82d-293390713a5e",
+            "label": "Unable to Block",
+            "isExecuted": false,
+            "uuid": "0b2e4d55-22a8-4a1e-ae64-bc70e306aae4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Add note to Indicator -> Send Malicious IP to FortiNAC",
+            "targetStep": "\/api\/3\/workflow_steps\/64a594f7-de26-4019-a82d-293390713a5e",
+            "sourceStep": "\/api\/3\/workflow_steps\/1193e8ed-c722-4f1e-abce-cb454419c367",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "d413f889-654f-4d93-9fd9-4d48a17b6432"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Block IP Address -> Add Note to Alerts",
+            "targetStep": "\/api\/3\/workflow_steps\/b725762f-f4cd-4db4-b114-df11816454ca",
+            "sourceStep": "\/api\/3\/workflow_steps\/d9cb6e40-58e9-4da8-b968-806bfc78e7ef",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "699703a7-f5a2-4027-aa54-20c4c261562c"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Add note to Indicator -> Send Malicious IP to FortiGate",
+            "targetStep": "\/api\/3\/workflow_steps\/d9cb6e40-58e9-4da8-b968-806bfc78e7ef",
+            "sourceStep": "\/api\/3\/workflow_steps\/1193e8ed-c722-4f1e-abce-cb454419c367",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "1346bd34-145b-42d1-92e4-d1b565da22f2"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Send Malicious IP to FortiNAC -> Mark as Blocked",
+            "targetStep": "\/api\/3\/workflow_steps\/9fac58ab-5b66-4f49-b779-1c877133bdc6",
+            "sourceStep": "\/api\/3\/workflow_steps\/64a594f7-de26-4019-a82d-293390713a5e",
+            "label": "Block Completed",
+            "isExecuted": false,
+            "uuid": "269af357-b7d2-4da5-b247-e8008f14e810"
+        }
+    ],
+    "priority": null,
+    "uuid": "81714ce4-ae55-4a25-9177-8c0931043034",
+    "owners": [],
+    "isPrivate": false,
+    "deletedAt": null,
+    "recordTags": [
+        "ManualAction",
+        "Mitigation"
+    ]
+}
