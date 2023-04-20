@@ -59,7 +59,7 @@ Your organization's network has been infiltrated. Ransomware was downloaded and 
 *	    What would your organization do differently if …
     *       … it is a publicly traded company in the United States?
     *       … it has customers in the European Union?
-    *       … it has proxy log retention is set to 1 week only? 
+    *       … it has proxy log retention set to 1 week only? 
     *       … it observed compromised email accounts?
     *       … it has a dedicated Cyber Threat Intelligence team?
     *       … it defined an incident budget of $100k?
@@ -85,8 +85,8 @@ Your organization is the target of a sophisticated attacker group. The attackers
 *	    How does your organization handle an APT scenario? Please provide a brief description of your process steps.
 *       How does your organization handle this scenario differently than other organizations? Please provide a brief description and justification of specifics.
 *	    What would your organization do differently if …
-    *       … … it is operating in Israel?
-    *       … … it assumes a state-sponsored attacker group located in Iran behind the attack?
+    *       … … it is operating in Israel/Ukraine?
+    *       … … it assumes a state-sponsored attacker group located in Iran/Russia behind the attack?
     *       … … it has defined formal reporting requirements?
     *       … … it has specified to contact the CISO, but CISO is unavailable?	
     *       … … its CFO’s laptop is affected?
