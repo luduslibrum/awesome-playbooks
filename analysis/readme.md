@@ -1,5 +1,5 @@
 # Community Playbook Analysis
-Analysis of 1221 community playbooks from various vendors 
+Analysis of 1217 community playbooks from various vendors 
 
 ## Import relevant modules
 
@@ -57,6 +57,55 @@ stop_words = set(stopwords.words("english")).union(stop_words_custom)
 tqdm.pandas()
 
 ```
+
+    Collecting en_core_web_sm==2.3.1
+      Using cached en_core_web_sm-2.3.1-py3-none-any.whl
+    Requirement already satisfied: spacy<2.4.0,>=2.3.0 in c:\users\mail\anaconda3\lib\site-packages (from en_core_web_sm==2.3.1) (2.3.9)
+    Requirement already satisfied: murmurhash<1.1.0,>=0.28.0 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (1.0.7)
+    Requirement already satisfied: wasabi<1.1.0,>=0.4.0 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (0.10.1)
+    Requirement already satisfied: tqdm<5.0.0,>=4.38.0 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (4.64.0)
+    Requirement already satisfied: catalogue<1.1.0,>=0.0.7 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (1.0.2)
+    Requirement already satisfied: blis<0.8.0,>=0.4.0 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (0.7.7)
+    Requirement already satisfied: setuptools in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (61.2.0)
+    Requirement already satisfied: preshed<3.1.0,>=3.0.2 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (3.0.6)
+    Requirement already satisfied: srsly<1.1.0,>=1.0.2 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (1.0.6)
+    Requirement already satisfied: cymem<2.1.0,>=2.0.2 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (2.0.6)
+    Requirement already satisfied: numpy>=1.15.0 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (1.21.5)
+    Requirement already satisfied: requests<3.0.0,>=2.13.0 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (2.27.1)
+    Requirement already satisfied: plac<1.2.0,>=0.9.6 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (1.1.3)
+    Requirement already satisfied: thinc<7.5.0,>=7.4.1 in c:\users\mail\anaconda3\lib\site-packages (from spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (7.4.6)
+    Requirement already satisfied: idna<4,>=2.5 in c:\users\mail\anaconda3\lib\site-packages (from requests<3.0.0,>=2.13.0->spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (3.3)
+    Requirement already satisfied: charset-normalizer~=2.0.0 in c:\users\mail\anaconda3\lib\site-packages (from requests<3.0.0,>=2.13.0->spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (2.0.4)
+    Requirement already satisfied: urllib3<1.27,>=1.21.1 in c:\users\mail\anaconda3\lib\site-packages (from requests<3.0.0,>=2.13.0->spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (1.26.9)
+    Requirement already satisfied: certifi>=2017.4.17 in c:\users\mail\anaconda3\lib\site-packages (from requests<3.0.0,>=2.13.0->spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (2022.12.7)
+    Requirement already satisfied: colorama in c:\users\mail\anaconda3\lib\site-packages (from tqdm<5.0.0,>=4.38.0->spacy<2.4.0,>=2.3.0->en_core_web_sm==2.3.1) (0.4.4)
+    [+] Download and installation successful
+    You can now load the model via spacy.load('en_core_web_sm')
+    
+
+    [nltk_data] Downloading package punkt to
+    [nltk_data]     C:\Users\mail\AppData\Roaming\nltk_data...
+    [nltk_data]   Package punkt is already up-to-date!
+    [nltk_data] Downloading package wordnet to
+    [nltk_data]     C:\Users\mail\AppData\Roaming\nltk_data...
+    [nltk_data]   Package wordnet is already up-to-date!
+    [nltk_data] Downloading package omw-1.4 to
+    [nltk_data]     C:\Users\mail\AppData\Roaming\nltk_data...
+    [nltk_data]   Package omw-1.4 is already up-to-date!
+    [nltk_data] Downloading package stopwords to
+    [nltk_data]     C:\Users\mail\AppData\Roaming\nltk_data...
+    [nltk_data]   Package stopwords is already up-to-date!
+    [nltk_data] Downloading package words to
+    [nltk_data]     C:\Users\mail\AppData\Roaming\nltk_data...
+    [nltk_data]   Package words is already up-to-date!
+    [nltk_data] Downloading package maxent_ne_chunker to
+    [nltk_data]     C:\Users\mail\AppData\Roaming\nltk_data...
+    [nltk_data]   Package maxent_ne_chunker is already up-to-date!
+    [nltk_data] Downloading package averaged_perceptron_tagger to
+    [nltk_data]     C:\Users\mail\AppData\Roaming\nltk_data...
+    [nltk_data]   Package averaged_perceptron_tagger is already up-to-
+    [nltk_data]       date!
+    
 
 ## (0) Define helping classes and functions
 
@@ -230,11 +279,12 @@ df_playbooks = df_playbooks.reset_index()
 df_playbooks['id'] = 'p' + (df_playbooks.index + 1).astype(str) # indexing in pandas starts at 0, so we add 1 to start the 'id' from 1
 
 # Save playbooks
-df_playbooks.to_csv("./coding/1_playbooks-auto.csv", sep=',', index=False)
+df_playbooks.to_csv("./coding/playbooks.csv", sep=',', index=False)
 
 # Print the final DataFrame
 df_playbooks.head()
 ```
+
 
 
 
@@ -353,7 +403,7 @@ df_steps = df_steps[['id', 'step_id', 'vendor', 'playbook_name', 'playbook_descr
 df_steps = df_steps.dropna(subset=['step_names', 'step_types'])
 
 # Write the resulting DataFrame to a CSV file
-df_steps.to_csv("./coding/action-auto.csv", sep=',', index=False)
+df_steps.to_csv("./coding/steps.csv", sep=',', index=False)
 
 # Display the resulting DataFrame
 df_steps.head()
@@ -364,6 +414,19 @@ df_steps.head()
 
 
 <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -480,7 +543,7 @@ columns_to_check = ['step_names', 'step_types', 'actuator']
 # Drop the duplicate rows based on the columns_to_check
 df_dedup = df_steps.drop_duplicates(subset=columns_to_check)
 
-df_dedup.to_csv("./coding/4_1_actions-auto.csv")
+df_dedup.to_csv("./coding/steps-to-be-coded.csv")
 
 ```
 
@@ -491,7 +554,7 @@ df_dedup.to_csv("./coding/4_1_actions-auto.csv")
 
 ```python
 # Load the DataFrame from the action-manual-coded.csv file
-df_SOV = pd.read_csv('./coding/4_2_action-coded.csv', sep=';')
+df_SOV = pd.read_csv('./coding/steps-coded.csv', sep=';')
 
 # Use tqdm to add a progress bar when iterating through the DataFrame
 tqdm.pandas()
@@ -543,7 +606,7 @@ df_SOV['step_description'] = df_SOV.apply(lambda x: str(x['action']).strip() + "
 
 ```
 
-    100%|███████████████████████████████| 16821/16821 [00:36<00:00, 456.84it/s]
+    100%|███████████████████████████████████████████████████████████████████████████| 16821/16821 [00:26<00:00, 632.69it/s]
     
 
 ## (5) Playbooks contain a median of 10 steps and are 97% automated (_Result 1_)
@@ -669,7 +732,7 @@ print('Playbook 0.75 quartile: {:.2f}'.format(summary['75%']))
 actions = df_SOV.groupby('action')['artifact'].agg(list)
 
 # Export the results
-actions.to_csv("./coding/6_1_actions_grouped.csv")
+actions.to_csv("./coding/step-action-grouped.csv")
 
 ```
 
@@ -677,7 +740,7 @@ actions.to_csv("./coding/6_1_actions_grouped.csv")
 
 
 ```python
-df_step_types = pd.read_csv('./coding/6_2_action_types.csv', sep=';')
+df_step_types = pd.read_csv('./coding/step-action-types.csv', sep=';')
 
 df_result2 = pd.merge(df_SOV, df_step_types[["action", "type"]], on='action', how='left')
 
@@ -688,19 +751,6 @@ df_result2.head()
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
