@@ -50,7 +50,7 @@ Please consider citing our publication if you are using our **Awesome-Playbooks*
 @InProceedings{Schlette2023,
 author = {Schlette, Daniel and Empl, Philip and Caselli, Marco and Schreck, Thomas and Pernul, G{\"u}nther},
 booktitle={Proceedings of the 45th IEEE Symposium on Security and Privacy (S&P '24)}, 
-title = {Do You Play It by the Books? A Study on Incident Response Playbooks and Influencing Factors}},
+title = {Do You Play It by the Books? A Study on Incident Response Playbooks and Influencing Factors},
 year={2024},
 volume={},
 number={},
