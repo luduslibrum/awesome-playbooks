@@ -1,6 +1,10 @@
 Awesome Playbooks [](https://github.com/luduslibrum/awesome-playbooks)
 =============================================================
 
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/luduslibrum/awesome-playbooks.svg)](http://isitmaintained.com/project/luduslibrum/awesome-playbooks "Percentage of issues still open")
+[![GitHub forks](https://img.shields.io/github/forks/luduslibrum/awesome-playbooks)](https://github.com/luduslibrum/awesome-playbooks/network)
+[![GitHub stars](https://img.shields.io/github/stars/luduslibrum/awesome-playbooks)](https://github.com/luduslibrum/awesome-playbooks/stargazers)
+
 > A curated repository of **1347 playbooks** and scripts for security incident response, aimed to help security analysts and [DFIR](http://www.acronymfinder.com/Digital-Forensics%2c-Incident-Response-%28DFIR%29.html) teams.
 
 | Vendor | Playbooks | Format | Link |
@@ -31,8 +35,25 @@ In addition, we provide a structural and content analysis of the playbooks and t
 
 ![methodoloy](https://user-images.githubusercontent.com/23430598/220401059-145d38f1-df7b-4bea-83b0-f45098a22282.svg)
 
-Factors
+Influencing Factors
 -------
 
 We conducted expert interviews with nine experts and performed an online study with n=147 to gather information on a incident response processes. The data collected is not published to protect the privacy of the participants, but we publish the structure and content of both the interview and the questionnaire ([go to factors](factors/)).
 
+
+Citation
+-------
+
+Please consider citing our publication if you are using our **Awesome-Playbooks** for your research: 
+
+```bib
+@InProceedings{Schlette2023,
+author = {Schlette, Daniel and Empl, Philip and Caselli, Marco and Schreck, Thomas and Pernul, G{\"u}nther},
+booktitle={Proceedings of the 45th IEEE Symposium on Security and Privacy (S&P '24)}, 
+title = {Do You Play It by the Books? A Study on Incident Response Playbooks and Influencing Factors}},
+year={2024},
+volume={},
+number={},
+pages={1-19}
+}
+```
