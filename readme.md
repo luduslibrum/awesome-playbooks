@@ -1,7 +1,7 @@
-Awesome Playbooks [](https://github.com/sindresorhus/awesome)
+Awesome Playbooks [](https://github.com/luduslibrum/awesome-playbooks)
 =============================================================
 
-> A curated repository of **1497 playbooks** and scripts for security incident response, aimed to help security analysts and [DFIR](http://www.acronymfinder.com/Digital-Forensics%2c-Incident-Response-%28DFIR%29.html) teams.
+> A curated repository of **1347 playbooks** and scripts for security incident response, aimed to help security analysts and [DFIR](http://www.acronymfinder.com/Digital-Forensics%2c-Incident-Response-%28DFIR%29.html) teams.
 
 | Vendor | Playbooks | Format | Link |
 | --- | --- | --- | --- |
