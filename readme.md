@@ -28,6 +28,13 @@ Awesome Playbooks [](https://github.com/luduslibrum/awesome-playbooks)
 | ThreatConnect | 83 | PBX(Z) | [/playbooks/threat\_connect](playbooks/threat_connect) |
 | Tines | 87 | JSON | [/playbooks/tines](playbooks/tines) |
 
+Incident Response Playbooks
+-----------
+
+Incident response "playbooks" are structured sets of operational procedures organizations use to instruct humans or machines on performing countermeasures against cybersecurity threats. These playbooks generally combine information about a given threat and organizational aspects relevant within the context of an organization. Both types of information are crucial for using, maintaining, and sharing playbooks across organizations as they ensure effectiveness and confidentiality.
+While practitioners show great interest in playbooks, their characteristics have not yet been thoroughly investigated from a research perspective. For this reason, we explore the topic by analyzing what is inside a playbook. Our approach consists of a comprehensive empirical assessment of available data (1217 playbooks), an online study with 147 participants, and final in-depth interviews with nine security professionals to consolidate and validate our findings.
+We notably find intrinsic ambiguities in the way practitioners and organizations define their playbooks. Furthermore, we notice that available playbooks cannot be used outright which might currently impair their wide use across different cybersecurity actors. As a result, we can conclude that organizations do "play it by the books" but individually define what is inside their playbooks and which areas of incident response they might address.
+
 Methodology
 -----------
 
@@ -41,7 +48,21 @@ Influencing Factors
 We conducted expert interviews with nine experts and performed an online study with n=147 to gather information on a incident response processes. The data collected is not published to protect the privacy of the participants, but we publish the structure and content of both the interview and the questionnaire ([go to factors](factors/)).
 
 
-Citation
+Contributing
+-------
+
+We encourage contributions from the cybersecurity community to make this repository a valuable and up-to-date resource. If you have new incident response playbooks, incident analysis reports, or improvements to existing content, we welcome your contributions.
+
+To contribute:
+
+1. Fork the repository and create your branch (`git checkout -b my-contribution`)
+2. Make your changes and commit them (`git commit -m 'Added a new playbook'`)
+3. Push the changes to your forked repository (`git push origin my-contribution`)
+4. Open a pull request to the `main` branch of this repository.
+
+
+
+Research Citation
 -------
 
 Please consider citing our publication if you are using our **Awesome-Playbooks** for your research: 
@@ -60,3 +81,13 @@ publisher = {{IEEE}},
 year={2024}
 }
 ```
+
+
+Questions
+-------
+
+Thank you for visiting our Incident Response Playbooks and Analysis Collection repository. We hope that this resource will empower you to handle cybersecurity incidents effectively and contribute to the collective security of our digital world.
+
+If you have any questions or suggestions, feel free to reach out to us or create an issue in the repository.
+
+Happy analyzing and responding!
