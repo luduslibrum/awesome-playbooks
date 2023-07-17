@@ -49,10 +49,10 @@ Please consider citing our publication if you are using our **Awesome-Playbooks*
 ```bib
 @InProceedings{Schlette2023,
 author = {Daniel Schlette and 
-	Philip Empl and 
-	Marco Caselli and
-	Thomas Schreck and 
-	G{\"u}nther Pernul}, 
+	 Philip Empl and 
+	 Marco Caselli and
+	 Thomas Schreck and 
+	 G{\"u}nther Pernul}, 
 title = {Do You Play It by the Books? A Study on Incident Response Playbooks and Influencing Factors},
 booktitle = {Proceedings of the 45th IEEE Symposium on Security and Privacy, {SP} 2024, San Francisco, CA, USA, May 20-23, 2024},
 pages = {1--19},
